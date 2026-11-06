@@ -283,6 +283,7 @@ html, body { height: 100%; overflow: hidden; background: #0c0c0c; }
 .vm-place .vm-label { transition: transform .25s; }
 .explore.map-on .markers, .explore.map-on .mm-wrap { opacity: 0; pointer-events: none; }
 @media (max-width: 720px) { .vm-hint { display: none; } .vm-n { font-size: 15px; } .vm-s { font-size: 12.5px; } }
+html:not(.exploring-on) .seal-fab { opacity: 0; pointer-events: none; visibility: hidden; }
 .mm-wrap { position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); width: 220px;
   background: rgba(244, 238, 225, 0.92); color: #2A2420; border-radius: 8px; padding: 10px; box-shadow: 0 12px 40px rgba(0,0,0,0.3); }
 .mm-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font: 500 0.62rem/1 var(--f-label); letter-spacing: 0.14em; text-transform: uppercase; }
@@ -963,7 +964,7 @@ a.q { text-decoration: none; }
     if (e.detail === "start") { coverUI(false); if (audio.paused) sound.click(); }
     else { syncCover(); }
   });
-  window.addEventListener("vale:explore", (e) => { if (e.detail === "start") coverUI(false); else { syncCover(); coverUI(true); } });
+  window.addEventListener("vale:explore", (e) => { document.documentElement.classList.toggle("exploring-on", e.detail === "start"); if (e.detail === "start") coverUI(false); else { syncCover(); coverUI(true); } });
 
 
   /* ---------- Perfil ---------- */

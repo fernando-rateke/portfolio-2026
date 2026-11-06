@@ -1327,11 +1327,15 @@
     const b = Builder();
     b.add(folds(lathe([[0.0, -0.2], [0.07, -0.19], [0.11, -0.12], [0.12, 0.0], [0.115, 0.12], [0.08, 0.19], [0.0, 0.21]], 26, 0, Math.PI * 2, 2), 7, () => 0.03), M(0, 0.2, 0, Math.PI / 2, 0, 0, 1, 1, 0.92), FUR);
     b.add(new T.SphereGeometry(0.1, 16, 10), M(0, 0.15, -0.02, 0, 0, 0, 1.05, 0.62, 1.6), FUR_L);
-    for (const [x, z] of [[-0.07, -0.13], [0.07, -0.13], [-0.075, 0.14], [0.075, 0.14]]) {
-      b.add(new T.CapsuleGeometry(0.032, 0.06, 4, 10), M(x, 0.07, z), FUR);
-      b.add(new T.SphereGeometry(1, 10, 8), M(x, 0.02, z - 0.015, 0, 0, 0, 0.04, 0.022, 0.05), FUR_L);
-    }
     part(body, b.build());
+    const legsH = [[-0.07, -0.13], [0.07, -0.13], [-0.075, 0.14], [0.075, 0.14]].map(([x, z]) => {
+      const j = joint(body, x, 0.12, z);
+      const lb = Builder();
+      lb.add(new T.CapsuleGeometry(0.032, 0.06, 4, 10), M(0, -0.05, 0), FUR);
+      lb.add(new T.SphereGeometry(1, 10, 8), M(0, -0.1, -0.015, 0, 0, 0, 0.04, 0.022, 0.05), FUR_L);
+      part(j, lb.build());
+      return j;
+    });
     const head = joint(body, 0, 0.29, -0.23);
     const hb = Builder();
     hb.add(new T.SphereGeometry(0.088, 18, 12), M(0, 0, 0, 0, 0, 0, 1, 0.95, 1.05), FUR);
@@ -1347,18 +1351,30 @@
     });
     const tail = joint(body, 0, 0.26, 0.26);
     part(tail, one(new T.ConeGeometry(0.024, 0.17, 8), FUR, M(0, 0.075, 0.02, 0.5, 0, 0)));
-    g.position.set(HILL.x - 0.72, 0, HILL.z + 0.35);
-    g.rotation.y = 0.35;
-    g.scale.setScalar(1.35);
+    g.scale.setScalar(1.5);
     scene.add(g);
+    // passeia num oito na frente do grupo: anda, para, fareja, segue
+    const ease3 = (k) => k * k * (3 - 2 * k);
+    const pathAt = (a) => ({ x: HILL.x - 2.3 + Math.sin(a) * 1.5, z: HILL.z + 0.9 + Math.sin(a * 2) * 0.45 });
     actors.push((t) => {
-      g.position.y = heightAt(g.position.x, g.position.z) - 0.02;
+      const u = t * 0.16, seg = Math.floor(u), fr = u - seg;
+      const mv = fr < 0.68 ? ease3(fr / 0.68) : 1;
+      const walking = fr > 0.03 && fr < 0.65;
+      const a = (seg + mv) * 1.5;
+      const p = pathAt(a), q = pathAt(a + 0.02);
+      g.position.set(p.x, heightAt(p.x, p.z) - 0.02, p.z);
+      g.rotation.y = Math.atan2(-(q.x - p.x), -(q.z - p.z));
+      const step = t * 9.5;
+      legsH.forEach((l, i) => { l.rotation.x = walking ? Math.sin(step + (i === 0 || i === 3 ? 0 : Math.PI)) * 0.55 : 0; });
+      body.position.y = walking ? Math.abs(Math.sin(step)) * 0.012 : 0;
+      body.rotation.z = walking ? Math.sin(step) * 0.05 : 0;
       const pant = Math.sin(t * 9.0);
       body.scale.set(1 + pant * 0.025, 1 + pant * 0.03, 1);
-      head.rotation.x = 0.05 + pant * 0.04;
-      head.rotation.y = Math.sin(t * 0.35) * 0.4;
+      const sniff = !walking && fr > 0.72;
+      head.rotation.x = sniff ? 0.55 + Math.sin(t * 14) * 0.05 : 0.05 + pant * 0.04;
+      head.rotation.y = walking ? Math.sin(t * 1.3) * 0.15 : Math.sin(t * 0.5) * 0.45;
       ears.forEach((e, i) => { e.rotation.z = (i ? -1 : 1) * (0.05 + Math.sin(t * 2.2 + i) * 0.08); e.rotation.x = Math.sin(t * 1.7 + i) * 0.1; });
-      tail.rotation.z = Math.sin(t * 7.5) * 0.6;
+      tail.rotation.z = Math.sin(t * (walking ? 9 : 6)) * (sniff ? 0.9 : 0.6);
     });
   }
 
@@ -1602,8 +1618,120 @@
     water.visible = true; grass.visible = true; flowers.visible = true; petals.visible = true; flies.visible = true;
   }
 
+  /* ------------------------------------------------------------------ */
+  /* Estrelas cadentes: riscam o céu e, às vezes, descem correndo pelo   */
+  /* vale até mergulhar num lago, como no filme                          */
+  /* ------------------------------------------------------------------ */
+  const meteors = (() => {
+    const N = 5, SEG = 26;
+    const rnd = mulberry(909);
+    const mat = new T.ShaderMaterial({
+      transparent: true, depthWrite: false, blending: T.AdditiveBlending, side: T.DoubleSide,
+      uniforms: { uNight: U.uNight },
+      vertexShader: `attribute float aA; attribute float aV; varying float vA; varying float vV; void main(){ vA=aA; vV=aV; gl_Position=projectionMatrix*viewMatrix*vec4(position,1.0); }`,
+      fragmentShader: `uniform float uNight; varying float vA; varying float vV;
+        void main(){ float edge=1.0-abs(vV*2.0-1.0); float a=vA*smoothstep(0.0,0.9,edge); vec3 c=mix(vec3(0.62,0.82,1.0),vec3(1.0,0.97,0.86),vA*vA);
+          gl_FragColor=vec4(c*a*(0.75+uNight*0.6),a); }`,
+    });
+    const headMat = new T.ShaderMaterial({
+      transparent: true, depthWrite: false, blending: T.AdditiveBlending, uniforms: { uNight: U.uNight, uA: { value: 0 } },
+      vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+      fragmentShader: `uniform float uNight, uA; varying vec2 vUv; void main(){ float d=length(vUv-0.5)*2.0; float core=smoothstep(0.25,0.0,d); float glow=smoothstep(1.0,0.0,d); vec3 c=vec3(1.0,0.96,0.85)*core*1.6+vec3(0.55,0.78,1.0)*glow*glow*0.8; float a=(core+glow*glow*0.7)*uA*(0.8+uNight*0.5); gl_FragColor=vec4(c*a,a); }`,
+    });
+    const ringMat = new T.ShaderMaterial({
+      transparent: true, depthWrite: false, blending: T.AdditiveBlending, uniforms: { uA: { value: 0 } },
+      vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+      fragmentShader: `uniform float uA; varying vec2 vUv; void main(){ float d=length(vUv-0.5)*2.0; float r=smoothstep(0.08,0.0,abs(d-0.8))+smoothstep(0.5,0.0,d)*0.5; gl_FragColor=vec4(vec3(0.7,0.88,1.0)*r*uA,r*uA); }`,
+    });
+    const list = [];
+    for (let i = 0; i < N; i++) {
+      const g = new T.BufferGeometry();
+      const pos = new Float32Array(SEG * 2 * 3), aA = new Float32Array(SEG * 2), aV = new Float32Array(SEG * 2), idx = [];
+      for (let k = 0; k < SEG; k++) { aV[k * 2] = 0; aV[k * 2 + 1] = 1; if (k < SEG - 1) { const a = k * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } }
+      g.setAttribute("position", new T.BufferAttribute(pos, 3)); g.setAttribute("aA", new T.BufferAttribute(aA, 1)); g.setAttribute("aV", new T.BufferAttribute(aV, 1)); g.setIndex(idx);
+      const trail = new T.Mesh(g, mat); trail.frustumCulled = false; trail.visible = false; scene.add(trail);
+      const hm = headMat.clone(); hm.uniforms.uNight = U.uNight;
+      const head = new T.Mesh(new T.PlaneGeometry(1, 1), hm); head.visible = false; head.frustumCulled = false; scene.add(head);
+      const rm = ringMat.clone();
+      const ring = new T.Mesh(new T.PlaneGeometry(1, 1), rm); ring.rotation.x = -Math.PI / 2; ring.visible = false; scene.add(ring);
+      list.push({ trail, head, ring, hist: [], t: 0, dur: 0, live: false, kind: "sky", splash: -1 });
+    }
+    const bez = (a, b, c, k) => { const u = 1 - k; return new T.Vector3(u * u * a.x + 2 * u * k * b.x + k * k * c.x, u * u * a.y + 2 * u * k * b.y + k * k * c.y, u * u * a.z + 2 * u * k * b.z + k * k * c.z); };
+    function launch(m, kind) {
+      m.kind = kind; m.t = 0; m.live = true; m.hist.length = 0; m.splash = -1;
+      if (kind === "sky") {
+        const a = new T.Vector3(-160 + rnd() * 320, 70 + rnd() * 60, -170 - rnd() * 160);
+        const dir = new T.Vector3(rnd() < 0.5 ? -1 : 1, -0.45 - rnd() * 0.3, 0.1).normalize();
+        m.p0 = a; m.p1 = a.clone().addScaledVector(dir, 55); m.p2 = a.clone().addScaledVector(dir, 110);
+        m.dur = 1.4 + rnd() * 0.9; m.width = 1.5; m.size = 6;
+      } else {
+        // desce do céu, corre rente ao campo e mergulha num lago
+        const L = LAKES[[0, 2, 3][Math.floor(rnd() * 3)]];
+        const tgt = new T.Vector3(L.x + (rnd() - 0.5) * L.rx * 0.7, 0.15, L.z + (rnd() - 0.5) * L.rz * 0.5);
+        const side = rnd() < 0.5 ? -1 : 1;
+        const dir = new T.Vector3(side, 0, 0.35 * (rnd() - 0.5)).normalize();
+        const skim = tgt.clone().addScaledVector(dir, -38); skim.y = Math.max(heightAt(skim.x, skim.z), 0) + 1.4;
+        m.p0 = skim.clone().addScaledVector(dir, -50).add(new T.Vector3(0, 60, -20));
+        m.p1 = skim; m.p2 = tgt;
+        m.dur = 3.2 + rnd() * 1.2; m.width = 0.8; m.size = 3.6;
+      }
+    }
+    let next = 4, lastT = null;
+    const view = new T.Vector3(), side = new T.Vector3(), dir = new T.Vector3();
+    const step = (t) => {
+      const dt = lastT === null ? 0 : Math.max(0, Math.min(0.1, t - lastT)); lastT = t;
+      next -= dt;
+      if (next <= 0) {
+        const m = list.find((x) => !x.live && x.splash < 0);
+        if (m) launch(m, Math.random() < 0.45 ? "vale" : "sky");
+        const night = U.uNight.value;
+        next = (night > 0.5 ? 3 : 6) + Math.random() * (night > 0.5 ? 5 : 9);
+      }
+      list.forEach((m) => {
+        if (m.splash >= 0) {
+          m.splash += dt;
+          const k = m.splash / 1.6;
+          m.ring.visible = k < 1; m.ring.scale.setScalar(1 + k * 9); m.ring.material.uniforms.uA.value = (1 - k) * 0.9;
+          if (k >= 1) m.splash = -1;
+        }
+        if (!m.live) { m.trail.visible = false; m.head.visible = false; return; }
+        m.t += dt;
+        let k = Math.min(1, m.t / m.dur);
+        const kk = m.kind === "vale" ? 1 - Math.pow(1 - k, 1.6) : k;
+        const p = bez(m.p0, m.p1, m.p2, kk);
+        if (m.kind === "vale" && kk > 0.45) p.y = Math.max(p.y, Math.max(heightAt(p.x, p.z), 0) + 0.6 * (1 - kk) + 0.15);
+        m.hist.unshift(p); if (m.hist.length > SEG) m.hist.pop();
+        const fade = m.kind === "sky" ? Math.sin(Math.PI * k) : Math.min(1, k * 4);
+        // fita voltada para a câmera, afinando na cauda
+        const pos = m.trail.geometry.attributes.position.array, aA = m.trail.geometry.attributes.aA.array;
+        for (let i = 0; i < SEG; i++) {
+          const a = m.hist[Math.min(i, m.hist.length - 1)], b = m.hist[Math.min(i + 1, m.hist.length - 1)];
+          dir.subVectors(a, b); if (dir.lengthSq() < 1e-6) dir.set(1, 0, 0); dir.normalize();
+          view.subVectors(camera.position, a).normalize();
+          side.crossVectors(dir, view).normalize();
+          const w = m.width * (1 - i / SEG) * (0.6 + 0.4 * fade);
+          pos.set([a.x + side.x * w, a.y + side.y * w, a.z + side.z * w], i * 6);
+          pos.set([a.x - side.x * w, a.y - side.y * w, a.z - side.z * w], i * 6 + 3);
+          const al = Math.pow(1 - i / SEG, 1.5) * fade;
+          aA[i * 2] = al; aA[i * 2 + 1] = al;
+        }
+        m.trail.geometry.attributes.position.needsUpdate = true; m.trail.geometry.attributes.aA.needsUpdate = true;
+        m.trail.visible = true; m.head.visible = true;
+        m.head.position.copy(p); m.head.quaternion.copy(camera.quaternion); m.head.scale.setScalar(m.size * (0.7 + 0.3 * fade));
+        m.head.material.uniforms.uA.value = fade;
+        if (k >= 1) {
+          m.live = false;
+          if (m.kind === "vale") { m.splash = 0; m.ring.position.set(m.p2.x, 0.12, m.p2.z); }
+        }
+      });
+    };
+    step.launch = (kind) => { const m = list.find((x) => !x.live && x.splash < 0); if (m) launch(m, kind); };
+    return step;
+  })();
+
   function updateWorld(t) {
     U.uTime.value = t;
+    meteors(t);
     // castelo: percurso elíptico, passos alternados, corpo balançando
     const c = castleAt(t);
     const gy = Math.max(heightAt(c.x, c.z), 0);
@@ -1784,7 +1912,7 @@
   }
   if ($("introSkip")) $("introSkip").addEventListener("click", skipFilm);
   // seek: posiciona a entrada num corte e num ponto do corte (usado para revisar quadros)
-  window.vale = { playIntro, go: (id) => { if (!explore.active) startExplore(); go(id); }, seek(i, frac = 0.5) { if (!intro.active) playIntro(); startShot(i); intro.t = intro.shots[i].d * frac; } };
+  window.vale = { star: (k) => meteors.launch(k || "vale"), playIntro, go: (id) => { if (!explore.active) startExplore(); go(id); }, seek(i, frac = 0.5) { if (!intro.active) playIntro(); startShot(i); intro.t = intro.shots[i].d * frac; } };
 
 
   /* ------------------------------------------------------------------ */

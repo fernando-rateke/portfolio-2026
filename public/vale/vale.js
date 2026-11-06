@@ -704,45 +704,79 @@
     const METAL = "#3E434A", METAL_D = "#2C3036", WOOD = "#7B5A3E", CANVAS = "#C9BBA0", COPPER = "#6F8D7E", SLATE = "#7C8A96";
     const WALL = ["#ECE2CF", "#E2D3B8", "#D9CDB6"], ROOF = ["#A8473A", "#8E3C33", "#5E6B76", "#7C4A3A"];
 
-    // Casco: massas sobrepostas, como uma sucata que virou casa
-    [[0, 9.6, 0, 6.4, 4.0, 4.8, RUST[0]], [-3.4, 10.4, 0.3, 4.8, 3.8, 4.2, RUST[1]], [3.8, 10.2, 0, 3.6, 3.3, 3.6, RUST[2]],
-     [-0.6, 12.8, 0.4, 4.4, 2.8, 3.6, RUST[3]], [1.6, 7.6, 0, 4.6, 2.2, 3.8, RUST[4]]]
-      .forEach(([x, y, z, sx, sy, sz, c]) => B.add(new T.SphereGeometry(1, 28, 18), M(x, y, z, 0, 0, 0, sx, sy, sz), c));
-    // Placas de metal remendadas (umas cinza, outras de ferrugem)
-    for (let i = 0; i < 40; i++) {
-      const a = r() * Math.PI * 2, y = 7.2 + r() * 6.5;
-      const rad = 4.7 - Math.abs(y - 10) * 0.28;
-      B.add(new T.BoxGeometry(1.4 + r() * 1.2, 0.9 + r() * 0.9, 0.22), M(Math.cos(a) * rad * 1.28, y, Math.sin(a) * rad, (r() - 0.5) * 0.3, -a + Math.PI / 2, (r() - 0.5) * 0.4), i % 4 === 0 ? RUSTS[i % 3] : HULL[(i + 2) % 5]);
+    // ===== Corpo refeito pela referência do filme =====
+    const BROWN = (x, y, z) => { const n = Math.sin(x * 2.3 + y * 1.1) * Math.sin(z * 1.9 - y * 0.7); return n > 0.5 ? "#9A6E4E" : n < -0.5 ? "#6A4A36" : "#83604A"; };
+    const DOME = "#7E8A96", DOME_D = "#5E6A76", DOME_L = "#9AA6B0", BAND = "#4E5862";
+    const PLANK = (x, y, z) => (Math.floor((y + 20) * 2.2) % 2 ? "#7A5A40" : "#6A4C36");
+    // base de ferrugem e madeira, larga e irregular
+    [[0.4, 9.0, 0, 6.2, 2.9, 4.4], [-3.0, 9.6, 0.2, 4.2, 2.8, 3.8], [3.6, 8.8, 0, 3.6, 2.6, 3.4], [0.8, 7.4, 0, 4.6, 1.6, 3.4]]
+      .forEach(([x, y, z, sx, sy, sz]) => B.add(new T.SphereGeometry(1, 28, 18), M(x, y, z, 0, 0, 0, sx, sy, sz), BROWN));
+    // tábuas e chapas na base
+    for (let i = 0; i < 46; i++) {
+      const a = r() * Math.PI * 2, y = 7.4 + r() * 4.0, rad = 4.5 - Math.abs(y - 9.2) * 0.45;
+      B.add(new T.BoxGeometry(1.3 + r() * 1.2, 0.7 + r() * 0.8, 0.2), M(Math.cos(a) * rad * 1.36, y, Math.sin(a) * rad, (r() - 0.5) * 0.3, -a + Math.PI / 2, (r() - 0.5) * 0.4), i % 3 === 0 ? "#5E6A76" : i % 3 === 1 ? "#7A5A40" : "#8C6448");
     }
-    // Abas de metal nas laterais, como asas dobradas
-    for (const z of [-1, 1]) for (let k = 0; k < 3; k++) {
-      B.add(new T.BoxGeometry(2.6 - k * 0.4, 1.6, 0.14), M(-1.6 + k * 2.2, 10.6 - k * 0.5, z * (4.9 - k * 0.3), z * (0.35 + k * 0.1), 0, (k - 1) * 0.25), k === 1 ? RUSTS[1] : HULL[k]);
-      for (let j = 0; j < 4; j++) B.add(new T.SphereGeometry(0.09, 5, 4), M(-2.4 + k * 2.2 + j * 0.5, 11.2 - k * 0.5, z * (5.0 - k * 0.3)), METAL_D);
+    for (let i = 0; i < 40; i++) { const a = i / 40 * Math.PI * 2; B.add(new T.SphereGeometry(0.12, 6, 4), M(Math.cos(a) * 6.0, 10.3 + Math.sin(a * 4) * 0.2, Math.sin(a) * 4.4), METAL_D); }
+    // boca: maxilar que se projeta, com dentes, e a plataforma
+    B.add(new T.BoxGeometry(1.6, 1.4, 3.8), M(6.2, 8.4, 0), "#1E1614");
+    for (let i = 0; i < 7; i++) B.add(new T.ConeGeometry(0.22, 0.6, 4), M(6.9, 8.9, -1.5 + i * 0.5, Math.PI, 0, 0), "#E2D8C4");
+    for (let i = 0; i < 6; i++) B.add(new T.ConeGeometry(0.2, 0.5, 4), M(7.0, 7.9, -1.25 + i * 0.5), "#E2D8C4");
+    B.add(new T.BoxGeometry(2.4, 0.5, 4.2), M(7.2, 7.5, 0, 0, 0, -0.18), BROWN);
+    B.add(new T.BoxGeometry(2.6, 0.22, 1.8), M(8.2, 6.9, 0, 0, 0, -0.1), WOOD);
+    // cúpulas como elmos: casco cinza, cintas rebitadas e vigias redondas
+    const dome = (x, y, z, R, h, vig) => {
+      B.add(new T.SphereGeometry(R, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2), M(x, y, z), (px, py) => (py > R * 0.82 ? DOME_L : DOME));
+      B.add(new T.CylinderGeometry(R, R * 1.04, h, 32, 1, true), M(x, y - h / 2, z), DOME_D);
+      B.add(new T.TorusGeometry(R * 1.02, 0.16, 8, 40), M(x, y + 0.02, z, Math.PI / 2, 0, 0), BAND);
+      B.add(new T.TorusGeometry(R * 1.05, 0.2, 8, 40), M(x, y - h, z, Math.PI / 2, 0, 0), BAND);
+      B.add(new T.TorusGeometry(R * 0.72, 0.12, 8, 32), M(x, y + R * 0.68, z, Math.PI / 2, 0, 0), BAND);
+      for (let i = 0; i < 24; i++) { const a = i / 24 * Math.PI * 2; B.add(new T.SphereGeometry(0.08, 5, 4), M(x + Math.cos(a) * R * 1.03, y - h * 0.5, z + Math.sin(a) * R * 1.03), METAL_D); }
+      vig.forEach(([a, dy, rr]) => {
+        const px = x + Math.cos(a) * R * 0.98, pz = z + Math.sin(a) * R * 0.98, Mv = M(px, y + dy, pz, 0, -a + Math.PI / 2, 0);
+        B.add(new T.TorusGeometry(rr, rr * 0.28, 8, 18), Mv, "#3E464E");
+        B.add(new T.CircleGeometry(rr * 0.9, 16), Mv.clone().multiply(M(0, 0, 0.02)), "#1A1E22", 1);
+      });
+    };
+    dome(1.8, 12.2, 0, 3.7, 1.6, [[0, 1.0, 0.55], [0.6, 1.4, 0.4], [-0.6, 1.4, 0.4], [1.3, 0.8, 0.35], [-1.3, 0.8, 0.35]]);
+    dome(-2.8, 12.6, 0.4, 3.0, 1.4, [[2.6, 1.0, 0.4], [3.4, 0.9, 0.35], [2.0, 1.4, 0.32]]);
+    dome(0.2, 16.2, -0.2, 2.6, 1.2, [[0, 0.9, 0.4], [0.9, 1.0, 0.3], [-0.9, 1.0, 0.3]]);
+    dome(-3.4, 15.6, -1.4, 1.6, 0.9, [[2.4, 0.6, 0.26]]);
+    // olhos-canhão na frente da cúpula maior
+    for (const z of [-1.3, 1.3]) {
+      B.add(new T.CylinderGeometry(0.6, 0.7, 1.6, 16), M(5.6, 11.4, z, 0, 0, -Math.PI / 2), "#4E5862");
+      B.add(new T.TorusGeometry(0.64, 0.14, 8, 18), M(6.4, 11.4, z, 0, Math.PI / 2, 0), "#3A424A");
+      B.add(new T.CircleGeometry(0.5, 16), M(6.43, 11.4, z, 0, Math.PI / 2, 0), "#141618");
     }
-    // Canhões saindo dos flancos
-    for (const z of [-1, 1]) for (let k = 0; k < 3; k++) {
-      const Mg = M(-2.4 + k * 2.6, 9.4 + (k % 2) * 1.3, z * 4.7, z * Math.PI / 2 + z * 0.15, 0, 0);
-      B.add(new T.CylinderGeometry(0.22, 0.3, 2.2, 10), Mg.clone().multiply(M(0, 1.0, 0)), METAL);
-      B.add(new T.TorusGeometry(0.24, 0.07, 6, 12), Mg.clone().multiply(M(0, 2.1, 0, Math.PI / 2, 0, 0)), METAL_D);
+    // paredes de tábuas e varandas entre as cúpulas
+    for (const [x, y, z, w, h, ry] of [[-0.6, 13.8, 3.0, 3.6, 2.2, 0.1], [3.4, 14.4, -2.4, 2.6, 2.0, 2.8], [-4.4, 13.4, 2.2, 2.2, 1.8, 0.6], [4.6, 12.6, 2.6, 2.0, 1.6, -0.5]]) {
+      B.add(new T.BoxGeometry(w, h, 0.24), M(x, y, z, 0, ry, 0), PLANK);
+      B.add(new T.BoxGeometry(w + 0.2, 0.12, 0.6), M(x, y - h / 2, z, 0, ry, 0), WOOD);
+      for (let k = 0; k <= 5; k++) B.add(new T.BoxGeometry(0.06, 0.5, 0.06), M(x + Math.cos(ry) * (-w / 2 + k * w / 5), y - h / 2 + 0.3, z - Math.sin(ry) * (-w / 2 + k * w / 5) + 0.25 * Math.cos(ry)), WOOD);
     }
-    // Rebites no cinturão do casco
-    for (let i = 0; i < 52; i++) { const a = i / 52 * Math.PI * 2; B.add(new T.SphereGeometry(0.13, 6, 4), M(Math.cos(a) * 6.32, 9.2 + Math.sin(a * 3) * 0.25, Math.sin(a) * 4.74), METAL_D); }
-
-    // Rosto: olhos-canhão, boca com dentes e a plataforma de madeira
-    for (const z of [-1.5, 1.5]) {
-      B.add(new T.CylinderGeometry(0.62, 0.72, 1.8, 16), M(7.0, 11.2, z, 0, 0, -Math.PI / 2), METAL);
-      B.add(new T.TorusGeometry(0.66, 0.12, 8, 18), M(7.9, 11.2, z, 0, Math.PI / 2, 0), METAL_D);
-      B.add(new T.CircleGeometry(0.5, 16), M(7.93, 11.2, z, 0, Math.PI / 2, 0), "#1B1615");
+    // asas de lona com nervuras, na traseira
+    for (const sz of [-1, 1]) {
+      const wing = new T.Shape(); wing.moveTo(0, 0); wing.bezierCurveTo(-2.5, 1.6, -6.5, 1.8, -8.2, -0.6); wing.bezierCurveTo(-6.6, -1.4, -4.8, -2.6, -2.6, -3.2); wing.bezierCurveTo(-1.6, -2.2, -0.6, -1.2, 0, 0);
+      const Mw = M(-4.6, 12.0, sz * 3.6, sz * 0.5, sz * 0.55, 0.15);
+      B.add(new T.ShapeGeometry(wing, 12), Mw, "#C9CDD2", 0, 0.5);
+      B.add(new T.ShapeGeometry(wing, 12), Mw.clone().multiply(M(0, 0, -0.03, 0, Math.PI, 0, -1, 1, 1)), "#B4B8BE", 0, 0.5);
+      for (let k = 0; k < 4; k++) { const a = 0.18 - k * 0.22, len = 6.6 - k * 1.1; B.add(new T.CylinderGeometry(0.05, 0.04, len, 5), Mw.clone().multiply(M(-Math.cos(a) * len / 2, Math.sin(a) * len / 2, 0.03, 0, 0, Math.PI / 2 - a)), "#6A6E74"); }
     }
-    B.add(new T.BoxGeometry(1.2, 1.1, 3.6), M(6.6, 8.6, 0), "#2A201D");
-    for (let i = 0; i < 6; i++) B.add(new T.BoxGeometry(0.5, 0.5, 0.42), M(7.1, 9.05, -1.4 + i * 0.56, 0, 0, 0.1), "#D9D1C0");
-    B.add(new T.BoxGeometry(2.8, 0.28, 1.8), M(7.9, 8.1, 0, 0, 0, -0.12), WOOD);
-    B.add(new T.BoxGeometry(0.1, 0.9, 1.8), M(9.25, 8.4, 0), WOOD);
-
-    // Cúpulas do alto
-    [[0.2, 14.6, 0.2, 3.0, 2.3, 2.8, RUST[2]], [-2.9, 14.9, 1.2, 2.0, 2.2, 1.9, SLATE], [2.6, 15.2, -1.2, 1.9, 2.0, 1.9, COPPER], [-4.4, 13.0, -2.2, 1.6, 1.5, 1.5, RUSTS[2]]]
-      .forEach(([x, y, z, sx, sy, sz, c]) => B.add(new T.SphereGeometry(1, 24, 14), M(x, y, z, 0, 0, 0, sx, sy, sz), c));
-
+    // chaminés altas de ferrugem, algumas tortas
+    [[-1.6, 17.0, -1.2, 7.0, 0.04, 0.42], [-0.4, 18.0, -2.0, 8.2, -0.05, 0.5], [1.2, 17.4, -1.6, 6.4, 0.08, 0.38], [-3.6, 16.8, 0.2, 5.0, 0.12, 0.34], [2.8, 15.4, 1.2, 4.0, -0.15, 0.32]]
+      .forEach(([x, y, z, h, lean, rr]) => {
+        const Mc = M(x, y + h / 2 - 1, z, 0, 0, lean);
+        B.add(new T.CylinderGeometry(rr, rr * 1.15, h, 12), Mc, (px, py) => (Math.floor((py + h) * 1.4) % 3 === 0 ? "#6A4A36" : "#8A5E44"));
+        B.add(new T.CylinderGeometry(rr * 1.35, rr * 0.95, 0.5, 12), Mc.clone().multiply(M(0, h / 2 + 0.2, 0)), "#3A3236");
+        for (const fy of [-0.25, 0.1]) B.add(new T.TorusGeometry(rr * 1.08, 0.07, 6, 14), Mc.clone().multiply(M(0, h * fy, 0, Math.PI / 2, 0, 0)), "#3A3236");
+        chimneyTops.push(new T.Vector3(0, h / 2 + 0.6, 0).applyMatrix4(Mc));
+      });
+    // mastros, guindastes e cabos no alto
+    for (const [x, z, h, ang] of [[2.6, 0.6, 5.2, 0.6], [-2.2, 1.6, 4.4, -0.8]]) {
+      B.add(new T.CylinderGeometry(0.06, 0.08, h, 6), M(x, 18 + h / 2, z), "#3A3236");
+      B.add(new T.CylinderGeometry(0.05, 0.05, 3.2, 6), M(x + Math.cos(ang) * 1.4, 18 + h - 0.6, z + Math.sin(ang) * 1.4, 0, -ang, Math.PI / 2 - 0.35), "#3A3236");
+      B.add(new T.CylinderGeometry(0.015, 0.015, 3.6, 4), M(x + Math.cos(ang) * 1.6, 18 + h - 2.2, z + Math.sin(ang) * 1.6, 0, 0, 0.3), "#2A2420");
+    }
+    B.add(new T.CylinderGeometry(0.02, 0.02, 9, 4), M(0.2, 21.5, 0.8, 0.2, 0, 1.2), "#2A2420");
     // Casinhas com telhado de duas águas e janelas que acendem à noite
     const house = (x, y, z, w, h, d, ry, wall, roof) => {
       const Mh = M(x, y, z, 0, ry, 0);
@@ -753,21 +787,10 @@
       B.add(new T.PlaneGeometry(w * 0.24, h * 0.34), Mh.clone().multiply(M(w * 0.22, 0.04, d / 2 + 0.02)), "#2D2624", 1);
       B.add(new T.PlaneGeometry(w * 0.24, h * 0.34), Mh.clone().multiply(M(0, 0.04, -d / 2 - 0.02, 0, Math.PI, 0)), "#2D2624", 1);
     };
-    [[-3.6, 12.6, 2.6, 1.8, 1.3, 1.5, 0.3], [3.9, 12.3, 2.0, 1.6, 1.2, 1.4, -0.2], [0.6, 16.2, 1.8, 1.7, 1.2, 1.4, 0.1],
-     [-2.2, 16.4, -1.0, 1.4, 1.1, 1.2, 0.6], [2.8, 16.8, 0.8, 1.3, 1.0, 1.1, -0.4], [-4.8, 9.6, 3.4, 1.6, 1.3, 1.3, 0.7],
-     [4.8, 9.0, 2.9, 1.4, 1.2, 1.2, -0.6], [1.6, 11.6, 4.2, 1.6, 1.2, 1.2, 0.0], [-1.4, 11.2, 4.1, 1.5, 1.1, 1.2, 0.15],
-     [-5.2, 12.0, -2.4, 1.6, 1.2, 1.4, 2.6], [1.2, 12.4, -4.0, 1.7, 1.2, 1.3, 3.1], [4.2, 13.4, -2.6, 1.3, 1.1, 1.1, 2.8]]
+    [[-4.8, 9.4, 3.6, 1.6, 1.3, 1.3, 0.7], [4.4, 8.6, 3.2, 1.4, 1.2, 1.2, -0.6], [1.6, 7.0, 3.6, 1.5, 1.1, 1.2, 0.0],
+     [-5.4, 10.8, -2.6, 1.6, 1.2, 1.4, 2.6], [1.4, 10.6, -4.2, 1.7, 1.2, 1.3, 3.1], [-1.4, 6.6, -3.2, 1.3, 1.0, 1.1, 2.9],
+     [-2.4, 17.6, 1.4, 1.2, 1.0, 1.0, 0.4], [2.4, 18.0, 0.0, 1.1, 0.9, 1.0, -0.3]]
       .forEach(([x, y, z, w, h, d, ry], i) => house(x, y, z, w, h, d, ry, WALL[i % 3], ROOF[i % 4]));
-
-    // Chaminés, algumas tortas
-    [[-1.2, 15.8, -0.8, 4.2, 0.05], [1.0, 16.4, -1.4, 5.0, -0.06], [3.6, 15.0, -1.8, 3.2, -0.12], [-3.6, 15.6, 0.0, 3.0, 0.1],
-     [-4.8, 13.2, -1.6, 2.6, 0.18], [0.4, 15.4, 2.2, 2.4, 0.0], [4.8, 13.4, 1.4, 2.2, -0.2]].forEach(([x, y, z, h, lean]) => {
-      const Mc = M(x, y, z, 0, 0, lean);
-      B.add(new T.CylinderGeometry(0.36, 0.46, h, 12), Mc, METAL);
-      B.add(new T.CylinderGeometry(0.62, 0.38, 0.55, 12), Mc.clone().multiply(M(0, h / 2 + 0.1, 0)), METAL_D);
-      B.add(new T.TorusGeometry(0.4, 0.08, 6, 12), Mc.clone().multiply(M(0, h * 0.15, 0, Math.PI / 2, 0, 0)), METAL_D);
-      chimneyTops.push(new T.Vector3(0, h / 2 + 0.35, 0).applyMatrix4(Mc));
-    });
 
     // Torres com cone e mastro
     const turret = (x, y, z, rr, h, roof) => {
@@ -778,25 +801,9 @@
       B.add(new T.PlaneGeometry(0.24, 0.36), M(x, y + h * 0.1, z + rr + 0.02), "#2D2624", 1);
       B.add(new T.PlaneGeometry(0.24, 0.36), M(x + rr + 0.02, y + h * 0.1, z, 0, Math.PI / 2, 0), "#2D2624", 1);
     };
-    turret(-0.6, 17.6, 0.4, 0.95, 3.6, ROOF[0]);
-    turret(3.0, 17.4, 1.6, 0.6, 2.4, ROOF[2]);
-    turret(-3.4, 17.2, -1.4, 0.55, 2.0, ROOF[1]);
-
-    // Canos
-    const pipe = (pts, rad, c) => B.add(new T.TubeGeometry(new T.CatmullRomCurve3(pts.map((q) => new T.Vector3(...q))), 40, rad, 8), M(), c);
-    pipe([[5.2, 8.0, 3.0], [4.4, 10.0, 4.4], [2.0, 11.5, 4.6], [0.0, 12.5, 3.6]], 0.2, COPPER);
-    pipe([[-5.6, 9.0, -2.6], [-6.4, 11.0, -1.0], [-5.8, 13.0, 0.8], [-4.2, 14.4, 1.2]], 0.18, METAL);
-    pipe([[3.0, 13.2, 3.0], [4.4, 14.0, 2.4], [5.2, 13.0, 1.0]], 0.14, METAL_D);
-    pipe([[-2.0, 7.0, -3.8], [-4.0, 8.2, -3.6], [-5.6, 10.6, -2.4]], 0.16, COPPER);
-
-    // Velas de lona na traseira e a sucata da cauda
-    for (const z of [-1, 1]) {
-      B.add(new T.BoxGeometry(3.4, 2.6, 0.08), M(-7.2, 11.0, z * 2.6, 0, z * 0.5, 0.15), CANVAS);
-      for (let k = 0; k < 4; k++) B.add(new T.CylinderGeometry(0.05, 0.05, 2.8, 4), M(-8.4 + k * 0.8, 11.0, z * 2.6, 0, z * 0.5, 0.15), WOOD);
-    }
-    for (let i = 0; i < 7; i++) B.add(new T.BoxGeometry(1 + r(), 0.8 + r() * 0.6, 1 + r()), M(-6.2 + r() * 1.2, 7.4 + r() * 2.2, (r() - 0.5) * 3.6, 0, r(), 0), i % 2 ? WOOD : HULL[3]);
-    B.add(new T.SphereGeometry(1, 20, 14), M(-6.4, 9.6, 0, 0, 0, 0, 2.2, 1.8, 2.4), RUST[1]);
-    for (const z of [-0.9, 0, 0.9]) { B.add(new T.CylinderGeometry(0.28, 0.36, 1.8, 10), M(-8.4, 9.6 + Math.abs(z) * 0.3, z, 0, 0, Math.PI / 2 + 0.2), METAL); B.add(new T.TorusGeometry(0.3, 0.08, 6, 12), M(-9.3, 9.4 + Math.abs(z) * 0.3, z, 0, Math.PI / 2, 0.2), METAL_D); }
+    turret(0.4, 19.4, 0.6, 0.8, 3.0, ROOF[0]);
+    turret(4.2, 14.6, 1.8, 0.55, 2.2, ROOF[2]);
+    turret(-4.6, 14.8, 1.6, 0.5, 2.0, ROOF[1]);
 
     const bodyGeo = B.build();
     castleBody.add(new T.Mesh(bodyGeo, objMat));
@@ -1002,7 +1009,7 @@
       uniforms: Object.assign({}, U),
       transparent: true, depthWrite: false,
       vertexShader: `attribute float aAge; varying float vAge; void main(){ vAge=aAge; vec4 mv=modelViewMatrix*vec4(position,1.0); gl_PointSize=(3.0+aAge*13.0)*300.0/-mv.z; gl_Position=projectionMatrix*mv; }`,
-      fragmentShader: `uniform float uNight; varying float vAge; void main(){ vec2 p=gl_PointCoord-0.5; float d=length(p); if(d>0.5) discard; float a=smoothstep(0.5,0.12,d)*(1.0-vAge)*0.5; vec3 c=mix(mix(vec3(0.97,0.97,0.95),vec3(0.8,0.82,0.84),vAge),vec3(0.24,0.27,0.34),uNight); gl_FragColor=vec4(c,a); }`,
+      fragmentShader: `uniform float uNight; varying float vAge; void main(){ vec2 p=gl_PointCoord-0.5; float d=length(p); if(d>0.5) discard; float a=smoothstep(0.5,0.12,d)*(1.0-vAge)*0.5; vec3 c=mix(mix(vec3(0.22,0.2,0.21),vec3(0.46,0.45,0.47),vAge),vec3(0.12,0.13,0.17),uNight); gl_FragColor=vec4(c,a); }`,
     });
     const pts = new T.Points(g, m); pts.frustumCulled = false; scene.add(pts);
     return { g, data: Array.from({ length: SMOKE_N }, (_, i) => ({ age: (i * 0.137) % 1, src: i % 7, o: new T.Vector3(), seed: (i * 0.618) % 1 })) };
@@ -1862,7 +1869,7 @@
     const wd = U.uWind.value;
     smoke.data.forEach((sm, i) => {
       const age = (sm.age + t * 0.075) % 1;
-      if (sm.last === undefined || age < sm.last) sm.o.copy(chimneyTops[sm.src]).applyMatrix4(castleBody.matrixWorld);
+      if (sm.last === undefined || age < sm.last) sm.o.copy(chimneyTops[sm.src % chimneyTops.length]).applyMatrix4(castleBody.matrixWorld);
       sm.last = age;
       pa[i * 3] = sm.o.x + wd.x * age * 16 + Math.sin(age * 6 + sm.seed * 9) * 1.2;
       pa[i * 3 + 1] = sm.o.y + age * 14 + age * age * 6;

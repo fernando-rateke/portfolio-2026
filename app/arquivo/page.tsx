@@ -86,7 +86,7 @@ export default function ArquivoPage() {
       <div className="noise" aria-hidden="true" />
 
       <header className="sub-header">
-        <Link href="/#archive" className="back-link">← VOLTAR</Link>
+        <Link href="/antigo#archive" className="back-link">← VOLTAR</Link>
         <span className="sub-title">ARQUIVO DE ESTUDOS</span>
       </header>
 

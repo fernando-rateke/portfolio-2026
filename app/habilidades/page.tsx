@@ -59,7 +59,7 @@ export default function HabilidadesPage() {
       <div className="noise" aria-hidden="true" />
 
       <header className="sub-header">
-        <Link href="/#about" className="back-link">← VOLTAR</Link>
+        <Link href="/antigo#about" className="back-link">← VOLTAR</Link>
         <span className="sub-title">HABILIDADES</span>
       </header>
 

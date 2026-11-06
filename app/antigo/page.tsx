@@ -3,15 +3,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
-import CoverflowGallery from "./components/CoverflowGallery";
-import { onKeyActivate } from "./utils/a11y";
-import type { ScenePhase } from "./SculptureScene";
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
+import CoverflowGallery from "../components/CoverflowGallery";
+import { onKeyActivate } from "../utils/a11y";
+import type { ScenePhase } from "../SculptureScene";
 
-const ExperienceNotice = dynamic(() => import("./components/ExperienceNotice"), { ssr: false });
-const SculptureScene = dynamic(() => import("./SculptureScene"), { ssr: false });
-const FinalePortalScene = dynamic(() => import("./components/FinalePortalScene"), { ssr: false });
+const ExperienceNotice = dynamic(() => import("../components/ExperienceNotice"), { ssr: false });
+const SculptureScene = dynamic(() => import("../SculptureScene"), { ssr: false });
+const FinalePortalScene = dynamic(() => import("../components/FinalePortalScene"), { ssr: false });
 
 export default function Home() {
   const [sceneMode, setSceneMode] = useState<ScenePhase>("hero");

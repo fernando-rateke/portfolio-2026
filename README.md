@@ -23,13 +23,20 @@ Abra http://localhost:3000.
 | `npm start`     | serve o build de produção              |
 | `npm run lint`  | ESLint (Next, React, acessibilidade)   |
 
+## Página inicial: o Vale
+
+A raiz (`/`) serve a experiência nova, ainda em construção: `public/vale/index.html`,
+com a cena 3D em `public/vale/vale.js` (Three.js r149, incluído em `public/vale/three.min.js`)
+e os mundos de destaque em `public/vale/mundos.js`. O portfólio anterior continua em
+`/antigo`, e as demais páginas (`/materias`, `/sobre`...) seguem nas rotas de sempre.
+
 ## Estrutura
 
 ```
 app/
 ├── layout.tsx            # layout raiz: metadados, fontes, cursor e áudio globais
 ├── globals.css           # todos os estilos (tema "Sumi Ink")
-├── page.tsx              # home: hero, sobre, projetos, arquivos, galeria, portal
+├── antigo/page.tsx       # home anterior: hero, sobre, projetos, arquivos, galeria, portal
 ├── materias/             # catálogo de atividades por matéria e trimestre
 ├── sobre/ curriculo/ projeto/ galeria/
 ├── arquivo/ habilidades/ # páginas antigas, sem link no menu

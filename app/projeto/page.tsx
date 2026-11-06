@@ -34,7 +34,7 @@ export default function ProjetoPage() {
 
       <section className="section" style={{ paddingTop: "120px" }}>
         <div className="container">
-          <Link href="/#projects" className="btn-outline" style={{ display: "inline-flex", marginBottom: "2rem" }}>
+          <Link href="/antigo#projects" className="btn-outline" style={{ display: "inline-flex", marginBottom: "2rem" }}>
             <i className="ph ph-arrow-left"></i> Voltar para Projetos
           </Link>
 

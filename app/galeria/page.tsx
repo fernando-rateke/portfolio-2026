@@ -62,7 +62,7 @@ export default function GaleriaPage() {
           />
 
           <div style={{ textAlign: "center", marginTop: "4rem" }}>
-            <Link href="/#home" className="btn btn-outline">
+            <Link href="/antigo#home" className="btn btn-outline">
               <i className="ph ph-arrow-left"></i> Voltar ao Início
             </Link>
           </div>

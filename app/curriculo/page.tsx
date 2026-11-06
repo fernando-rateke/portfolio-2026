@@ -36,7 +36,7 @@ export default function CurriculoPage() {
       <section className="section" style={{ paddingTop: "120px", paddingBottom: "4rem" }}>
         <div className="container" style={{ textAlign: "center" }}>
           <Link
-            href="/#about"
+            href="/antigo#about"
             className="btn-outline"
             style={{ display: "inline-flex", marginBottom: "2rem" }}
           >

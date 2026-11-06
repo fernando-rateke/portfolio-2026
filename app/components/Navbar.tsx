@@ -14,7 +14,7 @@ export default function Navbar({ activePage = "home" }: { activePage?: string })
 
     // If we're on a dedicated subpage (e.g. /materias, /curriculo, /sobre, /galeria)
     const pathname = window.location.pathname.toLowerCase().replace(/\/$/, "");
-    if (pathname !== "") return;
+    if (pathname !== "/antigo") return;
 
     const sections = [
       { id: "home", name: "home" },
@@ -50,7 +50,7 @@ export default function Navbar({ activePage = "home" }: { activePage?: string })
     setMobileMenuOpen(false);
     if (targetId && typeof window !== "undefined") {
       const cleanPath = window.location.pathname.toLowerCase().replace(/\/$/, "");
-      if (cleanPath === "") {
+      if (cleanPath === "/antigo") {
         const el = document.getElementById(targetId);
         if (el) {
           el.scrollIntoView({ behavior: "smooth" });
@@ -63,7 +63,7 @@ export default function Navbar({ activePage = "home" }: { activePage?: string })
     <header className="navbar">
       <div className="nav-container">
         {/* Left Column: Brand Logo with 3D Emblem */}
-        <Link href="/#home" className="logo" onClick={() => handleNavClick("home")}>
+        <Link href="/antigo#home" className="logo" onClick={() => handleNavClick("home")}>
           <Navbar3D />
           <span>
             Fernando <span>Rateke</span>
@@ -74,35 +74,35 @@ export default function Navbar({ activePage = "home" }: { activePage?: string })
         <div className="nav-center-wrapper">
           <nav className={`nav-links ${mobileMenuOpen ? "mobile-open" : ""}`}>
             <Link
-              href="/#home"
+              href="/antigo#home"
               className={`nav-item ${activeSection === "home" ? "active-link" : ""}`}
               onClick={() => handleNavClick("home")}
             >
               Início
             </Link>
             <Link
-              href="/#about"
+              href="/antigo#about"
               className={`nav-item ${activeSection === "sobre" ? "active-link" : ""}`}
               onClick={() => handleNavClick("about")}
             >
               Sobre Mim
             </Link>
             <Link
-              href="/#projects"
+              href="/antigo#projects"
               className={`nav-item ${activeSection === "projects" ? "active-link" : ""}`}
               onClick={() => handleNavClick("projects")}
             >
               Projetos
             </Link>
             <Link
-              href="/#archive"
+              href="/antigo#archive"
               className={`nav-item ${activeSection === "archive" ? "active-link" : ""}`}
               onClick={() => handleNavClick("archive")}
             >
               Arquivos
             </Link>
             <Link
-              href="/#gallery"
+              href="/antigo#gallery"
               className={`nav-item ${activeSection === "galeria" ? "active-link" : ""}`}
               onClick={() => handleNavClick("gallery")}
             >

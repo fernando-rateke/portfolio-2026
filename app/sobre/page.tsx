@@ -55,7 +55,7 @@ export default function SobrePage() {
 
       <section className="section" style={{ paddingTop: "130px", minHeight: "100vh" }}>
         <div className="container">
-          <Link href="/#about" className="btn-outline" style={{ display: "inline-flex", marginBottom: "2rem" }}>
+          <Link href="/antigo#about" className="btn-outline" style={{ display: "inline-flex", marginBottom: "2rem" }}>
             <i className="ph ph-arrow-left"></i> Voltar para Início
           </Link>
 

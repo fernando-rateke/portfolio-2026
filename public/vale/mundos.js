@@ -114,76 +114,89 @@
   /* ---------------- Calcifer: chama em shader, com rosto ---------------- */
   function makeCalcifer(s = 1) {
     const group = new T.Group();
-    const U = { uT: { value: 0 }, uTalk: { value: 0 }, uBlink: { value: 1 }, uLook: { value: new T.Vector2() }, uHot: { value: 0 } };
+    const U = { uT: { value: 0 }, uTalk: { value: 0 }, uBlink: { value: 1 }, uLook: { value: new T.Vector2() }, uHot: { value: 0 }, uArms: { value: 0 } };
     const flame = new T.Mesh(new T.PlaneGeometry(1.3 * s, 1.6 * s), new T.ShaderMaterial({
       transparent: true, depthWrite: false, uniforms: U,
       vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
       fragmentShader: `${NOISE}
-        uniform float uT, uTalk, uBlink, uHot; uniform vec2 uLook; varying vec2 vUv;
+        uniform float uT, uTalk, uBlink, uHot, uArms; uniform vec2 uLook; varying vec2 vUv;
         float g(float x, float c, float w){ return exp(-pow((x-c)/w,2.0)); }
         void main(){
           float t=uT;
           vec2 q=vec2((vUv.x-0.5)*0.8125, vUv.y);
-          q.x-=0.05*sin(t*2.1+q.y*3.0)*smoothstep(0.4,1.0,q.y);
-          // corpo
-          float e=length((q-vec2(0.0,0.36))/vec2(0.235,0.225));
-          e+=0.045*snoise(vec2(q.x*7.0,q.y*7.0-t*3.2));
-          float body=smoothstep(1.02,0.96,e);
-          // línguas de fogo
-          float n=snoise(vec2(q.x*5.0,t*1.7))*0.035;
-          float top=0.5+n
-            +0.46*g(q.x,0.02*sin(t*3.1),0.055)*(0.82+0.18*sin(t*5.3))
-            +0.22*g(q.x,-0.125+0.02*sin(t*2.7+1.0),0.045)*(0.78+0.22*sin(t*4.1+2.0))
-            +0.25*g(q.x,0.135+0.02*sin(t*3.7+2.0),0.045)*(0.78+0.22*sin(t*4.7+1.0))
-            +0.13*g(q.x,-0.215,0.032)*(0.6+0.4*sin(t*6.0))
-            +0.12*g(q.x,0.225,0.03)*(0.6+0.4*sin(t*5.5+3.0));
-          float wide=0.24-(q.y-0.36)*0.04;
-          float tongue=step(0.36,q.y)*smoothstep(0.012,-0.012,q.y-top)*smoothstep(wide+0.012,wide-0.02,abs(q.x));
-          float m=max(body,tongue);
-          // brasas soltas acima das pontas
-          for(int i=0;i<4;i++){
-            float fi=float(i); float ph=fract(t*0.55+fi*0.27);
-            vec2 sp=vec2(sin(fi*2.3+t*0.8)*0.12, 0.62+ph*0.45);
-            m=max(m, smoothstep(0.018,0.004,length(q-sp))*(1.0-ph));
+          vec2 c=vec2(0.0,0.35);
+          vec2 v=q-c; v.x-=0.025*sin(t*1.9+q.y*5.0)*smoothstep(0.0,0.4,v.y);
+          float ang=atan(v.y,v.x);
+          float dist=length(v*vec2(1.0,0.94));
+          // contorno macio: bolha com línguas no topo
+          float top=g(ang,1.57+0.12*sin(t*1.3),0.32)*0.15*(0.85+0.15*sin(t*3.1))
+                   +g(ang,2.15+0.05*sin(t*2.0),0.17)*0.075*(0.6+0.4*sin(t*4.3+1.0))
+                   +g(ang,1.0+0.05*sin(t*2.4),0.18)*0.07*(0.6+0.4*sin(t*3.7+2.0));
+          float r=0.25+top+0.016*snoise(vec2(ang*2.0,t*0.7))+0.004*snoise(vec2(ang*5.0,t*1.6));
+          float body=smoothstep(r+0.014,r-0.03,dist);
+          float aura=smoothstep(r+0.11,r-0.01,dist);
+          // chaminhas soltas que sobem e somem
+          float wisp=0.0;
+          for(int i=0;i<2;i++){
+            float fi=float(i); float ph=fract(t*0.32+fi*0.5);
+            vec2 wp=c+vec2((fi-0.5)*0.07+sin(t+fi*3.0)*0.03, 0.27+ph*0.3);
+            wisp=max(wisp, smoothstep(0.045*(1.0-ph)+0.01,0.0,length((q-wp)*vec2(1.3,0.8)))*(1.0-ph));
           }
-          // calor: núcleo claro, borda vermelha
-          float heat=max(clamp(1.0-e,0.0,1.0), tongue*clamp((top-q.y)*2.2,0.0,1.0)*0.6);
-          vec3 col=mix(vec3(0.80,0.14,0.04),vec3(1.0,0.45,0.07),smoothstep(0.0,0.3,heat));
-          col=mix(col,vec3(1.0,0.78,0.26),smoothstep(0.32,0.62,heat));
-          col=mix(col,vec3(1.0,0.96,0.78),smoothstep(0.7,0.95,heat)*0.75);
-          col=mix(col,vec3(0.55,0.08,0.03),smoothstep(0.86,1.0,e)*body*(1.0-tongue)*0.55);
-          col*=1.0+uHot*0.25;
-          // olhos
-          float bl=max(uBlink,0.08);
+          // braços de fogo
+          float arms=0.0;
           for(int k=0;k<2;k++){
             float sx=k==0?-1.0:1.0;
-            vec2 ec=vec2(sx*0.088,0.405);
-            float ed=length((q-ec)/vec2(0.068,0.084*bl));
-            col=mix(col,vec3(0.28,0.05,0.02),smoothstep(1.16,1.04,ed));
-            col=mix(col,vec3(1.0,0.98,0.92),smoothstep(1.0,0.93,ed));
-            vec2 pc=ec+uLook*vec2(0.022,0.02*bl);
-            float pd=length((q-pc)/vec2(1.0,bl));
-            col=mix(col,vec3(0.06,0.03,0.03),smoothstep(0.031,0.025,pd)*step(ed,1.0));
-            col=mix(col,vec3(1.0),smoothstep(0.009,0.004,length(q-pc-vec2(0.009,0.01)))*step(ed,1.0)*step(0.5,bl));
+            vec2 p=q-vec2(sx*0.19,0.25);
+            float along=sx*p.x; float len=0.16*uArms;
+            float wav=0.018*sin(along*32.0-t*11.0+sx);
+            float th=mix(0.04,0.012,clamp(along/max(len,0.001),0.0,1.0));
+            float fing=smoothstep(len-0.04,len,along)*0.02*sin((p.y+wav)*90.0);
+            arms=max(arms, smoothstep(th+0.008,th-0.006,abs(p.y-wav-0.01*along*6.0)+fing)*step(0.0,along)*smoothstep(len,len-0.035,along));
           }
-          // boca com dentinhos
-          float mh=0.016+0.045*uTalk;
-          vec2 mc=vec2(0.0,0.296);
-          float md=length((q-mc)/vec2(0.105,mh));
-          float inMouth=smoothstep(1.04,0.96,md)*step(q.y,mc.y+0.004);
-          col=mix(col,vec3(0.32,0.04,0.02),inMouth);
-          float teeth=step(mc.y-0.012*(1.0-abs(fract(q.x*26.0)-0.5)*2.0),q.y)*inMouth*step(0.03,mh);
-          col=mix(col,vec3(1.0,0.93,0.82),teeth);
-          col=mix(col,vec3(0.32,0.04,0.02),smoothstep(0.007,0.0,abs(q.y-(mc.y+2.4*q.x*q.x)))*step(abs(q.x),0.105)*(1.0-inMouth));
-          gl_FragColor=vec4(col,m);
-          if(m<0.01) discard;
+          // cores: âmbar no centro, laranja, borda vermelha esfumaçada
+          float k=clamp(dist/r,0.0,1.0);
+          vec3 col=mix(vec3(0.97,0.66,0.24),vec3(0.91,0.48,0.14),smoothstep(0.25,0.75,k));
+          col=mix(col,vec3(0.78,0.25,0.08),smoothstep(0.72,1.0,k));
+          col*=0.96+0.06*snoise(q*4.0+vec2(0.0,-t*0.5));
+          col*=1.0+uHot*0.15;
+          vec3 auraCol=vec3(0.62,0.12,0.04);
+          vec3 outc=mix(auraCol,col,body);
+          outc=mix(outc,vec3(0.95,0.55,0.18),wisp*(1.0-body));
+          outc=mix(outc,mix(vec3(1.0,0.86,0.42),vec3(0.98,0.62,0.2),0.3),arms*(1.0-body));
+          float a=max(max(aura*0.62,body),max(wisp*0.85,arms));
+          // olhos redondos, bege, pupila pequena
+          float bl=max(uBlink,0.07);
+          for(int e=0;e<2;e++){
+            float sx=e==0?-1.0:1.0;
+            vec2 ec=vec2(sx*0.078,0.395);
+            float ed=length((q-ec)/vec2(0.05,0.054*bl));
+            outc=mix(outc,vec3(0.22,0.08,0.03),smoothstep(1.14,1.06,ed)*body);
+            outc=mix(outc,vec3(0.95,0.90,0.80),smoothstep(1.02,0.96,ed)*body);
+            vec2 pc=ec+uLook*vec2(0.016,0.013*bl);
+            outc=mix(outc,vec3(0.16,0.07,0.03),smoothstep(0.019,0.015,length((q-pc)/vec2(1.0,bl)))*step(ed,1.0)*body);
+          }
+          // boca: pílula quando calado; um D largo quando fala
+          vec2 mc=vec2(0.0,0.3);
+          float open=smoothstep(0.08,0.4,uTalk);
+          vec2 mp=q-mc;
+          float pill=length(vec2(max(abs(mp.x)-0.034,0.0),mp.y))-0.011;
+          float dh=0.012+0.055*uTalk;
+          float dshape=max(length(vec2(mp.x/0.1,(mp.y+0.002)/dh))-1.0, mp.y-0.006);
+          float m=mix(pill*30.0,dshape,open);
+          float inside=smoothstep(0.02,-0.02,m);
+          float rim=smoothstep(0.12,0.04,abs(m))*(1.0-inside*0.0);
+          vec3 mouthCol=mix(vec3(0.88,0.36,0.16),mix(vec3(0.42,0.06,0.02),vec3(0.95,0.62,0.24),smoothstep(-0.006-dh*0.45,-0.006-dh*0.9,mp.y)),open);
+          outc=mix(outc,vec3(0.25,0.07,0.02),smoothstep(0.35,0.0,abs(m))*body*0.9);
+          outc=mix(outc,mouthCol,inside*body);
+          gl_FragColor=vec4(outc,a);
+          if(a<0.01) discard;
         }`,
     }));
     flame.position.y = 0.8 * s;
     const halo = new T.Mesh(new T.PlaneGeometry(3.2 * s, 3.2 * s), new T.ShaderMaterial({
       transparent: true, depthWrite: false, blending: T.AdditiveBlending, uniforms: U,
       vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
-      fragmentShader: `uniform float uT, uHot; varying vec2 vUv; void main(){ float d=length(vUv-vec2(0.5,0.42)); float f=0.85+0.1*sin(uT*9.0)+0.05*sin(uT*23.0); float a=smoothstep(0.5,0.0,d)*0.32*f*(1.0+uHot*0.5); gl_FragColor=vec4(vec3(1.0,0.5,0.15)*a,a); }`,
+      fragmentShader: `uniform float uT, uHot; varying vec2 vUv; void main(){ float d=length(vUv-vec2(0.5,0.42)); float f=0.85+0.1*sin(uT*9.0)+0.05*sin(uT*23.0); float a=smoothstep(0.5,0.0,d)*0.3*f*(1.0+uHot*0.5); gl_FragColor=vec4(vec3(1.0,0.45,0.12)*a,a); }`,
     }));
     halo.position.y = 0.7 * s;
     group.add(halo, flame);
@@ -192,7 +205,8 @@
       group, U,
       update(dt, camera, talk) {
         U.uT.value += dt;
-        U.uTalk.value += ((talk ? 0.5 + 0.5 * Math.abs(Math.sin(U.uT.value * 11)) : 0) - U.uTalk.value) * Math.min(1, dt * 14);
+        U.uTalk.value += ((talk ? 0.45 + 0.55 * Math.abs(Math.sin(U.uT.value * 9)) : 0) - U.uTalk.value) * Math.min(1, dt * 12);
+        U.uArms.value += (Math.max(talk ? 1 : 0, U.uHot.value) - U.uArms.value) * Math.min(1, dt * 4);
         blinkT -= dt;
         if (blinkT < 0) { U.uBlink.value = Math.max(0, U.uBlink.value - dt * 14); if (U.uBlink.value === 0) blinkT = 2.5 + Math.random() * 3; }
         else U.uBlink.value = Math.min(1, U.uBlink.value + dt * 10);
@@ -1593,7 +1607,7 @@
       logs.add(new T.CylinderGeometry(0.09, 0.09, 0.8, 8), M(0, 0.06, 0, 0, 0.5, Math.PI / 2), "#4A3020");
       logs.add(new T.CylinderGeometry(0.09, 0.09, 0.8, 8), M(0, 0.06, 0.05, 0, -0.5, Math.PI / 2), "#5A3B26");
       cal.add(new T.Mesh(logs.build(), mat));
-      calc = makeCalcifer(0.78); calc.group.position.y = 0.02; cal.add(calc.group);
+      calc = makeCalcifer(0.82); calc.group.position.y = 0.02; cal.add(calc.group);
 
       // amuletos pendurados (como no quarto do castelo)
       const cm = toon(env);
@@ -1661,7 +1675,7 @@
     const onClick = (e) => { if (e.target !== canvas) return; const id = pick(e); if (id) select(id); };
 
     const api = {
-      template: "", dossierLabel: "Ver todos os gostos", select: (id) => select(id),
+      template: "", dossierLabel: "Ver todos os gostos", select: (id) => select(id), say: (t) => say(t),
       titleHTML: `<span class="w-kicker">Alto do castelo</span><span class="w-name">O quarto</span>`,
       hintText: "Toque no que chamar a sua atenção.",
       build,

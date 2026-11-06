@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Rateke · Portfólio 2026</title>
-<meta name="description" content="Portfólio de Fernando Rateke: um vale para atravessar, com o castelo andante, o Templo do Sino (AcousticBuild) e o mundo do Nós.">
+<meta name="description" content="Portfólio de Fernando Rateke: um vale para atravessar, com o castelo andante, a Torre dos Grimórios, o Templo do Sino (AcousticBuild) e o mundo do Nós.">
 <meta property="og:title" content="Rateke · Portfólio 2026">
 <meta property="og:description" content="A jornada é o que dá forma ao mundo.">
 <meta property="og:type" content="website">
@@ -13,6 +13,7 @@
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<script>window.VALE_BASE = "/vale/";</script>
 <style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -381,6 +382,137 @@ td:first-child { font-family: var(--f-display); font-size: 1rem; white-space: no
 .state.open { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); }
 
 
+
+/* ---------- Perfil: ficha de personagem ---------- */
+.seal-fab { position: fixed; z-index: 120; left: max(16px, env(safe-area-inset-left, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);
+  width: 60px; height: 60px; padding: 0; border: 0; background: transparent; cursor: pointer; filter: drop-shadow(0 6px 14px rgba(0,0,0,0.3)); transition: transform 0.3s ease; }
+.seal-fab svg { width: 100%; height: 100%; }
+.seal-fab:hover { transform: rotate(-6deg) scale(1.06); }
+.seal-fab .tip { position: absolute; left: 70px; top: 50%; transform: translateY(-50%); white-space: nowrap; font: 500 0.7rem/1 var(--f-label); letter-spacing: 0.16em; text-transform: uppercase;
+  color: #fff; background: rgba(20, 16, 14, 0.75); padding: 8px 10px; border-radius: 999px; opacity: 0; transition: opacity 0.3s ease; pointer-events: none; }
+.seal-fab:hover .tip, .seal-fab:focus-visible .tip { opacity: 1; }
+html.intro-on .seal-fab, html.perfil-on .seal-fab { display: none; }
+html.perfil-on, html.perfil-on body { overflow: hidden; }
+.lockup[role="button"] { cursor: pointer; pointer-events: auto; }
+.perfil { position: fixed; inset: 0; z-index: 150; display: grid; place-items: center; padding: max(12px, env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) max(12px, env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
+  background: rgba(12, 10, 9, 0.55); backdrop-filter: blur(6px); }
+.perfil[hidden] { display: none; }
+.perfil .book { --paper: #F4EEE1; --paper-2: #EDE5D4; --ink: #2A2420; --muted: #6C6156; --rule: rgba(42,36,32,0.16); --red: #C22026;
+  position: relative; width: min(1100px, 100%); height: min(900px, 100%); display: grid; grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  background: var(--paper); color: var(--ink); border-radius: 6px; overflow: hidden; box-shadow: 0 30px 80px rgba(0,0,0,0.45);
+  clip-path: circle(0% at var(--ox, 6%) var(--oy, 94%)); transition: clip-path 0.9s cubic-bezier(.7,0,.2,1); }
+.perfil.open .book { clip-path: circle(150% at var(--ox, 6%) var(--oy, 94%)); }
+.perfil .page { min-width: 0; overflow-y: auto; padding: 44px clamp(20px, 3.4vw, 44px) 36px; }
+.perfil .page-l { background: linear-gradient(90deg, var(--paper) 0%, var(--paper) 94%, var(--paper-2) 100%); border-right: 1px solid var(--rule); }
+.perfil .page-r { background: linear-gradient(90deg, var(--paper-2) 0%, var(--paper) 6%); }
+.perfil .close { position: absolute; top: 14px; right: 14px; z-index: 2; font: 500 0.72rem/1 var(--f-label); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink);
+  background: transparent; border: 1px solid var(--rule); border-radius: 999px; padding: 10px 14px; cursor: pointer; }
+.perfil .close:hover { border-color: var(--red); color: var(--red); }
+.perfil .kick { font: 500 0.68rem/1 var(--f-label); letter-spacing: 0.2em; text-transform: uppercase; color: var(--red); }
+.perfil .id { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 22px; align-items: end; margin-top: 16px; }
+.perfil .portrait { position: relative; aspect-ratio: 1; max-width: 100%; background: #ddd; padding: 7px; background: #fff; box-shadow: 0 6px 18px rgba(0,0,0,0.15); transform: rotate(-2deg); }
+.perfil .portrait img { display: block; width: 100%; height: 100%; object-fit: cover; filter: saturate(0.9) contrast(1.02); }
+.perfil .portrait::before, .perfil .portrait::after { content: ""; position: absolute; width: 54px; height: 18px; background: rgba(214, 196, 150, 0.7); }
+.perfil .portrait::before { top: -8px; left: -14px; transform: rotate(-28deg); }
+.perfil .portrait::after { bottom: -8px; right: -14px; transform: rotate(-28deg); }
+.perfil h2.name { font: 700 clamp(1.7rem, 1.2rem + 1.6vw, 2.5rem)/1.05 var(--f-display); margin: 6px 0 0; text-wrap: balance; }
+.perfil .name-jp { font: 600 0.95rem/1 var(--f-display); color: var(--muted); letter-spacing: 0.3em; margin-top: 8px; display: block; }
+.perfil .stats { margin: 26px 0 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); border-top: 1px solid var(--rule); }
+.perfil .stats dt, .perfil .stats dd { margin: 0; padding: 9px 0; border-bottom: 1px solid var(--rule); font-size: 0.9rem; }
+.perfil .stats dt { font: 500 0.68rem/1.9 var(--f-label); letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); padding-right: 18px; }
+.perfil .bio { margin-top: 22px; font-size: 0.95rem; line-height: 1.75; color: var(--ink); }
+.perfil .bio p { margin: 0 0 10px; max-width: none; }
+.perfil .quest { margin-top: 16px; padding: 14px 16px; border-left: 3px solid var(--red); background: rgba(194, 32, 38, 0.06); }
+.perfil .quest b { display: block; font: 500 0.66rem/1 var(--f-label); letter-spacing: 0.18em; text-transform: uppercase; color: var(--red); margin-bottom: 8px; }
+.perfil .quest p { margin: 0; font-family: var(--f-display); font-size: 1.02rem; line-height: 1.5; max-width: none; }
+.perfil .links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+.perfil .links a, .perfil .copy { font: 500 0.72rem/1 var(--f-label); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink); text-decoration: none;
+  border: 1px solid var(--rule); border-radius: 999px; padding: 10px 14px; background: transparent; cursor: pointer; }
+.perfil .links a.cv { background: var(--red); color: #fff; border-color: var(--red); }
+.perfil .links a:hover, .perfil .copy:hover { border-color: var(--red); }
+.perfil .mail { margin-top: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font: 400 0.82rem/1.4 var(--f-label); color: var(--muted); }
+.perfil .mail span { user-select: all; word-break: break-all; }
+.perfil .tabs { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid var(--rule); margin: 14px 0 22px; }
+.perfil .tabs button { font: 500 0.72rem/1 var(--f-label); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); background: none; border: 0; border-bottom: 2px solid transparent;
+  padding: 12px 10px 11px; cursor: pointer; margin-bottom: -1px; }
+.perfil .tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--red); }
+.perfil .tabs button span { font-family: var(--f-display); letter-spacing: 0; margin-right: 6px; color: var(--red); font-size: 0.95rem; }
+.perfil [role="tabpanel"][hidden] { display: none; }
+.perfil .panel-intro { font-size: 0.92rem; color: var(--muted); margin: 0 0 16px; max-width: none; }
+.attr { display: grid; grid-template-columns: 54px minmax(0, 1fr); gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--rule); }
+.attr .k { font: 800 2.4rem/1 var(--f-display); color: var(--red); text-align: center; }
+.attr h3 { font: 600 1.15rem/1.2 var(--f-display); margin: 0; }
+.attr .tech { font: 500 0.74rem/1.5 var(--f-label); color: var(--muted); margin: 4px 0 8px; letter-spacing: 0.04em; }
+.attr ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 0.88rem; }
+.attr li { display: flex; gap: 8px; flex-wrap: wrap; }
+.attr li em { font-style: normal; color: var(--muted); }
+.inv { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; }
+.inv div { border: 1px solid var(--rule); border-radius: 6px; padding: 14px 10px 12px; display: grid; gap: 8px; justify-items: center; text-align: center; background: rgba(255,255,255,0.35); }
+.inv b { width: 46px; height: 46px; display: grid; place-items: center; border-radius: 50%; background: var(--ink); color: var(--paper); font: 700 1.05rem/1 var(--f-display); }
+.inv span { font-size: 0.84rem; line-height: 1.2; }
+.inv small { font: 500 0.62rem/1 var(--f-label); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.ach { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 16px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--rule); position: relative; }
+.ach img { width: 112px; height: 84px; object-fit: cover; border-radius: 4px; display: block; }
+.ach h3 { font: 600 1.08rem/1.25 var(--f-display); margin: 0 0 4px; }
+.ach p { margin: 0; font-size: 0.88rem; line-height: 1.55; max-width: none; }
+.ach .stamp { position: absolute; right: 0; top: 12px; font: 700 0.62rem/1 var(--f-label); letter-spacing: 0.16em; text-transform: uppercase; color: var(--red);
+  border: 2px solid var(--red); border-radius: 4px; padding: 5px 7px; transform: rotate(-6deg); opacity: 0.8; }
+.quests { display: grid; gap: 10px; }
+.q { display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; gap: 14px; align-items: start; padding: 14px; border: 1px solid var(--rule); border-radius: 6px; text-align: left; background: rgba(255,255,255,0.35); color: inherit; font: inherit; }
+button.q { cursor: pointer; } button.q:hover, a.q:hover { border-color: var(--red); }
+a.q { text-decoration: none; }
+.q i { width: 14px; height: 14px; border-radius: 50%; margin-top: 4px; border: 1px solid rgba(0,0,0,0.2); }
+.q h3 { font: 600 1.05rem/1.2 var(--f-display); margin: 0 0 4px; }
+.q p { margin: 0; font-size: 0.86rem; line-height: 1.5; color: var(--muted); max-width: none; }
+.q small { font: 500 0.62rem/1 var(--f-label); letter-spacing: 0.12em; text-transform: uppercase; padding: 5px 8px; border-radius: 999px; border: 1px solid var(--rule); white-space: nowrap; }
+.q small.on { color: var(--red); border-color: var(--red); }
+.likes { display: grid; gap: 14px; }
+.likes section { border-top: 1px solid var(--rule); padding-top: 12px; }
+.likes h3 { font: 600 1.05rem/1.2 var(--f-display); margin: 0 0 8px; display: flex; gap: 10px; align-items: baseline; }
+.likes h3 span { font: 700 1.2rem/1 var(--f-display); color: var(--red); }
+.likes ul { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px; }
+.likes li { font-size: 0.86rem; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--rule); }
+.likes li.fav { border-color: var(--red); color: var(--red); }
+@media (max-width: 860px) {
+  .perfil { padding: 0; }
+  .perfil .book { grid-template-columns: minmax(0, 1fr); height: 100%; border-radius: 0; overflow-y: auto; display: block; }
+  .perfil .page { overflow: visible; padding: 56px 20px 28px; }
+  .perfil .page-r { padding-top: 8px; }
+  .perfil .id { grid-template-columns: 110px minmax(0, 1fr); gap: 16px; }
+  .ach { grid-template-columns: 96px minmax(0, 1fr); }
+  .ach img { width: 96px; height: 72px; }
+  .ach .stamp { position: static; display: inline-block; margin-top: 8px; transform: rotate(-4deg); }
+}
+@media (prefers-reduced-motion: reduce) { .perfil .book { transition: none; } }
+
+
+/* ---------- Torre dos Grimórios ---------- */
+.mundo[data-world="torre"] .dossier { background: #EFE4CC; color: #2B2118; }
+.mundo[data-world="torre"] .dossier .w-btn { color: #2B2118; border-color: rgba(43,33,24,0.35); background: transparent; }
+.g-k { font: 800 1em/1 var(--f-display); color: #8E2B22; margin-right: 12px; }
+.g-count { font: 500 0.72rem/1 var(--f-label); letter-spacing: 0.14em; text-transform: uppercase; color: #8E2B22; margin: 4px 0 0; }
+.g-filter { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0 14px; }
+.g-filter button { font: 500 0.7rem/1 var(--f-label); letter-spacing: 0.1em; text-transform: uppercase; padding: 9px 12px; border-radius: 999px; border: 1px solid rgba(43,33,24,0.3); background: transparent; color: inherit; cursor: pointer; }
+.g-filter button[aria-pressed="true"] { background: #2B2118; color: #EFE4CC; border-color: #2B2118; }
+.spells { display: grid; gap: 8px; margin-top: 12px; }
+.spell { border: 1px solid rgba(43,33,24,0.22); border-radius: 6px; background: rgba(255,255,255,0.4); }
+.spell[hidden] { display: none; }
+.spell summary { list-style: none; display: grid; grid-template-columns: 36px minmax(0, 1fr) 14px; gap: 12px; align-items: center; padding: 12px; cursor: pointer; }
+.spell summary::-webkit-details-marker { display: none; }
+.spell summary::after { content: "+"; font: 500 1.1rem/1 var(--f-label); color: #8E2B22; }
+.spell[open] summary::after { content: "\2212"; }
+.g-tri { font: 600 0.72rem/1 var(--f-label); display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; border: 1px solid #8E2B22; color: #8E2B22; }
+.g-t { min-width: 0; }
+.g-t b { display: block; font: 600 1rem/1.25 var(--f-display); }
+.g-t small { display: block; font: 500 0.7rem/1.4 var(--f-label); color: rgba(43,33,24,0.7); letter-spacing: 0.03em; margin-top: 3px; }
+.g-body { padding: 0 12px 14px; }
+.g-body img { width: 100%; height: auto; border-radius: 4px; margin: 4px 0 10px; display: block; }
+.g-body p { font-size: 0.92rem; }
+.g-body h4 { font: 500 0.66rem/1 var(--f-label); letter-spacing: 0.16em; text-transform: uppercase; margin: 14px 0 8px; color: #8E2B22; }
+.g-skills { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 6px; font-size: 0.86rem; line-height: 1.5; }
+.g-skills li { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 8px; }
+.g-skills b { font: 600 0.74rem/1.5 var(--f-label); color: #8E2B22; }
+
 /* ---------- Mundos de destaque ---------- */
 .mundo { position: fixed; inset: 0; z-index: 200; background: #000; color: #fff; }
 .mundo[hidden], .world-gate[hidden], .dossier[hidden], .w-btn[hidden], .w-count[hidden] { display: none; }
@@ -526,7 +658,7 @@ footer .inner { max-width: 1180px; margin-inline: auto; display: flex; flex-wrap
       </div>
     </div>
     <div class="hero-title">
-      <div class="lockup"><svg viewBox="0 0 120 120" aria-hidden="true"><use href="#seal"/></svg><span class="wordmark">Rateke</span></div>
+      <div class="lockup" id="heroLockup" role="button" tabindex="0" aria-label="Abrir o perfil"><svg viewBox="0 0 120 120" aria-hidden="true"><use href="#seal"/></svg><span class="wordmark">Rateke</span></div>
       <h1>A jornada é o que dá forma ao mundo.</h1>
       <span class="who">Fernando Rateke · Portfólio 2026</span>
     </div>
@@ -637,7 +769,7 @@ footer .inner { max-width: 1180px; margin-inline: auto; display: flex; flex-wrap
           <div class="place"><span class="label">Margem sul</span><h3>Torii</h3><p>A entrada. A capa acontece aqui, e atravessar o torii leva ao filme.</p></div>
           <div class="place"><span class="label">Campo central</span><h3>Castelo do Howl</h3><p>Caminha pelo vale. Dentro, Calcifer na lareira guia o visitante, e a porta com o seletor de cores leva aos projetos.</p></div>
           <div class="place"><span class="label">Topo do castelo</span><h3>Seu quarto</h3><p>Objetos que contam seus gostos: estante de mangás, controle, vitrola, a janela para o vale.</p></div>
-          <div class="place"><span class="label">Ilhota norte</span><h3>Torre dos Grimórios</h3><p>As matérias. Cada uma é um grimório; cada atividade, um feitiço.</p></div>
+          <div class="place"><span class="label">Ilhota norte</span><h3>Torre dos Grimórios</h3><p>As matérias. Cada uma é um grimório; cada atividade, um feitiço.</p><button class="w-enter" type="button" data-world="torre">Entrar na Torre</button></div>
           <div class="place"><span class="label">Sobre o lago</span><h3>Trem sobre a água</h3><p>A galeria. As fotos passam pelas janelas como lembranças, ao entardecer.</p></div>
           <div class="place"><span class="label">Em qualquer lugar</span><h3>Selo do perfil</h3><p>Abre a ficha: quem sou, atributos, inventário, conquistas, missões e currículo.</p></div>
         </div>
@@ -805,6 +937,8 @@ footer .inner { max-width: 1180px; margin-inline: auto; display: flex; flex-wrap
           <li><div><h3>Conceito do Vale, slogan, Calcifer como guia, trem de Chihiro</h3><p>Aprovados por você.</p></div><span class="state ok">Decidido</span></li>
           <li><div><h3>Personagens da capa, de costas e animados</h3><p>Howl, Sofia, Markl, Cabeça de Nabo e Heen. Primeira versão em 3D feita.</p></div><span class="state wip">Em andamento</span></li>
           <li><div><h3>Assinatura Rateke com o selo ラテケ</h3><p>Trocado a seu pedido. Falta aprovar.</p></div><span class="state open">Para aprovar</span></li>
+          <li><div><h3>Torre dos Grimórios</h3><p>As nove matérias como grimórios flutuantes; as 30 atividades como feitiços, com imagens, reflexões, competências e links.</p></div><span class="state wip">Em andamento</span></li>
+          <li><div><h3>Perfil: ficha de personagem</h3><p>Abre pelo selo no canto ou pela assinatura da capa. Retrato, dados, bio, missão, currículo, contatos e cinco abas.</p></div><span class="state wip">Em andamento</span></li>
           <li><div><h3>Mundos de destaque</h3><p>Templo do Sino e Nós, cada um com cena 3D própria e dossiê. Primeira versão pronta para revisão.</p></div><span class="state wip">Em andamento</span></li>
           <li><div><h3>Entrada e filme</h3><p>Primeira versão tocando na cena: caminho, torii, nuvens, cinco cortes com frases, selo e chegada. Cerca de 40 segundos.</p></div><span class="state wip">Em andamento</span></li>
           <li><div><h3>Paisagem do Vale em 3D</h3><p>Primeira versão em código: relevo, lagos, reflexo, nuvens, grama ao vento, torii, lanternas e o castelo caminhando pelo vale.</p></div><span class="state wip">Em andamento</span></li>
@@ -818,6 +952,111 @@ footer .inner { max-width: 1180px; margin-inline: auto; display: flex; flex-wrap
 </main>
 
 
+
+<button class="seal-fab" id="sealFab" type="button" aria-label="Abrir o perfil" aria-haspopup="dialog">
+  <svg viewBox="0 0 120 120" aria-hidden="true"><use href="#seal"/></svg><span class="tip">Perfil</span>
+</button>
+<div class="perfil" id="perfil" hidden role="dialog" aria-modal="true" aria-labelledby="perfilNome">
+  <div class="book">
+    <button class="close" id="perfilClose" type="button">Fechar</button>
+    <div class="page page-l">
+      <span class="kick">Ficha do personagem</span>
+      <div class="id">
+        <div class="portrait"><img src="/vale/perfil/retrato.jpg" alt="Fernando Rateke" width="640" height="640"></div>
+        <div>
+          <h2 class="name" id="perfilNome">Fernando Rateke Neto</h2>
+          <span class="name-jp">フェルナンド・ラテケ</span>
+        </div>
+      </div>
+      <dl class="stats">
+        <dt>Classe</dt><dd>Desenvolvedor de sistemas, em formação</dd>
+        <dt>Origem</dt><dd>Florianópolis, SC</dd>
+        <dt>Idade</dt><dd>18 anos</dd>
+        <dt>Guilda</dt><dd>SESI SENAI · turma 3B, 2026</dd>
+        <dt>Ofício</dt><dd>Ensino Médio integrado ao Técnico em Análise e Desenvolvimento de Sistemas</dd>
+      </dl>
+      <div class="bio">
+        <p>Desde cedo tive afinidade com as exatas, principalmente matemática, biologia e programação. Gosto de desafios de lógica, de interfaces que se explicam sozinhas e de soluções que funcionam bem.</p>
+        <p>Além do código, levo comigo a pesquisa científica: participei da Iniciação Científica e apresentei projeto na FEBRACE, em São Paulo.</p>
+      </div>
+      <div class="quest"><b>Missão principal</b><p>Entrar na faculdade de tecnologia e construir software que melhore a vida das pessoas.</p></div>
+      <div class="links">
+        <a class="cv" href="https://www.canva.com/design/DAGxm9Bd6lU/f8w8zNxuOLH2PDnrVvsAmQ/view" target="_blank" rel="noreferrer">Ver currículo</a>
+        <a href="https://github.com/fernando-rateke" target="_blank" rel="noreferrer">GitHub</a>
+        <a href="https://www.linkedin.com/in/fernando-rateke/" target="_blank" rel="noreferrer">LinkedIn</a>
+        <a href="https://www.instagram.com/rateke.fer/" target="_blank" rel="noreferrer">Instagram</a>
+      </div>
+      <div class="mail"><span id="perfilMail">fernando_rateke-n@estudante.sesisenai.org.br</span><button class="copy" id="perfilCopy" type="button">Copiar e-mail</button></div>
+    </div>
+    <div class="page page-r">
+      <div class="tabs" role="tablist" aria-label="Seções da ficha">
+        <button role="tab" id="tab-attr" aria-controls="pn-attr" aria-selected="true"><span>力</span>Atributos</button>
+        <button role="tab" id="tab-inv" aria-controls="pn-inv" aria-selected="false" tabindex="-1"><span>具</span>Inventário</button>
+        <button role="tab" id="tab-ach" aria-controls="pn-ach" aria-selected="false" tabindex="-1"><span>賞</span>Conquistas</button>
+        <button role="tab" id="tab-q" aria-controls="pn-q" aria-selected="false" tabindex="-1"><span>旅</span>Missões</button>
+        <button role="tab" id="tab-like" aria-controls="pn-like" aria-selected="false" tabindex="-1"><span>好</span>Gostos</button>
+      </div>
+
+      <div role="tabpanel" id="pn-attr" aria-labelledby="tab-attr">
+        <p class="panel-intro">Quatro áreas que se reforçam. Em cada uma, onde ela já foi usada de verdade.</p>
+        <div class="attr"><div class="k">形</div><div><h3>Interfaces</h3><p class="tech">HTML · CSS · JavaScript · Design de interface</p>
+          <ul><li>AcousticBuild <em>interface e simulação</em></li><li>Este portfólio <em>cena 3D e experiência</em></li><li>Meme: Evolucionismo <em>comunicação visual</em></li></ul></div></div>
+        <div class="attr"><div class="k">術</div><div><h3>Aplicações</h3><p class="tech">React · TypeScript · Next.js · Three.js · Java</p>
+          <ul><li>AcousticBuild <em>cálculos normativos e interface interativa</em></li><li>Hollow Depths <em>RPG com lógica de probabilidade</em></li><li>CRUD em Java <em>orientação a objetos</em></li></ul></div></div>
+        <div class="attr"><div class="k">理</div><div><h3>Dados e sistemas</h3><p class="tech">Python · FastAPI · SQL · UML · IoT</p>
+          <ul><li>Hackathon de Cibersegurança <em>modelagem de dados e camadas IoT</em></li><li>Banco de dados relacional <em>esquemas e proteção contra injeção SQL</em></li><li>Semáforo e LEDs <em>Arduino e lógica de controle</em></li></ul></div></div>
+        <div class="attr"><div class="k">探</div><div><h3>Pesquisa e produto</h3><p class="tech">Iniciação Científica · Prototipação · Narrativa</p>
+          <ul><li>Iniciação Científica <em>pesquisa e metodologia</em></li><li>FEBRACE <em>comunicação científica em São Paulo</em></li><li>Nós <em>roteiro, direção e trailer renderizado por código</em></li></ul></div></div>
+      </div>
+
+      <div role="tabpanel" id="pn-inv" aria-labelledby="tab-inv" hidden>
+        <p class="panel-intro">As ferramentas que levo na mochila.</p>
+        <div class="inv">
+          <div><b>Re</b><span>React</span><small>Interface</small></div>
+          <div><b>TS</b><span>TypeScript</span><small>Linguagem</small></div>
+          <div><b>JS</b><span>JavaScript</span><small>Linguagem</small></div>
+          <div><b>Nx</b><span>Next.js</span><small>Framework</small></div>
+          <div><b>3D</b><span>Three.js</span><small>Gráficos</small></div>
+          <div><b>Py</b><span>Python</span><small>Linguagem</small></div>
+          <div><b>Fa</b><span>FastAPI</span><small>Back-end</small></div>
+          <div><b>SQ</b><span>SQL e SQLite</span><small>Dados</small></div>
+          <div><b>Jv</b><span>Java</span><small>Linguagem</small></div>
+          <div><b>Ar</b><span>Arduino</span><small>IoT</small></div>
+          <div><b>Fg</b><span>Figma</span><small>Design</small></div>
+          <div><b>Cv</b><span>Canva</span><small>Apresentação</small></div>
+          <div><b>Gt</b><span>Git e GitHub</span><small>Versão</small></div>
+          <div><b>Vc</b><span>Vercel</span><small>Publicação</small></div>
+        </div>
+      </div>
+
+      <div role="tabpanel" id="pn-ach" aria-labelledby="tab-ach" hidden>
+        <div class="ach"><img src="/vale/perfil/febrace.jpg" alt="Equipe com a bandeira do SESI SENAI na FEBRACE"><div><h3>FEBRACE</h3><p>Apresentação e defesa de projeto na Feira Brasileira de Ciências e Engenharia, em São Paulo.</p></div><span class="stamp">Conquistado</span></div>
+        <div class="ach"><img src="/vale/perfil/iniciacao-cientifica.jpg" alt="Registro da Iniciação Científica"><div><h3>Iniciação Científica</h3><p>Pesquisa no Grupo 5 de Iniciação Científica, com participação em evento científico nacional em São Paulo.</p></div><span class="stamp">Conquistado</span></div>
+        <div class="ach"><img src="/vale/perfil/red1000.jpg" alt="Nota 960 na plataforma Red1000"><div><h3>Redação 960</h3><p>960 de 1000 numa redação dissertativo-argumentativa na plataforma Red1000, com nota máxima em quatro das cinco competências.</p></div><span class="stamp">Conquistado</span></div>
+      </div>
+
+      <div role="tabpanel" id="pn-q" aria-labelledby="tab-q" hidden>
+        <p class="panel-intro">As duas primeiras abrem os seus mundos no castelo.</p>
+        <div class="quests">
+          <button class="q" type="button" data-world="templo"><i style="background:#C22026"></i><div><h3>AcousticBuild</h3><p>Previsão de ruído em edificações pelas normas EN 12354. React, FastAPI e SQLite.</p></div><small class="on">Porta vermelha</small></button>
+          <button class="q" type="button" data-world="nos"><i style="background:#0B0809"></i><div><h3>Nós</h3><p>Narrativa de exploração psicológica em TypeScript e Canvas, com Luana Lupi Vergara.</p></div><small class="on">Em andamento</small></button>
+          <a class="q" href="https://game-nauy.onrender.com/" target="_blank" rel="noreferrer"><i style="background:#2E7896"></i><div><h3>Hollow Depths</h3><p>RPG de turno guiado por probabilidade, cartas e leitura de variáveis.</p></div><small>Jogar</small></a>
+          <div class="q"><i style="background:#78AB5A"></i><div><h3>Semáforo e LEDs</h3><p>Montagem e programação de circuitos no Arduino: LED, semáforo com temporização e botão com lógica de alternância.</p></div><small>Concluída</small></div>
+          <div class="q"><i style="background:#8A5A44"></i><div><h3>Hackathon de Cibersegurança</h3><p>Modelagem, banco de dados e proteção de dispositivos IoT numa solução integrada, sob pressão de tempo.</p></div><small>Concluída</small></div>
+        </div>
+      </div>
+
+      <div role="tabpanel" id="pn-like" aria-labelledby="tab-like" hidden>
+        <div class="likes">
+          <section><h3><span>宮</span>Studio Ghibli</h3><ul><li class="fav">O Castelo Animado</li><li class="fav">A Viagem de Chihiro</li><li class="fav">Meu Amigo Totoro</li><li>e os outros filmes também</li></ul></section>
+          <section><h3><span>漫</span>Animes</h3><ul><li>Frieren</li><li>Attack on Titan</li><li>Tokyo Ghoul</li></ul></section>
+          <section><h3><span>日</span>Japão</h3><ul><li>Cultura</li><li>Estética</li><li>Kanji e caligrafia</li></ul></section>
+          <section><h3><span>遊</span>Jogos</h3><ul><li>Jogar</li><li>Criar mundos</li></ul></section>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 <div class="mundo" id="world" hidden>
   <canvas id="worldCanvas" role="img" aria-label="Mundo de destaque em 3D"></canvas>
   <div class="world-labels" id="worldLabels" aria-hidden="true"></div>
@@ -848,6 +1087,8 @@ footer .inner { max-width: 1180px; margin-inline: auto; display: flex; flex-wrap
   </div>
 </div>
 <audio id="nosAudio" src="/vale/nos/trilha.mp3" preload="none" loop></audio>
+
+<script type="application/json" id="grimorios">[{"id":"natureza","code":"CN","cat":"ensino-medio","name":"Ciências da Natureza","desc":"Trabalhos envolvendo Biologia, Química e Física, explorando fenômenos naturais e sistemas em transformação.","acts":[{"t":"Meme: Evolucionismo","s":"Biologia · 1º Trimestre","tri":1,"img":"grim/evolucionismo_meme.jpg","r":"Construção de um meme para a disciplina de Biologia a fim de explorar e contrastar os conceitos evolutivos. A atividade exigia a representação visual de teorias através do humor digital. Ao criar a ironia em cima do processo de seleção natural e adaptação das espécies, foi possível internalizar melhor os mecanismos seletivos que ocorrem ao longo das gerações.","k":[["C3","Determinar os impactos das ações humanas nos ambientes, identificando suas causas e propondo soluções para a sua redução."],["H15","Comparar propostas de intervenção ambiental aplicando conhecimentos científicos e tecnológicos, observando os riscos e benefícios de sua implementação."],["H18","Identificar situações de risco ambiental na cidade onde reside."]],"l":[["Ver Imagem Original","/imagens/evolucionismo_meme.png"]]},{"t":"Combustíveis Fósseis & Poder Calorífico","s":"Física / Química · 1º Trimestre","tri":1,"img":"https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?auto=format&fit=crop&w=1200","r":"Apresentação desenvolvida a partir da pergunta norteadora: Se já sabemos que combustíveis fósseis poluem, por que ainda usamos? Investigamos os fatores químicos e socioeconômicos, comparando gasolina, etanol e diesel através do poder calorífico e do rendimento real dos motores. Concluímos que barreiras de infraestrutura e dependência energética são obstáculos tão grandes quanto a própria questão técnica.","k":[["C1","Compreender as ciências naturais e as tecnologias como construções humanas associadas à cultura dos povos e suas visões de mundo."],["H1","Interpretar informações apresentadas em diferentes linguagens usadas nas Ciências."],["C2","Aplicar os conceitos fundamentais e estruturas procedimentais das Ciências da Natureza na explicação de fenômenos cotidianos."],["H9","Explicar os conceitos de energia, matéria, vida e transformação para explicar fenômenos."],["H11","Empregar procedimentos e práticas de observação e experimentação para resolução de problemas."]],"l":[["Ver Apresentação no Canva","https://canva.link/DAHE8hNJVcQ/xuWPmiQMAqVdrltf6kQhvQ/view"]]},{"t":"Relatório: Eletricidade por Atrito","s":"Física Experimental · 1º Trimestre","tri":1,"img":"https://images.unsplash.com/photo-1517420704952-d9f39e95b43e?auto=format&fit=crop&w=1200","r":"Relatório da atividade prática sobre Eletricidade por Atrito. Investigamos a indução e polarização eletrostática através de diferentes materiais da série triboelétrica, analisando por que metais são condutores eficientes e como a conservação de cargas atua na transferência mecânica de elétrons.","k":[["C1","Compreender as ciências naturais e as tecnologias como construções humanas."],["H1","Interpretar informações apresentadas em diferentes linguagens usadas nas Ciências."],["C2","Aplicar os conceitos fundamentais e estruturas procedimentais na explicação de fenômenos."],["H7","Compreender os conceitos relacionados à Química nos seus diferentes ramos."],["H9","Explicar os conceitos de energia, matéria, vida e transformação."],["H11","Empregar práticas de observação, coleta de dados e conclusões."]]},{"t":"Mural Interativo: Saúde em Foco","s":"Biologia & Saúde Pública · 2º Trimestre","tri":2,"img":"https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=1200","r":"Construção de um painel científico interativo sobre a relação entre meio ambiente e saúde. Minha atuação esteve concentrada na seção de Epidemiologia, com foco na diferenciação conceitual e prática entre endemia, epidemia e pandemia a partir de dados da Dengue e da Covid-19. Participei ativamente da pesquisa, organização de tabelas/gráficos e validação do rigor científico das fontes sanitárias. (Nota: No momento não dispomos de foto do trabalho individual isolado; o projeto corresponde ao site e ao único QR Code grande visível na foto geral com todos os trabalhos da turma, e futuramente uma fotografia individual exclusiva será incluída).","k":[["H11","Empregar procedimentos de observação, coleta de dados e conclusões na resolução de problemas relacionados às Ciências da Natureza."],["H15","Comparar propostas de intervenção ambiental, observando os riscos e os benefícios de sua implementação."],["H18","Identificar situações de risco ambiental na cidade onde reside."],["H23","Formular propostas individuais ou coletivas voltadas à preservação e à promoção da saúde."]],"l":[["Ver Relatório em PDF","https://drive.google.com/file/d/1ISe63WHaR66tTHsTT_puYA-wSvAitAm_/view"],["Material Visual do Mural","https://drive.google.com/file/d/1s-Zz2nm7l1aDNKVaQwXZYh0itdDmly9d/view?usp=drive_link"]]},{"t":"Seminário sobre Estequiometria na Indústria: Hidrogênio Verde","s":"Química Industrial · 2º Trimestre","tri":2,"img":"https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=1200","r":"Seminário dedicado à análise da produção de hidrogênio verde por meio da eletrólise da água com uso de energia renovável. Demonstramos através de cálculos estequiométricos que a produção teórica de 100 toneladas de hidrogênio exige cerca de 900 toneladas de água. O trabalho investigou a viabilidade técnica, custos de produção, eficiência dos eletrolisadores, descarbonização industrial e o potencial estratégico do Brasil como exportador de matriz energética limpa.","k":[["H6","Compreender conceitos relacionados à Física em seus diferentes ramos."],["H7","Compreender os conceitos relacionados à Química em seus diferentes ramos."],["H9","Explicar os conceitos de energia, matéria, vida e transformação em fenômenos naturais e procedimentos tecnológicos."]],"l":[["Ver Seminário no Canva","https://canva.link/6xtaiixq3h9renk"]]},{"t":"Cartilha “Eletricidade e o Corpo Humano”: Relatório Saúde em Foco","s":"Ciências da Natureza & Biofísica · 2º Trimestre","tri":2,"img":"https://images.unsplash.com/photo-1507413245164-6160d8298b31?auto=format&fit=crop&w=1200","r":"Elaboração do relatório técnico-científico Saúde em Foco, documentando todo o processo de investigação multidisciplinar entre meio ambiente, fenômenos biofísicos e saúde pública. Aprofundei o levantamento de indicadores epidemiológicos de Dengue e Covid-19, enfrentando os desafios de filtrar bases de dados sanitárias confiáveis e sintetizar conceitos científicos em tabelas e textos claros.","k":[["H3","Inferir o significado de termos técnico-científicos em textos de instrumentação ou divulgação científica."],["H4","Identificar informações relevantes em textos, diagramas, gráficos, imagens e tabelas para compreender fenômenos das Ciências da Natureza."],["H12","Relacionar informações para construir modelos em ciência e tecnologia."],["H23","Formular propostas voltadas à preservação e à promoção da saúde individual e coletiva."]],"l":[["Ver Relatório no Google Docs","https://docs.google.com/document/d/1GBHMSXrC73zdzVipsbGKZUlj2xSZMs2m5162MnrJXJ4/edit?usp=sharing"]]},{"t":"Portfólio Digital de Eletroquímica","s":"Química Experimental · 2º Trimestre","tri":2,"img":"https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&w=1200","r":"⚠️ Projeto em desenvolvimento — o vídeo está sendo editado e será adicionado em breve. Desenvolvimento e registro de um experimento laboratorial focado em reações de oxirredução e princípios de Eletroquímica. O trabalho detalha materiais, procedimentos práticos e transformações moleculares observadas, correlacionando a teoria dos potenciais de redução com as transferências de elétrons e a conversão mútua entre energia elétrica e energia química.","k":[["H7","Compreender os conceitos relacionados à Química em seus diferentes ramos."],["H9","Explicar os conceitos de energia, matéria, vida e transformação."],["H11","Empregar observação, levantamento de hipóteses, experimentação, coleta de dados e conclusões."]],"l":[["Ver Portfólio Digital","https://fernandorateke.github.io/Natureza/"]]}]},{"id":"humanas","code":"CH","cat":"ensino-medio","name":"Ciências Humanas","desc":"Pesquisas sociológicas, linha do tempo histórica, geopolítica e discussões filosóficas.","acts":[{"t":"Imperialismo — China","s":"História · 1º Trimestre","tri":1,"img":"grim/imperialismo.jpg","r":"Investiguei a colonização chinesa e as tensões geopolíticas pós-Revolução Industrial analisando fontes primárias. O desafio foi rastrear como as potências ocidentais justificavam o imperialismo sob uma perspectiva civilizatória enquanto extraíam recursos. Aprendi a distinguir narrativas de vencedores e vencidos em documentos históricos.","k":[["H8","Analisar as relações entre os agentes envolvidos no mundo do trabalho."],["H10","Compreender as transformações no mundo do trabalho, geradas por mudanças na ordem econômica."],["H12","Propor ações sustentáveis e eficientes visando a melhoria dos processos produtivos."]],"l":[["Ver Artigo Completo","https://docs.google.com/document/d/1Q7P5cZxNsy_MuxwBBc5WnIbka_TOHeN1ok1CZg7kF3c/edit?usp=sharing"]]},{"t":"A Grande Guerra","s":"História / Comunicação · 1º Trimestre","tri":1,"img":"https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=1200","r":"Realizei um roleplay jornalístico situado em 1916, escrevendo como repórter de guerra. O exercício de me colocar no contexto da época — sem saber o desfecho — foi revelador sobre como a propaganda moldava a percepção pública. Aprendi como a linguagem e a seleção de fatos constroem narrativas históricas que persistem por séculos.","k":[["H15","Reconhecer os movimentos sociais e sua representação da coletividade como elemento de transformação da realidade social, política, econômica e cultural."],["H16","Compreender a relação entre ciência, tecnologia e sociedade e os efeitos dessa relação no contexto social, político e econômico."],["H39","Relacionar o papel das instituições sociais às soluções para problemas políticos, econômicos, sociais e ambientais no contexto da sociedade brasileira."]],"l":[["Ver Jornal no Canva","https://canva.link/DAHFb_bP_rI/VE3XPBFp5q2uxLqnJMAD_w/view"]]},{"t":"Geopolítica — Bolívia","s":"Geografia / Território · 1º Trimestre","tri":1,"img":"https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=1200","r":"Pesquisa e cartografia digital sobre como acontecimentos territoriais atravessam a identidade e a política de um país. Mapeamos os recursos estratégicos como gás e lítio e como a perda do litoral impactou o desenvolvimento boliviano.","k":[["H6","Interpretar diferentes representações gráficas e cartográficas do espaço geográfico."],["H11","Identificar os domínios morfoclimáticos e as características da natureza brasileira e sul-americana."],["H21","Avaliar o impacto das tecnologias na organização do território e da produção."]],"l":[["Ver Apresentação no Canva","https://canva.link/DAHBNPTyecc/HpLEDmwZHYRBV6idI8-yqg/view"]]},{"t":"Cinema e Totalitarismo: “O Pianista”","s":"História & Sociedade · 2º Trimestre","tri":2,"img":"https://images.unsplash.com/photo-1518676590629-3dcbd9c5a5c9?auto=format&fit=crop&w=1200","r":"Análise das dinâmicas do totalitarismo na Segunda Guerra Mundial através da obra cinematográfica 'O Pianista', acompanhando a trajetória de sobrevivência de Władysław Szpilman na Polônia ocupada. O estudo aprofundou as táticas de antissemitismo, propaganda estatal de massa, coerção violenta e o aparelhamento da indústria militar para enfraquecer liberdades civis, interferindo diretamente na cultura, na economia e no trabalho.","k":[["H10","Compreender as transformações no mundo do trabalho geradas por mudanças na ordem econômica."],["H22","Analisar, na perspectiva humana e social, as principais características e dinâmicas dos fluxos da sociedade."],["H26","Comparar pontos de vista e ações práticas do indivíduo ou grupo social em diferentes contextos."],["H27","Analisar hipóteses e questões ambientais, sociais, econômicas, políticas e culturais a partir de leituras e debates."]],"l":[["Ver Apresentação no Canva","https://canva.link/sr87kot7n67clkq"]]},{"t":"Tratado de Versalhes e o Ressentimento Alemão","s":"História Contemporânea · 2º Trimestre","tri":2,"img":"https://images.unsplash.com/photo-1461360370896-922624d12aa1?auto=format&fit=crop&w=1200","r":"Elaboração de um dossiê histórico-analítico investigando o Tratado de Versalhes e o sentimento de revanchismo que culminou na 2ª Guerra Mundial. Mapeamos as duras indenizações financeiras, perdas territoriais, desmilitarização e o impacto psicológico do Artigo 231 (Cláusula de Culpa de Guerra) na desestabilização da República de Weimar e na ascensão de partidos extremistas.","k":[["H10","Compreender as transformações no mundo do trabalho geradas por mudanças na ordem econômica."],["H22","Analisar, na perspectiva humana e social, as principais características e dinâmicas dos fluxos da sociedade."],["H26","Comparar pontos de vista e ações práticas do indivíduo ou grupo social em diferentes contextos."],["H27","Analisar hipóteses e questões ambientais, sociais, econômicas, políticas e culturais a partir de leituras e debates."]],"l":[["Ver Apresentação no Canva","https://canva.link/zx0trbgncx1jfu8"],["Ver Dossiê no Google Docs","https://docs.google.com/document/d/1WgATy9HOj_1GVUNEbzHNNutjo6nQrOVKk3RgD1JPkoQ/edit?usp=sharing"]]},{"t":"Tropicália — Sociedade e Política","s":"História & Sociedade · 2º Trimestre","tri":2,"img":"grim/tropicalia_card.jpg","r":"Apresentação oral individual sobre a Tropicália como movimento cultural, social e político no Brasil dos anos 1960–70. O trabalho examinou como artistas como Caetano Veloso, Gilberto Gil e Os Mutantes desafiaram a censura da ditadura militar através da música, da performance e da mistura de referências populares e eruditas. A apresentação relacionou a Tropicália às lutas sociais por liberdade de expressão, às transformações nas políticas públicas culturais e ao papel das instituições artísticas como agentes de resistência e transformação social.","k":[["H30","Analisar as lutas sociais e conquistas obtidas no que se refere às mudanças nas legislações ou nas políticas públicas."],["H39","Relacionar o papel das instituições sociais às soluções para problemas políticos, econômicos, sociais e ambientais no contexto da sociedade brasileira e do mundo."],["H40","Analisar o processo de formação das instituições sociais e políticas, compreendendo seu papel na sociedade."]],"l":[["Apresentação — Tropicália","https://www.canva.com/design/DAHSQ9Eo1-U/JfVR-UMWZ71Tow7Rr62k-g/view?utm_content=DAHSQ9Eo1-U&utm_campaign=designshare&utm_medium=embeds&utm_source=link"]]}]},{"id":"linguagens","code":"LG","cat":"ensino-medio","name":"Área de Linguagens","desc":"Produções textuais, estudos da língua, artes, literatura e línguas estrangeiras.","acts":[{"t":"A Paixão Segundo G.H.","s":"Literatura · 1º Trimestre","tri":1,"img":"https://img.youtube.com/vi/66sZjfvacSE/maxresdefault.jpg","r":"Ensaio audiovisual sobre a obra de Clarice Lispector, traduzindo metáforas e conflitos do sujeito para uma linguagem visual e narrativa.","l":[["Assistir Ensaio Audiovisual","https://www.youtube.com/watch?v=66sZjfvacSE"]]},{"t":"Naturalismo — Jogo Educativo","s":"Literatura Brasileira · 1º Trimestre","tri":1,"img":"https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=1200","r":"Conceitos do Naturalismo transformados em desafios interativos para relacionar literatura, história e denúncia social.","l":[["Acessar Jogo no Canva","https://canva.link/DAHCP-I0tb4/QMuWlVxaAfVN6jZV8QnEeg/view"]]},{"t":"Surrealismo","s":"Produção Artística · 1º Trimestre","tri":1,"img":"grim/atividade_surrealismo.jpg","r":"Registro visual de uma atividade autoral sobre linguagem surrealista, sonhos e composição de imagens."},{"t":"Videomanifesto — Produção Individual","s":"Produção Audiovisual & Linguagens · 2º Trimestre","tri":2,"img":"grim/videomanifesto_card.jpg","r":"Produção individual de um videomanifesto autoral com temática urgente sobre os graves impactos sociais e a violência enfrentada pela população na Ilha do Marajó e no Ceará, abordando a atuação de facções criminosas como o Comando Vermelho que expulsam famílias e cidades inteiras de suas casas. Como referência e suporte conceitual para a construção crítica do manifesto, utilizo a obra cinematográfica 'Manas' para aprofundar o debate sobre vulnerabilidade, direitos humanos e negligência estatal.","k":[["H3","Identificar o tema principal, os subtemas e as finalidades dos textos."],["H24","Produzir textos escritos de domínio acadêmico e educacional."]],"l":[["Abrir no Google Drive","https://drive.google.com/file/d/1rzA0Gnr50FvaVOE63p17_7tYq47S5y7t/view?usp=drive_link"]]},{"t":"Inglês — “What kind of art do you consume?”","s":"Língua Inglesa & Arte Digital · 2º Trimestre","tri":2,"img":"https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=1200","r":"Produção textual em inglês explorando os jogos eletrônicos sob a perspectiva de obras de arte e veículos de crítica social e impacto afetivo. Analisei os mundos, personagens e narrativas de Bloodborne e The Last of Us (Part I & II), além de apresentar o projeto autoral de jogo 'NÓS' (em desenvolvimento conjunto com Luana), que discute memória, traumas intergeracionais, família e construção de identidade.","k":[["H25","Interpretar textos em Língua Estrangeira Moderna — Inglês."]],"l":[["Ver Atividade no Google Docs","https://docs.google.com/document/d/1dhVqPMC24qmtpvBhl9AwGbQ-bqFMtX-6XAkmuOpbnjQ/edit?usp=sharing"]]},{"t":"Desempenho no Red1000 — 2º trimestre","s":"Redação & Língua Portuguesa · 2º Trimestre","tri":2,"img":"grim/red1000_nota.jpg","img2":"grim/red1000_criterios.jpg","r":"Produção de redação dissertativo-argumentativa no modelo oficial do Enem avaliada na plataforma Red1000, alcançando a pontuação de 960/1000. O resultado por competência consolidou 200 pontos em quatro eixos fundamentais: Língua Portuguesa (200), Tema e tipo textual (200), Coesão e articulação (200) e Proposta de intervenção (200), com 160 pontos em Argumentação e coerência.","k":[["H22","Produzir textos técnicos de acordo com uma estrutura estabelecida."]]}]},{"id":"matematica","code":"MT","cat":"ensino-medio","name":"Área de Matemática","desc":"Resoluções algébricas, geometria, estatística aplicada, probabilidade e raciocínio lógico.","acts":[{"t":"Quebrando a Banca","s":"Estatística e Probabilidade · 1º Trimestre","tri":1,"img":"https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1200","r":"Análise de probabilidade condicional e expectativa matemática a partir das estratégias apresentadas no filme.","k":[["H27","Compreender informações estatísticas provenientes de naturezas distintas."],["H28","Calcular medidas de tendência central e de dispersão."]]},{"t":"Hollow Depths","s":"Game Design & Matemática · 1º Trimestre","tri":1,"img":"grim/hollow-depths.jpg","r":"Um RPG de turno em que exploração e combate são orientados por probabilidade, cartas e leitura de variáveis numéricas.","l":[["Jogar / Acessar","https://game-nauy.onrender.com/"]]},{"t":"Existe uma crise silenciosa na nossa escola? — Saúde Mental","s":"Estatística & Análise de Dados · 2º Trimestre","tri":2,"img":"https://images.unsplash.com/photo-1543269865-cbf427effbad?auto=format&fit=crop&w=1200","r":"Pesquisa estatística aplicada sobre a saúde mental dos estudantes do Ensino Médio (amostra de 32 alunos via questionário anônimo). Mapeamos a frequência de estresse e privação de sono gerados por rotina escolar e vestibulares. A análise calculou média de ansiedade (3,97), variância (1,03), desvio padrão (1,02) e média de sono de 5,2 horas/noite, demonstrando na prática como a Estatística traduz experiências humanas complexas em diagnósticos confiáveis.","k":[["H27","Compreender informações estatísticas provenientes de naturezas distintas e formular juízos com base nessas informações."],["H28","Calcular medidas de tendência central e de dispersão de um conjunto de dados e aplicá-las em diferentes situações."],["H29","Construir tabelas e gráficos com recursos tecnológicos para simplificar cálculos e facilitar a leitura e a compreensão das informações."]],"l":[["Ver Apresentação no Canva","https://canva.link/o6mrqow1ovg23bl"]]}]},{"id":"modelagem","code":"MS","cat":"curso-tecnico","name":"Modelagem de Sistemas","desc":"Diagramas UML, requisitos de software e estruturação da arquitetura orientada.","acts":[{"t":"Hackathon: Cibersegurança","s":"UML, fluxo de dados e segurança · 1º Trimestre","tri":1,"img":"https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=1200","r":"Modelagem de uma proposta integrada de segurança, banco de dados e dispositivos conectados sob pressão de tempo.","k":[["H1","Reconhecer requisitos de qualidade, integridade, usabilidade e segurança da informação."],["H4","Selecionar linguagem de programação de acordo com os requisitos."]],"l":[["Ver Documentação no Canva","https://www.canva.com/design/DAHG7DnrZ6c/VvuKwrdyThZjsrDJEObxZA/view"]]}]},{"id":"desenvolvimento","code":"DS","cat":"curso-tecnico","name":"Desenvolvimento de Sistemas","desc":"Implementação de algoritmos estruturados, APIs REST e programação orientada a objetos.","acts":[{"t":"AcousticBuild — Plataforma de Previsões Acústicas","s":"Desenvolvimento Web Full-Stack · 2º Trimestre","tri":2,"img":"https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&w=1200","r":"O AcousticBuild é um projeto full-stack desenvolvido no curso técnico integrado à Iniciação Científica de Matemática, voltado à análise e previsão do desempenho acústico de edificações. Construímos uma interface moderna e responsiva com React no frontend, API RESTful com Python e FastAPI no backend, banco SQLite via SQLAlchemy, autenticação JWT e criptografia de senhas com Bcrypt, tornando cálculos de engenharia acústica acessíveis para arquitetos e projetistas.","k":[["H1","Reconhecer requisitos de qualidade, integridade, usabilidade e segurança da informação (interface responsiva, validação, JWT, hash Bcrypt e integridade)."],["H4","Selecionar linguagem de programação de acordo com os requisitos (React/JS para interface, Python/FastAPI para servidor, SQLite e CSS Modules)."],["H6","Aplicar linguagem de programação por meio de APIs, bibliotecas e frameworks na construção de rotinas de software (React, FastAPI, Axios, React Router, SQLAlchemy, JWT, Bcrypt)."]],"l":[["Apresentação — AcousticBuild","https://www.canva.com/design/DAHOEXsnSiU/twMjG-Quo00LmeoNuiPzQg/view?utm_content=DAHOEXsnSiU&utm_campaign=designshare&utm_medium=embeds&utm_source=link"],["Protótipo no Figma","https://www.figma.com/design/itGMzpxwezLRZ5aq1XkDc3/AcousticBuild?node-id=0-1&t=Dxhsf2FjqqYf4AYB-1"],["Repositório no GitHub","https://github.com/jjoaohartmann/SA-acousticBuild"],["README do Projeto","https://github.com/jjoaohartmann/SA-acousticBuild/blob/main/README.md"],["Vídeo do Projeto","https://drive.google.com/file/d/1kC-pFY_rgKTiVAEkhKXlEsYN6WP5YFrU/view"],["Vídeo","https://drive.google.com/file/d/1kC-pFY_rgKTiVAEkhKXlEsYN6WP5YFrU/view"]]}]},{"id":"programacao-aplicativos","code":"PA","cat":"curso-tecnico","name":"Programação de Aplicativos","desc":"Desenvolvimento de aplicações móveis e interfaces modernas com foco em experiência do usuário e integração de serviços.","acts":[{"t":"AcousticBuild — Plataforma de Previsões Acústicas","s":"Desenvolvimento Web & Aplicativos · 2º Trimestre","tri":2,"img":"https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&w=1200","r":"O AcousticBuild é um projeto full-stack desenvolvido no curso técnico integrado à Iniciação Científica de Matemática, voltado à análise e previsão do desempenho acústico de edificações. Construímos uma interface moderna e responsiva com React no frontend, API RESTful com Python e FastAPI no backend, banco SQLite via SQLAlchemy, autenticação JWT e criptografia de senhas com Bcrypt, tornando cálculos de engenharia acústica acessíveis para arquitetos e projetistas.","k":[["H1","Reconhecer requisitos de qualidade, integridade, usabilidade e segurança da informação (interface responsiva, validação, JWT, hash Bcrypt e integridade)."],["H4","Selecionar linguagem de programação de acordo com os requisitos (React/JS para interface, Python/FastAPI para servidor, SQLite e CSS Modules)."],["H6","Aplicar linguagem de programação por meio de APIs, bibliotecas e frameworks na construção de rotinas de software (React, FastAPI, Axios, React Router, SQLAlchemy, JWT, Bcrypt)."]],"l":[["Apresentação — AcousticBuild","https://www.canva.com/design/DAHOEXsnSiU/twMjG-Quo00LmeoNuiPzQg/view?utm_content=DAHOEXsnSiU&utm_campaign=designshare&utm_medium=embeds&utm_source=link"],["Protótipo no Figma","https://www.figma.com/design/itGMzpxwezLRZ5aq1XkDc3/AcousticBuild?node-id=0-1&t=Dxhsf2FjqqYf4AYB-1"],["Repositório no GitHub","https://github.com/jjoaohartmann/SA-acousticBuild"],["README do Projeto","https://github.com/jjoaohartmann/SA-acousticBuild/blob/main/README.md"],["Vídeo do Projeto","https://drive.google.com/file/d/1kC-pFY_rgKTiVAEkhKXlEsYN6WP5YFrU/view"],["Vídeo","https://drive.google.com/file/d/1kC-pFY_rgKTiVAEkhKXlEsYN6WP5YFrU/view"]]}]},{"id":"iot","code":"IO","cat":"curso-tecnico","name":"IoT - Internet das Coisas","desc":"Projetos eletrônicos, sensores para coleta contínua de metadados e segurança de hardware.","acts":[{"t":"Hackathon: Cibersegurança & IoT","s":"IoT e Proteção de Dispositivos · 1º Trimestre","tri":1,"img":"https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=1200","r":"Proposta de camadas de proteção e criptografia para dispositivos integrados na ponta da rede.","k":[["H01","Reconhecer especificações técnicas e paradigmas de IoT."],["H05","Integrar projeto orientado a sensoriamento e controle."]],"l":[["Ver Arquitetura IoT","https://www.canva.com/design/DAHG7DnrZ6c/VvuKwrdyThZjsrDJEObxZA/view"]]},{"t":"Atividade 1 — Acender LED","s":"Eletrônica Básica & IoT · 2º Trimestre","tri":2,"img":"https://images.unsplash.com/photo-1517077304055-6e89abbf09b0?auto=format&fit=crop&w=1200","r":"Montagem e programação de um circuito eletrônico inicial para controle de LED. O código enviou sinais digitais pelo pino do microcontrolador para acionar o componente físico, consolidando o entendimento sobre fluxo de corrente, polaridade de diodos emissores de luz e manipulação de saídas digitais em sistemas embarcados.","k":[["H01","Reconhecer especificações técnicas e paradigmas de IoT."],["H02","Integrar dispositivos para coleta automática de dados."],["H03","Integrar dispositivos de comunicação de dados."],["H04","Reconhecer especificações de sensoriamento e parametrização."],["H05","Integrar projeto orientado a sensoriamento e controle."]],"l":[["Ver Apresentação de IoT no Canva","https://canva.link/xt8l4950oajtohy"]]},{"t":"Atividade 2 — Semáforo","s":"Automação & Lógica de Controle · 2º Trimestre","tri":2,"img":"grim/semaforo_prototipo.jpg","r":"Montagem e programação de um sistema de sinalização de semáforo com três LEDs (vermelho, amarelo e verde). O código estruturou a temporização precisa das fases (vermelho 5s, amarelo 4s e verde 3s), aplicando conceitos fundamentais de múltiplas saídas digitais, temporização não bloqueante e automação de processos urbanos.","k":[["H01","Reconhecer especificações técnicas e paradigmas de IoT."],["H02","Integrar dispositivos para coleta automática de dados."],["H03","Integrar dispositivos de comunicação de dados."],["H04","Reconhecer especificações de sensoriamento e parametrização."],["H05","Integrar projeto orientado a sensoriamento e controle."]],"l":[["Ver Apresentação de IoT no Canva","https://canva.link/xt8l4950oajtohy"]]},{"t":"Atividade 3 — Controle de LED com botão: lógica Toggle","s":"Entradas Digitais & Estado · 2º Trimestre","tri":2,"img":"https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=1200","r":"Desenvolvimento de circuito de acionamento por botão utilizando lógica Toggle (inversão e retenção de estado lógico a cada clique). O botão atuou como entrada digital sensível a pulsos elétricos e o LED como saída de resposta, praticando debounce, leitura de variáveis de estado e interação física com microcontroladores.","k":[["H01","Reconhecer especificações técnicas e paradigmas de IoT."],["H02","Integrar dispositivos para coleta automática de dados."],["H03","Integrar dispositivos de comunicação de dados."],["H04","Reconhecer especificações de sensoriamento e parametrização."],["H05","Integrar projeto orientado a sensoriamento e controle."]],"l":[["Ver Apresentação de IoT no Canva","https://canva.link/xt8l4950oajtohy"]]}]},{"id":"banco","code":"BD","cat":"curso-tecnico","name":"Banco de Dados","desc":"Modelagem E-R, tabelas e scripts avançados em SQL para manipulação e integridade dos dados.","acts":[{"t":"Hackathon: Modelagem SQL & Proteção","s":"Dados, Validação e Proteção · 1º Trimestre","tri":1,"img":"https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=1200","r":"Estruturação de esquemas relacionais e proteção contra ataques e injeções SQL dentro de uma solução multidisciplinar.","k":[["H1","Reconhecer requisitos de integridade de banco de dados."],["H6","Aplicar SQL na estruturação e integridade de dados."]],"l":[["Ver Esquemas SQL","https://www.canva.com/design/DAHG7DnrZ6c/VvuKwrdyThZjsrDJEObxZA/view"]]}]}]</script>
 
 <template id="dossierTemplo">
   <span class="w-kicker">Projeto · Desenvolvimento de Sistemas</span>
@@ -905,7 +1146,7 @@ footer .inner { max-width: 1180px; margin-inline: auto; display: flex; flex-wrap
 <footer>
   <div class="inner">
     <span class="label">Proposta de identidade · Portfólio 2026</span>
-    <span class="label">Prévia em construção · <a href="/antigo">ver o portfólio anterior</a></span>
+    <span class="label">Prévia em construção</span>
   </div>
 </footer>
 
@@ -1056,6 +1297,59 @@ footer .inner { max-width: 1180px; margin-inline: auto; display: flex; flex-wrap
     enterBtn.hidden = e.detail === "start";
     if (e.detail === "start" && audio.paused) sound.click();
   });
+
+
+  /* ---------- Perfil ---------- */
+  const perfil = document.getElementById("perfil");
+  const fab = document.getElementById("sealFab");
+  let perfilOpener = null;
+  const openPerfil = (from) => {
+    perfilOpener = from || fab;
+    const r = (from || fab).getBoundingClientRect();
+    const book = perfil.querySelector(".book");
+    perfil.hidden = false;
+    const br = book.getBoundingClientRect();
+    book.style.setProperty("--ox", `${r.left + r.width / 2 - br.left}px`);
+    book.style.setProperty("--oy", `${r.top + r.height / 2 - br.top}px`);
+    document.documentElement.classList.add("perfil-on");
+    requestAnimationFrame(() => requestAnimationFrame(() => perfil.classList.add("open")));
+    document.getElementById("perfilClose").focus({ preventScroll: true });
+  };
+  const closePerfil = () => {
+    perfil.classList.remove("open");
+    document.documentElement.classList.remove("perfil-on");
+    setTimeout(() => { if (!perfil.classList.contains("open")) perfil.hidden = true; }, 650);
+    if (perfilOpener) perfilOpener.focus({ preventScroll: true });
+  };
+  fab.addEventListener("click", () => openPerfil(fab));
+  const lock = document.getElementById("heroLockup");
+  lock.addEventListener("click", () => openPerfil(lock));
+  lock.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openPerfil(lock); } });
+  document.getElementById("perfilClose").addEventListener("click", closePerfil);
+  perfil.addEventListener("click", (e) => { if (e.target === perfil) closePerfil(); });
+  addEventListener("keydown", (e) => { if (e.key === "Escape" && !perfil.hidden && perfil.classList.contains("open")) closePerfil(); });
+  // abas
+  const tabs = [...perfil.querySelectorAll('[role="tab"]')];
+  const selectTab = (t) => {
+    tabs.forEach((x) => { const on = x === t; x.setAttribute("aria-selected", String(on)); x.tabIndex = on ? 0 : -1; document.getElementById(x.getAttribute("aria-controls")).hidden = !on; });
+    t.focus();
+  };
+  tabs.forEach((t, i) => {
+    t.addEventListener("click", () => selectTab(t));
+    t.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowRight") selectTab(tabs[(i + 1) % tabs.length]);
+      if (e.key === "ArrowLeft") selectTab(tabs[(i - 1 + tabs.length) % tabs.length]);
+    });
+  });
+  // copiar e-mail
+  document.getElementById("perfilCopy").addEventListener("click", (e) => {
+    const btn = e.currentTarget, text = document.getElementById("perfilMail").textContent;
+    const done = () => { btn.textContent = "Copiado"; setTimeout(() => { btn.textContent = "Copiar e-mail"; }, 1800); };
+    try { navigator.clipboard.writeText(text).then(done, () => { getSelection().selectAllChildren(document.getElementById("perfilMail")); }); }
+    catch (err) { getSelection().selectAllChildren(document.getElementById("perfilMail")); }
+  });
+  // missões que abrem mundos fecham a ficha antes
+  perfil.querySelectorAll("[data-world]").forEach((b) => b.addEventListener("click", () => { perfil.classList.remove("open"); perfil.hidden = true; document.documentElement.classList.remove("perfil-on"); }, true));
 
   /* ---------- Mundos ---------- */
   document.querySelectorAll("[data-world]").forEach((el) => {

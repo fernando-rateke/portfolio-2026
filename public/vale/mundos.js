@@ -154,7 +154,11 @@
   }
   function hideDossier() { dossier.classList.remove("open"); dossier.hidden = true; }
   dossierBtn.addEventListener("click", showDossier);
-  $("dossierClose").addEventListener("click", () => { hideDossier(); if (current && current.dossierReady) dossierBtn.hidden = false; });
+  $("dossierClose").addEventListener("click", () => {
+    hideDossier();
+    if (current && current.onDossierClose) current.onDossierClose();
+    if (current && current.dossierReady) dossierBtn.hidden = false;
+  });
 
   function open(name) {
     const w = worlds[name];
@@ -164,7 +168,7 @@
     current = w;
     el.hidden = false; el.dataset.world = name; root.classList.add("intro-on");
     window.dispatchEvent(new CustomEvent("mundo", { detail: "open" }));
-    $("dossierBody").innerHTML = $(w.template).innerHTML;
+    $("dossierBody").innerHTML = $(w.template) ? $(w.template).innerHTML : "";
     hideDossier(); dossierBtn.hidden = true; dossierBtn.textContent = w.dossierLabel;
     labels.innerHTML = ""; line.textContent = ""; line.classList.remove("show");
     title.innerHTML = w.titleHTML; hint.textContent = w.hintText;
@@ -738,6 +742,266 @@
     return api;
   })();
 
-  const worlds = { templo, nos };
-  window.mundos = { open, close };
+  /* =================================================================== */
+  /* TORRE DOS GRIMÓRIOS                                                  */
+  /* =================================================================== */
+  const torre = (() => {
+    const scene = new T.Scene();
+    const camera = new T.PerspectiveCamera(46, 1, 0.1, 400);
+    const env = envUniforms({ sun: [0.35, 0.85, 0.25], sunCol: "#46578C", amb: "#40354A", fog: "#130F1A", fogDen: 0.016, glowCol: "#FFD38A" });
+    const BASE = window.VALE_BASE || "";
+    let DATA = [];
+    try { DATA = JSON.parse(document.getElementById("grimorios").textContent); } catch (e) { DATA = []; }
+    const META = { CN: ["自", "#4E7A4C"], CH: ["人", "#A4743A"], LG: ["言", "#9C3434"], MT: ["数", "#3E4C86"], MS: ["図", "#2E6E72"], DS: ["開", "#2C4A7A"], PA: ["作", "#5A3E7A"], IO: ["繋", "#7A5A2E"], BD: ["蔵", "#4A5560"] };
+    const LECTERN_TOP = new T.Vector3(0, 2.05, 0.1);
+    let time = 0, books = [], hovered = null, selected = null, circleMat, candleMat, tip, camFrom = null, camTo = null, camK = 1;
+    const ray = new T.Raycaster(), ndc = new T.Vector2();
+    const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+    // geometria voltada para dentro (paredes vistas de dentro da torre)
+    function inward(geo) {
+      const g = geo.index ? geo.toNonIndexed() : geo;
+      g.computeVertexNormals();
+      const p = g.attributes.position.array, n = g.attributes.normal.array;
+      for (let i = 0; i < p.length; i += 9) for (let k = 0; k < 3; k++) { const a = p[i + 3 + k]; p[i + 3 + k] = p[i + 6 + k]; p[i + 6 + k] = a; }
+      for (let i = 0; i < n.length; i += 9) for (let k = 0; k < 3; k++) { const a = n[i + 3 + k]; n[i + 3 + k] = n[i + 6 + k]; n[i + 6 + k] = a; }
+      for (let i = 0; i < n.length; i++) n[i] = -n[i];
+      return g;
+    }
+    function coverTexture(code, name) {
+      const c = document.createElement("canvas"); c.width = 256; c.height = 340;
+      const g = c.getContext("2d");
+      g.fillStyle = "rgba(0,0,0,0)"; g.clearRect(0, 0, 256, 340);
+      g.strokeStyle = "#E3C27A"; g.lineWidth = 6; g.strokeRect(18, 18, 220, 304);
+      g.lineWidth = 2; g.strokeRect(30, 30, 196, 280);
+      g.fillStyle = "#EFD08A"; g.textAlign = "center"; g.textBaseline = "middle";
+      g.font = "800 130px 'Shippori Mincho', 'Hiragino Mincho ProN', serif"; g.fillText(META[code][0], 128, 150);
+      g.font = "500 22px 'Geist Mono', monospace"; g.fillText(code, 128, 262);
+      const t = new T.CanvasTexture(c); t.anisotropy = 4; return t;
+    }
+
+    function build() {
+      const mat = toon(env);
+      const B = Builder(); const r = mulberry(31);
+      // parede de pedra
+      B.add(inward(new T.CylinderGeometry(9, 9, 34, 72, 40, true)), M(0, 17, 0), (x, y, z) => {
+        const row = Math.floor((y + 17) / 0.72), th = Math.atan2(z, x);
+        const col = Math.floor((th / (Math.PI * 2) + 0.5) * 56 + (row % 2) * 0.5);
+        const h = Math.abs(Math.sin(row * 12.9898 + col * 78.233) * 43758.5453) % 1;
+        return h < 0.33 ? "#4A4250" : h < 0.66 ? "#544B5A" : "#3F3946";
+      });
+      // piso de lajes em anéis
+      B.add(new T.CircleGeometry(9, 72, 0, Math.PI * 2), M(0, 0, 0, -Math.PI / 2, 0, 0), (x, y) => {
+        const rr = Math.hypot(x, y), ring = Math.floor(rr / 1.1), th = Math.atan2(y, x);
+        const seg = Math.floor((th / (Math.PI * 2) + 0.5) * (6 + ring * 6));
+        return (ring + seg) % 2 ? "#3A3340" : "#433B49";
+      });
+      // estantes ao redor (exceto onde estão as janelas)
+      const windows = [0, Math.PI * 2 / 3, Math.PI * 4 / 3].map((a) => a + Math.PI / 2);
+      const leather = ["#6B2E2A", "#2E4A3E", "#3B3A5E", "#7A5A2E", "#4A2E44", "#2E3E5A", "#5E4632", "#8A6A3A"];
+      const BAYS = 36;
+      for (let b = 0; b < BAYS; b++) {
+        const a = (b + 0.5) / BAYS * Math.PI * 2;
+        if (windows.some((w) => Math.abs(Math.atan2(Math.sin(a - w), Math.cos(a - w))) < 0.22)) continue;
+        const R = 8.55, cx = Math.cos(a) * R, cz = Math.sin(a) * R, rot = -a + Math.PI / 2;
+        const Mb = M(cx, 0, cz, 0, rot, 0);
+        const width = 2 * Math.PI * R / BAYS - 0.04;
+        B.add(new T.BoxGeometry(width, 6.2, 0.06), Mb.clone().multiply(M(0, 3.1, 0.3)), "#3A2618");
+        B.add(new T.BoxGeometry(0.08, 6.2, 0.62), Mb.clone().multiply(M(width / 2, 3.1, 0)), "#5A3B26");
+        for (let s = 0; s < 5; s++) {
+          const y = 0.25 + s * 1.2;
+          B.add(new T.BoxGeometry(width, 0.07, 0.62), Mb.clone().multiply(M(0, y, 0)), "#5A3B26");
+          let x = -width / 2 + 0.08;
+          while (x < width / 2 - 0.12) {
+            const w = 0.07 + r() * 0.08, h = 0.62 + r() * 0.36, lean = r() < 0.08 ? 0.25 : 0;
+            B.add(new T.BoxGeometry(w, h, 0.42), Mb.clone().multiply(M(x + w / 2, y + 0.035 + h / 2, 0.02, 0, 0, lean)), leather[Math.floor(r() * leather.length)]);
+            x += w + 0.005 + (lean ? 0.12 : 0);
+          }
+        }
+      }
+      // janelas altas e varandas
+      windows.forEach((a) => {
+        const x = Math.cos(a) * 8.92, z = Math.sin(a) * 8.92;
+        B.add(new T.PlaneGeometry(1.6, 5.2), M(x, 9.5, z, 0, -a - Math.PI / 2, 0), "#5E7FBE", 1);
+        B.add(new T.CircleGeometry(0.8, 24, 0, Math.PI), M(x * 0.999, 12.1, z * 0.999, 0, -a - Math.PI / 2, 0), "#5E7FBE", 1);
+        B.add(new T.BoxGeometry(0.1, 5.4, 0.12), M(x * 0.99, 9.5, z * 0.99, 0, -a - Math.PI / 2, 0), "#2A2230");
+      });
+      for (const y of [7.2, 14.4]) {
+        B.add(new T.TorusGeometry(8.2, 0.12, 6, 96), M(0, y, 0, Math.PI / 2, 0, 0), "#5A3B26");
+        B.add(new T.TorusGeometry(8.2, 0.05, 6, 96), M(0, y + 0.9, 0, Math.PI / 2, 0, 0), "#5A3B26");
+        for (let k = 0; k < 48; k++) { const a = k / 48 * Math.PI * 2; B.add(new T.CylinderGeometry(0.035, 0.035, 0.9, 5), M(Math.cos(a) * 8.2, y + 0.45, Math.sin(a) * 8.2), "#5A3B26"); }
+      }
+      // púlpito
+      B.add(new T.CylinderGeometry(0.55, 0.7, 0.18, 12), M(0, 0.09, 0), "#4A3020");
+      B.add(new T.CylinderGeometry(0.1, 0.14, 1.5, 10), M(0, 0.9, 0), "#5A3B26");
+      B.add(new T.BoxGeometry(1.3, 0.08, 0.95), M(0, 1.72, 0.05, -0.38, 0, 0), "#6B4A2E");
+      B.add(new T.BoxGeometry(1.3, 0.06, 0.06), M(0, 1.55, 0.5, -0.38, 0, 0), "#6B4A2E");
+      scene.add(new T.Mesh(B.build(), mat));
+
+      // círculo mágico no chão
+      circleMat = new T.ShaderMaterial({
+        transparent: true, depthWrite: false, blending: T.AdditiveBlending,
+        uniforms: { uTime: { value: 0 }, uPulse: { value: 0 } },
+        vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+        fragmentShader: `uniform float uTime; uniform float uPulse; varying vec2 vUv;
+          void main(){
+            vec2 p=vUv*2.0-1.0; float r=length(p); float a=atan(p.y,p.x);
+            float ring=smoothstep(0.012,0.0,abs(r-0.94))+smoothstep(0.01,0.0,abs(r-0.84))+smoothstep(0.008,0.0,abs(r-0.46))+smoothstep(0.006,0.0,abs(r-0.3));
+            float ticks=step(0.85,r)*step(r,0.93)*smoothstep(0.7,1.0,abs(sin(a*48.0-uTime*0.25)))*0.7;
+            float hex=0.0;
+            for(int k=0;k<6;k++){ float ang=float(k)*1.0472+uTime*0.08; vec2 d=vec2(cos(ang),sin(ang)); hex+=smoothstep(0.01,0.0,abs(dot(p,d)-0.42)); }
+            hex*=step(r,0.84);
+            float g=(ring+ticks+hex*0.7)*(0.45+0.55*uPulse);
+            vec3 col=mix(vec3(0.42,0.66,1.0),vec3(1.0,0.82,0.48),uPulse);
+            gl_FragColor=vec4(col*g,g);
+          }`,
+      });
+      const circle = new T.Mesh(new T.PlaneGeometry(8, 8), circleMat); circle.rotation.x = -Math.PI / 2; circle.position.y = 0.03; scene.add(circle);
+
+      // velas flutuando
+      const cg = new T.BufferGeometry(), cp = [];
+      for (let k = 0; k < 46; k++) { const a = r() * Math.PI * 2, rr = 2.6 + r() * 5; cp.push(Math.cos(a) * rr, 3.5 + r() * 12, Math.sin(a) * rr); }
+      cg.setAttribute("position", new T.Float32BufferAttribute(cp, 3));
+      candleMat = new T.ShaderMaterial({ transparent: true, depthWrite: false, blending: T.AdditiveBlending, uniforms: { uTime: { value: 0 } },
+        vertexShader: `uniform float uTime; varying float vF; void main(){ vec3 p=position; p.y+=sin(uTime*0.7+position.x*3.0)*0.15; vF=0.75+0.25*sin(uTime*9.0+position.z*7.0); vec4 mv=modelViewMatrix*vec4(p,1.0); gl_PointSize=90.0/-mv.z; gl_Position=projectionMatrix*mv; }`,
+        fragmentShader: `varying float vF; void main(){ vec2 q=gl_PointCoord-0.5; q.y*=0.7; float d=length(q); float c=smoothstep(0.5,0.0,d); gl_FragColor=vec4(vec3(1.0,0.75,0.4)*c*c*vF,1.0); }` });
+      const candles = new T.Points(cg, candleMat); candles.frustumCulled = false; scene.add(candles);
+      const CB = Builder();
+      for (let k = 0; k < cp.length; k += 3) CB.add(new T.CylinderGeometry(0.05, 0.05, 0.32, 8), M(cp[k], cp[k + 1] - 0.22, cp[k + 2]), "#EDE3CF", 0.4);
+      scene.add(new T.Mesh(CB.build(), mat));
+
+      // os grimórios
+      DATA.forEach((sub, i) => {
+        const meta = META[sub.code] || ["書", "#5A4632"];
+        const g = new T.Group();
+        const bb = Builder();
+        bb.add(new T.BoxGeometry(0.9, 1.2, 0.05), M(0, 0, -0.1), meta[1]);
+        bb.add(new T.BoxGeometry(0.84, 1.14, 0.17), M(0.02, 0, 0), "#EFE4CC");
+        bb.add(new T.BoxGeometry(0.06, 1.2, 0.26), M(-0.44, 0, 0), meta[1]);
+        for (const y of [-0.42, -0.14, 0.14, 0.42]) bb.add(new T.BoxGeometry(0.075, 0.035, 0.27), M(-0.44, y, 0), "#C9A24A");
+        const body = new T.Mesh(bb.build(), mat); g.add(body);
+        const hinge = new T.Group(); hinge.position.set(-0.45, 0, 0.11); g.add(hinge);
+        const fb = Builder();
+        fb.add(new T.BoxGeometry(0.9, 1.2, 0.05), M(0.45, 0, 0), meta[1]);
+        for (const [x, y] of [[0.1, 0.55], [0.8, 0.55], [0.1, -0.55], [0.8, -0.55]]) fb.add(new T.BoxGeometry(0.12, 0.12, 0.06), M(x, y, 0.01), "#C9A24A");
+        hinge.add(new T.Mesh(fb.build(), mat));
+        const label = new T.Mesh(new T.PlaneGeometry(0.7, 0.93), new T.MeshBasicMaterial({ map: coverTexture(sub.code, sub.name), transparent: true, depthWrite: false }));
+        label.position.set(0.45, 0, 0.03); hinge.add(label);
+        const hit = new T.Mesh(new T.BoxGeometry(1.2, 1.5, 0.6), new T.MeshBasicMaterial()); hit.visible = false; hit.userData.book = i; g.add(hit);
+        scene.add(g);
+        books.push({ g, hinge, hit, sub, a0: i / DATA.length * Math.PI * 2, open: 0, glow: 0, mat: body.material });
+      });
+
+      env.uPL.value[0].set(0, 6.8, 0); env.uPLC.value[0].set("#6F8FE0"); env.uPLR.value[0] = 3.6;
+      env.uPL.value[1].set(0, 9, 0); env.uPLC.value[1].set("#FFC67A"); env.uPLR.value[1] = 7;
+      env.uPL.value[2].set(0, 2.8, 0.9); env.uPLC.value[2].set("#9C7E52"); env.uPLR.value[2] = 0.001;
+
+      tip = document.createElement("div"); tip.className = "w-label"; tip.style.opacity = "0";
+    }
+
+    function bookPose(b, t) {
+      const a = b.a0 + t * 0.05;
+      return { pos: new T.Vector3(Math.cos(a) * 3.9, 2.5 + Math.sin(t * 0.8 + b.a0 * 3) * 0.18, Math.sin(a) * 3.9), rotY: -a + Math.PI / 2 };
+    }
+    function grimoireHTML(sub) {
+      const cat = sub.cat === "curso-tecnico" ? "Curso Técnico" : "Ensino Médio";
+      const tris = [...new Set(sub.acts.map((a) => a.tri))].sort();
+      const filters = tris.length > 1 ? `<div class="g-filter" role="group" aria-label="Filtrar por trimestre"><button type="button" aria-pressed="true" data-tri="all">Todos</button>${tris.map((t) => `<button type="button" aria-pressed="false" data-tri="${t}">${t}º trimestre</button>`).join("")}</div>` : "";
+      const spells = sub.acts.map((a) => {
+        const img = a.img ? `<img src="${esc(a.img.startsWith("http") ? a.img : BASE + a.img)}" alt="" loading="lazy" onerror="this.remove()">` : "";
+        const img2 = a.img2 && a.img2 !== a.img ? `<img src="${esc(BASE + a.img2)}" alt="" loading="lazy" onerror="this.remove()">` : "";
+        const k = a.k ? `<h4>Competências</h4><ul class="g-skills">${a.k.map(([c, d]) => `<li><b>${esc(c)}</b><span>${esc(d)}</span></li>`).join("")}</ul>` : "";
+        const l = a.l ? `<ul class="d-links">${a.l.map(([t, u]) => `<li><a href="${esc(u)}" target="_blank" rel="noreferrer">${esc(t)}</a></li>`).join("")}</ul>` : "";
+        return `<details class="spell" data-tri="${a.tri}"><summary><span class="g-tri">${a.tri}º</span><span class="g-t"><b>${esc(a.t)}</b><small>${esc(a.s)}</small></span></summary><div class="g-body">${img}${img2}${a.r ? `<p>${esc(a.r)}</p>` : ""}${k}${l}</div></details>`;
+      }).join("");
+      return `<span class="w-kicker">Grimório · ${cat}</span><h2 class="d-title"><span class="g-k">${(META[sub.code] || ["書"])[0]}</span>${esc(sub.name)}</h2><p class="d-sub">${esc(sub.desc)}</p>
+        <p class="g-count">${sub.acts.length} ${sub.acts.length === 1 ? "feitiço aprendido" : "feitiços aprendidos"}</p>${filters}<div class="spells">${spells}</div>`;
+    }
+    function select(i) {
+      if (selected === i) return;
+      selected = i;
+      const b = books[i];
+      $("dossierBody").innerHTML = grimoireHTML(b.sub);
+      const body = $("dossierBody");
+      body.querySelectorAll(".g-filter button").forEach((btn) => btn.addEventListener("click", () => {
+        body.querySelectorAll(".g-filter button").forEach((x) => x.setAttribute("aria-pressed", String(x === btn)));
+        body.querySelectorAll(".spell").forEach((sp) => { sp.hidden = btn.dataset.tri !== "all" && sp.dataset.tri !== btn.dataset.tri; });
+      }));
+      hint.textContent = "";
+      setTimeout(() => { if (current === api && selected === i) showDossier(); }, 900);
+      camFrom = { pos: camera.position.clone(), tgt: camera.userData.tgt.clone() };
+      camTo = { pos: new T.Vector3(0.9, 3.3, 3.2), tgt: new T.Vector3(1.0, 1.75, 0) };
+      camK = 0;
+    }
+    function deselect() {
+      if (selected === null) return;
+      selected = null; hint.textContent = "Toque num grimório.";
+      camFrom = { pos: camera.position.clone(), tgt: camera.userData.tgt.clone() }; camTo = null; camK = 0;
+    }
+    function pick(e) {
+      const rc = canvas.getBoundingClientRect();
+      ndc.set((e.clientX - rc.left) / rc.width * 2 - 1, -((e.clientY - rc.top) / rc.height) * 2 + 1);
+      ray.setFromCamera(ndc, camera);
+      const h = ray.intersectObjects(books.map((b) => b.hit))[0];
+      return h ? h.object.userData.book : null;
+    }
+    const onMove = (e) => { if (e.target !== canvas) return; hovered = pick(e); canvas.style.cursor = hovered !== null ? "pointer" : ""; };
+    const onClick = (e) => { if (e.target !== canvas) return; const i = pick(e); if (i !== null) select(i); };
+
+    const api = {
+      template: "dossierTorre", dossierLabel: "Abrir o grimório", select: (i) => select(i),
+      titleHTML: `<span class="w-kicker">Ilhota norte</span><span class="w-name">Torre dos Grimórios</span>`,
+      hintText: "Toque num grimório.",
+      build,
+      start() {
+        time = 0; selected = null; hovered = null; camK = 1; camTo = null;
+        camera.position.set(0, 4.3, 6.9); camera.userData.tgt = new T.Vector3(0, 3.0, 0);
+        books.forEach((b) => { b.open = 0; });
+        labels.appendChild(tip);
+        canvas.addEventListener("click", onClick); canvas.addEventListener("pointermove", onMove);
+        $("worldAction").hidden = true;
+        api.onDossierClose = deselect;
+      },
+      stop() { canvas.removeEventListener("click", onClick); canvas.removeEventListener("pointermove", onMove); canvas.style.cursor = ""; },
+      resize(w, h) { camera.aspect = w / h; camera.fov = w / h < 0.9 ? 74 : 58; camera.updateProjectionMatrix(); },
+      update(dt) {
+        time += dt;
+        circleMat.uniforms.uTime.value = time; candleMat.uniforms.uTime.value = time;
+        circleMat.uniforms.uPulse.value += ((selected !== null ? 1 : 0) - circleMat.uniforms.uPulse.value) * Math.min(1, dt * 2);
+        env.uPLR.value[2] = lerp(env.uPLR.value[2], selected !== null ? 1.5 : 0.001, Math.min(1, dt * 2));
+        books.forEach((b, i) => {
+          const pose = bookPose(b, time);
+          const isSel = selected === i;
+          b.k = lerp(b.k || 0, isSel ? 1 : 0, Math.min(1, dt * 2.2));
+          const pos = pose.pos.clone().lerp(LECTERN_TOP, ease(b.k));
+          b.g.position.copy(pos);
+          b.g.rotation.set(lerp(0, -1.18, ease(b.k)), lerp(pose.rotY, 0, ease(b.k)), Math.sin(time + i) * 0.05 * (1 - b.k));
+          b.hinge.rotation.y = lerp(0, -2.75, smooth(0.45, 1, b.k));
+          const glow = (hovered === i && !isSel ? 1 : 0) + b.k * 0.6;
+          b.glow = lerp(b.glow, glow, Math.min(1, dt * 6));
+          b.g.scale.setScalar(1 + b.glow * 0.08);
+        });
+        // câmera
+        const orbit = time * 0.04 + pointer.sx * 0.25;
+        const idle = { pos: new T.Vector3(Math.sin(orbit) * 6.9, 4.3 - pointer.sy * 0.8, Math.cos(orbit) * 6.9), tgt: new T.Vector3(0, 3.0, 0) };
+        camK = Math.min(1, camK + dt / 2.0);
+        const dest = camTo || idle;
+        if (camK < 1 && camFrom) { const e = ease(camK); camera.position.copy(camFrom.pos).lerp(dest.pos, e); camera.userData.tgt.copy(camFrom.tgt).lerp(dest.tgt, e); }
+        else { camera.position.lerp(dest.pos, Math.min(1, dt * 3)); camera.userData.tgt.lerp(dest.tgt, Math.min(1, dt * 3)); }
+        camera.lookAt(camera.userData.tgt);
+        // dica sobre o livro em foco
+        if (hovered !== null && selected === null) {
+          const b = books[hovered], v = b.g.position.clone().add(new T.Vector3(0, 0.95, 0)).project(camera);
+          tip.innerHTML = `<b>${esc(b.sub.name)}</b><span>${b.sub.acts.length} ${b.sub.acts.length === 1 ? "feitiço" : "feitiços"}</span>`;
+          tip.style.transform = `translate(-50%, -100%) translate(${(v.x * 0.5 + 0.5) * W}px, ${(-v.y * 0.5 + 0.5) * H}px)`;
+          tip.style.opacity = "1";
+        } else tip.style.opacity = "0";
+      },
+      render(rr) { rr.setRenderTarget(null); rr.render(scene, camera); },
+    };
+    return api;
+  })();
+
+  const worlds = { templo, nos, torre };
+  window.mundos = { open, close, worlds };
 })();

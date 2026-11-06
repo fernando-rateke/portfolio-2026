@@ -1276,6 +1276,350 @@
     return api;
   })();
 
-  const worlds = { templo, nos, torre, trem };
+  /* =================================================================== */
+  /* O QUARTO (alto do castelo): os gostos, com o Calcifer na lareira      */
+  /* =================================================================== */
+  const quarto = (() => {
+    const scene = new T.Scene();
+    scene.background = new T.Color("#160F0C");
+    const camera = new T.PerspectiveCamera(52, 1, 0.1, 200);
+    const env = envUniforms({ sun: [-0.35, 0.75, 0.55], sunCol: "#6E5646", amb: "#3A2D28", fog: "#160F0C", fogDen: 0.012, glowCol: "#FFB25A" });
+    const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    const SERIF = "'Shippori Mincho', 'Hiragino Mincho ProN', serif", MONO = "'JetBrains Mono', ui-monospace, monospace";
+    const ray = new T.Raycaster(), ndc = new T.Vector2();
+    let time = 0, hovered = null, selected = null, hits = [], flames = [], charms = [], tip, camFrom = null, camK = 1, sayTimer = null;
+
+    // o que cada canto do quarto guarda (espelha a aba Gostos do perfil)
+    const SPOTS = {
+      anime: {
+        name: "Estante", sub: "Animes", k: "漫",
+        view: { pos: [-2.6, 1.9, 0.9], tgt: [-5.8, 1.25, -0.2] },
+        say: "A estante dos animes. Nenhum volume perto de mim, por favor.",
+        html: () => `<span class="w-kicker">Estante · animes</span><h2 class="d-title">Animes</h2>
+          <p class="d-sub">Cada prateleira, uma série.</p>
+          <ul class="q-list"><li><b>Frieren</b><small>a jornada depois do fim da aventura</small></li><li><b>Attack on Titan</b><small>muralhas, liberdade e escolhas difíceis</small></li><li><b>Tokyo Ghoul</b><small>dois mundos dentro da mesma pessoa</small></li></ul>
+          <p class="d-note">A Torre dos Grimórios, no vale, é inspirada em Frieren.</p>`,
+      },
+      ghibli: {
+        name: "Pôsteres", sub: "Studio Ghibli", k: "宮",
+        view: { pos: [3.1, 2.0, 0.4], tgt: [3.25, 2.0, -4.6] },
+        say: "Os filmes favoritos. Um deles tem um demônio do fogo muito bonito.",
+        html: () => `<span class="w-kicker">Parede · Studio Ghibli</span><h2 class="d-title">Studio Ghibli</h2>
+          <p class="d-sub">Os três favoritos, e os outros filmes também.</p>
+          <ul class="q-list"><li class="fav"><b>O Castelo Animado</b><small>o castelo que anda pelo vale</small></li><li class="fav"><b>A Viagem de Chihiro</b><small>o trem que corre sobre a água</small></li><li class="fav"><b>Meu Amigo Totoro</b><small>o pôster da parede da estante</small></li></ul>
+          <p class="d-note">Este portfólio é uma homenagem a esses filmes. Personagens, castelo e músicas pertencem aos seus autores.</p>`,
+      },
+      jogos: {
+        name: "Mesa", sub: "Jogos", k: "遊",
+        view: { pos: [2.5, 2.2, 1.9], tgt: [5.6, 1.3, 0.4] },
+        say: "Aqui é onde os mundos começam. Inclusive este.",
+        html: () => `<span class="w-kicker">Mesa · jogos</span><h2 class="d-title">Jogos</h2>
+          <p class="d-sub">Jogar e criar mundos.</p>
+          <ul class="q-list"><li><b>Nós</b><small>narrativa de exploração psicológica, em desenvolvimento</small></li><li><b>Hollow Depths</b><small>RPG de turno guiado por probabilidade</small></li></ul>
+          <div class="q-actions"><button type="button" class="w-btn" data-go-world="nos">Abrir a porta preta</button><a class="w-btn" href="https://game-nauy.onrender.com/" target="_blank" rel="noreferrer">Jogar Hollow Depths</a></div>`,
+      },
+      japao: {
+        name: "Pergaminho", sub: "Japão", k: "日",
+        view: { pos: [-1.5, 2.1, 0.5], tgt: [-1.75, 2.1, -4.6] },
+        say: "旅 quer dizer jornada. É o mesmo kanji da placa do torii.",
+        html: () => `<span class="w-kicker">Pergaminho · Japão</span><h2 class="d-title">Japão</h2>
+          <p class="d-sub">Cultura, estética, kanji e caligrafia.</p>
+          <ul class="q-list"><li><b>旅</b><small>jornada: o kanji da placa do torii e do pergaminho</small></li><li><b>ラテケ</b><small>Rateke em katakana, no selo vermelho</small></li><li><b>終点</b><small>fim da linha, na placa da estação</small></li></ul>
+          <p class="d-note">Os kanji espalhados pelo vale marcam cada lugar: 城 castelo, 塔 torre, 汽 trem, 門 portão, 駅 estação.</p>`,
+      },
+      calcifer: {
+        name: "Calcifer", sub: "o guia", k: "火",
+        view: { pos: [-2.5, 1.4, -0.6], tgt: [-4.2, 0.75, -3.9] },
+        say: "Eu cuido do fogo do castelo. E deste quarto, já que alguém precisa.",
+        html: () => overviewHTML(),
+      },
+    };
+    function overviewHTML() {
+      return `<span class="w-kicker">Alto do castelo</span><h2 class="d-title">O quarto</h2>
+        <p class="d-sub">O que eu gosto, guardado onde dá para ver.</p>
+        <div class="q-grid">${["ghibli", "anime", "japao", "jogos"].map((id) => `<button type="button" class="q-card" data-spot="${id}"><b>${SPOTS[id].k}</b><span>${SPOTS[id].sub}</span><small>${SPOTS[id].name}</small></button>`).join("")}</div>
+        <p class="d-note">O Calcifer, na lareira, conhece cada canto. Toque nele quando quiser voltar para cá.</p>`;
+    }
+
+    function tex(w, h, draw) { const c = document.createElement("canvas"); c.width = w; c.height = h; draw(c.getContext("2d"), w, h); const t = new T.CanvasTexture(c); t.anisotropy = 4; return t; }
+    const flat = (t) => new T.MeshBasicMaterial({ map: t });
+
+    function build() {
+      const mat = toon(env);
+      const B = Builder(); const r = mulberry(12);
+      const WOOD = "#5A3B26", WOOD_D = "#3A2618", PLASTER = "#D8C6A2";
+      // piso de tatame
+      for (let x = -6; x < 6; x += 2) for (let z = -4.5; z < 4; z += 1) {
+        const c = (Math.floor(x / 2) + Math.floor(z)) % 2 ? "#BFAE72" : "#C9B87C";
+        B.add(new T.BoxGeometry(1.96, 0.06, 0.96), M(x + 1, 0, z + 0.5), c);
+      }
+      B.add(new T.BoxGeometry(12.2, 0.04, 8.8), M(0, -0.03, -0.3), "#2E2218");
+      // paredes, vigas e telhado inclinado
+      const back = new T.Shape([new T.Vector2(-6, 0), new T.Vector2(6, 0), new T.Vector2(6, 3.2), new T.Vector2(0, 5.6), new T.Vector2(-6, 3.2)]);
+      const hole = new T.Path(); hole.absarc(0, 2.75, 1.15, 0, Math.PI * 2, true); back.holes.push(hole);
+      B.add(new T.ShapeGeometry(back, 24), M(0, 0, -4.5), PLASTER);
+      for (const s of [-1, 1]) {
+        B.add(new T.BoxGeometry(0.12, 3.2, 8.6), M(s * 6, 1.6, -0.2), PLASTER);
+        B.add(new T.BoxGeometry(6.6, 0.12, 8.8), M(s * 3, 4.42, -0.2, 0, 0, -s * 0.3805), "#6B4A32");
+        for (let z = -4.2; z <= 4; z += 1.4) B.add(new T.BoxGeometry(6.6, 0.18, 0.16), M(s * 3, 4.3, z, 0, 0, -s * 0.3805), WOOD_D);
+        for (const y of [0.12, 3.12]) B.add(new T.BoxGeometry(0.14, 0.16, 8.6), M(s * 5.94, y, -0.2), WOOD_D);
+        for (let z = -4.4; z <= 4; z += 2.1) B.add(new T.BoxGeometry(0.14, 3.2, 0.18), M(s * 5.92, 1.6, z), WOOD_D);
+      }
+      B.add(new T.BoxGeometry(0.24, 0.26, 8.8), M(0, 5.52, -0.2), WOOD_D);
+      for (const x of [-4.4, -2.2, 2.2, 4.4]) B.add(new T.BoxGeometry(0.16, 3.2, 0.14), M(x, 1.6, -4.44), WOOD_D);
+      B.add(new T.BoxGeometry(12, 0.16, 0.14), M(0, 0.1, -4.44), WOOD_D);
+      // janela redonda com caixilho
+      B.add(new T.TorusGeometry(1.17, 0.11, 8, 48), M(0, 2.75, -4.42), WOOD_D);
+      B.add(new T.BoxGeometry(0.07, 2.3, 0.07), M(0, 2.75, -4.44), WOOD_D);
+      B.add(new T.BoxGeometry(2.3, 0.07, 0.07), M(0, 2.75, -4.44), WOOD_D);
+      B.add(new T.BoxGeometry(2.0, 0.1, 0.36), M(0, 1.55, -4.32), WOOD);
+      // lareira de pedra (o lugar do Calcifer)
+      const HX = -4.3, HZ = -3.75;
+      B.add(new T.BoxGeometry(2.0, 0.3, 1.3), M(HX, 0.15, HZ), "#6E6872");
+      for (const s of [-1, 1]) B.add(new T.BoxGeometry(0.42, 1.5, 0.9), M(HX + s * 0.78, 1.05, HZ - 0.15), (x, y) => (Math.floor(y * 4) % 2 ? "#7A6E66" : "#857A70"));
+      B.add(new T.BoxGeometry(2.0, 0.5, 0.95), M(HX, 2.05, HZ - 0.15), "#7A6E66");
+      B.add(new T.BoxGeometry(1.2, 2.4, 0.8), M(HX, 3.5, HZ - 0.3), "#6E6466");
+      B.add(new T.BoxGeometry(1.2, 1.3, 0.1), M(HX, 0.95, HZ - 0.55), "#1C1412");
+      B.add(new T.BoxGeometry(2.2, 0.12, 1.1), M(HX, 2.36, HZ - 0.1), WOOD);
+      for (const [x, z, c] of [[-0.6, 0, "#7A5A3A"], [0.15, 0.1, "#3E5A6A"], [0.6, -0.05, "#B98A4A"]]) B.add(new T.CylinderGeometry(0.09, 0.1, 0.32, 10), M(HX + x, 2.58, HZ + z), c);
+      // estante de mangá na parede esquerda
+      const SX = -5.62;
+      B.add(new T.BoxGeometry(0.06, 1.95, 3.4), M(SX - 0.22, 0.98, -0.3), WOOD_D);
+      for (const z of [-2.0, 1.4]) B.add(new T.BoxGeometry(0.52, 1.95, 0.06), M(SX + 0.02, 0.98, z), WOOD);
+      B.add(new T.BoxGeometry(0.56, 0.06, 3.46), M(SX + 0.02, 1.96, -0.3), WOOD);
+      for (let s = 0; s < 4; s++) {
+        const y = 0.06 + s * 0.48;
+        B.add(new T.BoxGeometry(0.52, 0.05, 3.4), M(SX + 0.02, y, -0.3), WOOD_D);
+        // volumes: cada prateleira uma série (cores das capas)
+        const series = [["#F2EEE6", "#7FAE9A", "#E8E2D2"], ["#5A3E2E", "#9C2E2A", "#6E5A44"], ["#1C1A1E", "#B0202A", "#2A2830"], ["#C9A24A", "#3E4C86", "#7A5A2E"]][s];
+        let z = -1.9;
+        while (z < 1.25) { const w = 0.08 + r() * 0.03, h = 0.34 + r() * 0.06; B.add(new T.BoxGeometry(0.34, h, w), M(SX + 0.06, y + 0.03 + h / 2, z + w / 2), series[Math.floor(r() * 3)]); z += w + 0.004; }
+      }
+      // mesa, monitor, teclado e controle na parede direita
+      const DX = 5.25;
+      B.add(new T.BoxGeometry(1.0, 0.08, 2.6), M(DX, 1.0, 0.4), WOOD);
+      for (const z of [-0.8, 1.6]) B.add(new T.BoxGeometry(0.9, 0.96, 0.06), M(DX, 0.5, z), WOOD_D);
+      B.add(new T.BoxGeometry(0.1, 0.62, 1.1), M(DX + 0.3, 1.5, 0.4), "#222026");
+      B.add(new T.BoxGeometry(0.08, 0.3, 0.1), M(DX + 0.32, 1.16, 0.4), "#222026");
+      B.add(new T.BoxGeometry(0.3, 0.03, 0.9), M(DX - 0.15, 1.06, 0.4), "#3A3840");
+      B.add(new T.BoxGeometry(0.22, 0.06, 0.34), M(DX - 0.2, 1.08, 1.4), "#2E2C36");
+      for (const s of [-1, 1]) B.add(new T.SphereGeometry(0.08, 10, 8), M(DX - 0.22, 1.08, 1.4 + s * 0.17), "#2E2C36");
+      B.add(new T.BoxGeometry(0.6, 0.07, 0.6), M(DX - 1.05, 0.62, -0.55, 0, 0.5, 0), "#7A2A26");
+      B.add(new T.BoxGeometry(0.07, 0.7, 0.6), M(DX - 0.8, 1.0, -0.7, 0, 0.5, 0), "#7A2A26");
+      B.add(new T.CylinderGeometry(0.04, 0.04, 0.6, 6), M(DX - 1.05, 0.3, -0.55), "#2E2C36");
+      // mesinha baixa com chá e almofadas
+      B.add(new T.BoxGeometry(1.6, 0.08, 1.0), M(0.2, 0.42, 1.2), WOOD);
+      for (const [x, z] of [[-0.5, 0.8], [0.9, 0.8], [-0.5, 1.6], [0.9, 1.6]]) B.add(new T.BoxGeometry(0.08, 0.4, 0.08), M(x, 0.2, z), WOOD_D);
+      B.add(new T.CylinderGeometry(0.13, 0.11, 0.2, 14), M(0.05, 0.56, 1.2), "#3E5A58");
+      B.add(new T.CylinderGeometry(0.07, 0.06, 0.08, 12), M(0.45, 0.5, 1.05), "#E8DCC2");
+      B.add(new T.CylinderGeometry(0.07, 0.06, 0.08, 12), M(0.5, 0.5, 1.4), "#E8DCC2");
+      B.add(new T.BoxGeometry(0.8, 0.12, 0.8), M(-1.1, 0.08, 1.8, 0, 0.3, 0), "#8A3A34");
+      B.add(new T.BoxGeometry(0.8, 0.12, 0.8), M(1.5, 0.08, 2.2, 0, -0.2, 0), "#3E4C66");
+      scene.add(new T.Mesh(B.build(), mat));
+
+      // vista pela janela: o vale no fim da tarde
+      const view = tex(512, 512, (g, w, h) => {
+        const sky = g.createLinearGradient(0, 0, 0, h * 0.62); sky.addColorStop(0, "#6F8FC6"); sky.addColorStop(0.6, "#E9B79A"); sky.addColorStop(1, "#F6D7A8");
+        g.fillStyle = sky; g.fillRect(0, 0, w, h);
+        g.fillStyle = "rgba(255,255,255,0.75)"; for (const [x, y, s] of [[120, 120, 40], [170, 110, 52], [220, 125, 38], [360, 90, 30], [395, 84, 40]]) { g.beginPath(); g.arc(x, y, s, 0, Math.PI * 2); g.fill(); }
+        g.fillStyle = "#8C9AB4"; g.beginPath(); g.moveTo(40, 330); g.lineTo(190, 190); g.lineTo(330, 330); g.fill();
+        g.fillStyle = "#F4F1EC"; g.beginPath(); g.moveTo(150, 228); g.lineTo(190, 190); g.lineTo(230, 228); g.lineTo(205, 222); g.lineTo(190, 236); g.lineTo(172, 222); g.fill();
+        g.fillStyle = "#9AA6BC"; g.beginPath(); g.moveTo(260, 330); g.lineTo(400, 214); g.lineTo(540, 330); g.fill();
+        g.fillStyle = "#7FA864"; g.fillRect(0, 318, w, h);
+        g.fillStyle = "#6A9656"; g.beginPath(); g.ellipse(120, 340, 220, 34, 0, 0, Math.PI * 2); g.fill();
+        g.fillStyle = "#5E93B4"; g.beginPath(); g.ellipse(300, 372, 190, 16, 0, 0, Math.PI * 2); g.fill();
+        g.fillStyle = "#C22026"; g.fillRect(286, 340, 4, 22); g.fillRect(304, 340, 4, 22); g.fillRect(280, 338, 34, 4);
+        g.fillStyle = "#5B6E4E"; g.fillRect(0, 400, w, h);
+      });
+      const vm = new T.Mesh(new T.PlaneGeometry(3.4, 3.4), flat(view)); vm.position.set(0, 2.75, -4.62); scene.add(vm);
+
+      // pôsteres (desenhados aqui, sem imagens dos filmes)
+      const poster = (bg, draw, title) => tex(300, 420, (g, w, h) => {
+        g.fillStyle = bg; g.fillRect(0, 0, w, h); draw(g, w, h);
+        g.fillStyle = "rgba(255,255,255,0.92)"; g.font = `700 30px ${SERIF}`; g.textAlign = "center"; g.fillText(title, w / 2, h - 34);
+        g.strokeStyle = "rgba(255,255,255,0.7)"; g.lineWidth = 4; g.strokeRect(10, 10, w - 20, h - 20);
+      });
+      const pCastle = poster("#6F9CC8", (g) => {
+        g.fillStyle = "#7FA864"; g.fillRect(0, 290, 300, 130);
+        g.fillStyle = "#6E5444"; g.beginPath(); g.ellipse(150, 200, 78, 58, 0, 0, Math.PI * 2); g.fill();
+        g.fillStyle = "#8A6A52"; for (const [x, y, rr] of [[110, 160, 26], [190, 170, 30], [150, 140, 22]]) { g.beginPath(); g.arc(x, y, rr, 0, Math.PI * 2); g.fill(); }
+        g.fillStyle = "#B8483A"; g.fillRect(120, 110, 18, 26); g.fillRect(168, 118, 16, 22);
+        g.strokeStyle = "#4A3428"; g.lineWidth = 7; for (const x of [118, 140, 162, 184]) { g.beginPath(); g.moveTo(x, 250); g.lineTo(x + (x % 2 ? 8 : -8), 300); g.stroke(); }
+        g.fillStyle = "rgba(255,255,255,0.7)"; g.beginPath(); g.arc(70, 70, 26, 0, Math.PI * 2); g.arc(100, 64, 30, 0, Math.PI * 2); g.fill();
+      }, "動く城");
+      const pTrain = poster("#E9A37C", (g) => {
+        const s = g.createLinearGradient(0, 0, 0, 260); s.addColorStop(0, "#5E6FA6"); s.addColorStop(1, "#F1B48A"); g.fillStyle = s; g.fillRect(0, 0, 300, 260);
+        g.fillStyle = "#4E8AA8"; g.fillRect(0, 250, 300, 170);
+        g.fillStyle = "#7A2A26"; g.fillRect(40, 214, 200, 28); g.fillStyle = "#E8DCC2"; g.fillRect(40, 196, 200, 20);
+        g.fillStyle = "#FFD58A"; for (let k = 0; k < 6; k++) g.fillRect(52 + k * 31, 200, 18, 12);
+        g.strokeStyle = "rgba(255,255,255,0.5)"; g.lineWidth = 2; g.beginPath(); g.moveTo(0, 262); g.lineTo(300, 262); g.stroke();
+      }, "千と千尋");
+      const pTotoro = tex(420, 240, (g, w, h) => {
+        g.fillStyle = "#24443E"; g.fillRect(0, 0, w, h);
+        g.fillStyle = "#2E5A4A"; g.beginPath(); g.ellipse(210, 260, 260, 90, 0, 0, Math.PI * 2); g.fill();
+        g.fillStyle = "#8C949C"; g.beginPath(); g.ellipse(210, 150, 62, 72, 0, 0, Math.PI * 2); g.fill();
+        g.beginPath(); g.moveTo(170, 98); g.lineTo(178, 52); g.lineTo(192, 92); g.fill(); g.beginPath(); g.moveTo(228, 92); g.lineTo(242, 52); g.lineTo(250, 98); g.fill();
+        g.fillStyle = "#E8E2D2"; g.beginPath(); g.ellipse(210, 170, 42, 46, 0, 0, Math.PI * 2); g.fill();
+        g.fillStyle = "#FFFFFF"; for (const x of [188, 232]) { g.beginPath(); g.arc(x, 118, 9, 0, Math.PI * 2); g.fill(); }
+        g.fillStyle = "#1C1A1E"; for (const x of [188, 232]) { g.beginPath(); g.arc(x, 118, 4.5, 0, Math.PI * 2); g.fill(); }
+        g.fillStyle = "#F4E6A0"; for (let k = 0; k < 14; k++) { g.globalAlpha = 0.5 + (k % 3) * 0.2; g.beginPath(); g.arc(30 + k * 28, 30 + (k * 37) % 70, 2.5, 0, Math.PI * 2); g.fill(); }
+        g.globalAlpha = 1; g.fillStyle = "rgba(255,255,255,0.9)"; g.font = `700 26px ${SERIF}`; g.textAlign = "left"; g.fillText("トトロ", 24, h - 22);
+      });
+      const frames = new T.Group(); scene.add(frames);
+      const hang = (t, w, h, pos, ry) => {
+        const fr = new T.Mesh(new T.BoxGeometry(w + 0.1, h + 0.1, 0.04), new T.MeshBasicMaterial({ color: 0x2a1c14 }));
+        const pm = new T.Mesh(new T.PlaneGeometry(w, h), flat(t)); pm.position.z = 0.025;
+        const g = new T.Group(); g.add(fr, pm); g.position.set(...pos); g.rotation.y = ry; frames.add(g); return g;
+      };
+      hang(pCastle, 1.05, 1.47, [2.5, 2.05, -4.4], 0);
+      hang(pTrain, 1.05, 1.47, [4.0, 1.95, -4.4], 0);
+      hang(pTotoro, 1.6, 0.92, [-5.84, 2.55, -0.3], Math.PI / 2);
+      // pergaminho com 旅
+      const scroll = tex(160, 420, (g, w, h) => {
+        g.fillStyle = "#EFE6D2"; g.fillRect(0, 0, w, h); g.fillStyle = "#3E5A58"; g.fillRect(0, 0, w, 30); g.fillRect(0, h - 30, w, 30);
+        g.fillStyle = "#1C1718"; g.font = `800 112px ${SERIF}`; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("旅", w / 2, h * 0.42);
+        g.fillStyle = "#C22026"; g.fillRect(w / 2 - 14, h - 92, 28, 28);
+      });
+      hang(scroll, 0.62, 1.62, [-1.75, 2.15, -4.4], 0);
+      // tela do computador: um mundo começando
+      const screen = tex(256, 160, (g, w, h) => {
+        g.fillStyle = "#101826"; g.fillRect(0, 0, w, h);
+        const px = 8; for (let x = 0; x < w; x += px) { const hh = 90 + Math.round(Math.sin(x * 0.05) * 10 + Math.sin(x * 0.13) * 6); g.fillStyle = "#3E6E4A"; g.fillRect(x, hh, px, h - hh); g.fillStyle = "#5A8C50"; g.fillRect(x, hh, px, px); }
+        g.fillStyle = "#C22026"; g.fillRect(120, 64, 6, 28); g.fillRect(146, 64, 6, 28); g.fillRect(114, 60, 44, 6);
+        g.fillStyle = "#FFD58A"; g.fillRect(30, 24, 10, 10);
+        g.fillStyle = "#E8DCC2"; g.font = `500 13px ${MONO}`; g.fillText("> criar mundo_", 12, h - 12);
+      });
+      const sm = new T.Mesh(new T.PlaneGeometry(1.0, 0.54), flat(screen)); sm.position.set(DX + 0.24, 1.5, 0.4); sm.rotation.y = -Math.PI / 2; scene.add(sm);
+
+      // Calcifer
+      const cal = new T.Group(); cal.position.set(HX, 0.32, HZ - 0.2); scene.add(cal);
+      const logs = Builder();
+      logs.add(new T.CylinderGeometry(0.09, 0.09, 0.8, 8), M(0, 0.06, 0, 0, 0.5, Math.PI / 2), "#4A3020");
+      logs.add(new T.CylinderGeometry(0.09, 0.09, 0.8, 8), M(0, 0.06, 0.05, 0, -0.5, Math.PI / 2), "#5A3B26");
+      cal.add(new T.Mesh(logs.build(), mat));
+      const flameMat = toon(env);
+      const fl = (geo, m, c) => { const b = Builder(); b.add(geo, m, c, 1); const mesh = new T.Mesh(b.build(), flameMat); cal.add(mesh); return mesh; };
+      const body = fl(new T.SphereGeometry(0.3, 18, 14), M(0, 0.36, 0, 0, 0, 0, 1, 1.15, 0.9), "#FF7A1E");
+      const core = fl(new T.SphereGeometry(0.2, 14, 10), M(0, 0.32, 0.08, 0, 0, 0, 1, 1.1, 0.9), "#FFC24A");
+      const tipF = fl(new T.ConeGeometry(0.18, 0.5, 12), M(0, 0.78, -0.02), "#FF8A2A");
+      const tongues = [[-0.24, 0.55, -0.3], [0.25, 0.58, 0.32], [-0.1, 0.7, -0.15], [0.12, 0.66, 0.2]].map(([x, y, rz]) => fl(new T.ConeGeometry(0.09, 0.32, 8), M(x, y, -0.04, 0, 0, rz), "#FF9A3A"));
+      flames.push(body, core, tipF, ...tongues);
+      const face = Builder();
+      for (const s of [-1, 1]) { face.add(new T.SphereGeometry(0.075, 12, 10), M(s * 0.1, 0.44, 0.25), "#FFFFFF", 0.7); face.add(new T.SphereGeometry(0.036, 10, 8), M(s * 0.1, 0.44, 0.315), "#1C1412", 0); }
+      face.add(new T.BoxGeometry(0.14, 0.03, 0.02), M(0, 0.3, 0.27), "#7A2A10", 0);
+      const faceMesh = new T.Mesh(face.build(), mat); cal.add(faceMesh);
+      cal.userData = { body, faceMesh };
+
+      // amuletos pendurados (como no quarto do castelo)
+      const cm = toon(env);
+      for (let k = 0; k < 7; k++) {
+        const x = -2.6 + k * 0.85 + (r() - 0.5) * 0.3, z = -3.0 + r() * 1.2, len = 0.6 + r() * 0.8;
+        const g = new T.Group(); g.position.set(x, 4.9 - Math.abs(x) * 0.3, z);
+        const b = Builder();
+        b.add(new T.CylinderGeometry(0.006, 0.006, len, 4), M(0, -len / 2, 0), "#2A2420");
+        const c = ["#8FC6E0", "#E0B85A", "#C26A8A", "#9AD08A"][k % 4];
+        b.add(new T.OctahedronGeometry(0.07 + r() * 0.04, 0), M(0, -len - 0.05, 0), c, 0.8);
+        g.add(new T.Mesh(b.build(), cm)); scene.add(g); charms.push({ g, ph: r() * 6 });
+      }
+
+      // áreas de toque
+      const hitBox = (id, size, pos) => { const m = new T.Mesh(new T.BoxGeometry(...size), new T.MeshBasicMaterial()); m.visible = false; m.position.set(...pos); m.userData.spot = id; scene.add(m); hits.push(m); };
+      hitBox("anime", [0.8, 2.1, 3.6], [SX, 1.0, -0.3]);
+      hitBox("ghibli", [2.8, 1.8, 0.4], [3.25, 2.0, -4.3]);
+      hitBox("ghibli", [0.4, 1.1, 1.8], [-5.8, 2.55, -0.3]);
+      hitBox("jogos", [1.4, 1.6, 2.8], [DX, 1.1, 0.4]);
+      hitBox("japao", [0.9, 1.9, 0.4], [-1.75, 2.15, -4.3]);
+      hitBox("calcifer", [1.3, 1.4, 1.0], [HX, 0.8, HZ]);
+
+      env.uPL.value[0].set(HX, 0.9, HZ + 0.6); env.uPLC.value[0].set("#FF8A3A"); env.uPLR.value[0] = 2.2;
+      env.uPL.value[1].set(DX - 0.4, 1.6, 0.4); env.uPLC.value[1].set("#5A82C0"); env.uPLR.value[1] = 0.9;
+      env.uPL.value[2].set(0, 2.9, -3.6); env.uPLC.value[2].set("#B88A5E"); env.uPLR.value[2] = 2.4;
+
+      tip = document.createElement("div"); tip.className = "w-label"; tip.style.opacity = "0";
+    }
+
+    function say(text) {
+      line.textContent = text; line.classList.remove("show"); void line.offsetWidth; line.classList.add("show");
+    }
+    const V = (a) => new T.Vector3(...a);
+    const IDLE = { pos: [0, 2.3, 3.9], tgt: [0, 1.8, -2.0] };
+    function bindDossier() {
+      const body = $("dossierBody");
+      body.querySelectorAll("[data-spot]").forEach((b) => b.addEventListener("click", () => select(b.dataset.spot)));
+      body.querySelectorAll("[data-go-world]").forEach((b) => b.addEventListener("click", () => { const w = b.dataset.goWorld; close(); open(w); }));
+    }
+    function select(id) {
+      selected = id;
+      const s = SPOTS[id];
+      camFrom = { pos: camera.position.clone(), tgt: camera.userData.tgt.clone() }; camK = 0;
+      say(s.say);
+      $("dossierBody").innerHTML = s.html(); bindDossier();
+      hint.textContent = "";
+      clearTimeout(sayTimer); sayTimer = setTimeout(() => { if (current === api && selected === id) showDossier(); }, 1300);
+    }
+    function deselect() {
+      selected = null; hint.textContent = api.hintText;
+      camFrom = { pos: camera.position.clone(), tgt: camera.userData.tgt.clone() }; camK = 0;
+      $("dossierBody").innerHTML = overviewHTML(); bindDossier();
+    }
+    function pick(e) {
+      const rc = canvas.getBoundingClientRect();
+      ndc.set((e.clientX - rc.left) / rc.width * 2 - 1, -((e.clientY - rc.top) / rc.height) * 2 + 1);
+      ray.setFromCamera(ndc, camera);
+      const h = ray.intersectObjects(hits)[0];
+      return h ? h.object.userData.spot : null;
+    }
+    const onMove = (e) => { if (e.target !== canvas) return; hovered = pick(e); canvas.style.cursor = hovered ? "pointer" : ""; };
+    const onClick = (e) => { if (e.target !== canvas) return; const id = pick(e); if (id) select(id); };
+
+    const api = {
+      template: "", dossierLabel: "Ver todos os gostos", select: (id) => select(id),
+      titleHTML: `<span class="w-kicker">Alto do castelo</span><span class="w-name">O quarto</span>`,
+      hintText: "Toque no que chamar a sua atenção.",
+      build,
+      start() {
+        time = 0; selected = null; hovered = null; camK = 1; camFrom = null;
+        camera.position.set(...IDLE.pos); camera.userData.tgt = V(IDLE.tgt);
+        labels.appendChild(tip);
+        canvas.addEventListener("click", onClick); canvas.addEventListener("pointermove", onMove);
+        $("worldAction").hidden = true;
+        $("dossierBody").innerHTML = overviewHTML(); bindDossier();
+        api.dossierReady = true; dossierBtn.hidden = false;
+        api.onDossierClose = () => { if (selected) deselect(); };
+        clearTimeout(sayTimer); sayTimer = setTimeout(() => { if (current === api && !selected) say("Ah, visita. Este é o quarto do Fernando."); }, 700);
+      },
+      stop() { clearTimeout(sayTimer); canvas.removeEventListener("click", onClick); canvas.removeEventListener("pointermove", onMove); canvas.style.cursor = ""; },
+      resize(w, h) { camera.aspect = w / h; camera.fov = w / h < 0.9 ? 72 : 52; camera.updateProjectionMatrix(); },
+      update(dt) {
+        time += dt;
+        // o fogo respira
+        flames.forEach((f, i) => { const k = 1 + Math.sin(time * (5 + i * 1.3) + i) * 0.06 + Math.sin(time * 11.7 + i * 2.1) * 0.03; f.scale.set(1 / Math.sqrt(k), k, 1 / Math.sqrt(k)); });
+        const talk = line.classList.contains("show") ? Math.abs(Math.sin(time * 9)) * 0.05 : 0;
+        const fm = flames[0].parent.userData.faceMesh; if (fm) fm.position.y = Math.sin(time * 2.2) * 0.015 + talk;
+        env.uPLC.value[0].setRGB(1.0, 0.54 + Math.sin(time * 7) * 0.04, 0.23).multiplyScalar(0.7 + Math.sin(time * 13) * 0.07 + (hovered === "calcifer" ? 0.2 : 0));
+        charms.forEach((c) => { c.g.rotation.z = Math.sin(time * 0.9 + c.ph) * 0.08; c.g.rotation.x = Math.cos(time * 0.7 + c.ph) * 0.05; });
+        // câmera
+        const dest = selected ? SPOTS[selected].view : IDLE;
+        const dp = V(dest.pos), dtg = V(dest.tgt);
+        if (!selected) { dp.x += pointer.sx * 0.6; dp.y -= pointer.sy * 0.25; }
+        camK = Math.min(1, camK + dt / 1.8);
+        if (camK < 1 && camFrom) { const e = ease(camK); camera.position.copy(camFrom.pos).lerp(dp, e); camera.userData.tgt.copy(camFrom.tgt).lerp(dtg, e); }
+        else { camera.position.lerp(dp, Math.min(1, dt * 3)); camera.userData.tgt.lerp(dtg, Math.min(1, dt * 3)); }
+        camera.lookAt(camera.userData.tgt);
+        // dica sobre o objeto
+        if (hovered && !selected) {
+          const s = SPOTS[hovered], hm = hits.find((h) => h.userData.spot === hovered);
+          const v = hm.position.clone().add(new T.Vector3(0, 1.0, 0)).project(camera);
+          tip.innerHTML = `<b>${esc(s.name)}</b><span>${esc(s.sub)}</span>`;
+          tip.style.transform = `translate(-50%, -100%) translate(${(v.x * 0.5 + 0.5) * W}px, ${(-v.y * 0.5 + 0.5) * H}px)`;
+          tip.style.opacity = "1";
+        } else tip.style.opacity = "0";
+      },
+      render(rr) { rr.setRenderTarget(null); rr.render(scene, camera); },
+    };
+    return api;
+  })();
+
+  const worlds = { templo, nos, torre, trem, quarto };
   window.mundos = { open, close, worlds };
 })();

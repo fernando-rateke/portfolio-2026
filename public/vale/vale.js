@@ -1811,6 +1811,7 @@
         { label: "Nós", sub: "o jogo", door: "#0B0809", run: () => openWorld("nos") },
         { label: "Hollow Depths", sub: "abre o jogo", door: "#2E7896", href: "https://game-nauy.onrender.com/" },
         { label: "Ficar no vale", sub: "visão geral", door: "#78AB5A", run: () => go(null) },
+        { label: "Subir ao quarto", sub: "os gostos, com o Calcifer", stair: true, run: () => openWorld("quarto") },
       ],
     },
     torre: {
@@ -1879,7 +1880,7 @@
     const box = $("pcActions"); box.innerHTML = ""; box.classList.toggle("doors", P.actions.some((a) => a.door));
     P.actions.forEach((a) => {
       const b = document.createElement(a.href ? "a" : "button");
-      b.className = "pc-btn" + (a.primary ? " primary" : "") + (a.door ? " door" : "");
+      b.className = "pc-btn" + (a.primary ? " primary" : "") + (a.door ? " door" : "") + (a.stair ? " stair" : "");
       if (a.door) b.style.setProperty("--door", a.door);
       b.innerHTML = a.sub ? `<b>${a.label}</b><small>${a.sub}</small>` : a.label;
       if (a.href) { b.href = a.href; b.target = "_blank"; b.rel = "noreferrer"; } else { b.type = "button"; b.addEventListener("click", a.run); }

@@ -239,6 +239,9 @@ html, body { height: 100%; overflow: hidden; background: #0c0c0c; }
 .pc-btn.door { border-radius: 8px; padding: 12px; text-align: left; }
 .pc-btn.door::before { content: ""; width: 18px; height: 18px; border-radius: 50%; background: var(--door); border: 2px solid rgba(42,36,32,0.2); flex: none; }
 .pc-btn.door b { display: block; font: 600 0.98rem/1.1 var(--f-display); letter-spacing: 0; text-transform: none; }
+.pc-actions.doors .pc-btn.stair { grid-column: 1 / -1; border-radius: 8px; padding: 12px; text-align: left; display: flex; justify-content: space-between; align-items: center; gap: 12px; border-style: dashed; }
+.pc-btn.stair b { font: 600 0.98rem/1.1 var(--f-display); letter-spacing: 0; text-transform: none; }
+.pc-btn.stair small { font: 500 0.62rem/1 var(--f-label); letter-spacing: 0.12em; color: #6C6156; }
 .pc-btn.door small { display: block; margin-top: 4px; font: 500 0.62rem/1 var(--f-label); letter-spacing: 0.12em; color: #6C6156; }
 .place-card { max-height: calc(100svh - 140px); overflow: auto; }
 .place-card.is-footer { width: min(620px, calc(100% - 32px)); }
@@ -390,6 +393,11 @@ a.q { text-decoration: none; }
 .likes ul { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px; }
 .likes li { font-size: 0.86rem; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--rule); }
 .likes li.fav { border-color: var(--red); color: var(--red); }
+.room-btn { margin-top: 18px; width: 100%; display: grid; grid-template-columns: auto 1fr; column-gap: 12px; align-items: center; text-align: left; padding: 12px 14px; border-radius: 8px; border: 1px dashed var(--red); background: transparent; color: inherit; cursor: pointer; font: inherit; }
+.room-btn span { grid-row: span 2; font: 800 1.5rem/1 var(--f-display); color: var(--red); }
+.room-btn b { font: 600 1rem/1.2 var(--f-display); }
+.room-btn small { font: 500 0.62rem/1.3 var(--f-label); letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; }
+.room-btn:hover, .room-btn:focus-visible { background: rgba(194, 32, 38, 0.06); }
 @media (max-width: 860px) {
   .perfil { padding: 0; }
   .perfil .book { grid-template-columns: minmax(0, 1fr); height: 100%; border-radius: 0; overflow-y: auto; display: block; }
@@ -409,6 +417,21 @@ a.q { text-decoration: none; }
 .mundo[data-world="trem"] .dossier .w-btn { color: #2A2420; border-color: rgba(42,36,32,0.35); background: transparent; }
 /* ---------- Torre dos Grimórios ---------- */
 .mundo[data-world="torre"] .dossier { background: #EFE4CC; color: #2B2118; }
+.mundo[data-world="quarto"] .dossier { background: #F4EBDD; color: #2A2018; }
+.mundo[data-world="quarto"] .dossier .w-btn { color: #2A2018; border-color: rgba(42,32,24,0.35); background: transparent; }
+.mundo[data-world="quarto"] .world-line { font-family: var(--f-display); font-style: normal; color: #FFE2B8; max-width: 26ch; font-size: clamp(1.2rem, 0.9rem + 1.6vw, 2.1rem); }
+.q-list { list-style: none; margin: 10px 0 14px; padding: 0; display: grid; gap: 10px; }
+.q-list li { border-top: 1px solid rgba(127,127,127,0.35); padding-top: 10px; }
+.q-list b { display: block; font: 600 1.1rem/1.25 var(--f-display); }
+.q-list small { display: block; font-size: 0.86rem; opacity: 0.8; margin-top: 2px; }
+.q-list li.fav b::after { content: "favorito"; margin-left: 10px; font: 600 0.58rem/1 var(--f-label); letter-spacing: 0.14em; text-transform: uppercase; color: #C22026; border: 1px solid #C22026; padding: 3px 5px; border-radius: 3px; vertical-align: middle; }
+.q-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.q-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0; }
+.q-card { display: grid; gap: 4px; text-align: left; padding: 14px; border-radius: 8px; border: 1px solid rgba(42,32,24,0.25); background: rgba(255,255,255,0.45); color: inherit; cursor: pointer; font: inherit; }
+.q-card:hover, .q-card:focus-visible { border-color: #C22026; }
+.q-card b { font: 800 1.6rem/1 var(--f-display); color: #C22026; }
+.q-card span { font: 600 1.02rem/1.2 var(--f-display); }
+.q-card small { font: 500 0.62rem/1 var(--f-label); letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; }
 .mundo[data-world="torre"] .dossier .w-btn { color: #2B2118; border-color: rgba(43,33,24,0.35); background: transparent; }
 .g-k { font: 800 1em/1 var(--f-display); color: #8E2B22; margin-right: 12px; }
 .g-count { font: 500 0.72rem/1 var(--f-label); letter-spacing: 0.14em; text-transform: uppercase; color: #8E2B22; margin: 4px 0 0; }
@@ -715,6 +738,7 @@ a.q { text-decoration: none; }
           <section><h3><span>日</span>Japão</h3><ul><li>Cultura</li><li>Estética</li><li>Kanji e caligrafia</li></ul></section>
           <section><h3><span>遊</span>Jogos</h3><ul><li>Jogar</li><li>Criar mundos</li></ul></section>
         </div>
+        <button class="room-btn" type="button" data-world="quarto"><span aria-hidden="true">火</span><b>Visitar o quarto</b><small>no alto do castelo, com o Calcifer</small></button>
       </div>
     </div>
   </div>

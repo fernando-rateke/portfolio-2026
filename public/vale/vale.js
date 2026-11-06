@@ -1080,6 +1080,44 @@
   // Orelha
   const ear = (B, x, y, z, s = 1) => B.add(new T.SphereGeometry(1, 10, 8), M(x, y, z, 0, 0, 0, 0.016 * s, 0.032 * s, 0.022 * s), SKIN_D);
 
+  // Tronco de gente não é redondo: achata frente e costas e alarga os ombros
+  function ovalize(geo, fn) {
+    const p = geo.attributes.position;
+    for (let i = 0; i < p.count; i++) { const y = p.getY(i); const [sx, sz] = fn(y); p.setX(i, p.getX(i) * sx); p.setZ(i, p.getZ(i) * sz); }
+    geo.computeVertexNormals(); return geo;
+  }
+  const bump = (y, c, w) => Math.exp(-((y - c) / w) * ((y - c) / w));
+  // Cabelo como uma massa só: cobre o crânio inteiro e cai em mechas recortadas
+  function hairShell(B, o) {
+    const [cx, cy, cz] = o.center, R = o.R, SU = 72, SV = 22;
+    const pos = [], vv = [], idx = [];
+    const lenAt = (th) => {
+      const back = (1 + Math.sin(th)) / 2;              // 0 na testa (−z), 1 na nuca (+z)
+      const side = Math.abs(Math.cos(th));
+      let L = o.front + (o.back - o.front) * Math.pow(back, 1.4) + o.side * side * (1 - back) * 0.9;
+      const w = Math.abs(Math.sin(th * o.locks * 0.5 + o.seed));
+      return L * (1 + o.spike * Math.pow(w, 2.2));
+    };
+    for (let i = 0; i <= SU; i++) {
+      const th = i / SU * Math.PI * 2, drape = lenAt(th) * R, arc = R * Math.PI / 2, A = arc + drape;
+      for (let j = 0; j <= SV; j++) {
+        const d = j / SV * A; let x, y, z;
+        const groove = 1 + 0.035 * Math.sin(th * o.locks) * Math.min(1, d / arc);
+        if (d <= arc) { const ph = d / R, rr = R * o.puff * groove * (1 + 0.05 * Math.sin(ph)); x = Math.sin(ph) * Math.cos(th) * rr; y = Math.cos(ph) * R * o.puffY; z = Math.sin(ph) * Math.sin(th) * rr * o.depth; }
+        else { const k = (d - arc) / Math.max(drape, 1e-4), rr = R * o.puff * groove * (1 - o.tipIn * k * k) * (1 - 0.06 * k); x = Math.cos(th) * rr; y = -(d - arc); z = Math.sin(th) * rr * o.depth; }
+        pos.push(cx + x, cy + y, cz + z); vv.push(d / A);
+      }
+    }
+    for (let i = 0; i < SU; i++) for (let j = 0; j < SV; j++) { const a = i * (SV + 1) + j, b = a + SV + 1; idx.push(a, b, a + 1, b, b + 1, a + 1); }
+    const g = new T.BufferGeometry();
+    g.setAttribute("position", new T.Float32BufferAttribute(pos, 3)); g.setAttribute("aT", new T.Float32BufferAttribute(vv, 1)); g.setIndex(idx); g.computeVertexNormals();
+    B.add(g, M(), (x, y, z, t) => {
+      const th = Math.atan2(z - cz, x - cx), lock = Math.floor((th + Math.PI) / (Math.PI * 2) * o.locks);
+      if (t > o.shine[0] && t < o.shine[1] && Math.sin(th * 3.0 + 1.2) > -0.2) return o.light;
+      return lock % 3 === 0 ? o.dark : o.base;
+    }, 0, (j, p, gg) => Math.pow(Math.max(0, gg.attributes.aT.getX(j) - 0.45) / 0.55, 1.5) * o.sway);
+  }
+
   /* Howl: casaco em losangos, cabelo loiro repicado */
   {
     const g = new T.Group();
@@ -1100,12 +1138,17 @@
     });
     const torso = new T.Group(); g.add(torso);
     const tb = Builder();
-    const coat = folds(lathe([[0.292, 0.46], [0.27, 0.66], [0.215, 0.92], [0.168, 1.04], [0.172, 1.24], [0.205, 1.39], [0.15, 1.5], [0.07, 1.545]], 64, 0, Math.PI * 2, 7),
-      11, (y) => 0.055 * smooth(1.0, 0.46, y), 0.7);
-    tb.add(coat, M(), harlequin, 0, (j, p) => smooth(0.98, 0.46, p.getY(j)) * 1.3);
-    tb.add(new T.TorusGeometry(0.29, 0.014, 6, 48), M(0, 0.47, 0, Math.PI / 2, 0, 0), GOLD, 0, 1.3);
-    // abertura das costas: duas abas que se separam com o vento
-    tb.add(new T.BoxGeometry(0.012, 0.36, 0.006), M(0, 0.66, 0.268, -0.15, 0, 0), SEAM, 0, (j, p) => smooth(0.18, -0.18, p.getY(j)) * 1.3);
+    // quadril e cintura da calça
+    tb.add(ovalize(lathe([[0.15, 0.86], [0.158, 0.93], [0.15, 1.0]], 32), () => [1.05, 0.78]), M(), PANTS);
+    // jaqueta curta até o quadril, ombros largos, costas retas
+    const coat = ovalize(folds(lathe([[0.205, 0.8], [0.19, 0.9], [0.172, 1.0], [0.176, 1.12], [0.192, 1.25], [0.205, 1.36], [0.19, 1.43], [0.13, 1.5], [0.07, 1.545]], 64, 0, Math.PI * 2, 6),
+      9, (y) => 0.03 * smooth(1.05, 0.8, y), 0.7), (y) => [1 + 0.16 * bump(y, 1.38, 0.09), 0.74 + 0.04 * smooth(1.1, 0.85, y)]);
+    tb.add(coat, M(), harlequin, 0, (j, p) => smooth(0.95, 0.8, p.getY(j)) * 0.8);
+    tb.add(ovalize(new T.TorusGeometry(0.2, 0.012, 6, 48), () => [1, 1]), M(0, 0.81, 0, Math.PI / 2, 0, 0, 1, 0.75, 1), GOLD, 0, 0.8);
+    // costura central das costas
+    tb.add(new T.BoxGeometry(0.01, 0.5, 0.006), M(0, 1.08, 0.132), SEAM);
+    // omoplatas e deltoides dão forma de gente às costas
+    for (const sx of [-1, 1]) { tb.add(new T.SphereGeometry(1, 16, 12), M(sx * 0.08, 1.3, 0.118, 0, 0, 0, 0.085, 0.1, 0.02), harlequin); tb.add(new T.SphereGeometry(1, 14, 10), M(sx * 0.215, 1.39, 0, 0, 0, 0, 0.07, 0.065, 0.075), harlequin); }
     // gola alta
     tb.add(lathe([[0.075, 1.5], [0.088, 1.56], [0.095, 1.6]], 28), M(), "#4F6E96");
     tb.add(new T.TorusGeometry(0.072, 0.02, 8, 20), M(0, 1.53, 0, Math.PI / 2, 0, 0), "#F4F0E6");
@@ -1113,9 +1156,9 @@
     tb.add(new T.BoxGeometry(0.11, 0.07, 0.03), M(0.2, 0.86, -0.06, 0, -0.6, -0.15), PINK);
     part(torso, tb.build());
     const armsH = [-1, 1].map((sx) => {
-      const sh = joint(torso, sx * 0.208, 1.43, 0);
+      const sh = joint(torso, sx * 0.232, 1.39, 0);
       const b = Builder();
-      b.add(folds(lathe([[0.05, -0.52], [0.06, -0.4], [0.06, -0.15], [0.064, 0.0], [0.05, 0.05]], 20, 0, Math.PI * 2, 3), 6, (y) => 0.06), M(), harlequin);
+      b.add(folds(lathe([[0.045, -0.54], [0.052, -0.42], [0.056, -0.27], [0.062, -0.12], [0.064, 0.0], [0.05, 0.05]], 20, 0, Math.PI * 2, 3), 6, (y) => 0.05), M(), harlequin);
       b.add(new T.TorusGeometry(0.052, 0.012, 6, 18), M(0, -0.5, 0, Math.PI / 2, 0, 0), GOLD);
       if (sx < 0) hand(b, M(0, -0.56, 0), SKIN, sx);
       part(sh, b.build()); return sh;
@@ -1125,20 +1168,23 @@
     hb.add(new T.CylinderGeometry(0.044, 0.05, 0.12, 12), M(0, -0.02, 0), SKIN);
     hb.add(new T.SphereGeometry(0.11, 22, 16), M(0, 0.125, 0, 0, 0, 0, 0.96, 1.1, 1.02), SKIN);
     ear(hb, -0.103, 0.11, 0.0); ear(hb, 0.103, 0.11, 0.0);
-    hb.add(new T.SphereGeometry(0.114, 22, 14, 0, Math.PI * 2, 0, Math.PI * 0.55), M(0, 0.135, 0.008, 0, 0, 0, 1.0, 1.08, 1.06), HAIR_D);
     part(head, hb.build());
     const hair = Builder();
-    hairdo(hair, {
-      seed: 8, center: [0, 0.135, 0.008], R: 0.116, w: 0.032, th: 0.012, sway: 0.9, puff: 0.12,
-      base: HAIR, dark: HAIR_D, light: HAIR_L, shine: [0.16, 0.27],
+    hairShell(hair, { center: [0, 0.135, 0.004], R: 0.118, puff: 1.1, puffY: 1.12, depth: 1.06, front: 0.12, side: 0.55, back: 0.8, locks: 12, spike: 0.55, tipIn: 0.05, seed: 0.4,
+      base: HAIR, dark: HAIR_D, light: HAIR_L, shine: [0.18, 0.3], sway: 0.9 });
+    part(head, hair.build());
+    // mechas repicadas por cima da massa, soltas na nuca e nas laterais
+    const flicks = Builder();
+    hairdo(flicks, {
+      seed: 8, center: [0, 0.135, 0.004], R: 0.128, w: 0.03, th: 0.012, sway: 1.0, puff: 0.08, depth: 1.06,
+      base: HAIR, dark: HAIR_D, light: HAIR_L, shine: [0.1, 0.22],
       groups: [
-        { n: 30, a: [0.02, 0.98], root: [0.05, 0.4], end: 1.78, len: [0.07, 0.15], out: 0.035, curl: 0.3 },     // nuca e costas
-        { n: 10, a: [-0.12, 0.12], root: [0.1, 0.4], end: 1.62, len: [0.06, 0.12], out: 0.03, curl: 0.2 },      // lateral direita
-        { n: 10, a: [0.88, 1.12], root: [0.1, 0.4], end: 1.62, len: [0.06, 0.12], out: 0.03, curl: 0.2 },       // lateral esquerda
-        { n: 12, a: [1.15, 1.85], root: [0.05, 0.3], end: 1.18, len: [0.02, 0.05], out: 0.02, curl: 0.5, shine: false }, // franja
+        { n: 16, a: [0.05, 0.95], root: [0.7, 1.15], end: 1.95, len: [0.05, 0.1], out: 0.045, curl: 0.15 },
+        { n: 6, a: [-0.1, 0.1], root: [0.8, 1.2], end: 1.8, len: [0.04, 0.08], out: 0.04, curl: 0.2 },
+        { n: 6, a: [0.9, 1.1], root: [0.8, 1.2], end: 1.8, len: [0.04, 0.08], out: 0.04, curl: 0.2 },
       ],
     });
-    bare(head, hair.build());
+    bare(head, flicks.build());
     g.position.set(HILL.x + 0.62, 0, HILL.z - 0.1);
     g.rotation.y = 0.08;
     scene.add(g);
@@ -1159,17 +1205,17 @@
     const DRESS = "#5D7FB4", DRESS_D = "#4B6A9C", HAIR = "#E9ECF1", HAIR_D = "#BDC5D1", HAIR_L = "#FFFFFF", WHITE = "#F4F1E8";
     const lb = Builder();
     for (const sx of [-1, 1]) {
-      lb.add(new T.CapsuleGeometry(0.043, 0.22, 4, 8), M(sx * 0.07, 0.17, 0), "#6B5545");
-      lb.add(new T.CapsuleGeometry(0.05, 0.08, 4, 10), M(sx * 0.07, 0.04, -0.035, -Math.PI / 2, 0, 0), "#4A3426");
+      lb.add(new T.CapsuleGeometry(0.036, 0.1, 4, 8), M(sx * 0.07, 0.11, 0), "#6B5545");
+      lb.add(new T.CapsuleGeometry(0.046, 0.08, 4, 10), M(sx * 0.07, 0.04, -0.035, -Math.PI / 2, 0, 0), "#4A3426");
     }
     part(g, lb.build());
     const torso = new T.Group(); g.add(torso);
     const tb = Builder();
-    const dress = folds(lathe([[0.29, 0.27], [0.255, 0.5], [0.18, 0.82], [0.12, 0.97], [0.13, 1.12], [0.155, 1.23], [0.1, 1.31], [0.05, 1.33]], 56, 0, Math.PI * 2, 5),
-      14, (y) => 0.065 * smooth(0.95, 0.27, y), 1.3);
-    tb.add(dress, M(), (x, y) => (y < 0.33 ? DRESS_D : DRESS), 0, (j, p) => smooth(0.85, 0.27, p.getY(j)) * 1.2);
-    // mangas bufantes
-    for (const sx of [-1, 1]) tb.add(new T.SphereGeometry(1, 14, 10), M(sx * 0.16, 1.22, 0, 0, 0, 0, 0.058, 0.05, 0.06), DRESS);
+    const dress = ovalize(folds(lathe([[0.27, 0.12], [0.25, 0.3], [0.215, 0.55], [0.165, 0.8], [0.118, 0.96], [0.122, 1.03], [0.142, 1.12], [0.155, 1.2], [0.16, 1.25], [0.12, 1.3], [0.05, 1.33]], 56, 0, Math.PI * 2, 5),
+      14, (y) => 0.06 * smooth(0.95, 0.12, y), 1.3), (y) => [1 + 0.14 * bump(y, 1.24, 0.07), 0.9 - 0.16 * smooth(0.9, 1.1, y)]);
+    tb.add(dress, M(), (x, y) => (y < 0.18 ? DRESS_D : DRESS), 0, (j, p) => smooth(0.85, 0.12, p.getY(j)) * 1.1);
+    // omoplatas e mangas bufantes
+    for (const sx of [-1, 1]) { tb.add(new T.SphereGeometry(1, 14, 10), M(sx * 0.062, 1.17, 0.1, 0, 0, 0, 0.065, 0.08, 0.016), DRESS); tb.add(new T.SphereGeometry(1, 14, 10), M(sx * 0.185, 1.22, 0, 0, 0, 0, 0.066, 0.058, 0.066), DRESS); }
     tb.add(new T.TorusGeometry(0.075, 0.026, 8, 20), M(0, 1.31, 0, Math.PI / 2, 0, 0), WHITE);
     // alças do avental cruzando as costas, laço e fitas
     tb.add(new T.BoxGeometry(0.022, 0.32, 0.008), M(-0.045, 1.13, 0.132, -0.12, 0, 0.32), WHITE);
@@ -1182,7 +1228,7 @@
     tb.add(new T.BoxGeometry(0.022, 0.26, 0.008), M(0.035, 0.85, 0.13, 0, 0, -0.12), WHITE, 0, 1.0);
     part(torso, tb.build());
     const armsS = [-1, 1].map((sx) => {
-      const sh = joint(torso, sx * 0.165, 1.21, 0);
+      const sh = joint(torso, sx * 0.19, 1.21, 0);
       const b = Builder();
       b.add(folds(lathe([[0.04, -0.44], [0.047, -0.3], [0.05, -0.1], [0.05, 0.02]], 18, 0, Math.PI * 2, 3), 5, (y) => 0.06), M(), DRESS);
       b.add(new T.TorusGeometry(0.042, 0.01, 6, 16), M(0, -0.44, 0, Math.PI / 2, 0, 0), WHITE);
@@ -1194,20 +1240,11 @@
     hb.add(new T.CylinderGeometry(0.037, 0.042, 0.08, 12), M(0, -0.01, 0), SKIN);
     hb.add(new T.SphereGeometry(0.098, 22, 16), M(0, 0.105, 0, 0, 0, 0, 0.96, 1.08, 1.02), SKIN);
     ear(hb, -0.093, 0.095, 0.0, 0.85); ear(hb, 0.093, 0.095, 0.0, 0.85);
-    hb.add(new T.SphereGeometry(0.103, 22, 14, 0, Math.PI * 2, 0, Math.PI * 0.55), M(0, 0.118, 0.006, 0, 0, 0, 1.0, 1.06, 1.06), HAIR_D);
     part(head, hb.build());
     const hair = Builder();
-    hairdo(hair, {
-      seed: 15, center: [0, 0.118, 0.006], R: 0.104, w: 0.03, th: 0.012, sway: 0.6, puff: 0.2,
-      base: HAIR, dark: HAIR_D, light: HAIR_L, shine: [0.14, 0.26],
-      groups: [
-        { n: 34, a: [0.0, 1.0], root: [0.04, 0.4], end: 1.95, len: [0.02, 0.045], out: 0.012, curl: 1.6 },    // chanel, pontas para dentro
-        { n: 10, a: [-0.18, 0.05], root: [0.1, 0.45], end: 1.75, len: [0.02, 0.04], out: 0.01, curl: 1.4 },
-        { n: 10, a: [0.95, 1.18], root: [0.1, 0.45], end: 1.75, len: [0.02, 0.04], out: 0.01, curl: 1.4 },
-        { n: 12, a: [1.2, 1.8], root: [0.05, 0.3], end: 1.12, len: [0.01, 0.03], out: 0.01, curl: 0.6, shine: false },
-      ],
-    });
-    bare(head, hair.build());
+    hairShell(hair, { center: [0, 0.118, 0.004], R: 0.104, puff: 1.16, puffY: 1.1, depth: 1.08, front: 0.1, side: 0.95, back: 1.0, locks: 22, spike: 0.06, tipIn: 0.32, seed: 1.1,
+      base: HAIR, dark: HAIR_D, light: HAIR_L, shine: [0.16, 0.28], sway: 0.6 });
+    part(head, hair.build());
     g.position.set(HILL.x - 0.02, 0, HILL.z + 0.05);
     g.rotation.y = -0.06;
     scene.add(g);
@@ -1965,7 +2002,8 @@
   }
   if ($("introSkip")) $("introSkip").addEventListener("click", skipFilm);
   // seek: posiciona a entrada num corte e num ponto do corte (usado para revisar quadros)
-  window.vale = { star: (k) => meteors.launch(k || "vale"), playIntro, go: (id) => { if (!explore.active) startExplore(); go(id); }, seek(i, frac = 0.5) { if (!intro.active) playIntro(); startShot(i); intro.t = intro.shots[i].d * frac; } };
+  let peekCam = null;
+  window.vale = { peek: (p, t) => { peekCam = p ? { p: new T.Vector3(p[0], p[1] + hillTop, p[2]), t: new T.Vector3(t[0], t[1] + hillTop, t[2]) } : null; }, star: (k) => meteors.launch(k || "vale"), playIntro, go: (id) => { if (!explore.active) startExplore(); go(id); }, seek(i, frac = 0.5) { if (!intro.active) playIntro(); startShot(i); intro.t = intro.shots[i].d * frac; } };
 
 
   /* ------------------------------------------------------------------ */
@@ -2297,7 +2335,7 @@
         explore.coverK = Math.min(1, explore.coverK + tdt / 2.4);
         const e = ease(explore.coverK);
         place(explore.coverFrom.pos.clone().lerp(p, e), explore.coverFrom.tgt.clone().lerp(BASE.target, e));
-      } else place(p, BASE.target);
+      } else if (peekCam) place(peekCam.p, peekCam.t); else place(p, BASE.target);
     }
     render();
     if (running) requestAnimationFrame(frame);

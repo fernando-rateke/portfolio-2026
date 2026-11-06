@@ -813,6 +813,105 @@
     scene.add(train);
   }
 
+
+  /* ------------------------------------------------------------------ */
+  /* Estação do fim da linha: o rodapé do vale (contato, redes, créditos) */
+  /* ------------------------------------------------------------------ */
+  const STATION = new T.Vector3(72, 0, TRACK_Z + 3.4);
+  const signRedraws = [];
+  {
+    const gy = Math.max(heightAt(STATION.x, STATION.z), 0.2);
+    STATION.y = gy;
+    const B = Builder();
+    const WOOD = "#7A5A3E", WOOD_D = "#5A4030", ROOF = "#3E5A58", STONE = "#8D8790";
+    // plataforma de tábuas com borda de pedra
+    B.add(new T.BoxGeometry(15, 0.7, 3.4, 30, 1, 1), M(0, 0.2, 0), (x) => (Math.floor((x + 7.5) / 0.5) % 2 ? WOOD : "#83634A"));
+    B.add(new T.BoxGeometry(15.2, 0.16, 0.34), M(0, 0.6, -1.62), STONE);
+    for (let k = 0; k < 3; k++) B.add(new T.BoxGeometry(0.8, 0.22, 2.4), M(7.9 + k * 0.75, 0.42 - k * 0.22, 0.2), STONE); // degraus
+    for (const x of [-7, -3.5, 0, 3.5, 7]) for (const z of [-1.4, 1.4]) B.add(new T.CylinderGeometry(0.12, 0.14, 1.2, 6), M(x, -0.3, z), WOOD_D);
+    // abrigo: quatro postes, parede do fundo e telhado inclinado
+    for (const x of [-3.2, 3.2]) for (const z of [-1.2, 1.1]) B.add(new T.CylinderGeometry(0.11, 0.13, 3.0, 8), M(x, 2.0, z), WOOD_D);
+    B.add(new T.BoxGeometry(6.6, 2.2, 0.14), M(0, 1.7, -1.22), "#C9B48E");
+    B.add(new T.BoxGeometry(6.8, 0.16, 0.2), M(0, 0.68, -1.2), WOOD_D);
+    B.add(new T.BoxGeometry(6.8, 0.16, 0.2), M(0, 2.84, -1.2), WOOD_D);
+    B.add(new T.BoxGeometry(7.6, 0.18, 3.4), M(0, 3.62, -0.05, 0.16, 0, 0), ROOF);
+    B.add(new T.BoxGeometry(7.7, 0.12, 0.2), M(0, 3.38, 1.62, 0.16, 0, 0), "#2E4442");
+    // banco
+    B.add(new T.BoxGeometry(3.2, 0.12, 0.62), M(1.2, 1.08, -0.6), WOOD);
+    B.add(new T.BoxGeometry(3.2, 0.5, 0.08), M(1.2, 1.4, -0.92, -0.12, 0, 0), WOOD);
+    for (const x of [-0.2, 2.6]) B.add(new T.BoxGeometry(0.1, 0.52, 0.5), M(x, 0.8, -0.6), WOOD_D);
+    // poste com lanterna de chama alaranjada
+    B.add(new T.CylinderGeometry(0.08, 0.1, 4.2, 8), M(5.8, 2.6, 0.9), "#2E2A2C");
+    B.add(new T.BoxGeometry(0.8, 0.08, 0.08), M(5.5, 4.55, 0.9), "#2E2A2C");
+    B.add(new T.BoxGeometry(0.42, 0.56, 0.42), M(5.2, 4.2, 0.9), "#FFB45A", 1);
+    B.add(new T.ConeGeometry(0.34, 0.26, 4), M(5.2, 4.6, 0.9, 0, Math.PI / 4, 0), "#2E2A2C");
+    // placa da estação sobre dois postes
+    for (const x of [-6.4, -3.9]) B.add(new T.CylinderGeometry(0.07, 0.08, 2.9, 6), M(x, 1.95, 1.1), WOOD_D);
+    // quadro de avisos (moldura)
+    B.add(new T.BoxGeometry(3.0, 1.75, 0.08), M(-1.6, 1.8, -1.12), WOOD_D);
+    const sm = new T.Mesh(B.build(), objMat); sm.position.set(STATION.x, gy, STATION.z); scene.add(sm);
+    const sl = new T.Mesh(sm.geometry, castleLine); sl.position.copy(sm.position); scene.add(sl);
+
+    const signMat = (canvasEl) => {
+      const tex = new T.CanvasTexture(canvasEl); tex.anisotropy = 4;
+      return { tex, mat: new T.ShaderMaterial({
+        uniforms: Object.assign({}, U, { map: { value: tex } }),
+        vertexShader: `varying vec2 vUv; varying vec3 vW; void main(){ vUv=uv; vec4 w=modelMatrix*vec4(position,1.0); vW=w.xyz; gl_Position=projectionMatrix*viewMatrix*w; }`,
+        fragmentShader: `${COMMON} uniform sampler2D map; varying vec2 vUv; varying vec3 vW;
+          void main(){ vec3 c=texture2D(map,vUv).rgb; c=mix(c,nightTint(c)*1.25+lanternGlow(vW)*0.6,uNight); gl_FragColor=vec4(applyFog(c,vW),1.0); }`,
+      }) };
+    };
+    const SERIF = "'Shippori Mincho', 'Hiragino Mincho ProN', serif", MONO = "'JetBrains Mono', ui-monospace, monospace";
+    // placa no estilo das estações japonesas
+    {
+      const c = document.createElement("canvas"); c.width = 640; c.height = 200;
+      const draw = () => {
+        const g = c.getContext("2d");
+        g.fillStyle = "#F4EFE4"; g.fillRect(0, 0, 640, 200);
+        g.fillStyle = "#1F3E4A"; g.fillRect(0, 150, 640, 50);
+        g.fillStyle = "#C22026"; g.fillRect(0, 142, 640, 8);
+        g.fillStyle = "#1C1718"; g.textAlign = "center"; g.textBaseline = "middle";
+        g.font = `800 82px ${SERIF}`; g.fillText("終点", 320, 62);
+        g.font = `600 22px ${MONO}`; g.fillText("FIM DA LINHA · ラテケ", 320, 120);
+        g.fillStyle = "#F4EFE4"; g.font = `600 20px ${MONO}`;
+        g.textAlign = "left"; g.fillText("← 塔 TORRE", 18, 176);
+        g.textAlign = "right"; g.fillText("門 TORII →", 622, 176);
+      };
+      draw();
+      const { tex, mat } = signMat(c);
+      const m = new T.Mesh(new T.PlaneGeometry(3.0, 0.94), mat);
+      m.position.set(STATION.x - 5.15, gy + 3.0, STATION.z + 1.16); scene.add(m);
+      signRedraws.push(() => { draw(); tex.needsUpdate = true; });
+    }
+    // quadro de avisos: o que um rodapé teria, pregado na parede
+    {
+      const c = document.createElement("canvas"); c.width = 600; c.height = 350;
+      const draw = () => {
+        const g = c.getContext("2d");
+        g.fillStyle = "#3A2C22"; g.fillRect(0, 0, 600, 350);
+        const pin = (x, y, w, h, rot, bg) => { g.save(); g.translate(x + w / 2, y + h / 2); g.rotate(rot); g.fillStyle = bg; g.fillRect(-w / 2, -h / 2, w, h); g.fillStyle = "#C22026"; g.beginPath(); g.arc(0, -h / 2 + 10, 5, 0, Math.PI * 2); g.fill(); g.restore(); };
+        const mail = (document.getElementById("perfilMail") || {}).textContent || "fernando_rateke-n@estudante.sesisenai.org.br";
+        pin(22, 20, 330, 150, -0.03, "#F4EFE4");
+        g.fillStyle = "#C22026"; g.font = `600 15px ${MONO}`; g.textAlign = "left"; g.textBaseline = "alphabetic";
+        g.fillText("連絡 · CONTATO", 42, 60);
+        g.fillStyle = "#1C1718"; g.font = `600 28px ${SERIF}`; g.fillText("Fernando Rateke", 42, 98);
+        g.font = `500 12.5px ${MONO}`; g.fillText(mail, 42, 130);
+        g.fillText("github.com/fernando-rateke", 42, 152);
+        pin(372, 26, 200, 140, 0.04, "#EADFC6");
+        g.fillStyle = "#C22026"; g.font = `600 15px ${MONO}`; g.fillText("履歴 · CURRÍCULO", 390, 66);
+        g.fillStyle = "#1C1718"; g.font = `600 20px ${SERIF}`; g.fillText("LinkedIn", 390, 102); g.fillText("Instagram", 390, 130);
+        pin(40, 196, 520, 120, 0.015, "#F4EFE4");
+        g.fillStyle = "#1C1718"; g.font = `600 22px ${SERIF}`; g.fillText("A jornada é o que dá forma ao mundo.", 62, 248);
+        g.font = `500 13px ${MONO}`; g.fillStyle = "#5A4E44"; g.fillText("© 2026 FERNANDO RATEKE · FEITO À MÃO COM THREE.JS", 62, 284);
+      };
+      draw();
+      const { tex, mat } = signMat(c);
+      const m = new T.Mesh(new T.PlaneGeometry(2.8, 1.63), mat);
+      m.position.set(STATION.x - 1.6, gy + 1.8, STATION.z - 1.07); scene.add(m);
+      signRedraws.push(() => { draw(); tex.needsUpdate = true; });
+    }
+  }
+
   // Percurso: uma elipse pelo fundo do vale, sem sumir e reaparecer
   const CASTLE_PATH = { cx: 10, cz: -190, rx: 120, rz: 34, w: 0.0055, a0: 2.3 };
   function castleAt(t) {
@@ -1728,6 +1827,14 @@
       view: () => { const tp = train.position; return { pos: new T.Vector3(tp.x - 15, tp.y + 6.5, TRACK_Z + 21), tgt: new T.Vector3(tp.x - 3, tp.y + 0.6, TRACK_Z) }; },
       actions: [{ label: "Embarcar", primary: true, run: () => openWorld("trem") }],
     },
+    estacao: {
+      k: "駅", name: "Estação do fim da linha", kicker: "Fim da linha",
+      text: "Toda viagem termina numa estação. Aqui ficam o contato, as redes, o currículo e os créditos.",
+      anchor: () => new T.Vector3(STATION.x, STATION.y + 6.4, STATION.z),
+      view: () => { const wide = innerWidth > 900; return wide ? { pos: new T.Vector3(STATION.x - 7.5, STATION.y + 4.4, STATION.z + 14), tgt: new T.Vector3(STATION.x - 6.2, STATION.y + 1.6, STATION.z - 1) } : { pos: new T.Vector3(STATION.x - 1, STATION.y + 6.5, STATION.z + 17), tgt: new T.Vector3(STATION.x - 1, STATION.y - 2.5, STATION.z - 1) }; },
+      footer: true,
+      actions: [{ label: "Voltar à capa", primary: true, run: () => exitExplore(true) }, { label: "Ver o filme de novo", run: () => playIntro(true) }],
+    },
   };
   const explore = { active: false, place: null, from: null, k: 1, markers: {}, coverFrom: null, coverK: 1 };
   if (exploreEl) {
@@ -1766,6 +1873,9 @@
     $("pcKicker").textContent = P.kicker;
     $("pcTitle").innerHTML = `<span aria-hidden="true">${P.k}</span>${P.name}`;
     $("pcText").textContent = P.text;
+    $("placeCard").classList.toggle("is-footer", !!P.footer);
+    const foot = $("pcFooter");
+    if (foot) { foot.hidden = !P.footer; if (P.footer) fillFooter(foot); }
     const box = $("pcActions"); box.innerHTML = ""; box.classList.toggle("doors", P.actions.some((a) => a.door));
     P.actions.forEach((a) => {
       const b = document.createElement(a.href ? "a" : "button");
@@ -1776,6 +1886,31 @@
       box.appendChild(b);
     });
     card.hidden = false;
+  }
+  // o rodapé reaproveita os dados do perfil (fonte única)
+  function fillFooter(foot) {
+    if (foot.dataset.ready) return;
+    const mailEl = document.getElementById("perfilMail");
+    const mail = mailEl ? mailEl.textContent.trim() : "";
+    const links = [...document.querySelectorAll(".perfil .links a")];
+    const places = [["castelo", "城", "Castelo"], ["torre", "塔", "Torre"], ["trem", "汽", "Trem"], ["torii", "門", "Torii"]];
+    foot.innerHTML = `
+      <div class="pf-col"><h3>連絡 · Contato</h3>${mail ? `<p class="pf-mail">${mail}</p><button type="button" class="pc-btn" data-copy>Copiar e-mail</button>` : ""}</div>
+      <div class="pf-col"><h3>網 · Redes</h3><ul class="pf-links"></ul></div>
+      <div class="pf-col"><h3>地図 · Lugares</h3><ul class="pf-places"></ul></div>
+      <p class="pf-credits">© 2026 Fernando Rateke. Vale feito à mão com Three.js. Homenagem ao Studio Ghibli: personagens, castelo e músicas pertencem aos seus autores.</p>`;
+    const ul = foot.querySelector(".pf-links");
+    links.forEach((a) => { const li = document.createElement("li"); const c = a.cloneNode(true); c.className = ""; li.appendChild(c); ul.appendChild(li); });
+    const pl = foot.querySelector(".pf-places");
+    places.forEach(([id, k, n]) => { const li = document.createElement("li"); const b = document.createElement("button"); b.type = "button"; b.innerHTML = `<b aria-hidden="true">${k}</b>${n}`; b.addEventListener("click", () => go(id)); li.appendChild(b); pl.appendChild(li); });
+    const li = document.createElement("li"); const pb = document.createElement("button"); pb.type = "button"; pb.innerHTML = `<b aria-hidden="true">印</b>Perfil`;
+    pb.addEventListener("click", () => { const f = document.getElementById("sealFab"); if (f) f.click(); }); li.appendChild(pb); pl.appendChild(li);
+    const cp = foot.querySelector("[data-copy]");
+    if (cp) cp.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(mail); cp.textContent = "E-mail copiado"; } catch (e) { cp.textContent = mail; }
+      setTimeout(() => { cp.textContent = "Copiar e-mail"; }, 2200);
+    });
+    foot.dataset.ready = "1";
   }
   function go(id) {
     explore.from = camState(); explore.k = 0; explore.place = id;
@@ -1812,7 +1947,7 @@
       el.style.transform = `translate(-50%, -100%) translate(${((p.x * 0.5 + 0.5) * W2).toFixed(1)}px, ${((-p.y * 0.5 + 0.5) * H2).toFixed(1)}px)`;
       el.style.opacity = vis ? "1" : "0"; el.tabIndex = vis ? 0 : -1;
     });
-    const cpos = { torii: [TORII.x, TORII.z], castelo: [castle.position.x, castle.position.z], torre: [TOWER.x, TOWER.z], trem: [Math.max(-128, Math.min(128, train.position.x)), TRACK_Z] };
+    const cpos = { torii: [TORII.x, TORII.z], castelo: [castle.position.x, castle.position.z], torre: [TOWER.x, TOWER.z], trem: [Math.max(-128, Math.min(128, train.position.x)), TRACK_Z], estacao: [STATION.x, STATION.z] };
     Object.entries(cpos).forEach(([id, [x, z]]) => {
       const d = explore.markers[id + "-mm"]; d.style.left = `${(explore.mm.mx(x) / 200 * 100).toFixed(2)}%`; d.style.top = `${(explore.mm.mz(z) / 130 * 100).toFixed(2)}%`;
     });
@@ -1858,6 +1993,7 @@
   function start() {
     resize();
     if (plaque) plaque.userData.redraw();
+    signRedraws.forEach((f) => f());
     captureFrames();
     U.uNight.value = nightTarget;
     if (reduce) { updateWorld(clock); place(BASE.pos, BASE.target); render(); }

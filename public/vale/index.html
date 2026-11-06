@@ -240,6 +240,19 @@ html, body { height: 100%; overflow: hidden; background: #0c0c0c; }
 .pc-btn.door::before { content: ""; width: 18px; height: 18px; border-radius: 50%; background: var(--door); border: 2px solid rgba(42,36,32,0.2); flex: none; }
 .pc-btn.door b { display: block; font: 600 0.98rem/1.1 var(--f-display); letter-spacing: 0; text-transform: none; }
 .pc-btn.door small { display: block; margin-top: 4px; font: 500 0.62rem/1 var(--f-label); letter-spacing: 0.12em; color: #6C6156; }
+.place-card { max-height: calc(100svh - 140px); overflow: auto; }
+.place-card.is-footer { width: min(620px, calc(100% - 32px)); }
+@media (min-width: 901px) { .place-card.is-footer { left: calc(max(24px, env(safe-area-inset-left, 0px)) + 76px); transform: none; bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); } }
+.pc-footer[hidden] { display: none; }
+.pc-footer { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 18px; padding: 14px 0 16px; margin-bottom: 14px; border-top: 1px solid rgba(42,36,32,0.18); border-bottom: 1px solid rgba(42,36,32,0.18); }
+.pc-footer h3 { margin: 0 0 8px; font: 600 0.62rem/1.3 var(--f-label); letter-spacing: 0.14em; text-transform: uppercase; color: #C22026; }
+.pc-footer ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.pc-footer a, .pc-footer li button { font: 500 0.94rem/1.3 var(--f-display); color: #2A2420; text-decoration: none; background: none; border: 0; padding: 0; cursor: pointer; display: inline-flex; gap: 8px; align-items: baseline; }
+.pc-footer a:hover, .pc-footer li button:hover { color: #C22026; }
+.pc-footer li button b { color: #C22026; font-weight: 800; }
+.pc-footer .pf-mail { font: 500 0.78rem/1.5 var(--f-label); word-break: break-all; margin: 0 0 10px; color: #2A2420; }
+.pc-footer .pf-credits { grid-column: 1 / -1; margin: 0; font-size: 0.78rem; line-height: 1.5; color: #6C6156; }
+@media (max-width: 720px) { .pc-footer { grid-template-columns: 1fr 1fr; } .pc-footer .pf-col:first-child { grid-column: 1 / -1; } }
 .mm-wrap { position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); width: 220px;
   background: rgba(244, 238, 225, 0.92); color: #2A2420; border-radius: 8px; padding: 10px; box-shadow: 0 12px 40px rgba(0,0,0,0.3); }
 .mm-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font: 500 0.62rem/1 var(--f-label); letter-spacing: 0.14em; text-transform: uppercase; }
@@ -330,8 +343,22 @@ html.perfil-on, html.perfil-on body { overflow: hidden; }
 .inv small { font: 500 0.62rem/1 var(--f-label); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
 .ach { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 16px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--rule); position: relative; }
 .ach img { width: 112px; height: 84px; object-fit: cover; border-radius: 4px; display: block; }
+.perfil .forms { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.perfil .form { position: relative; width: 44px; height: 44px; padding: 0; border: 1px solid var(--rule); border-radius: 4px; background: #fff; cursor: pointer; overflow: hidden; opacity: 0.62; transition: opacity .2s, transform .2s, border-color .2s; }
+.perfil .form img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.perfil .form span { position: absolute; right: 2px; bottom: 2px; font: 600 0.62rem/1 var(--f-display); color: #fff; background: var(--red); padding: 2px 3px; border-radius: 2px; }
+.perfil .form:hover, .perfil .form:focus-visible { opacity: 1; transform: translateY(-2px); }
+.perfil .form[aria-pressed="true"] { opacity: 1; border-color: var(--red); }
+.perfil .form-cap { margin: 6px 0 0; font: 600 0.62rem/1.4 var(--f-label); letter-spacing: 0.14em; text-transform: uppercase; color: var(--red); }
+.perfil .portrait img { transition: opacity .25s; }
+.d-photos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0 6px; }
+.d-photos figure { margin: 0; }
+.d-photos img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 4px; }
+.d-photos figcaption { font-size: 0.74rem; opacity: 0.75; margin-top: 4px; line-height: 1.4; }
+.d-award { border-left: 3px solid #C22026; padding: 4px 0 4px 12px; margin: 14px 0 6px; }
 .ach h3 { font: 600 1.08rem/1.25 var(--f-display); margin: 0 0 4px; }
 .ach p { margin: 0; font-size: 0.88rem; line-height: 1.55; max-width: none; }
+.ach > div { padding-right: 104px; }
 .ach .stamp { position: absolute; right: 0; top: 12px; font: 700 0.62rem/1 var(--f-label); letter-spacing: 0.16em; text-transform: uppercase; color: var(--red);
   border: 2px solid var(--red); border-radius: 4px; padding: 5px 7px; transform: rotate(-6deg); opacity: 0.8; }
 .quests { display: grid; gap: 10px; }
@@ -358,6 +385,7 @@ a.q { text-decoration: none; }
   .perfil .id { grid-template-columns: 110px minmax(0, 1fr); gap: 16px; }
   .ach { grid-template-columns: 96px minmax(0, 1fr); }
   .ach img { width: 96px; height: 72px; }
+  .ach > div { padding-right: 0; }
   .ach .stamp { position: static; display: inline-block; margin-top: 8px; transform: rotate(-4deg); }
 }
 @media (prefers-reduced-motion: reduce) { .perfil .book { transition: none; } }
@@ -528,7 +556,8 @@ a.q { text-decoration: none; }
       <span class="w-kicker" id="pcKicker"></span>
       <h2 id="pcTitle"></h2>
       <p id="pcText"></p>
-      <div class="pc-actions" id="pcActions"></div>
+      <div class="pc-footer" id="pcFooter" hidden></div>
+         <div class="pc-actions" id="pcActions"></div>
     </div>
     <nav class="mm-wrap" aria-label="Mapa do vale">
       <div class="mm-head"><span>Mapa do vale</span><button type="button" id="overviewBtn">Visão geral</button></div>
@@ -571,10 +600,17 @@ a.q { text-decoration: none; }
     <div class="page page-l">
       <span class="kick">Ficha do personagem</span>
       <div class="id">
-        <div class="portrait"><img src="/vale/perfil/retrato.jpg" alt="Fernando Rateke" width="640" height="640"></div>
+        <div class="portrait"><img id="portraitImg" src="/vale/perfil/retrato.jpg" alt="Fernando Rateke hoje, no espelho do carro" width="640" height="640"></div>
         <div>
           <h2 class="name" id="perfilNome">Fernando Rateke Neto</h2>
           <span class="name-jp">フェルナンド・ラテケ</span>
+          <div class="forms" role="group" aria-label="Retratos: hoje e na infância">
+            <button class="form" type="button" aria-pressed="true" data-src="/vale/perfil/retrato.jpg" data-alt="Fernando Rateke hoje, no espelho do carro" data-cap="Hoje"><img src="/vale/perfil/retrato.jpg" alt="" width="44" height="44"><span>今</span></button>
+            <button class="form" type="button" aria-pressed="false" data-src="/vale/perfil/hoje-2.jpg" data-alt="Fernando Rateke hoje, diante de um painel grafitado" data-cap="Hoje"><img src="/vale/perfil/hoje-2.jpg" alt="" width="44" height="44" loading="lazy"><span>今</span></button>
+            <button class="form" type="button" aria-pressed="false" data-src="/vale/perfil/infancia-1.jpg" data-alt="Fernando Rateke na infância, de camisa listrada" data-cap="Na infância"><img src="/vale/perfil/infancia-1.jpg" alt="" width="44" height="44" loading="lazy"><span>昔</span></button>
+            <button class="form" type="button" aria-pressed="false" data-src="/vale/perfil/infancia-2.jpg" data-alt="Fernando Rateke na infância, sentado no avião" data-cap="Na infância"><img src="/vale/perfil/infancia-2.jpg" alt="" width="44" height="44" loading="lazy"><span>昔</span></button>
+          </div>
+          <p class="form-cap" id="formCap" aria-live="polite">Hoje</p>
         </div>
       </div>
       <dl class="stats">
@@ -586,7 +622,7 @@ a.q { text-decoration: none; }
       </dl>
       <div class="bio">
         <p>Desde cedo tive afinidade com as exatas, principalmente matemática, biologia e programação. Gosto de desafios de lógica, de interfaces que se explicam sozinhas e de soluções que funcionam bem.</p>
-        <p>Além do código, levo comigo a pesquisa científica: participei da Iniciação Científica e apresentei projeto na FEBRACE, em São Paulo.</p>
+        <p>Além do código, levo comigo a pesquisa científica: pela Iniciação Científica apresentei projetos na FEBRACE, em São Paulo, e na DUAL International Fair, e conquistei o 2º lugar na XI FEBIC com o AcousticBuild.</p>
       </div>
       <div class="quest"><b>Missão principal</b><p>Entrar na faculdade de tecnologia e construir software que melhore a vida das pessoas.</p></div>
       <div class="links">
@@ -615,7 +651,7 @@ a.q { text-decoration: none; }
         <div class="attr"><div class="k">理</div><div><h3>Dados e sistemas</h3><p class="tech">Python · FastAPI · SQL · UML · IoT</p>
           <ul><li>Hackathon de Cibersegurança <em>modelagem de dados e camadas IoT</em></li><li>Banco de dados relacional <em>esquemas e proteção contra injeção SQL</em></li><li>Semáforo e LEDs <em>Arduino e lógica de controle</em></li></ul></div></div>
         <div class="attr"><div class="k">探</div><div><h3>Pesquisa e produto</h3><p class="tech">Iniciação Científica · Prototipação · Narrativa</p>
-          <ul><li>Iniciação Científica <em>pesquisa e metodologia</em></li><li>FEBRACE <em>comunicação científica em São Paulo</em></li><li>Nós <em>roteiro, direção e trailer renderizado por código</em></li></ul></div></div>
+          <ul><li>Iniciação Científica <em>pesquisa e metodologia</em></li><li>FEBIC <em>2º lugar com o AcousticBuild</em></li><li>FEBRACE <em>comunicação científica em São Paulo</em></li><li>Nós <em>roteiro, direção e trailer renderizado por código</em></li></ul></div></div>
       </div>
 
       <div role="tabpanel" id="pn-inv" aria-labelledby="tab-inv" hidden>
@@ -639,8 +675,11 @@ a.q { text-decoration: none; }
       </div>
 
       <div role="tabpanel" id="pn-ach" aria-labelledby="tab-ach" hidden>
-        <div class="ach"><img src="/vale/perfil/febrace.jpg" alt="Equipe com a bandeira do SESI SENAI na FEBRACE"><div><h3>FEBRACE</h3><p>Apresentação e defesa de projeto na Feira Brasileira de Ciências e Engenharia, em São Paulo.</p></div><span class="stamp">Conquistado</span></div>
-        <div class="ach"><img src="/vale/perfil/iniciacao-cientifica.jpg" alt="Registro da Iniciação Científica"><div><h3>Iniciação Científica</h3><p>Pesquisa no Grupo 5 de Iniciação Científica, com participação em evento científico nacional em São Paulo.</p></div><span class="stamp">Conquistado</span></div>
+        <div class="ach"><img src="/vale/perfil/febic.jpg" alt="Equipe no palco da XI FEBIC recebendo o 2º lugar" loading="lazy"><div><h3>2º lugar na XI FEBIC</h3><p>Feira Brasileira de Iniciação Científica 2026, em Joinville. Segundo lugar em Ciências Exatas e da Terra, no Ensino Médio, com o AcousticBuild.</p></div><span class="stamp">2º lugar</span></div>
+        <div class="ach"><img src="/vale/perfil/febic-equipe.jpg" alt="Equipe do AcousticBuild com o certificado, o troféu e as medalhas da FEBIC" loading="lazy"><div><h3>Credencial para a FoCiTeCu 2027</h3><p>O resultado na FEBIC rendeu credencial para a feira internacional FoCiTeCu 2027, na Argentina.</p></div><span class="stamp">Credenciado</span></div>
+        <div class="ach"><img src="/vale/perfil/dual.jpg" alt="Equipe da Iniciação Científica com a bandeira na DUAL International Fair" loading="lazy"><div><h3>DUAL International Fair 2026</h3><p>Apresentação de projeto numa feira científica internacional, com a equipe da Iniciação Científica.</p></div><span class="stamp">Conquistado</span></div>
+        <div class="ach"><img src="/vale/perfil/febrace.jpg" alt="Equipe com a bandeira do SESI SENAI na FEBRACE" loading="lazy"><div><h3>FEBRACE</h3><p>Apresentação e defesa de projeto na Feira Brasileira de Ciências e Engenharia, em São Paulo.</p></div><span class="stamp">Conquistado</span></div>
+        <div class="ach"><img src="/vale/perfil/ic-2026.jpg" alt="Seleção da Iniciação Científica 2026" loading="lazy" style="object-position: 50% 70%"><div><h3>Iniciação Científica</h3><p>Pesquisador na seleção da Iniciação Científica 2026, depois de passar pelo antigo Grupo 5.</p></div><span class="stamp">Conquistado</span></div>
         <div class="ach"><img src="/vale/perfil/red1000.jpg" alt="Nota 960 na plataforma Red1000"><div><h3>Redação 960</h3><p>960 de 1000 numa redação dissertativo-argumentativa na plataforma Red1000, com nota máxima em quatro das cinco competências.</p></div><span class="stamp">Conquistado</span></div>
       </div>
 
@@ -717,6 +756,11 @@ a.q { text-decoration: none; }
   <h3>Como foi feito</h3>
   <div class="chips"><span>React</span><span>Python</span><span>FastAPI</span><span>SQLite</span><span>SQLAlchemy</span><span>JWT</span><span>Bcrypt</span></div>
   <p class="d-note">Projeto full-stack do curso técnico, integrado à Iniciação Científica de Matemática.</p>
+  <div class="d-award"><h3>2º lugar na XI FEBIC</h3><p>Na Feira Brasileira de Iniciação Científica 2026, em Joinville, o AcousticBuild ficou em segundo lugar em Ciências Exatas e da Terra, no Ensino Médio, e ganhou credencial para a FoCiTeCu 2027, na Argentina.</p></div>
+  <div class="d-photos">
+    <figure><img src="/vale/trem/febic-estande.jpg" alt="Estande do AcousticBuild na XI FEBIC, com a equipe" loading="lazy"><figcaption>O estande na feira</figcaption></figure>
+    <figure><img src="/vale/trem/febic-palco.jpg" alt="Equipe no palco recebendo o 2º lugar" loading="lazy"><figcaption>O 2º lugar no palco</figcaption></figure>
+  </div>
   <h3>Ver mais</h3>
   <ul class="d-links">
     <li><a href="https://drive.google.com/file/d/1kC-pFY_rgKTiVAEkhKXlEsYN6WP5YFrU/view" target="_blank" rel="noreferrer">Assistir ao vídeo do projeto</a></li>
@@ -867,6 +911,14 @@ a.q { text-decoration: none; }
     });
   });
   // copiar e-mail
+  // retratos: hoje e na infância
+  const pImg = document.getElementById("portraitImg"), fCap = document.getElementById("formCap");
+  document.querySelectorAll(".perfil .form").forEach((b) => b.addEventListener("click", () => {
+    document.querySelectorAll(".perfil .form").forEach((o) => o.setAttribute("aria-pressed", String(o === b)));
+    pImg.style.opacity = "0";
+    setTimeout(() => { pImg.src = b.dataset.src; pImg.alt = b.dataset.alt; pImg.style.opacity = "1"; }, 180);
+    fCap.textContent = b.dataset.cap;
+  }));
   document.getElementById("perfilCopy").addEventListener("click", (e) => {
     const btn = e.currentTarget, text = document.getElementById("perfilMail").textContent;
     const done = () => { btn.textContent = "Copiado"; setTimeout(() => { btn.textContent = "Copiar e-mail"; }, 1800); };

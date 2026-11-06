@@ -1010,14 +1010,24 @@
     const camera = new T.PerspectiveCamera(58, 1, 0.1, 1500);
     const env = envUniforms({ sun: [-0.35, 0.32, -0.88], sunCol: "#FFC59A", amb: "#4A3A44", fog: "#E9B9A2", fogDen: 0.006, glowCol: "#FFD49A" });
     const BASE = window.VALE_BASE || "";
+    // lembranças em ordem: a viagem começa na infância e segue pelas feiras
     const MEMS = [
+      { src: "trem/infancia-aviao.jpg", tag: "Infância", t: "Uma das primeiras viagens", d: "Pequeno, sentado na janela do avião. A jornada começa bem antes de a gente perceber." },
       { src: "trem/florianopolis.jpg", tag: "Florianópolis", t: "Fernando Rateke", d: "Registro pessoal e início do percurso como desenvolvedor e pesquisador." },
-      { src: "trem/aeroporto.jpg", tag: "Florianópolis", t: "Aeroporto de Florianópolis", d: "Embarque da delegação no Aeroporto Internacional de Florianópolis, rumo à FEBRACE." },
+      { src: "trem/grupo-5.jpg", tag: "Iniciação Científica", t: "Antigo Grupo 5", d: "O antigo Grupo 5 de Iniciação Científica: pesquisa e desenvolvimento em equipe." },
+      { src: "trem/ic-2026.jpg", tag: "Iniciação Científica", t: "Seleção da IC 2026", d: "A nova seleção da Iniciação Científica, reunida diante da bandeira do grupo." },
+      { src: "trem/tias.jpg", tag: "Aeroporto de Florianópolis", t: "Com as minhas tias", d: "Antes do embarque para a FEBRACE, com as minhas tias, a quem devo um agradecimento enorme por tudo." },
+      { src: "trem/aeroporto.jpg", tag: "Aeroporto de Florianópolis", t: "A bandeira na mala", d: "Com a bandeira da Iniciação Científica no Aeroporto de Florianópolis, antes de seguir para São Paulo." },
+      { src: "trem/febrace-2026.jpg", tag: "Aeroporto de Florianópolis", t: "Rumo à FEBRACE 2026", d: "A equipe reunida antes do voo para São Paulo." },
       { src: "trem/sao-paulo.jpg", tag: "São Paulo", t: "São Paulo", d: "A roda-gigante e a imersão durante a participação num evento científico e acadêmico nacional." },
       { src: "trem/febrace.jpg", tag: "FEBRACE · São Paulo", t: "FEBRACE", d: "Apresentação e defesa de projeto na Feira Brasileira de Ciências e Engenharia, em São Paulo." },
-      { src: "trem/grupo-5.jpg", tag: "Iniciação Científica", t: "Antigo Grupo 5", d: "O antigo Grupo 5 de Iniciação Científica: pesquisa e desenvolvimento em equipe." },
+      { src: "trem/dual.jpg", tag: "Feira internacional", t: "DUAL International Fair 2026", d: "A equipe da Iniciação Científica na DUAL International Fair 2026." },
+      { src: "trem/febic-estande.jpg", tag: "XI FEBIC · Joinville", t: "O estande do AcousticBuild", d: "O AcousticBuild apresentado na XI Feira Brasileira de Iniciação Científica, em Joinville." },
+      { src: "trem/febic-equipe.jpg", tag: "XI FEBIC · Joinville", t: "Certificado e troféu", d: "A equipe do AcousticBuild com o certificado, o troféu e as medalhas da FEBIC." },
+      { src: "trem/febic-palco.jpg", tag: "XI FEBIC · Joinville", t: "2º lugar", d: "Segundo lugar em Ciências Exatas e da Terra, no Ensino Médio, com credencial para a FoCiTeCu 2027, na Argentina." },
+      { src: "trem/febic-amigos.jpg", tag: "XI FEBIC · Joinville", t: "Fim de feira", d: "Medalhas, troféus e amigos de outro país no encerramento da XI FEBIC." },
     ];
-    const L = 112, SPEED0 = 3.6;
+    const L = Math.max(112, MEMS.length * 10), SPEED0 = 3.6;
     let time = 0, travel = 0, speed = SPEED0, target = SPEED0, movers = [], photos = [], hovered = null, open = null, audio = null, clackTimer = null, rumble = null;
     const ray = new T.Raycaster(), ndc = new T.Vector2();
     const wrap = (x) => ((x % L) + L) % L - L / 2;

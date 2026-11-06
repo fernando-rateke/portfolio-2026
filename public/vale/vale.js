@@ -1779,7 +1779,7 @@
     requestAnimationFrame(resize);
     window.dispatchEvent(new CustomEvent("vale:intro", { detail: "end" }));
     try { sessionStorage.setItem("vale-entrou", "1"); } catch (e) { /* sem armazenamento */ }
-    if (exploreEl) startExplore();
+    if (exploreEl) startExplore(true);
     else if (reduce) { place(BASE.pos, BASE.target); render(); }
   }
   if ($("introSkip")) $("introSkip").addEventListener("click", skipFilm);
@@ -1803,15 +1803,12 @@
     },
     castelo: {
       k: "城", name: "Castelo do Howl", kicker: "Os projetos",
-      text: "A porta de quatro cores leva a um mundo diferente em cada cor.",
+      text: "Dentro, o Calcifer cuida da lareira e a porta de quatro cores leva aos projetos.",
       anchor: () => castle.position.clone().add(new T.Vector3(0, 15, 0)),
       view: () => { const cp = castle.position; return { pos: new T.Vector3(cp.x - 30, cp.y + 5, cp.z + 36), tgt: new T.Vector3(cp.x, cp.y + 7, cp.z) }; },
       actions: [
-        { label: "Templo do Sino", sub: "AcousticBuild", door: "#C22026", run: () => openWorld("templo") },
-        { label: "Nós", sub: "o jogo", door: "#0B0809", run: () => openWorld("nos") },
-        { label: "Hollow Depths", sub: "abre o jogo", door: "#2E7896", href: "https://game-nauy.onrender.com/" },
-        { label: "Ficar no vale", sub: "visão geral", door: "#78AB5A", run: () => go(null) },
-        { label: "Subir ao quarto", sub: "os gostos, com o Calcifer", stair: true, run: () => openWorld("quarto") },
+        { label: "Entrar no castelo", primary: true, run: () => openWorld("castelo") },
+        { label: "Subir ao quarto", run: () => openWorld("quarto") },
       ],
     },
     torre: {
@@ -1863,9 +1860,143 @@
     });
     explore.mm = { mx, mz };
     $("overviewBtn").addEventListener("click", () => go(null));
+    if ($("mapBtn")) $("mapBtn").addEventListener("click", () => { if (vmap) vmap.open(); });
     $("placeClose").addEventListener("click", () => go(null));
     addEventListener("keydown", (e) => { if (e.key === "Escape" && explore.active && explore.place && !document.documentElement.classList.contains("perfil-on") && $("world").hidden) go(null); });
   }
+  /* ---------------- Mapa ilustrado do vale (aparece no fim do filme) ---------------- */
+  const vmap = (() => {
+    if (!exploreEl) return null;
+    const X = (x) => 40 + (x + 150) / 300 * 920, Y = (z) => 140 + (z + 235) / 270 * 450;
+    const SX = (r) => r / 300 * 920, SZ = (r) => r / 270 * 450;
+    const f = (n) => n.toFixed(1);
+    const rr = mulberry(404);
+    // montanhas do horizonte
+    let mts = "", snow = "";
+    for (let k = 0; k < 9; k++) {
+      const cx = 20 + k * 122 + (rr() - 0.5) * 40, h = 60 + rr() * 50, w = 110 + rr() * 60, base = 140;
+      mts += `<path d="M${f(cx - w)} ${base} L${f(cx)} ${f(base - h)} L${f(cx + w)} ${base}Z"/>`;
+      snow += `<path d="M${f(cx - w * 0.22)} ${f(base - h * 0.78)} L${f(cx)} ${f(base - h)} L${f(cx + w * 0.22)} ${f(base - h * 0.78)} L${f(cx + w * 0.08)} ${f(base - h * 0.72)} L${f(cx)} ${f(base - h * 0.8)} L${f(cx - w * 0.1)} ${f(base - h * 0.7)}Z"/>`;
+    }
+    // água tirada do próprio terreno: círculos sobrepostos viram margens orgânicas
+    let shore = "", water = "", deep = "";
+    for (let x = -150; x <= 150; x += 3) for (let z = -232; z <= 34; z += 3) {
+      const h = heightAt(x, z);
+      if (h < 0.02) {
+        const cx = f(X(x)), cy = f(Y(z));
+        shore += `<circle cx="${cx}" cy="${cy}" r="7.4"/>`; water += `<circle cx="${cx}" cy="${cy}" r="5.6"/>`;
+        if (h < -0.9) deep += `<circle cx="${cx}" cy="${cy}" r="4.6"/>`;
+      }
+    }
+    const lakes = `<g fill="#34587E" filter="url(#vmGoo)">${shore}</g><g fill="#1D3553" filter="url(#vmGoo)">${water}</g><g fill="#18304C" filter="url(#vmGoo)">${deep}</g>`;
+    const ripples = LAKES.map((L) => `<ellipse cx="${f(X(L.x))}" cy="${f(Y(L.z))}" rx="${f(SX(L.rx) * 0.62)}" ry="${f(SZ(L.rz) * 0.55)}"/>`).join("");
+    // árvores em tufos
+    const treeSpots = [[-38, -58], [-44, -62], [-33, -66], [-92, -84], [-86, -90], [52, -62], [60, -58], [57, -70], [118, -104], [26, -150], [-20, -200], [-120, -60], [-130, 0], [130, -10], [100, 10], [-60, 20]];
+    const trees = treeSpots.map(([x, z]) => { let s = ""; for (let k = 0; k < 4; k++) s += `<circle cx="${f(X(x) + (rr() - 0.5) * 16)}" cy="${f(Y(z) + (rr() - 0.5) * 10)}" r="${f(4 + rr() * 4)}"/>`; return s; }).join("");
+    // trilho pontilhado e rota do castelo
+    const P = CASTLE_PATH;
+    const svg = `<svg class="vm-svg" viewBox="0 0 1000 620" role="img" aria-label="Mapa ilustrado do vale">
+      <defs>
+        <pattern id="vmDots" width="14" height="14" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1" fill="rgba(255,255,255,0.06)"/></pattern>
+        <radialGradient id="vmVig" cx="50%" cy="55%" r="70%"><stop offset="60%" stop-color="rgba(0,0,0,0)"/><stop offset="100%" stop-color="rgba(0,0,0,0.45)"/></radialGradient>
+        <filter id="vmGlow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4"/></filter>
+        <filter id="vmGoo"><feGaussianBlur stdDeviation="3.2"/><feColorMatrix values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -10"/></filter>
+      </defs>
+      <rect width="1000" height="620" fill="#1A2420"/>
+      <rect y="0" width="1000" height="140" fill="#16202E"/>
+      <g fill="#223047">${mts}</g><g fill="#A9B8CC" opacity="0.9">${snow}</g>
+      <rect width="1000" height="620" fill="url(#vmDots)"/>
+      <path d="M0 140 Q250 128 500 138 T1000 134 L1000 146 L0 146Z" fill="#1E2B24"/>
+      <g class="vm-lakes">${lakes}</g>
+      <g fill="none" stroke="rgba(160,200,240,0.13)" stroke-width="1" stroke-dasharray="6 7">${ripples}</g>
+      <ellipse cx="${f(X(62))}" cy="${f(Y(-100))}" rx="20" ry="10" fill="#2C4A32" stroke="#3E6446" stroke-width="1.4"/>
+      <ellipse cx="${f(X(6))}" cy="${f(Y(18))}" rx="70" ry="20" fill="#24382A"/>
+      <g fill="#2B4632">${trees}</g>
+      <ellipse class="vm-route" cx="${f(X(P.cx))}" cy="${f(Y(P.cz))}" rx="${f(SX(P.rx))}" ry="${f(SZ(P.rz))}" fill="none" stroke="#D8CDB4" stroke-opacity="0.55" stroke-width="1.6" stroke-dasharray="7 6"/>
+      <line x1="${f(X(-136))}" x2="${f(X(136))}" y1="${f(Y(TRACK_Z))}" y2="${f(Y(TRACK_Z))}" stroke="#EFE6D2" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="0.1 7" opacity="0.85"/>
+      <path d="M${f(X(TORII.x))} ${f(Y(TORII.z) + 8)} Q ${f(X(8))} ${f(Y(6))} ${f(X(HILL.x))} ${f(Y(HILL.z))}" fill="none" stroke="#B9A98A" stroke-width="1.4" stroke-dasharray="2 5" opacity="0.7"/>
+
+      <g class="vm-place" data-place="torre" tabindex="0" role="button" aria-label="Torre dos Grimórios: as matérias" transform="translate(${f(X(62))} ${f(Y(-100))})">
+        <circle class="vm-halo" r="46" cy="-26"/>
+        <rect x="-8" y="-52" width="16" height="48" fill="#0E0B10"/><path d="M-13 -52 L0 -74 L13 -52Z" fill="#0E0B10"/>
+        <rect x="-3" y="-42" width="6" height="8" fill="#FFB65A"/><rect x="-3" y="-24" width="6" height="7" fill="#FFB65A" opacity="0.7"/>
+        <g class="vm-label" transform="translate(0 -96)"><text class="vm-n" text-anchor="middle">TORRE DOS GRIMÓRIOS</text><text class="vm-s" y="15" text-anchor="middle">塔 · MATÉRIAS</text></g>
+      </g>
+      <g class="vm-place" data-place="torii" tabindex="0" role="button" aria-label="Torii: a entrada" transform="translate(${f(X(TORII.x))} ${f(Y(TORII.z))})">
+        <circle class="vm-halo" r="44" cy="-8"/>
+        <path d="M-34 -30 Q0 -38 34 -30 L31 -25 Q0 -31 -31 -25Z" fill="#1C1414"/>
+        <rect x="-27" y="-24" width="54" height="5" fill="#C22026"/><rect x="-27" y="-14" width="54" height="4" fill="#C22026"/>
+        <rect x="-21" y="-24" width="6" height="34" fill="#C22026"/><rect x="15" y="-24" width="6" height="34" fill="#C22026"/>
+        <rect x="-4" y="-21" width="8" height="7" fill="#1C1414"/>
+        <g fill="#8C8A90"><rect x="-44" y="-6" width="6" height="14"/><rect x="38" y="-6" width="6" height="14"/></g><g fill="#FFB65A"><rect x="-43" y="-4" width="4" height="4"/><rect x="39" y="-4" width="4" height="4"/></g>
+        <g class="vm-label" transform="translate(0 30)"><text class="vm-n" text-anchor="middle">TORII · ENTRADA</text><text class="vm-s" y="15" text-anchor="middle">門 · VOLTAR À CAPA</text></g>
+      </g>
+      <g class="vm-place" data-place="estacao" tabindex="0" role="button" aria-label="Estação do fim da linha: contato e créditos" transform="translate(${f(X(STATION.x))} ${f(Y(STATION.z))})">
+        <circle class="vm-halo" r="40" cy="-8"/>
+        <rect x="-26" y="-3" width="52" height="6" fill="#6B4A32"/><path d="M-20 -20 L20 -20 L24 -14 L-24 -14Z" fill="#3E5A58"/>
+        <rect x="-18" y="-14" width="3" height="11" fill="#3A2618"/><rect x="15" y="-14" width="3" height="11" fill="#3A2618"/>
+        <rect x="-10" y="-12" width="20" height="8" fill="#F4EFE4"/><text x="0" y="-5.5" class="vm-tiny" text-anchor="middle">駅</text>
+        <g class="vm-label" transform="translate(0 28)"><text class="vm-n" text-anchor="middle">ESTAÇÃO</text><text class="vm-s" y="15" text-anchor="middle">駅 · CONTATO</text></g>
+      </g>
+      <g class="vm-place vm-moving" data-place="trem" tabindex="0" role="button" aria-label="Trem sobre a água: a galeria" id="vmTrain">
+        <circle class="vm-halo" r="44"/>
+        <g transform="translate(-48 -9)"><rect width="30" height="16" rx="3" fill="#C22026"/><rect x="33" width="30" height="16" rx="3" fill="#C22026"/><rect x="66" width="30" height="16" rx="3" fill="#C22026"/>
+        <g fill="#FFD58A"><rect x="5" y="4" width="6" height="5"/><rect x="17" y="4" width="6" height="5"/><rect x="38" y="4" width="6" height="5"/><rect x="50" y="4" width="6" height="5"/><rect x="71" y="4" width="6" height="5"/><rect x="83" y="4" width="6" height="5"/></g></g>
+        <g class="vm-label" transform="translate(0 30)"><text class="vm-n" text-anchor="middle">TREM · GALERIA</text><text class="vm-s" y="15" text-anchor="middle">汽 · LEMBRANÇAS</text></g>
+      </g>
+      <g class="vm-place vm-moving" data-place="castelo" tabindex="0" role="button" aria-label="Castelo do Howl: os projetos" id="vmCastle">
+        <circle class="vm-halo" r="50" cy="-14"/>
+        <g stroke="#0E0B10" stroke-width="3" stroke-linecap="round"><path d="M-14 6 L-19 30"/><path d="M-4 8 L-6 32"/><path d="M6 8 L8 32"/><path d="M15 6 L21 30"/></g>
+        <ellipse cx="0" cy="-6" rx="34" ry="20" fill="#0E0B10"/>
+        <rect x="-16" y="-38" width="7" height="14" fill="#0E0B10"/><rect x="10" y="-36" width="6" height="12" fill="#0E0B10"/>
+        <rect x="-6" y="-34" width="14" height="10" fill="#C22026"/><circle cx="-6" cy="-2" r="3.2" fill="#FFB65A"/>
+        <g class="vm-label" transform="translate(0 -66)"><text class="vm-n" text-anchor="middle">CASTELO DO HOWL · PROJETOS</text><text class="vm-s" y="15" text-anchor="middle">城 · AS QUATRO PORTAS</text></g>
+      </g>
+      <g class="vm-place vm-moving vm-room" data-world="quarto" tabindex="0" role="button" aria-label="Quarto no topo do castelo: os gostos" id="vmRoom">
+        <g class="vm-label"><text class="vm-s vm-up" text-anchor="middle">火 QUARTO NO TOPO · GOSTOS</text></g>
+      </g>
+
+      <g transform="translate(64 540)" class="vm-compass"><circle r="22" fill="none" stroke="#EFE6D2" stroke-width="1.4" opacity="0.8"/><path d="M0 -30 L6 0 L0 30 L-6 0Z" fill="#EFE6D2" opacity="0.9"/><path d="M0 -30 L6 0 L-6 0Z" fill="#C22026"/><text y="-38" text-anchor="middle" class="vm-k">北</text></g>
+      <g transform="translate(870 590)"><line x1="0" x2="80" stroke="#EFE6D2" stroke-width="1.4" opacity="0.7"/><line x1="0" x2="0" y1="-4" y2="4" stroke="#EFE6D2"/><line x1="80" x2="80" y1="-4" y2="4" stroke="#EFE6D2"/><text x="40" y="-8" text-anchor="middle" class="vm-s">一 里</text></g>
+      <rect width="1000" height="620" fill="url(#vmVig)" pointer-events="none"/>
+    </svg>`;
+    const el = document.createElement("div");
+    el.className = "vmap"; el.id = "valeMap"; el.hidden = true;
+    el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "false"); el.setAttribute("aria-label", "Mapa do vale");
+    el.innerHTML = `<div class="vm-panel">
+        <div class="vm-head"><span class="vm-title"><b aria-hidden="true">地図</b>Mapa do vale</span><span class="vm-hint">Toque num lugar para viajar até ele</span><button type="button" class="vm-close" aria-label="Fechar o mapa">&times;</button></div>
+        ${svg}
+        <div class="vm-foot"><button type="button" class="vm-explore">Explorar o vale em 3D</button></div>
+      </div>`;
+    exploreEl.appendChild(el);
+    const trainG = el.querySelector("#vmTrain"), castleG = el.querySelector("#vmCastle"), room = el.querySelector("#vmRoom");
+    const close = () => { el.classList.remove("open"); setTimeout(() => { if (!el.classList.contains("open")) el.hidden = true; }, 380); exploreEl.classList.remove("map-on"); };
+    const openM = () => { el.hidden = false; requestAnimationFrame(() => el.classList.add("open")); exploreEl.classList.add("map-on"); showCard(null); };
+    el.querySelectorAll(".vm-place").forEach((g) => {
+      const act = () => {
+        close();
+        if (g.dataset.world) { if (window.mundos) window.mundos.open(g.dataset.world); return; }
+        go(g.dataset.place);
+      };
+      g.addEventListener("click", act);
+      g.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); act(); } });
+    });
+    el.querySelector(".vm-close").addEventListener("click", close);
+    el.querySelector(".vm-explore").addEventListener("click", () => { close(); go(null); });
+    addEventListener("keydown", (e) => { if (e.key === "Escape" && el.classList.contains("open")) close(); });
+    return {
+      open: openM, close, isOpen: () => el.classList.contains("open"),
+      update() {
+        if (el.hidden) return;
+        const tx = Math.max(-136, Math.min(136, train.position.x));
+        trainG.setAttribute("transform", `translate(${f(X(tx))} ${f(Y(TRACK_Z))})`);
+        trainG.style.opacity = Math.abs(train.position.x) > 138 ? "0.25" : "1";
+        castleG.setAttribute("transform", `translate(${f(X(castle.position.x))} ${f(Y(castle.position.z))})`);
+        room.setAttribute("transform", `translate(${f(X(castle.position.x))} ${f(Y(castle.position.z) - 104)})`);
+      },
+    };
+  })();
+
   function camState() { return { pos: camera.position.clone(), tgt: lastTgt.clone() }; }
   function showCard(id) {
     const card = $("placeCard");
@@ -1918,20 +2049,23 @@
     showCard(id);
     Object.entries(explore.markers).forEach(([key, el]) => el.classList.toggle("on", key.replace("-mm", "") === id));
   }
-  function startExplore() {
+  function startExplore(withMap) {
     explore.active = true; explore.place = null; explore.from = camState(); explore.k = 0;
     exploreEl.hidden = false; hero.classList.add("exploring");
     showCard(null);
     window.dispatchEvent(new CustomEvent("vale:explore", { detail: "start" }));
     setRunning(true);
+    if (withMap && vmap) vmap.open();
   }
   function exitExplore(toCover) {
+    if (vmap) vmap.close();
     explore.active = false; exploreEl.hidden = true; hero.classList.remove("exploring");
     showCard(null);
     if (toCover) { explore.coverFrom = camState(); explore.coverK = 0; }
     window.dispatchEvent(new CustomEvent("vale:explore", { detail: "end" }));
   }
   function exploreStep(dt, tdt = dt) {
+    if (vmap) vmap.update();
     const P = explore.place ? PLACES[explore.place] : null;
     const v = P ? P.view() : { pos: OVERVIEW.pos.clone().add(new T.Vector3(Math.sin(clock * 0.05) * 6, 0, 0)), tgt: OVERVIEW.tgt.clone() };
     explore.k = Math.min(1, explore.k + tdt / 2.3);

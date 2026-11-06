@@ -111,6 +111,99 @@
     };
   }
 
+  /* ---------------- Calcifer: chama em shader, com rosto ---------------- */
+  function makeCalcifer(s = 1) {
+    const group = new T.Group();
+    const U = { uT: { value: 0 }, uTalk: { value: 0 }, uBlink: { value: 1 }, uLook: { value: new T.Vector2() }, uHot: { value: 0 } };
+    const flame = new T.Mesh(new T.PlaneGeometry(1.3 * s, 1.6 * s), new T.ShaderMaterial({
+      transparent: true, depthWrite: false, uniforms: U,
+      vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+      fragmentShader: `${NOISE}
+        uniform float uT, uTalk, uBlink, uHot; uniform vec2 uLook; varying vec2 vUv;
+        float g(float x, float c, float w){ return exp(-pow((x-c)/w,2.0)); }
+        void main(){
+          float t=uT;
+          vec2 q=vec2((vUv.x-0.5)*0.8125, vUv.y);
+          q.x-=0.05*sin(t*2.1+q.y*3.0)*smoothstep(0.4,1.0,q.y);
+          // corpo
+          float e=length((q-vec2(0.0,0.36))/vec2(0.235,0.225));
+          e+=0.045*snoise(vec2(q.x*7.0,q.y*7.0-t*3.2));
+          float body=smoothstep(1.02,0.96,e);
+          // línguas de fogo
+          float n=snoise(vec2(q.x*5.0,t*1.7))*0.035;
+          float top=0.5+n
+            +0.46*g(q.x,0.02*sin(t*3.1),0.055)*(0.82+0.18*sin(t*5.3))
+            +0.22*g(q.x,-0.125+0.02*sin(t*2.7+1.0),0.045)*(0.78+0.22*sin(t*4.1+2.0))
+            +0.25*g(q.x,0.135+0.02*sin(t*3.7+2.0),0.045)*(0.78+0.22*sin(t*4.7+1.0))
+            +0.13*g(q.x,-0.215,0.032)*(0.6+0.4*sin(t*6.0))
+            +0.12*g(q.x,0.225,0.03)*(0.6+0.4*sin(t*5.5+3.0));
+          float wide=0.24-(q.y-0.36)*0.04;
+          float tongue=step(0.36,q.y)*smoothstep(0.012,-0.012,q.y-top)*smoothstep(wide+0.012,wide-0.02,abs(q.x));
+          float m=max(body,tongue);
+          // brasas soltas acima das pontas
+          for(int i=0;i<4;i++){
+            float fi=float(i); float ph=fract(t*0.55+fi*0.27);
+            vec2 sp=vec2(sin(fi*2.3+t*0.8)*0.12, 0.62+ph*0.45);
+            m=max(m, smoothstep(0.018,0.004,length(q-sp))*(1.0-ph));
+          }
+          // calor: núcleo claro, borda vermelha
+          float heat=max(clamp(1.0-e,0.0,1.0), tongue*clamp((top-q.y)*2.2,0.0,1.0)*0.6);
+          vec3 col=mix(vec3(0.80,0.14,0.04),vec3(1.0,0.45,0.07),smoothstep(0.0,0.3,heat));
+          col=mix(col,vec3(1.0,0.78,0.26),smoothstep(0.32,0.62,heat));
+          col=mix(col,vec3(1.0,0.96,0.78),smoothstep(0.7,0.95,heat)*0.75);
+          col=mix(col,vec3(0.55,0.08,0.03),smoothstep(0.86,1.0,e)*body*(1.0-tongue)*0.55);
+          col*=1.0+uHot*0.25;
+          // olhos
+          float bl=max(uBlink,0.08);
+          for(int k=0;k<2;k++){
+            float sx=k==0?-1.0:1.0;
+            vec2 ec=vec2(sx*0.088,0.405);
+            float ed=length((q-ec)/vec2(0.068,0.084*bl));
+            col=mix(col,vec3(0.28,0.05,0.02),smoothstep(1.16,1.04,ed));
+            col=mix(col,vec3(1.0,0.98,0.92),smoothstep(1.0,0.93,ed));
+            vec2 pc=ec+uLook*vec2(0.022,0.02*bl);
+            float pd=length((q-pc)/vec2(1.0,bl));
+            col=mix(col,vec3(0.06,0.03,0.03),smoothstep(0.031,0.025,pd)*step(ed,1.0));
+            col=mix(col,vec3(1.0),smoothstep(0.009,0.004,length(q-pc-vec2(0.009,0.01)))*step(ed,1.0)*step(0.5,bl));
+          }
+          // boca com dentinhos
+          float mh=0.016+0.045*uTalk;
+          vec2 mc=vec2(0.0,0.296);
+          float md=length((q-mc)/vec2(0.105,mh));
+          float inMouth=smoothstep(1.04,0.96,md)*step(q.y,mc.y+0.004);
+          col=mix(col,vec3(0.32,0.04,0.02),inMouth);
+          float teeth=step(mc.y-0.012*(1.0-abs(fract(q.x*26.0)-0.5)*2.0),q.y)*inMouth*step(0.03,mh);
+          col=mix(col,vec3(1.0,0.93,0.82),teeth);
+          col=mix(col,vec3(0.32,0.04,0.02),smoothstep(0.007,0.0,abs(q.y-(mc.y+2.4*q.x*q.x)))*step(abs(q.x),0.105)*(1.0-inMouth));
+          gl_FragColor=vec4(col,m);
+          if(m<0.01) discard;
+        }`,
+    }));
+    flame.position.y = 0.8 * s;
+    const halo = new T.Mesh(new T.PlaneGeometry(3.2 * s, 3.2 * s), new T.ShaderMaterial({
+      transparent: true, depthWrite: false, blending: T.AdditiveBlending, uniforms: U,
+      vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+      fragmentShader: `uniform float uT, uHot; varying vec2 vUv; void main(){ float d=length(vUv-vec2(0.5,0.42)); float f=0.85+0.1*sin(uT*9.0)+0.05*sin(uT*23.0); float a=smoothstep(0.5,0.0,d)*0.32*f*(1.0+uHot*0.5); gl_FragColor=vec4(vec3(1.0,0.5,0.15)*a,a); }`,
+    }));
+    halo.position.y = 0.7 * s;
+    group.add(halo, flame);
+    let blinkT = 2;
+    return {
+      group, U,
+      update(dt, camera, talk) {
+        U.uT.value += dt;
+        U.uTalk.value += ((talk ? 0.5 + 0.5 * Math.abs(Math.sin(U.uT.value * 11)) : 0) - U.uTalk.value) * Math.min(1, dt * 14);
+        blinkT -= dt;
+        if (blinkT < 0) { U.uBlink.value = Math.max(0, U.uBlink.value - dt * 14); if (U.uBlink.value === 0) blinkT = 2.5 + Math.random() * 3; }
+        else U.uBlink.value = Math.min(1, U.uBlink.value + dt * 10);
+        // os olhos seguem o cursor
+        U.uLook.value.x += (pointer.sx - U.uLook.value.x) * Math.min(1, dt * 4);
+        U.uLook.value.y += (-pointer.sy - U.uLook.value.y) * Math.min(1, dt * 4);
+        flame.quaternion.copy(camera.quaternion); halo.quaternion.copy(camera.quaternion);
+      },
+    };
+  }
+
   /* ---------------- estrutura comum ---------------- */
   const root = document.documentElement;
   const el = $("world"), canvas = $("worldCanvas");
@@ -160,10 +253,13 @@
     if (current && current.dossierReady) dossierBtn.hidden = false;
   });
 
-  function open(name) {
+  const backBtn = $("worldBack"), backHTML = backBtn.innerHTML;
+  function open(name, from) {
     const w = worlds[name];
     if (!w) return;
-    if (name === "nos" && !w.entered) { showGate(); return; }
+    if (name === "nos" && !w.entered) { showGate(from); return; }
+    w.from = from || null;
+    backBtn.innerHTML = w.from ? backHTML.replace("Voltar ao vale", "Voltar ao castelo") : backHTML;
     if (!ensureRenderer()) return;
     current = w;
     el.hidden = false; el.dataset.world = name; root.classList.add("intro-on");
@@ -187,14 +283,16 @@
     hideDossier();
     window.dispatchEvent(new CustomEvent("mundo", { detail: "close" }));
   }
-  $("worldBack").addEventListener("click", close);
-  addEventListener("keydown", (e) => { if (e.key === "Escape" && current) close(); });
+  function back() { if (!current) return; const f = current.from; close(); if (f) open(f); }
+  backBtn.addEventListener("click", back);
+  addEventListener("keydown", (e) => { if (e.key === "Escape" && current) back(); });
 
   // aviso antes da porta preta
   const gate = $("worldGate");
-  function showGate() { gate.hidden = false; root.classList.add("intro-on"); $("gateEnter").focus(); }
-  $("gateEnter").addEventListener("click", () => { gate.hidden = true; worlds.nos.entered = true; open("nos"); });
-  $("gateBack").addEventListener("click", () => { gate.hidden = true; if (!current) root.classList.remove("intro-on"); });
+  let gateFrom = null;
+  function showGate(from) { gateFrom = from || null; gate.hidden = false; root.classList.add("intro-on"); $("gateEnter").focus(); }
+  $("gateEnter").addEventListener("click", () => { gate.hidden = true; worlds.nos.entered = true; open("nos", gateFrom); });
+  $("gateBack").addEventListener("click", () => { gate.hidden = true; if (gateFrom && !current) { open(gateFrom); return; } if (!current) root.classList.remove("intro-on"); });
 
   /* =================================================================== */
   /* TEMPLO DO SINO                                                       */
@@ -1287,7 +1385,7 @@
     const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
     const SERIF = "'Shippori Mincho', 'Hiragino Mincho ProN', serif", MONO = "'JetBrains Mono', ui-monospace, monospace";
     const ray = new T.Raycaster(), ndc = new T.Vector2();
-    let time = 0, hovered = null, selected = null, hits = [], flames = [], charms = [], tip, camFrom = null, camK = 1, sayTimer = null;
+    let time = 0, hovered = null, selected = null, hits = [], calc = null, charms = [], tip, camFrom = null, camK = 1, sayTimer = null;
 
     // o que cada canto do quarto guarda (espelha a aba Gostos do perfil)
     const SPOTS = {
@@ -1492,23 +1590,12 @@
       const sm = new T.Mesh(new T.PlaneGeometry(1.0, 0.54), flat(screen)); sm.position.set(DX + 0.24, 1.5, 0.4); sm.rotation.y = -Math.PI / 2; scene.add(sm);
 
       // Calcifer
-      const cal = new T.Group(); cal.position.set(HX, 0.32, HZ - 0.2); scene.add(cal);
+      const cal = new T.Group(); cal.position.set(HX, 0.32, HZ - 0.15); scene.add(cal);
       const logs = Builder();
       logs.add(new T.CylinderGeometry(0.09, 0.09, 0.8, 8), M(0, 0.06, 0, 0, 0.5, Math.PI / 2), "#4A3020");
       logs.add(new T.CylinderGeometry(0.09, 0.09, 0.8, 8), M(0, 0.06, 0.05, 0, -0.5, Math.PI / 2), "#5A3B26");
       cal.add(new T.Mesh(logs.build(), mat));
-      const flameMat = toon(env);
-      const fl = (geo, m, c) => { const b = Builder(); b.add(geo, m, c, 1); const mesh = new T.Mesh(b.build(), flameMat); cal.add(mesh); return mesh; };
-      const body = fl(new T.SphereGeometry(0.3, 18, 14), M(0, 0.36, 0, 0, 0, 0, 1, 1.15, 0.9), "#FF7A1E");
-      const core = fl(new T.SphereGeometry(0.2, 14, 10), M(0, 0.32, 0.08, 0, 0, 0, 1, 1.1, 0.9), "#FFC24A");
-      const tipF = fl(new T.ConeGeometry(0.18, 0.5, 12), M(0, 0.78, -0.02), "#FF8A2A");
-      const tongues = [[-0.24, 0.55, -0.3], [0.25, 0.58, 0.32], [-0.1, 0.7, -0.15], [0.12, 0.66, 0.2]].map(([x, y, rz]) => fl(new T.ConeGeometry(0.09, 0.32, 8), M(x, y, -0.04, 0, 0, rz), "#FF9A3A"));
-      flames.push(body, core, tipF, ...tongues);
-      const face = Builder();
-      for (const s of [-1, 1]) { face.add(new T.SphereGeometry(0.075, 12, 10), M(s * 0.1, 0.44, 0.25), "#FFFFFF", 0.7); face.add(new T.SphereGeometry(0.036, 10, 8), M(s * 0.1, 0.44, 0.315), "#1C1412", 0); }
-      face.add(new T.BoxGeometry(0.14, 0.03, 0.02), M(0, 0.3, 0.27), "#7A2A10", 0);
-      const faceMesh = new T.Mesh(face.build(), mat); cal.add(faceMesh);
-      cal.userData = { body, faceMesh };
+      calc = makeCalcifer(0.78); calc.group.position.y = 0.02; cal.add(calc.group);
 
       // amuletos pendurados (como no quarto do castelo)
       const cm = toon(env);
@@ -1538,7 +1625,10 @@
       tip = document.createElement("div"); tip.className = "w-label"; tip.style.opacity = "0";
     }
 
+    let sayUntil = 0;
+    const talking = () => performance.now() < sayUntil;
     function say(text) {
+      sayUntil = performance.now() + Math.min(3200, 900 + text.length * 45);
       line.textContent = text; line.classList.remove("show"); void line.offsetWidth; line.classList.add("show");
     }
     const V = (a) => new T.Vector3(...a);
@@ -1546,7 +1636,7 @@
     function bindDossier() {
       const body = $("dossierBody");
       body.querySelectorAll("[data-spot]").forEach((b) => b.addEventListener("click", () => select(b.dataset.spot)));
-      body.querySelectorAll("[data-go-world]").forEach((b) => b.addEventListener("click", () => { const w = b.dataset.goWorld; close(); open(w); }));
+      body.querySelectorAll("[data-go-world]").forEach((b) => b.addEventListener("click", () => { const w = b.dataset.goWorld; const f = api.from; close(); open(w, f || "quarto"); }));
     }
     function select(id) {
       selected = id;
@@ -1593,9 +1683,8 @@
       update(dt) {
         time += dt;
         // o fogo respira
-        flames.forEach((f, i) => { const k = 1 + Math.sin(time * (5 + i * 1.3) + i) * 0.06 + Math.sin(time * 11.7 + i * 2.1) * 0.03; f.scale.set(1 / Math.sqrt(k), k, 1 / Math.sqrt(k)); });
-        const talk = line.classList.contains("show") ? Math.abs(Math.sin(time * 9)) * 0.05 : 0;
-        const fm = flames[0].parent.userData.faceMesh; if (fm) fm.position.y = Math.sin(time * 2.2) * 0.015 + talk;
+        calc.U.uHot.value += ((hovered === "calcifer" ? 1 : 0) - calc.U.uHot.value) * Math.min(1, dt * 5);
+        calc.update(dt, camera, talking());
         env.uPLC.value[0].setRGB(1.0, 0.54 + Math.sin(time * 7) * 0.04, 0.23).multiplyScalar(0.7 + Math.sin(time * 13) * 0.07 + (hovered === "calcifer" ? 0.2 : 0));
         charms.forEach((c) => { c.g.rotation.z = Math.sin(time * 0.9 + c.ph) * 0.08; c.g.rotation.x = Math.cos(time * 0.7 + c.ph) * 0.05; });
         // câmera
@@ -1620,6 +1709,276 @@
     return api;
   })();
 
-  const worlds = { templo, nos, torre, trem, quarto };
+  /* =================================================================== */
+  /* O CASTELO POR DENTRO: lareira do Calcifer, porta de quatro cores     */
+  /* =================================================================== */
+  const castelo = (() => {
+    const scene = new T.Scene();
+    scene.background = new T.Color("#120C0A");
+    const camera = new T.PerspectiveCamera(55, 1, 0.1, 200);
+    const env = envUniforms({ sun: [0.3, 0.75, 0.6], sunCol: "#6A5646", amb: "#3A2E2A", fog: "#120C0A", fogDen: 0.014, glowCol: "#FFC27A" });
+    const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    const ray = new T.Raycaster(), ndc = new T.Vector2();
+    const DOORS = [
+      { id: "vermelho", color: "#C22026", name: "Templo do Sino", sub: "AcousticBuild", world: "templo", say: "Vermelho: o Templo do Sino. O AcousticBuild mora lá.", text: "Previsão de ruído em edificações pelas normas EN 12354. 2º lugar na XI FEBIC." },
+      { id: "preto", color: "#0B0809", name: "Nós", sub: "o jogo", world: "nos", say: "Preto. O mundo do Nós. Do outro lado é escuro, vá com calma.", text: "Narrativa de exploração psicológica, em desenvolvimento." },
+      { id: "azul", color: "#2E7896", name: "Hollow Depths", sub: "abre o jogo", href: "https://game-nauy.onrender.com/", say: "Azul: as profundezas do Hollow Depths. Ele abre numa aba nova.", text: "RPG de turno guiado por probabilidade." },
+      { id: "verde", color: "#78AB5A", name: "O vale", sub: "voltar", back: true, say: "Verde: de volta ao vale. O castelo continua andando.", text: "Sai do castelo e volta para a visão do vale." },
+    ];
+    const VIEWS = {
+      idle: { pos: [-0.6, 2.25, 4.4], tgt: [-1.2, 1.5, -2.2] },
+      door: { pos: [1.5, 2.0, 0.4], tgt: [1.6, 2.2, -5] },
+      calcifer: { pos: [-2.4, 1.7, -0.3], tgt: [-5.6, 1.1, -1.6] },
+      stairs: { pos: [1.8, 2.5, 2.6], tgt: [5.2, 2.4, -1.8] },
+    };
+    let time = 0, hovered = null, view = "idle", choice = null, opening = 0, openK = 0, calc = null, hits = [], doorHinge, dialPtr, portalMat, chips, tip, camFrom = null, camK = 1, sayUntil = 0, timer = null;
+    const talking = () => performance.now() < sayUntil;
+    function say(text) { sayUntil = performance.now() + Math.min(3200, 900 + text.length * 45); line.textContent = text; line.classList.remove("show"); void line.offsetWidth; line.classList.add("show"); }
+    function setView(v) { if (view === v) return; view = v; camFrom = { pos: camera.position.clone(), tgt: camera.userData.tgt.clone() }; camK = 0; }
+    function tex(w, h, draw) { const c = document.createElement("canvas"); c.width = w; c.height = h; draw(c.getContext("2d"), w, h); const t = new T.CanvasTexture(c); t.anisotropy = 4; return t; }
+
+    function build() {
+      const mat = toon(env);
+      const B = Builder(); const r = mulberry(5);
+      const WOOD = "#6B4A32", WOOD_D = "#3A2618", PLASTER = "#CDB894", BRICK = "#8A5A44";
+      // assoalho de tábuas
+      for (let x = -6; x < 6; x += 0.5) B.add(new T.BoxGeometry(0.49, 0.06, 9.6), M(x + 0.25, 0, -0.3), r() < 0.5 ? "#7A5638" : "#6E4C32");
+      // tapete
+      B.add(new T.BoxGeometry(3.6, 0.02, 2.4), M(-0.8, 0.04, 0.9), "#7A2A26");
+      B.add(new T.BoxGeometry(3.2, 0.025, 2.0), M(-0.8, 0.045, 0.9), "#A04A34");
+      B.add(new T.BoxGeometry(2.4, 0.03, 1.2), M(-0.8, 0.05, 0.9), "#C9A24A");
+      // paredes com rodapé de madeira, teto com vigas
+      B.add(new T.BoxGeometry(12, 4.4, 0.14), M(0, 2.2, -5.1), PLASTER);
+      for (const sx of [-1, 1]) B.add(new T.BoxGeometry(0.14, 4.4, 9.8), M(sx * 6.05, 2.2, -0.2), PLASTER);
+      B.add(new T.BoxGeometry(12, 1.0, 0.06), M(0, 0.5, -5.02), WOOD);
+      for (const sx of [-1, 1]) B.add(new T.BoxGeometry(0.06, 1.0, 9.8), M(sx * 5.98, 0.5, -0.2), WOOD);
+      B.add(new T.BoxGeometry(12.2, 0.14, 10), M(0, 4.45, -0.2), "#4A3424");
+      for (let z = -4.6; z <= 4; z += 1.6) B.add(new T.BoxGeometry(12, 0.26, 0.22), M(0, 4.28, z), WOOD_D);
+      for (const x of [-3, 0, 3]) B.add(new T.BoxGeometry(0.22, 4.4, 0.22), M(x, 2.2, -4.95), WOOD_D);
+      // janela da parede do fundo
+      B.add(new T.BoxGeometry(1.8, 1.5, 0.1), M(-3.6, 2.6, -5.0), WOOD_D);
+      // lareira grande (parede esquerda)
+      const HZ = -1.6;
+      B.add(new T.BoxGeometry(1.3, 0.7, 2.6), M(-5.4, 0.35, HZ), (x, y) => (Math.floor(y * 6) % 2 ? BRICK : "#7A4E3A"));
+      B.add(new T.BoxGeometry(1.0, 2.0, 0.5), M(-5.5, 1.7, HZ - 1.05), BRICK);
+      B.add(new T.BoxGeometry(1.0, 2.0, 0.5), M(-5.5, 1.7, HZ + 1.05), BRICK);
+      B.add(new T.BoxGeometry(1.2, 0.5, 2.6), M(-5.45, 2.9, HZ), "#7A4E3A");
+      B.add(new T.BoxGeometry(1.0, 1.4, 1.8), M(-5.6, 3.8, HZ), "#6E4636");
+      B.add(new T.BoxGeometry(0.2, 1.6, 1.6), M(-5.95, 1.4, HZ), "#1A1210");
+      B.add(new T.BoxGeometry(1.5, 0.1, 2.9), M(-5.3, 3.18, HZ), WOOD);
+      for (const [z, c] of [[-0.9, "#3E5A6A"], [-0.4, "#B98A4A"], [0.5, "#7A5A3A"], [1.0, "#5A6E4A"]]) B.add(new T.CylinderGeometry(0.1, 0.12, 0.34, 10), M(-5.1, 3.4, HZ + z), c);
+      // frigideira pendurada (a do café da manhã)
+      B.add(new T.CylinderGeometry(0.28, 0.24, 0.06, 18), M(-4.75, 2.35, HZ + 0.7, 0, 0, Math.PI / 2), "#2A2626");
+      B.add(new T.BoxGeometry(0.04, 0.5, 0.06), M(-4.75, 2.75, HZ + 0.7), "#2A2626");
+      // mesa, cadeiras e chaleira
+      B.add(new T.BoxGeometry(2.2, 0.1, 1.2), M(-1.0, 0.95, 0.9), WOOD);
+      for (const [x, z] of [[-1.95, 0.4], [-0.05, 0.4], [-1.95, 1.4], [-0.05, 1.4]]) B.add(new T.BoxGeometry(0.1, 0.92, 0.1), M(x, 0.46, z), WOOD_D);
+      for (const [x, z, ry] of [[-1.6, 1.9, 0.2], [-0.3, 1.95, -0.15], [-2.5, 0.9, Math.PI / 2]]) {
+        B.add(new T.BoxGeometry(0.5, 0.06, 0.5), M(x, 0.55, z, 0, ry, 0), WOOD);
+        B.add(new T.BoxGeometry(0.5, 0.6, 0.06), M(x + Math.sin(ry) * 0.22, 0.86, z + Math.cos(ry) * 0.22, 0, ry, 0), WOOD);
+      }
+      B.add(new T.SphereGeometry(0.16, 14, 10), M(-0.7, 1.12, 0.8, 0, 0, 0, 1, 0.8, 1), "#3E5A58");
+      B.add(new T.CylinderGeometry(0.06, 0.05, 0.1, 10), M(-1.4, 1.05, 1.0), "#E8DCC2");
+      B.add(new T.CylinderGeometry(0.06, 0.05, 0.1, 10), M(-1.1, 1.05, 1.2), "#E8DCC2");
+      // prateleiras com potes que brilham (feitiços do Howl)
+      for (const y of [1.5, 2.1, 2.7]) {
+        B.add(new T.BoxGeometry(1.8, 0.06, 0.4), M(-1.2, y, -4.85), WOOD);
+        for (let k = 0; k < 5; k++) { const c = ["#8FC6E0", "#E0B85A", "#C26A8A", "#9AD08A", "#B0A0E0"][(k + Math.round(y * 3)) % 5]; B.add(new T.CylinderGeometry(0.08, 0.08, 0.22 + r() * 0.1, 10), M(-1.9 + k * 0.35, y + 0.15, -4.82), c, 0.55); }
+      }
+      // ervas penduradas nas vigas
+      for (let k = 0; k < 9; k++) { const x = -4.6 + k * 1.05, z = -3.0 + (k % 3) * 1.6, len = 0.4 + r() * 0.4; B.add(new T.CylinderGeometry(0.008, 0.008, len, 4), M(x, 4.17 - len / 2, z), "#2A2420"); B.add(new T.ConeGeometry(0.12, 0.34, 6), M(x, 4.0 - len, z, Math.PI, 0, 0), ["#5A7A44", "#7A8A44", "#8A6A3A"][k % 3]); }
+      // escada para o quarto (lado direito)
+      for (let k = 0; k < 13; k++) {
+        const z = 2.4 - k * 0.48, y = 0.16 + k * 0.31;
+        B.add(new T.BoxGeometry(1.3, 0.1, 0.5), M(5.2, y, z), WOOD);
+        B.add(new T.BoxGeometry(1.3, y, 0.06), M(5.2, y / 2, z + 0.23), WOOD_D);
+        if (k % 2 === 0) B.add(new T.CylinderGeometry(0.035, 0.035, 0.9, 6), M(4.55, y + 0.45, z), WOOD_D);
+      }
+      { const len = Math.hypot(13 * 0.48, 13 * 0.31); B.add(new T.BoxGeometry(0.08, 0.08, len), M(4.55, 0.16 + 6 * 0.31 + 0.9, 2.4 - 6 * 0.48, Math.atan2(0.31, 0.48), 0, 0), WOOD); }
+      B.add(new T.BoxGeometry(1.5, 0.1, 1.6), M(5.2, 4.3, -4.2), "#1A1210");
+      // a porta com o seletor de cores (parede do fundo)
+      const DX = 1.6;
+      B.add(new T.BoxGeometry(1.7, 0.18, 0.3), M(DX, 2.66, -4.95), WOOD_D);
+      for (const sx of [-1, 1]) B.add(new T.BoxGeometry(0.18, 2.66, 0.3), M(DX + sx * 0.76, 1.33, -4.95), WOOD_D);
+      B.add(new T.CylinderGeometry(0.5, 0.5, 0.08, 32), M(DX, 3.3, -4.98, Math.PI / 2, 0, 0), "#3A2618");
+      scene.add(new T.Mesh(B.build(), mat));
+
+      // seletor: quatro quadrantes coloridos e o ponteiro
+      const dial = new T.Group(); dial.position.set(DX, 3.3, -4.92); scene.add(dial);
+      DOORS.forEach((d, i) => {
+        const a0 = Math.PI / 2 - (i + 1) * Math.PI / 2;
+        const sec = new T.Mesh(new T.CircleGeometry(0.42, 24, a0, Math.PI / 2), new T.MeshBasicMaterial({ color: d.color }));
+        sec.position.z = 0.01; dial.add(sec);
+      });
+      { const hub = new T.Mesh(new T.CircleGeometry(0.1, 20), new T.MeshBasicMaterial({ color: 0xc9a24a })); hub.position.z = 0.05; dial.add(hub); }
+      dialPtr = new T.Mesh(new T.PlaneGeometry(0.06, 0.4), new T.MeshBasicMaterial({ color: 0xe8dcc2 }));
+      dialPtr.geometry.translate(0, 0.2, 0); dialPtr.position.z = 0.04; dial.add(dialPtr);
+      // portal atrás da porta
+      portalMat = new T.ShaderMaterial({ uniforms: { uCol: { value: new T.Color("#FFD9A0") }, uT: { value: 0 }, uOpen: { value: 0 } },
+        vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+        fragmentShader: `${NOISE} uniform vec3 uCol; uniform float uT, uOpen; varying vec2 vUv;
+          void main(){ vec2 p=vUv-0.5; float n=snoise(vec2(p.x*3.0+uT*0.3, p.y*3.0-uT*0.5))*0.5+0.5; float r=length(p*vec2(1.6,1.0));
+            vec3 c=mix(uCol*0.5, uCol*1.4+0.15, n)*(1.0-r*0.8); c=mix(vec3(0.05,0.03,0.03), c, uOpen); gl_FragColor=vec4(c,1.0); }` });
+      const portal = new T.Mesh(new T.PlaneGeometry(1.36, 2.5), portalMat); portal.position.set(DX, 1.25, -5.02); scene.add(portal);
+      // folha da porta, com dobradiça à esquerda
+      doorHinge = new T.Group(); doorHinge.position.set(DX - 0.68, 0, -4.9); scene.add(doorHinge);
+      const DB = Builder();
+      DB.add(new T.BoxGeometry(1.36, 2.5, 0.1), M(0.68, 1.25, 0), WOOD);
+      for (const y of [0.5, 1.25, 2.0]) DB.add(new T.BoxGeometry(1.36, 0.1, 0.03), M(0.68, y, 0.06), WOOD_D);
+      DB.add(new T.SphereGeometry(0.06, 10, 8), M(1.18, 1.2, 0.1), "#C9A24A");
+      doorHinge.add(new T.Mesh(DB.build(), mat));
+
+      // vista pela janela
+      const view = tex(256, 200, (g, w, h) => {
+        const s = g.createLinearGradient(0, 0, 0, h); s.addColorStop(0, "#7FA4D4"); s.addColorStop(0.7, "#E9C9A0"); s.addColorStop(1, "#7FA864");
+        g.fillStyle = s; g.fillRect(0, 0, w, h); g.fillStyle = "#7FA864"; g.fillRect(0, 140, w, 60);
+        g.fillStyle = "#9AA6BC"; g.beginPath(); g.moveTo(20, 140); g.lineTo(110, 70); g.lineTo(200, 140); g.fill();
+        g.fillStyle = "#F4F1EC"; g.beginPath(); g.moveTo(90, 86); g.lineTo(110, 70); g.lineTo(130, 86); g.fill();
+        g.fillStyle = "rgba(255,255,255,0.8)"; for (const [x, y, rr] of [[60, 40, 18], [84, 34, 22], [200, 50, 16]]) { g.beginPath(); g.arc(x, y, rr, 0, Math.PI * 2); g.fill(); }
+        g.strokeStyle = "#3A2618"; g.lineWidth = 8; g.beginPath(); g.moveTo(w / 2, 0); g.lineTo(w / 2, h); g.moveTo(0, h / 2); g.lineTo(w, h / 2); g.stroke();
+      });
+      const wv = new T.Mesh(new T.PlaneGeometry(1.6, 1.3), new T.MeshBasicMaterial({ map: view })); wv.position.set(-3.6, 2.6, -4.94); scene.add(wv);
+
+      // Calcifer na lareira
+      calc = makeCalcifer(1.05); calc.group.position.set(-5.35, 0.66, HZ); scene.add(calc.group);
+      const LB = Builder();
+      LB.add(new T.CylinderGeometry(0.1, 0.1, 0.9, 8), M(-5.35, 0.76, HZ, 0.4, 0, Math.PI / 2), "#4A3020");
+      LB.add(new T.CylinderGeometry(0.1, 0.1, 0.9, 8), M(-5.3, 0.76, HZ + 0.05, -0.4, 0, Math.PI / 2), "#5A3B26");
+      scene.add(new T.Mesh(LB.build(), mat));
+
+      const hitBox = (id, size, pos) => { const m = new T.Mesh(new T.BoxGeometry(...size), new T.MeshBasicMaterial()); m.visible = false; m.position.set(...pos); m.userData.spot = id; scene.add(m); hits.push(m); };
+      hitBox("door", [1.8, 3.9, 0.5], [DX, 1.9, -4.8]);
+      hitBox("calcifer", [1.2, 1.8, 2.0], [-5.3, 1.3, HZ]);
+      hitBox("stairs", [1.4, 4.0, 6.4], [5.2, 2.0, -0.6]);
+
+      env.uPL.value[0].set(-4.6, 1.3, HZ); env.uPLC.value[0].set("#FF8A3A"); env.uPLR.value[0] = 3.0;
+      env.uPL.value[1].set(-3.6, 2.6, -4.3); env.uPLC.value[1].set("#C9A27A"); env.uPLR.value[1] = 2.2;
+      env.uPL.value[2].set(DX, 1.4, -4.3); env.uPLC.value[2].set("#FFD9A0"); env.uPLR.value[2] = 0.001;
+
+      tip = document.createElement("div"); tip.className = "w-label"; tip.style.opacity = "0";
+      chips = document.createElement("div"); chips.className = "dial-chips"; chips.setAttribute("role", "group"); chips.setAttribute("aria-label", "Seletor de cores da porta");
+      DOORS.forEach((d) => {
+        const b = document.createElement("button"); b.type = "button"; b.className = "dial-chip"; b.dataset.door = d.id; b.setAttribute("aria-pressed", "false");
+        b.style.setProperty("--door", d.color); b.innerHTML = `<i aria-hidden="true"></i><b>${esc(d.name)}</b><small>${esc(d.sub)}</small>`;
+        b.addEventListener("click", () => choose(d.id)); chips.appendChild(b);
+      });
+    }
+
+    function choose(id) {
+      const d = DOORS.find((x) => x.id === id); if (!d || opening) return;
+      choice = d;
+      chips.querySelectorAll(".dial-chip").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.door === id)));
+      portalMat.uniforms.uCol.value.set(d.color === "#0B0809" ? "#3A2A4A" : d.color);
+      env.uPLC.value[2].set(d.color === "#0B0809" ? "#6A4A8A" : d.color);
+      setView("door"); say(d.say);
+      const act = $("worldAction"); act.hidden = false; act.textContent = d.back ? "Sair pela porta verde" : `Abrir a porta ${{ vermelho: "vermelha", preto: "preta", azul: "azul" }[id]}`;
+    }
+    function openDoor() {
+      if (!choice || opening) return;
+      opening = 1;
+      const d = choice;
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        if (current !== api) return;
+        if (d.href) { window.open(d.href, "_blank", "noopener"); opening = -1; return; }
+        if (d.back) { close(); return; }
+        close(); open(d.world, "castelo");
+      }, 1300);
+    }
+    function overviewHTML() {
+      return `<span class="w-kicker">Os projetos</span><h2 class="d-title">O castelo</h2>
+        <p class="d-sub">Cada cor do seletor abre a porta para um mundo diferente.</p>
+        <div class="c-doors">${DOORS.map((d) => `<button type="button" class="c-door" data-door="${d.id}" style="--door:${d.color}"><i aria-hidden="true"></i><span><b>${esc(d.name)}</b><small>${esc(d.text)}</small></span></button>`).join("")}</div>
+        <button type="button" class="c-door c-stairs" data-up><i aria-hidden="true"></i><span><b>Subir ao quarto</b><small>Os gostos, no alto do castelo.</small></span></button>`;
+    }
+    function bindDossier() {
+      const body = $("dossierBody");
+      body.querySelectorAll("[data-door]").forEach((b) => b.addEventListener("click", () => { hideDossier(); dossierBtn.hidden = false; choose(b.dataset.door); }));
+      const up = body.querySelector("[data-up]"); if (up) up.addEventListener("click", goUp);
+    }
+    function goUp() { setView("stairs"); say("Lá em cima fica o quarto. Cuidado com o terceiro degrau."); clearTimeout(timer); timer = setTimeout(() => { if (current === api) { close(); open("quarto", "castelo"); } }, 1400); }
+    function pick(e) {
+      const rc = canvas.getBoundingClientRect();
+      ndc.set((e.clientX - rc.left) / rc.width * 2 - 1, -((e.clientY - rc.top) / rc.height) * 2 + 1);
+      ray.setFromCamera(ndc, camera);
+      const h = ray.intersectObjects(hits)[0];
+      return h ? h.object.userData.spot : null;
+    }
+    const onMove = (e) => { if (e.target !== canvas) return; hovered = pick(e); canvas.style.cursor = hovered ? "pointer" : ""; };
+    const onClick = (e) => {
+      if (e.target !== canvas) return;
+      const s = pick(e);
+      if (s === "door") { if (choice) openDoor(); else { setView("door"); say("Primeiro escolha uma cor no seletor, logo acima da porta."); } }
+      else if (s === "calcifer") { setView("calcifer"); say("Eu sou o Calcifer. Mantenho o castelo andando e as portas abrindo."); setTimeout(() => { if (current === api) showDossier(); }, 1200); }
+      else if (s === "stairs") goUp();
+    };
+    const onAction = () => openDoor();
+    const LABELS = { door: ["Porta", "o seletor de cores"], calcifer: ["Calcifer", "o guia"], stairs: ["Escada", "sobe ao quarto"] };
+
+    const api = {
+      template: "", dossierLabel: "Ver os projetos", choose: (id) => choose(id), openDoor: () => openDoor(),
+      titleHTML: `<span class="w-kicker">Por dentro</span><span class="w-name">Castelo do Howl</span>`,
+      hintText: "Escolha uma cor no seletor da porta, ou suba a escada.",
+      build,
+      start() {
+        time = 0; hovered = null; choice = null; opening = 0; openK = 0; view = "idle"; camK = 1; camFrom = null;
+        camera.position.set(...VIEWS.idle.pos); camera.userData.tgt = new T.Vector3(...VIEWS.idle.tgt);
+        labels.appendChild(tip);
+        $("worldAction").hidden = true; $("worldAction").addEventListener("click", onAction);
+        document.querySelector(".world-bottom").insertBefore(chips, document.querySelector(".world-actions"));
+        chips.querySelectorAll(".dial-chip").forEach((b) => b.setAttribute("aria-pressed", "false"));
+        canvas.addEventListener("click", onClick); canvas.addEventListener("pointermove", onMove);
+        $("dossierBody").innerHTML = overviewHTML(); bindDossier();
+        api.dossierReady = true; dossierBtn.hidden = false;
+        api.onDossierClose = () => {};
+        env.uPLR.value[2] = 0.001; portalMat.uniforms.uOpen.value = 0;
+        clearTimeout(timer); timer = setTimeout(() => { if (current === api && !choice) say("Bem-vindo ao castelo. Gire o seletor da porta e escolha um mundo."); }, 600);
+      },
+      stop() {
+        clearTimeout(timer); canvas.removeEventListener("click", onClick); canvas.removeEventListener("pointermove", onMove); canvas.style.cursor = "";
+        $("worldAction").removeEventListener("click", onAction); $("worldAction").hidden = true;
+        if (chips.parentNode) chips.parentNode.removeChild(chips);
+      },
+      resize(w, h) { camera.aspect = w / h; camera.fov = w / h < 0.9 ? 74 : 55; camera.updateProjectionMatrix(); },
+      update(dt) {
+        time += dt;
+        portalMat.uniforms.uT.value = time;
+        // seletor gira até a cor escolhida
+        const idx = choice ? DOORS.indexOf(choice) : -1;
+        const target = idx < 0 ? Math.sin(time * 0.6) * 0.1 : -(idx * Math.PI / 2 + Math.PI / 4);
+        dialPtr.rotation.z += (target - dialPtr.rotation.z) * Math.min(1, dt * 5);
+        // porta abre e o portal acende
+        openK += ((opening === 1 ? 1 : 0) - openK) * Math.min(1, dt * (opening === 1 ? 2.2 : 3));
+        if (opening === -1 && openK < 0.05) opening = 0;
+        if (opening === -1) openK += (0 - openK) * Math.min(1, dt * 3);
+        doorHinge.rotation.y = -openK * 1.9;
+        portalMat.uniforms.uOpen.value = Math.max(openK, choice ? 0.15 : 0);
+        env.uPLR.value[2] = 0.001 + openK * 3.2 + (choice ? 0.6 : 0);
+        calc.U.uHot.value += ((hovered === "calcifer" ? 1 : 0) - calc.U.uHot.value) * Math.min(1, dt * 5);
+        calc.update(dt, camera, talking());
+        env.uPLC.value[0].setRGB(1.0, 0.54 + Math.sin(time * 7) * 0.04, 0.23).multiplyScalar(0.75 + Math.sin(time * 13) * 0.07);
+        // câmera
+        const V = VIEWS[view];
+        const dp = new T.Vector3(...V.pos), dtg = new T.Vector3(...V.tgt);
+        if (view === "idle") { dp.x += pointer.sx * 0.6; dp.y -= pointer.sy * 0.25; }
+        if (opening === 1) dp.lerp(new T.Vector3(1.6, 1.6, -3.6), openK * 0.6);
+        camK = Math.min(1, camK + dt / 1.8);
+        if (camK < 1 && camFrom) { const e = ease(camK); camera.position.copy(camFrom.pos).lerp(dp, e); camera.userData.tgt.copy(camFrom.tgt).lerp(dtg, e); }
+        else { camera.position.lerp(dp, Math.min(1, dt * 3)); camera.userData.tgt.lerp(dtg, Math.min(1, dt * 3)); }
+        camera.lookAt(camera.userData.tgt);
+        if (hovered) {
+          const hm = hits.find((x) => x.userData.spot === hovered);
+          const v = hm.position.clone().add(new T.Vector3(0, hovered === "door" ? 2.2 : 1.2, 0)).project(camera);
+          tip.innerHTML = `<b>${LABELS[hovered][0]}</b><span>${LABELS[hovered][1]}</span>`;
+          tip.style.transform = `translate(-50%, -100%) translate(${(v.x * 0.5 + 0.5) * W}px, ${(-v.y * 0.5 + 0.5) * H}px)`;
+          tip.style.opacity = "1";
+        } else tip.style.opacity = "0";
+      },
+      render(rr) { rr.setRenderTarget(null); rr.render(scene, camera); },
+    };
+    return api;
+  })();
+
+  const worlds = { templo, nos, torre, trem, quarto, castelo };
   window.mundos = { open, close, worlds };
 })();

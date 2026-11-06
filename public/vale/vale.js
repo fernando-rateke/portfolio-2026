@@ -2329,7 +2329,7 @@
       <div class="pf-col"><h3>連絡 · Contato</h3>${mail ? `<p class="pf-mail">${mail}</p><button type="button" class="pc-btn" data-copy>Copiar e-mail</button>` : ""}</div>
       <div class="pf-col"><h3>網 · Redes</h3><ul class="pf-links"></ul></div>
       <div class="pf-col"><h3>地図 · Lugares</h3><ul class="pf-places"></ul></div>
-      <p class="pf-credits">© 2026 Fernando Rateke. Vale feito à mão com Three.js. Homenagem ao Studio Ghibli: personagens, castelo e músicas pertencem aos seus autores.</p>`;
+      <p class="pf-credits">© 2026 Fernando Rateke. Vale feito à mão com Three.js. Homenagem ao Studio Ghibli: personagens e castelo pertencem aos seus autores. Músicas: Joe Hisaishi, Evan Call e Claude Debussy.</p>`;
     const ul = foot.querySelector(".pf-links");
     links.forEach((a) => { const li = document.createElement("li"); const c = a.cloneNode(true); c.className = ""; li.appendChild(c); ul.appendChild(li); });
     const pl = foot.querySelector(".pf-places");

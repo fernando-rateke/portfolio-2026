@@ -868,7 +868,7 @@ a.q { text-decoration: none; }
       <li><a href="https://www.linkedin.com/in/fernando-rateke/">LinkedIn</a></li>
       <li><a href="https://www.instagram.com/rateke.fer/">Instagram</a></li>
     </ul>
-    <p class="tx-note">© 2026 Fernando Rateke. Homenagem ao Studio Ghibli: personagens, castelo e músicas pertencem aos seus autores.</p>
+    <p class="tx-note">© 2026 Fernando Rateke. Homenagem ao Studio Ghibli: personagens e castelo pertencem aos seus autores. Músicas: Joe Hisaishi (O Castelo Animado e A Viagem de Chihiro), Evan Call (Frieren) e Claude Debussy (Clair de Lune).</p>
   </div>
 </section>
 <div class="perfil" id="perfil" hidden role="dialog" aria-modal="true" aria-labelledby="perfilNome">
@@ -1281,10 +1281,43 @@ a.q { text-decoration: none; }
     el.addEventListener("click", go);
     if (el.tagName !== "BUTTON") el.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
   });
-  let themeWasPlaying = false;
+  /* ---------- Música de cada mundo ---------- */
+  // Torre: Time Flows Ever Onward · Trem (e o último trem): One Summer's Day · Castelo e quarto: Clair de Lune
+  const BASE = window.VALE_BASE || "";
+  const TRACKS = { torre: "audio/torre.mp3", trem: "audio/trem.mp3", ultimo: "audio/trem.mp3", castelo: "audio/castelo.mp3", quarto: "audio/castelo.mp3" };
+  const worldAudio = new Audio(); worldAudio.loop = true; worldAudio.preload = "none";
+  let worldFade, themeWasPlaying = false, inWorld = false, leaveTimer = null;
+  const fadeEl = (el, target, ms, done) => {
+    clearInterval(worldFade);
+    const start = el.volume, t0 = performance.now();
+    worldFade = setInterval(() => {
+      const k = Math.min(1, (performance.now() - t0) / ms);
+      el.volume = Math.min(1, Math.max(0, start + (target - start) * k));
+      if (k >= 1) { clearInterval(worldFade); if (done) done(); }
+    }, 40);
+  };
+  const soundOn = () => sound.getAttribute("aria-pressed") === "true";
   window.addEventListener("mundo", (e) => {
-    if (e.detail === "open") { themeWasPlaying = !audio.paused; if (themeWasPlaying) sound.click(); }
-    else if (themeWasPlaying) { themeWasPlaying = false; sound.click(); }
+    const name = document.getElementById("world").dataset.world;
+    if (e.detail === "open") {
+      clearTimeout(leaveTimer);
+      if (!inWorld) { themeWasPlaying = soundOn(); inWorld = true; if (!audio.paused) fadeTo(0, 700, () => audio.pause()); }
+      const src = TRACKS[name] ? BASE + TRACKS[name] : null;
+      if (!themeWasPlaying || !src) { if (!worldAudio.paused) fadeEl(worldAudio, 0, 700, () => worldAudio.pause()); return; }
+      if (worldAudio.dataset.src === src && !worldAudio.paused) { fadeEl(worldAudio, 0.55, 800); return; }
+      worldAudio.dataset.src = src; worldAudio.src = src; worldAudio.volume = 0;
+      const pl = worldAudio.play(); if (pl && pl.catch) pl.catch(() => {});
+      fadeEl(worldAudio, 0.55, 2200);
+    } else {
+      // entre dois mundos (castelo para o quarto, por exemplo) a música continua; só sai ao voltar ao vale
+      clearTimeout(leaveTimer);
+      leaveTimer = setTimeout(() => {
+        inWorld = false;
+        if (!worldAudio.paused) fadeEl(worldAudio, 0, 900, () => worldAudio.pause());
+        if (themeWasPlaying && audio.paused) { audio.volume = 0; const pl = audio.play(); if (pl && pl.catch) pl.catch(() => {}); fadeTo(0.6, 2000); }
+        themeWasPlaying = false;
+      }, 250);
+    }
   });
 
 })();

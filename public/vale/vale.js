@@ -102,29 +102,35 @@
     float fbm(vec2 p){float s=0.0,a=0.5;for(int i=0;i<4;i++){s+=a*snoise(p);p*=2.03;a*=0.5;}return s;}
   `;
   const COMMON = `
-    uniform float uTime; uniform float uNight; uniform float uReflect; uniform float uHaze;
-    uniform vec3 uSun; uniform vec3 uFogDay; uniform vec3 uFogNight; uniform float uFogDensity;
+    uniform float uTime; uniform float uNight; uniform float uDusk; uniform float uReflect; uniform float uHaze;
+    uniform vec3 uSun; uniform vec3 uFogDay; uniform vec3 uFogDusk; uniform vec3 uFogNight; uniform float uFogDensity;
     uniform vec3 uLanterns[2];
-    vec3 fogColor(){ return mix(uFogDay,uFogNight,uNight); }
-    vec3 applyFog(vec3 col, vec3 w){
-      float d=length(w-cameraPosition);
-      float f=1.0-exp(-pow(d*uFogDensity,1.35));
-      col=mix(col,fogColor(),clamp(f,0.0,0.94));
-      return mix(col, mix(vec3(0.93,0.95,0.97),vec3(0.20,0.25,0.36),uNight), uHaze);
-    }
+    vec3 fogColor(){ return mix(mix(uFogDay,uFogDusk,uDusk),uFogNight,uNight); }
+    vec3 hazeColor(){ return mix(mix(vec3(0.93,0.95,0.97),vec3(0.98,0.80,0.74),uDusk),vec3(0.20,0.25,0.36),uNight); }
+    // fim de tarde: tudo esquenta, sombras puxam para o lilás
+    vec3 duskGrade(vec3 c){ float l=dot(c,vec3(0.3,0.55,0.15)); vec3 warm=c*vec3(1.10,0.80,0.74)+vec3(0.06,0.015,0.04); vec3 shade=mix(vec3(0.30,0.22,0.42),vec3(1.0),smoothstep(0.05,0.6,l)); return warm*mix(shade,vec3(1.0),0.55); }
     vec3 lanternGlow(vec3 w){
       vec3 g=vec3(0.0);
       for(int i=0;i<2;i++){ float d=length(w-uLanterns[i]); g+=vec3(1.0,0.62,0.25)*(0.55/(1.0+d*d*0.35)); }
       return g;
+    }
+    vec3 applyFog(vec3 col, vec3 w){
+      float dk=uDusk*(1.0-uNight);
+      col=mix(col,duskGrade(col),dk);
+      col+=lanternGlow(w)*dk*0.35;
+      float d=length(w-cameraPosition);
+      float f=1.0-exp(-pow(d*uFogDensity,1.35));
+      col=mix(col,fogColor(),clamp(f,0.0,0.94));
+      return mix(col, hazeColor(), uHaze);
     }
     vec3 nightTint(vec3 c){ return c*vec3(0.20,0.27,0.40)+vec3(0.012,0.018,0.035); }
   `;
   const col = (h) => new T.Color(h);
 
   const U = {
-    uTime: { value: 0 }, uNight: { value: 0 }, uReflect: { value: 0 }, uHaze: { value: 0 },
+    uTime: { value: 0 }, uNight: { value: 0 }, uDusk: { value: 0 }, uReflect: { value: 0 }, uHaze: { value: 0 }, uGustAmp: { value: 1 },
     uSun: { value: new T.Vector3(-0.35, 0.78, 0.52).normalize() },
-    uFogDay: { value: col("#C4DDE8") }, uFogNight: { value: col("#1A2943") },
+    uFogDay: { value: col("#C4DDE8") }, uFogDusk: { value: col("#E2A3A0") }, uFogNight: { value: col("#1A2943") },
     uFogDensity: { value: 0.0021 },
     uLanterns: { value: [new T.Vector3(), new T.Vector3()] },
     uWind: { value: new T.Vector2(1, -0.35).normalize() },
@@ -142,28 +148,49 @@
   /* ------------------------------------------------------------------ */
   /* Céu                                                                 */
   /* ------------------------------------------------------------------ */
+  const DAY_SUN = new T.Vector3(-0.35, 0.78, 0.52).normalize(), DUSK_SUN = new T.Vector3(0.36, 0.05, -0.93).normalize(), DUSK_SUN_LIGHT = new T.Vector3(0.45, 0.32, -0.83).normalize();
   const sky = new T.Mesh(new T.SphereGeometry(1800, 48, 24), mat(
     `varying vec3 vDir; void main(){ vDir=normalize(position); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
-    `${COMMON}
-     uniform vec3 uZenD, uHorD, uZenN, uHorN, uMoon; varying vec3 vDir;
+    `${COMMON}${NOISE}
+     uniform vec3 uZenD, uHorD, uZenN, uHorN, uMoon, uDuskSun; varying vec3 vDir;
      float hash(vec3 p){ return fract(sin(dot(p,vec3(12.9898,78.233,37.719)))*43758.5453); }
      void main(){
        vec3 d=normalize(vDir); float y=d.y;
        vec3 day=mix(uHorD,uZenD,smoothstep(-0.02,0.5,y));
        day+=vec3(0.16,0.14,0.09)*pow(max(dot(d,normalize(vec3(0.55,0.42,-0.72))),0.0),5.0);
+       // pôr do sol: dourado no horizonte, coral, rosa, magenta, roxo e índigo no alto
+       float yy=max(y,0.0);
+       vec3 dusk=mix(vec3(1.0,0.74,0.42),vec3(0.98,0.55,0.45),smoothstep(0.0,0.07,yy));
+       dusk=mix(dusk,vec3(0.86,0.43,0.60),smoothstep(0.05,0.17,yy));
+       dusk=mix(dusk,vec3(0.50,0.36,0.66),smoothstep(0.15,0.36,yy));
+       dusk=mix(dusk,vec3(0.17,0.18,0.42),smoothstep(0.32,0.85,yy));
+       float sd=dot(d,uDuskSun);
+       float side=clamp(dot(normalize(d.xz+1e-4),normalize(uDuskSun.xz)),-1.0,1.0);
+       // lado do sol mais quente; do lado oposto, a sombra da Terra e o cinturão de Vênus
+       dusk=mix(dusk,vec3(1.0,0.82,0.52),pow(max(sd,0.0),7.0)*0.85*(1.0-smoothstep(0.1,0.5,yy)));
+       float anti=smoothstep(0.1,-0.8,side);
+       dusk=mix(dusk,vec3(0.93,0.62,0.72),anti*smoothstep(0.02,0.07,yy)*(1.0-smoothstep(0.12,0.24,yy))*0.75);
+       dusk=mix(dusk,vec3(0.34,0.40,0.62),anti*(1.0-smoothstep(0.0,0.045,yy))*0.8);
+       dusk+=vec3(1.0,0.93,0.72)*(smoothstep(0.99865,0.9992,sd)*1.4+pow(max(sd,0.0),900.0)*0.6+pow(max(sd,0.0),60.0)*0.25);
+       dusk+=vec3(1.0,0.9,0.95)*step(0.9985,hash(floor(d*300.0)))*smoothstep(0.45,0.8,yy)*0.6;
        vec3 night=mix(uHorN,uZenN,smoothstep(-0.02,0.55,y));
+       // muitas estrelas, umas maiores, e uma Via Láctea discreta
        vec3 cell=floor(d*380.0); float h=hash(cell);
-       float star=step(0.9972,h)*smoothstep(0.02,0.18,y);
-       night+=vec3(0.85,0.9,1.0)*star*(0.55+0.45*sin(uTime*1.7+h*91.0));
+       float star=step(0.9952,h)*smoothstep(0.02,0.18,y);
+       night+=vec3(0.85,0.9,1.0)*star*(0.45+0.55*sin(uTime*1.7+h*91.0))*(0.6+0.4*fract(h*37.0));
+       vec3 cell2=floor(d*140.0); float h2=hash(cell2+3.1);
+       night+=vec3(1.0,0.95,0.85)*step(0.9982,h2)*smoothstep(0.05,0.2,y)*(0.75+0.25*sin(uTime*2.3+h2*50.0));
+       float band=exp(-pow(dot(d,normalize(vec3(0.35,0.55,0.75)))*4.2,2.0))*smoothstep(0.0,0.3,y);
+       night+=vec3(0.30,0.32,0.48)*band*(0.35+0.65*smoothstep(-0.2,0.8,fbm(d.xz*6.0+d.y*3.0)))*0.35;
        float md=dot(d,uMoon);
        float disc=smoothstep(0.99935,0.9996,md);
        float bite=smoothstep(0.99935,0.9996,dot(d,normalize(uMoon+vec3(0.011,0.008,0.004))));
        night+=vec3(0.93,0.94,0.9)*disc*(1.0-bite*0.96)+vec3(0.22,0.28,0.42)*pow(max(md,0.0),420.0)*0.7;
-       vec3 c=mix(day,night,uNight);
-       c=mix(c, mix(vec3(0.93,0.95,0.97),vec3(0.2,0.25,0.36),uNight), uHaze);
+       vec3 c=mix(mix(day,dusk,uDusk),night,uNight);
+       c=mix(c, hazeColor(), uHaze);
        gl_FragColor=vec4(c,1.0);
      }`,
-    { uZenD: { value: col("#2468AA") }, uHorD: { value: col("#BCDBEA") }, uZenN: { value: col("#040914") }, uHorN: { value: col("#1C2D4C") }, uMoon: { value: new T.Vector3(0.42, 0.36, -0.83).normalize() } },
+    { uZenD: { value: col("#2468AA") }, uHorD: { value: col("#BCDBEA") }, uZenN: { value: col("#040914") }, uHorN: { value: col("#1C2D4C") }, uMoon: { value: new T.Vector3(0.42, 0.36, -0.83).normalize() }, uDuskSun: { value: DUSK_SUN } },
     { side: T.BackSide, depthWrite: false }
   ));
   sky.renderOrder = -10;
@@ -351,24 +378,25 @@
         gl_Position=projectionMatrix*viewMatrix*w;
       }`,
       `${COMMON}${NOISE}
-      uniform vec3 uShD, uMidD, uLitD, uShN, uMidN, uLitN; varying vec3 vW; varying vec3 vN; varying float vBase; varying float vHt;
+      uniform vec3 uShD, uMidD, uLitD, uShK, uMidK, uLitK, uShN, uMidN, uLitN; varying vec3 vW; varying vec3 vN; varying float vBase; varying float vHt;
       void main(){
         if(vW.y < vBase + snoise(vW.xz*0.06)*2.2) discard;
         vec3 n=normalize(vN+0.13*vec3(snoise(vW.yz*0.028),snoise(vW.xz*0.028),snoise(vW.xy*0.028)));
         float hf=clamp((vW.y-vBase)/vHt,0.0,1.0);
         float v=(dot(n,uSun)*0.5+0.5)*0.7+hf*0.44;
-        vec3 sh=mix(uShD,uShN,uNight), md=mix(uMidD,uMidN,uNight), lt=mix(uLitD,uLitN,uNight);
+        vec3 sh=mix(mix(uShD,uShK,uDusk),uShN,uNight), md=mix(mix(uMidD,uMidK,uDusk),uMidN,uNight), lt=mix(mix(uLitD,uLitK,uDusk),uLitN,uNight);
         vec3 c=mix(sh,md,smoothstep(0.46,0.6,v));
         c=mix(c,lt,smoothstep(0.66,0.8,v));
         vec3 V=normalize(cameraPosition-vW);
-        c+=vec3(0.06,0.06,0.05)*(1.0-uNight)*smoothstep(0.55,0.95,1.0-abs(dot(normalize(vN),V)));
+        c+=mix(vec3(0.06,0.06,0.05),vec3(0.22,0.12,0.04),uDusk)*(1.0-uNight)*smoothstep(0.55,0.95,1.0-abs(dot(normalize(vN),V)));
         c*=mix(0.84,1.0,smoothstep(0.0,0.16,hf));
         float d=length(vW-cameraPosition);
         c=mix(c,fogColor(),clamp((d-250.0)/1400.0,0.0,0.35));
-        c=mix(c, mix(vec3(0.93,0.95,0.97),vec3(0.2,0.25,0.36),uNight), uHaze);
+        c=mix(c, hazeColor(), uHaze);
         gl_FragColor=vec4(c,1.0);
       }`,
       { uShD: { value: col("#93ABC2") }, uMidD: { value: col("#D7E2EB") }, uLitD: { value: col("#FFFDF6") },
+        uShK: { value: col("#9A78B4") }, uMidK: { value: col("#F4A3A8") }, uLitK: { value: col("#FFDDA6") },
         uShN: { value: col("#1A2438") }, uMidN: { value: col("#2C3B58") }, uLitN: { value: col("#5C6F93") } });
     cloudMesh = new T.Mesh(g, m);
     cloudMesh.frustumCulled = false;
@@ -390,6 +418,24 @@
       }
     }
     cloudMesh.userData.mist = mistMat;
+    // neblina baixa nos morros e no pé das montanhas
+    const hillMist = new T.SpriteMaterial({ map: mistTex, color: 0x9fb2d0, transparent: true, opacity: 0, depthWrite: false, fog: false });
+    const hm = new T.Group(); const rr = mulberry(71);
+    for (let i = 0; i < 26; i++) {
+      const sp = new T.Sprite(hillMist);
+      const x = -260 + rr() * 520, z = -150 - rr() * 120;
+      sp.position.set(x, 6 + rr() * 10, z); sp.scale.set(90 + rr() * 80, 18 + rr() * 10, 1);
+      sp.userData = { x, sp: 0.4 + rr() * 0.6 }; hm.add(sp);
+    }
+    const lowMist = hillMist.clone();
+    for (let i = 0; i < 10; i++) {
+      const sp = new T.Sprite(lowMist);
+      const x = -120 + rr() * 240, z = -70 - rr() * 70;
+      sp.position.set(x, 2.5 + rr() * 3, z); sp.scale.set(50 + rr() * 40, 7 + rr() * 4, 1);
+      sp.userData = { x, sp: 0.6 + rr() * 0.8 }; hm.add(sp);
+    }
+    scene.add(hm);
+    cloudMesh.userData.hillMist = { mat: hillMist, low: lowMist, group: hm };
   }
 
   /* ------------------------------------------------------------------ */
@@ -423,7 +469,7 @@
       vec3 nc=nightTint(c);
       nc+=lanternGlow(vW)*0.9;
       c=mix(c,nc,uNight);
-      c=mix(c,vec3(1.0,0.72,0.36)*1.15,vGlow*uNight);
+      c=mix(c,vec3(1.0,0.72,0.36)*1.15,vGlow*max(uNight,uDusk*0.75));
       c=mix(c,c*1.08+vec3(0.06,0.05,0.02),vGlow*(1.0-uNight)*0.3);
       gl_FragColor=vec4(applyFog(c,vW),1.0);
     }`;
@@ -1382,12 +1428,12 @@
   /* Grama com vento                                                     */
   /* ------------------------------------------------------------------ */
   const WIND = `
-    uniform vec2 uWind; uniform float uTime;
+    uniform vec2 uWind; uniform float uTime; uniform float uGustAmp;
     float gust(vec2 xz){
       float travel=dot(xz,uWind);
       float wave=sin(travel*0.16-uTime*1.9)*0.5+0.5;
       float n=snoise(xz*0.035-uWind*uTime*0.55)*0.5+0.5;
-      return smoothstep(0.25,0.95,wave*0.55+n*0.65);
+      return smoothstep(0.25,0.95,wave*0.55+n*0.65)*uGustAmp;
     }`;
   let grass, flowers;
   {
@@ -1585,9 +1631,10 @@
     if (t) return t === "dark" ? 1 : 0;
     return matchMedia("(prefers-color-scheme: dark)").matches ? 1 : 0;
   };
-  let nightTarget = wantNight();
-  U.uNight.value = nightTarget;
-  new MutationObserver(() => { nightTarget = wantNight(); }).observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+  const wantDusk = () => (root.getAttribute("data-theme") === "dusk" ? 1 : 0);
+  let nightTarget = wantNight(), duskTarget = wantDusk();
+  U.uNight.value = nightTarget; U.uDusk.value = duskTarget;
+  new MutationObserver(() => { nightTarget = wantNight(); duskTarget = wantDusk(); }).observe(root, { attributes: true, attributeFilter: ["data-theme"] });
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { nightTarget = wantNight(); });
 
   let W = 1, H = 1;
@@ -1685,7 +1732,7 @@
         const m = list.find((x) => !x.live && x.splash < 0);
         if (m) launch(m, Math.random() < 0.45 ? "vale" : "sky");
         const night = U.uNight.value;
-        next = (night > 0.5 ? 3 : 6) + Math.random() * (night > 0.5 ? 5 : 9);
+        next = (night > 0.5 ? 1.6 : 6) + Math.random() * (night > 0.5 ? 3 : 9);
       }
       list.forEach((m) => {
         if (m.splash >= 0) {
@@ -1772,6 +1819,12 @@
     });
     cloudMesh.position.x = Math.sin(t * 0.006) * 40;
     cloudMesh.userData.mist.opacity = 0.55 * (1 - U.uNight.value * 0.75);
+    { const H = cloudMesh.userData.hillMist; const n = U.uNight.value, dk = U.uDusk.value * (1 - n);
+      H.mat.opacity = n * 0.34 + dk * 0.16; H.mat.color.setRGB(0.62 + dk * 0.36, 0.70 + dk * 0.06, 0.82 - dk * 0.1);
+      const hi = Math.min(1, Math.max(0, (camera.position.y - 12) / 25)); H.low.opacity = H.mat.opacity * 0.6 * (1 - hi); H.low.color.copy(H.mat.color);
+      H.group.children.forEach((sp) => { sp.position.x = sp.userData.x + Math.sin(t * 0.03 * sp.userData.sp + sp.userData.x) * 18; }); }
+    U.uGustAmp.value = 1 + U.uNight.value * 0.6 + U.uDusk.value * 0.15;
+    U.uSun.value.copy(DAY_SUN).lerp(DUSK_SUN_LIGHT, U.uDusk.value * (1 - U.uNight.value)).normalize();
   }
 
   const lastTgt = new T.Vector3();
@@ -1903,7 +1956,7 @@
     intro.active = false; intro.inFilm = false;
     introEl.hidden = true; introEl.classList.remove("film"); hero.classList.remove("playing"); document.documentElement.classList.remove("intro-on");
     $("introLine").classList.remove("show"); $("introSeal").classList.remove("show");
-    U.uHaze.value = 0; U.uNight.value = nightTarget;
+    U.uHaze.value = 0; U.uNight.value = nightTarget; U.uDusk.value = duskTarget;
     requestAnimationFrame(resize);
     window.dispatchEvent(new CustomEvent("vale:intro", { detail: "end" }));
     try { sessionStorage.setItem("vale-entrou", "1"); } catch (e) { /* sem armazenamento */ }
@@ -2221,16 +2274,19 @@
     const dt = Math.min(0.05, raw), tdt = Math.min(0.25, raw); // tdt: transições seguem o relógio real
     clock += dt;
     if (intro.active) {
+      U.uDusk.value += (duskTarget - U.uDusk.value) * Math.min(1, dt * 2.2);
       updateWorld(clock);
       introStep(dt);
     } else if (explore.active) {
       U.uNight.value += (nightTarget - U.uNight.value) * Math.min(1, dt * 2.2);
+      U.uDusk.value += (duskTarget - U.uDusk.value) * Math.min(1, dt * 2.2);
       pointer.sx += (pointer.x - pointer.sx) * Math.min(1, dt * 1.6);
       pointer.sy += (pointer.y - pointer.sy) * Math.min(1, dt * 1.6);
       updateWorld(clock);
       exploreStep(dt, tdt);
     } else {
       U.uNight.value += (nightTarget - U.uNight.value) * Math.min(1, dt * 2.2);
+      U.uDusk.value += (duskTarget - U.uDusk.value) * Math.min(1, dt * 2.2);
       pointer.sx += (pointer.x - pointer.sx) * Math.min(1, dt * 1.6);
       pointer.sy += (pointer.y - pointer.sy) * Math.min(1, dt * 1.6);
       updateWorld(clock);
@@ -2257,14 +2313,14 @@
     if (plaque) plaque.userData.redraw();
     signRedraws.forEach((f) => f());
     captureFrames();
-    U.uNight.value = nightTarget;
+    U.uNight.value = nightTarget; U.uDusk.value = duskTarget;
     if (reduce) { updateWorld(clock); place(BASE.pos, BASE.target); render(); }
     else setRunning(true);
     new IntersectionObserver((es) => { visible = es[0].isIntersecting; setRunning(visible && !document.hidden); }).observe(canvas);
     document.addEventListener("visibilitychange", () => setRunning(visible && !document.hidden));
     let rt2; addEventListener("resize", () => { clearTimeout(rt2); rt2 = setTimeout(() => { resize(); if (reduce || !running) { place(BASE.pos, BASE.target); render(); } }, 150); });
     if (reduce) {
-      new MutationObserver(() => { U.uNight.value = wantNight(); render(); }).observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+      new MutationObserver(() => { U.uNight.value = wantNight(); U.uDusk.value = wantDusk(); render(); }).observe(root, { attributes: true, attributeFilter: ["data-theme"] });
     }
     canvas.classList.add("ready");
     // pausa o vale enquanto um mundo de destaque está aberto

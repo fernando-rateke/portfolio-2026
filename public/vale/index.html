@@ -14,6 +14,7 @@
 <link rel="icon" href="/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <script>window.VALE_BASE = "/vale/";</script>
+<script>(function(){var d=new Date(),m=d.getHours()*60+d.getMinutes(),t=m<=300||m>1140?"dark":m<=840?"light":"dusk";try{var s=sessionStorage.getItem("vale-tema");if(s)t=s;}catch(e){}document.documentElement.setAttribute("data-theme",t);})();</script>
 <style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -61,7 +62,7 @@
   --gutter: max(16px, env(safe-area-inset-left, 0px));
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
+  :root:not([data-theme="light"]):not([data-theme="dusk"]) {
     --bg: #0D1422; --surface: #131D2E; --ink: #ECE7DA; --muted: #9AA4B2; --line: #26334A;
     --accent: #E2463F; --accent-ink: #1A0E0E;
     --sky-top: #060B17; --sky-low: #1C2C4A;
@@ -197,9 +198,10 @@ html.intro-on, html.intro-on body { overflow: hidden; }
   backdrop-filter: blur(6px);
 }
 .theme-toggle svg, .sound-toggle svg { width: 22px; height: 22px; }
-.theme-toggle .moon { display: none; }
-.is-night .theme-toggle .sun { display: none; }
+.theme-toggle .moon, .theme-toggle .sunset { display: none; }
+.is-night .theme-toggle .sun, .is-dusk .theme-toggle .sun { display: none; }
 .is-night .theme-toggle .moon { display: block; }
+.is-dusk .theme-toggle .sunset { display: block; }
 
 
 /* ---------- Site: tela cheia e exploração ---------- */
@@ -762,8 +764,9 @@ a.q { text-decoration: none; }
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.6L12.5 5v14l-4.9-4.5H4z"/><path class="wave" d="M15.8 9a4.2 4.2 0 0 1 0 6"/><path class="wave" d="M18.4 6.5a7.6 7.6 0 0 1 0 11"/></svg>
         <span id="soundLabel">Ouvir o tema</span>
       </button>
-      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Alternar entre dia e noite">
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Trocar entre dia, fim de tarde e noite">
         <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.3 5.3l1.7 1.7M17 17l1.7 1.7M5.3 18.7 7 17M17 7l1.7-1.7"/></svg>
+        <svg class="sunset" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M6.5 16a5.5 5.5 0 0 1 11 0"/><path d="M2.5 16h19M5 19.5h14M12 4.5v3M4.6 8.6l1.8 1.8M19.4 8.6l-1.8 1.8"/></svg>
         <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M19.5 14.6A8 8 0 0 1 9.4 4.5a8 8 0 1 0 10.1 10.1Z"/></svg>
         <span id="themeLabel">Dia</span>
       </button>
@@ -1110,22 +1113,26 @@ a.q { text-decoration: none; }
   /* ---------- Tema ---------- */
   const toggle = document.getElementById("themeToggle");
   const label = document.getElementById("themeLabel");
-  const isNight = () => {
-    const t = root.getAttribute("data-theme");
-    if (t) return t === "dark";
-    return matchMedia("(prefers-color-scheme: dark)").matches;
-  };
+  // tema pelo relógio: até 14h dia, até 19h fim de tarde, depois noite (até 5h)
+  const byClock = () => { const d = new Date(), m = d.getHours() * 60 + d.getMinutes(); return m <= 300 || m > 1140 ? "dark" : m <= 840 ? "light" : "dusk"; };
+  const NAMES = { light: "Dia", dusk: "Fim de tarde", dark: "Noite" }, NEXT = { light: "dusk", dusk: "dark", dark: "light" };
+  const current = () => root.getAttribute("data-theme") || byClock();
+  const isNight = () => current() === "dark";
   const syncLabel = () => {
-    const n = isNight();
-    document.body.classList.toggle("is-night", n);
-    label.textContent = n ? "Noite" : "Dia";
-    toggle.setAttribute("aria-pressed", String(n));
+    const t = current();
+    document.body.classList.toggle("is-night", t === "dark");
+    document.body.classList.toggle("is-dusk", t === "dusk");
+    label.textContent = NAMES[t];
+    toggle.setAttribute("aria-label", `Tema: ${NAMES[t]}. Trocar para ${NAMES[NEXT[t]].toLowerCase()}`);
   };
   toggle.addEventListener("click", () => {
-    root.setAttribute("data-theme", isNight() ? "light" : "dark");
+    const t = NEXT[current()];
+    root.setAttribute("data-theme", t);
+    try { sessionStorage.setItem("vale-tema", t); } catch (e) { /* sem storage */ }
     syncLabel();
   });
-  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", syncLabel);
+  // sem escolha manual, o tema acompanha o relógio enquanto a página está aberta
+  setInterval(() => { let manual = null; try { manual = sessionStorage.getItem("vale-tema"); } catch (e) { /* */ } if (!manual && current() !== byClock()) root.setAttribute("data-theme", byClock()); }, 60000);
   new MutationObserver(syncLabel).observe(root, { attributes: true, attributeFilter: ["data-theme"] });
 
   syncLabel();

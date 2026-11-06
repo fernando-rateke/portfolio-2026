@@ -240,18 +240,67 @@
   addEventListener("resize", () => { if (current) resize(); });
 
   const dossier = $("dossier"), dossierBtn = $("worldDossierBtn"), hint = $("worldHint"), title = $("worldTitle"), labels = $("worldLabels"), line = $("worldLine");
-  function showDossier() {
-    dossier.hidden = false; dossierBtn.hidden = true;
-    requestAnimationFrame(() => dossier.classList.add("open"));
-    dossier.focus();
+  // Kamishibai: cada <section class="kc"> do conteúdo vira um cartão pintado
+  const kami = $("kami"), kWin = $("kamiWindow"), kDots = $("kamiDots"), kCount = $("kamiCount");
+  let kCards = [], kIdx = 0, kTimer = null;
+  function buildCards() {
+    const body = $("dossierBody");
+    if (!body.firstElementChild) return;
+    let secs = [...body.children].filter((n) => n.matches("section.kc"));
+    if (!secs.length) { const sec = document.createElement("section"); sec.className = "kc"; while (body.firstChild) sec.appendChild(body.firstChild); body.appendChild(sec); secs = [sec]; }
+    kCards.forEach((c) => c.remove());
+    kCards = secs.map((sec) => {
+      const card = document.createElement("article"); card.className = "kami-card";
+      card.dataset.c = sec.dataset.c || (current && current.kamiColor) || "gold";
+      if (sec.dataset.k) { const k = document.createElement("span"); k.className = "kk"; k.setAttribute("aria-hidden", "true"); k.textContent = sec.dataset.k; card.appendChild(k); }
+      while (sec.firstChild) card.appendChild(sec.firstChild);
+      kWin.insertBefore(card, kWin.firstChild);
+      return card;
+    });
+    body.innerHTML = "";
+    kIdx = Math.max(0, Math.min(kCards.length - 1, parseInt(body.dataset.start || "0", 10) || 0));
+    delete body.dataset.start;
+    kDots.innerHTML = kCards.length > 1 && kCards.length <= 16 ? kCards.map(() => "<i></i>").join("") : "";
   }
-  function hideDossier() { dossier.classList.remove("open"); dossier.hidden = true; }
-  dossierBtn.addEventListener("click", showDossier);
-  $("dossierClose").addEventListener("click", () => {
+  function setCard(i) {
+    kIdx = Math.max(0, Math.min(kCards.length - 1, i));
+    kCards.forEach((c, j) => {
+      c.classList.toggle("out", j < kIdx);
+      c.style.zIndex = j < kIdx ? 3 : j === kIdx ? 2 : j === kIdx + 1 ? 1 : 0;
+      c.style.visibility = j < kIdx - 1 || j > kIdx + 1 ? "hidden" : "visible";
+      c.setAttribute("aria-hidden", String(j !== kIdx));
+      if (j === kIdx) c.scrollTop = 0;
+    });
+    [...kDots.children].forEach((d, j) => d.classList.toggle("on", j === kIdx));
+    kCount.textContent = kCards.length > 1 ? `${kIdx + 1} / ${kCards.length}` : "";
+    $("kamiPrev").disabled = kIdx === 0; $("kamiNext").disabled = kIdx === kCards.length - 1;
+    $("kamiPrev").hidden = $("kamiNext").hidden = kCards.length < 2;
+    if (current && current.onCard) current.onCard(kIdx);
+  }
+  function showDossier() {
+    buildCards();
+    if (!kCards.length) return;
+    clearTimeout(kTimer);
+    kami.hidden = false; dossierBtn.hidden = true;
+    setCard(kIdx);
+    requestAnimationFrame(() => requestAnimationFrame(() => kami.classList.add("open")));
+    $("kamiClose").focus();
+  }
+  function hideDossier() { kami.classList.remove("open"); clearTimeout(kTimer); kTimer = setTimeout(() => { if (!kami.classList.contains("open")) kami.hidden = true; }, 360); }
+  const kamiOpen = () => !kami.hidden && kami.classList.contains("open");
+  function closeKami() {
     hideDossier();
     if (current && current.onDossierClose) current.onDossierClose();
     if (current && current.dossierReady) dossierBtn.hidden = false;
-  });
+  }
+  dossierBtn.addEventListener("click", showDossier);
+  $("kamiClose").addEventListener("click", closeKami);
+  $("dossierClose").addEventListener("click", closeKami);
+  $("kamiPrev").addEventListener("click", () => setCard(kIdx - 1));
+  $("kamiNext").addEventListener("click", () => setCard(kIdx + 1));
+  kami.addEventListener("click", (e) => { if (e.target === kami) closeKami(); });
+  addEventListener("keydown", (e) => { if (!kamiOpen()) return; if (e.key === "ArrowRight") setCard(kIdx + 1); else if (e.key === "ArrowLeft") setCard(kIdx - 1); });
+  { let sx = null; kWin.addEventListener("pointerdown", (e) => { sx = e.clientX; }); kWin.addEventListener("pointerup", (e) => { if (sx !== null && Math.abs(e.clientX - sx) > 50) setCard(kIdx + (e.clientX < sx ? 1 : -1)); sx = null; }); }
 
   const backBtn = $("worldBack"), backHTML = backBtn.innerHTML;
   function open(name, from) {
@@ -259,7 +308,7 @@
     if (!w) return;
     if (name === "nos" && !w.entered) { showGate(from); return; }
     w.from = from || null;
-    backBtn.innerHTML = w.from ? backHTML.replace("Voltar ao vale", "Voltar ao castelo") : backHTML;
+    backBtn.innerHTML = w.from ? backHTML.replace("Voltar ao vale", name === "quarto" ? "Descer ao castelo" : "Voltar ao castelo") : backHTML;
     if (!ensureRenderer()) return;
     current = w;
     el.hidden = false; el.dataset.world = name; root.classList.add("intro-on");
@@ -283,9 +332,9 @@
     hideDossier();
     window.dispatchEvent(new CustomEvent("mundo", { detail: "close" }));
   }
-  function back() { if (!current) return; const f = current.from; close(); if (f) open(f); }
+  function back() { if (!current) return; const f = current.from, was = el.dataset.world; close(); if (f) { worlds[f].returnFrom = was; open(f); } }
   backBtn.addEventListener("click", back);
-  addEventListener("keydown", (e) => { if (e.key === "Escape" && current) back(); });
+  addEventListener("keydown", (e) => { if (e.key !== "Escape" || !current) return; if (kamiOpen()) { closeKami(); return; } back(); });
 
   // aviso antes da porta preta
   const gate = $("worldGate");
@@ -1710,44 +1759,76 @@
   })();
 
   /* =================================================================== */
-  /* O CASTELO POR DENTRO: lareira do Calcifer, porta de quatro cores     */
+  /* O CASTELO POR DENTRO: entra-se pela porta dos fundos, sobe-se ao     */
+  /* quarto e, na volta, a porta com o seletor leva aos mundos            */
   /* =================================================================== */
   const castelo = (() => {
     const scene = new T.Scene();
-    scene.background = new T.Color("#120C0A");
+    scene.background = new T.Color("#0E0A10");
     const camera = new T.PerspectiveCamera(55, 1, 0.1, 200);
     const env = envUniforms({ sun: [0.3, 0.75, 0.6], sunCol: "#6A5646", amb: "#3A2E2A", fog: "#120C0A", fogDen: 0.014, glowCol: "#FFC27A" });
-    const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
     const ray = new T.Raycaster(), ndc = new T.Vector2();
+    const ROOM_KEY = "castelo-quarto";
     const DOORS = [
-      { id: "vermelho", color: "#C22026", name: "Templo do Sino", sub: "AcousticBuild", world: "templo", say: "Vermelho: o Templo do Sino. O AcousticBuild mora lá.", text: "Previsão de ruído em edificações pelas normas EN 12354. 2º lugar na XI FEBIC." },
-      { id: "preto", color: "#0B0809", name: "Nós", sub: "o jogo", world: "nos", say: "Preto. O mundo do Nós. Do outro lado é escuro, vá com calma.", text: "Narrativa de exploração psicológica, em desenvolvimento." },
-      { id: "azul", color: "#2E7896", name: "Hollow Depths", sub: "abre o jogo", href: "https://game-nauy.onrender.com/", say: "Azul: as profundezas do Hollow Depths. Ele abre numa aba nova.", text: "RPG de turno guiado por probabilidade." },
-      { id: "verde", color: "#78AB5A", name: "O vale", sub: "voltar", back: true, say: "Verde: de volta ao vale. O castelo continua andando.", text: "Sai do castelo e volta para a visão do vale." },
+      { id: "vermelho", color: "#C22026", name: "Árvore do Totoro", sub: "AcousticBuild", world: "arvore", say: "Vermelho: a árvore do Totoro. É lá que mora o AcousticBuild." },
+      { id: "preto", color: "#0B0809", name: "Nós", sub: "o jogo", world: "nos", say: "Preto. Um corredor escuro, e o Nós no fim dele. Vá com calma." },
+      { id: "azul", color: "#2E7896", name: "Hollow Depths", sub: "abre o jogo", href: "https://game-nauy.onrender.com/", say: "Azul: as profundezas do Hollow Depths. Ele abre numa aba nova." },
+      { id: "verde", color: "#78AB5A", name: "O vale", sub: "voltar", back: true, say: "Verde: de volta ao vale. O castelo continua andando." },
     ];
+    const DX = 1.6, BACKX = -0.6;
     const VIEWS = {
-      idle: { pos: [-0.6, 2.25, 4.4], tgt: [-1.2, 1.5, -2.2] },
+      outside: { pos: [BACKX, 1.75, 8.6], tgt: [BACKX, 1.6, 0] },
+      idle: { pos: [-0.6, 2.25, 3.9], tgt: [-1.2, 1.5, -2.2] },
       door: { pos: [1.5, 2.0, 0.4], tgt: [1.6, 2.2, -5] },
       calcifer: { pos: [-2.4, 1.7, -0.3], tgt: [-5.6, 1.1, -1.6] },
       stairs: { pos: [1.8, 2.5, 2.6], tgt: [5.2, 2.4, -1.8] },
+      down: { pos: [3.6, 2.6, -2.4], tgt: [1.6, 2.0, -5] },
     };
-    let time = 0, hovered = null, view = "idle", choice = null, opening = 0, openK = 0, calc = null, hits = [], doorHinge, dialPtr, portalMat, chips, tip, camFrom = null, camK = 1, sayUntil = 0, timer = null;
+    let spinBtn, time = 0, hovered = null, view = "idle", choiceIdx = -1, opening = 0, openK = 0, backK = 0, entryT = -1, calc = null, hits = [], sectors = [], doorHinge, backHinge, dialPtr, portalMat, plateTex, plateDraw, tip, stairTip, camFrom = null, camK = 1, sayUntil = 0, timer = null;
+    const unlocked = () => { try { return sessionStorage.getItem(ROOM_KEY) === "1"; } catch (e) { return true; } };
     const talking = () => performance.now() < sayUntil;
-    function say(text) { sayUntil = performance.now() + Math.min(3200, 900 + text.length * 45); line.textContent = text; line.classList.remove("show"); void line.offsetWidth; line.classList.add("show"); }
+    function say(text) { sayUntil = performance.now() + Math.min(3400, 900 + text.length * 45); line.textContent = text; line.classList.remove("show"); void line.offsetWidth; line.classList.add("show"); }
     function setView(v) { if (view === v) return; view = v; camFrom = { pos: camera.position.clone(), tgt: camera.userData.tgt.clone() }; camK = 0; }
     function tex(w, h, draw) { const c = document.createElement("canvas"); c.width = w; c.height = h; draw(c.getContext("2d"), w, h); const t = new T.CanvasTexture(c); t.anisotropy = 4; return t; }
+
+    // o que se vê pelo vão da porta em cada cor
+    const previews = {
+      vermelho: (g, w, h) => {
+        const s = g.createLinearGradient(0, 0, 0, h); s.addColorStop(0, "#9CC4E4"); s.addColorStop(0.6, "#D8EBC8"); s.addColorStop(1, "#4E7A3E"); g.fillStyle = s; g.fillRect(0, 0, w, h);
+        g.fillStyle = "#2F5A2E"; for (const [x, y, r] of [[70, 150, 90], [190, 120, 110], [130, 80, 80], [40, 230, 70], [220, 230, 80]]) { g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill(); }
+        g.fillStyle = "#5A4030"; g.fillRect(105, 230, 50, 170);
+        g.fillStyle = "#1E140E"; g.beginPath(); g.ellipse(130, 330, 20, 34, 0, 0, Math.PI * 2); g.fill();
+        g.strokeStyle = "#EFE6D2"; g.lineWidth = 5; g.beginPath(); g.moveTo(100, 270); g.quadraticCurveTo(130, 285, 160, 270); g.stroke();
+        g.fillStyle = "#6E9A4E"; g.fillRect(0, 400, w, 112);
+      },
+      preto: (g, w, h) => {
+        g.fillStyle = "#050406"; g.fillRect(0, 0, w, h);
+        for (let k = 8; k > 0; k--) { const s = k / 8; g.strokeStyle = `rgba(80,70,90,${0.25 * (1 - s)})`; g.lineWidth = 2; g.strokeRect(w / 2 - 120 * s, h / 2 - 220 * s, 240 * s, 440 * s); }
+        const r = g.createRadialGradient(w / 2, h * 0.52, 0, w / 2, h * 0.52, 30); r.addColorStop(0, "rgba(255,214,120,1)"); r.addColorStop(1, "rgba(255,170,60,0)"); g.fillStyle = r; g.fillRect(0, 0, w, h);
+      },
+      azul: (g, w, h) => {
+        const s = g.createLinearGradient(0, 0, 0, h); s.addColorStop(0, "#2E7896"); s.addColorStop(1, "#06141E"); g.fillStyle = s; g.fillRect(0, 0, w, h);
+        g.fillStyle = "rgba(180,230,255,0.25)"; for (let k = 0; k < 14; k++) { g.beginPath(); g.arc((k * 53) % w, h - (k * 97) % h, 2 + (k % 3), 0, Math.PI * 2); g.fill(); }
+        g.fillStyle = "rgba(255,255,255,0.12)"; for (let k = 0; k < 5; k++) { g.beginPath(); g.moveTo(k * 60, 0); g.lineTo(k * 60 + 40, 0); g.lineTo(k * 60 + 120, h); g.lineTo(k * 60 + 90, h); g.fill(); }
+      },
+      verde: (g, w, h) => {
+        const s = g.createLinearGradient(0, 0, 0, h); s.addColorStop(0, "#7FA4D4"); s.addColorStop(0.55, "#EAD3A8"); s.addColorStop(0.56, "#7FA864"); s.addColorStop(1, "#4E7A3E"); g.fillStyle = s; g.fillRect(0, 0, w, h);
+        g.fillStyle = "#9AA6BC"; g.beginPath(); g.moveTo(-20, 290); g.lineTo(90, 170); g.lineTo(200, 290); g.fill();
+        g.fillStyle = "#C22026"; g.fillRect(150, 300, 8, 60); g.fillRect(190, 300, 8, 60); g.fillRect(140, 296, 68, 8);
+        g.fillStyle = "rgba(255,255,255,0.8)"; for (const [x, y, r] of [[60, 70, 26], [96, 62, 30], [200, 90, 22]]) { g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill(); }
+      },
+      fechado: (g, w, h) => { g.fillStyle = "#0A0708"; g.fillRect(0, 0, w, h); },
+    };
+    const previewTex = {};
 
     function build() {
       const mat = toon(env);
       const B = Builder(); const r = mulberry(5);
-      const WOOD = "#6B4A32", WOOD_D = "#3A2618", PLASTER = "#CDB894", BRICK = "#8A5A44";
-      // assoalho de tábuas
+      const WOOD = "#6B4A32", WOOD_D = "#3A2618", PLASTER = "#CDB894", BRICK = "#8A5A44", METAL = "#4E474C";
       for (let x = -6; x < 6; x += 0.5) B.add(new T.BoxGeometry(0.49, 0.06, 9.6), M(x + 0.25, 0, -0.3), r() < 0.5 ? "#7A5638" : "#6E4C32");
-      // tapete
       B.add(new T.BoxGeometry(3.6, 0.02, 2.4), M(-0.8, 0.04, 0.9), "#7A2A26");
       B.add(new T.BoxGeometry(3.2, 0.025, 2.0), M(-0.8, 0.045, 0.9), "#A04A34");
       B.add(new T.BoxGeometry(2.4, 0.03, 1.2), M(-0.8, 0.05, 0.9), "#C9A24A");
-      // paredes com rodapé de madeira, teto com vigas
       B.add(new T.BoxGeometry(12, 4.4, 0.14), M(0, 2.2, -5.1), PLASTER);
       for (const sx of [-1, 1]) B.add(new T.BoxGeometry(0.14, 4.4, 9.8), M(sx * 6.05, 2.2, -0.2), PLASTER);
       B.add(new T.BoxGeometry(12, 1.0, 0.06), M(0, 0.5, -5.02), WOOD);
@@ -1755,9 +1836,21 @@
       B.add(new T.BoxGeometry(12.2, 0.14, 10), M(0, 4.45, -0.2), "#4A3424");
       for (let z = -4.6; z <= 4; z += 1.6) B.add(new T.BoxGeometry(12, 0.26, 0.22), M(0, 4.28, z), WOOD_D);
       for (const x of [-3, 0, 3]) B.add(new T.BoxGeometry(0.22, 4.4, 0.22), M(x, 2.2, -4.95), WOOD_D);
-      // janela da parede do fundo
+      // parede da frente com a porta dos fundos (por onde se entra)
+      for (const [x0, x1] of [[-6, BACKX - 0.65], [BACKX + 0.65, 6]]) B.add(new T.BoxGeometry(x1 - x0, 4.4, 0.16), M((x0 + x1) / 2, 2.2, 4.62), PLASTER);
+      B.add(new T.BoxGeometry(1.3, 2.1, 0.16), M(BACKX, 3.35, 4.62), PLASTER);
+      // por fora: chapas de metal rebitadas, como no casco do castelo
+      for (let x = -6; x < 6; x += 1.2) for (let y = 0; y < 4.4; y += 1.1) {
+        if (Math.abs(x + 0.6 - BACKX) < 1.0 && y < 2.3) continue;
+        B.add(new T.BoxGeometry(1.16, 1.06, 0.06), M(x + 0.6, y + 0.55, 4.74), (Math.floor(x) + Math.floor(y)) % 2 ? METAL : "#5A5258");
+        for (const [dx, dy] of [[-0.48, -0.44], [0.48, -0.44], [-0.48, 0.44], [0.48, 0.44]]) B.add(new T.SphereGeometry(0.035, 6, 4), M(x + 0.6 + dx, y + 0.55 + dy, 4.78), "#8A8288");
+      }
+      for (const sx of [-1, 1]) B.add(new T.BoxGeometry(0.14, 2.4, 0.3), M(BACKX + sx * 0.66, 1.2, 4.66), WOOD_D);
+      B.add(new T.BoxGeometry(1.46, 0.14, 0.3), M(BACKX, 2.36, 4.66), WOOD_D);
+      B.add(new T.BoxGeometry(0.22, 0.32, 0.22), M(BACKX + 1.1, 2.3, 4.92), "#FFC67A", 1);
+      B.add(new T.BoxGeometry(4.0, 0.08, 1.6), M(BACKX, 0.0, 6.0), "#3A3436");
+      // janela, lareira, mesa, prateleiras, ervas
       B.add(new T.BoxGeometry(1.8, 1.5, 0.1), M(-3.6, 2.6, -5.0), WOOD_D);
-      // lareira grande (parede esquerda)
       const HZ = -1.6;
       B.add(new T.BoxGeometry(1.3, 0.7, 2.6), M(-5.4, 0.35, HZ), (x, y) => (Math.floor(y * 6) % 2 ? BRICK : "#7A4E3A"));
       B.add(new T.BoxGeometry(1.0, 2.0, 0.5), M(-5.5, 1.7, HZ - 1.05), BRICK);
@@ -1767,10 +1860,8 @@
       B.add(new T.BoxGeometry(0.2, 1.6, 1.6), M(-5.95, 1.4, HZ), "#1A1210");
       B.add(new T.BoxGeometry(1.5, 0.1, 2.9), M(-5.3, 3.18, HZ), WOOD);
       for (const [z, c] of [[-0.9, "#3E5A6A"], [-0.4, "#B98A4A"], [0.5, "#7A5A3A"], [1.0, "#5A6E4A"]]) B.add(new T.CylinderGeometry(0.1, 0.12, 0.34, 10), M(-5.1, 3.4, HZ + z), c);
-      // frigideira pendurada (a do café da manhã)
       B.add(new T.CylinderGeometry(0.28, 0.24, 0.06, 18), M(-4.75, 2.35, HZ + 0.7, 0, 0, Math.PI / 2), "#2A2626");
       B.add(new T.BoxGeometry(0.04, 0.5, 0.06), M(-4.75, 2.75, HZ + 0.7), "#2A2626");
-      // mesa, cadeiras e chaleira
       B.add(new T.BoxGeometry(2.2, 0.1, 1.2), M(-1.0, 0.95, 0.9), WOOD);
       for (const [x, z] of [[-1.95, 0.4], [-0.05, 0.4], [-1.95, 1.4], [-0.05, 1.4]]) B.add(new T.BoxGeometry(0.1, 0.92, 0.1), M(x, 0.46, z), WOOD_D);
       for (const [x, z, ry] of [[-1.6, 1.9, 0.2], [-0.3, 1.95, -0.15], [-2.5, 0.9, Math.PI / 2]]) {
@@ -1780,14 +1871,12 @@
       B.add(new T.SphereGeometry(0.16, 14, 10), M(-0.7, 1.12, 0.8, 0, 0, 0, 1, 0.8, 1), "#3E5A58");
       B.add(new T.CylinderGeometry(0.06, 0.05, 0.1, 10), M(-1.4, 1.05, 1.0), "#E8DCC2");
       B.add(new T.CylinderGeometry(0.06, 0.05, 0.1, 10), M(-1.1, 1.05, 1.2), "#E8DCC2");
-      // prateleiras com potes que brilham (feitiços do Howl)
       for (const y of [1.5, 2.1, 2.7]) {
         B.add(new T.BoxGeometry(1.8, 0.06, 0.4), M(-1.2, y, -4.85), WOOD);
         for (let k = 0; k < 5; k++) { const c = ["#8FC6E0", "#E0B85A", "#C26A8A", "#9AD08A", "#B0A0E0"][(k + Math.round(y * 3)) % 5]; B.add(new T.CylinderGeometry(0.08, 0.08, 0.22 + r() * 0.1, 10), M(-1.9 + k * 0.35, y + 0.15, -4.82), c, 0.55); }
       }
-      // ervas penduradas nas vigas
       for (let k = 0; k < 9; k++) { const x = -4.6 + k * 1.05, z = -3.0 + (k % 3) * 1.6, len = 0.4 + r() * 0.4; B.add(new T.CylinderGeometry(0.008, 0.008, len, 4), M(x, 4.17 - len / 2, z), "#2A2420"); B.add(new T.ConeGeometry(0.12, 0.34, 6), M(x, 4.0 - len, z, Math.PI, 0, 0), ["#5A7A44", "#7A8A44", "#8A6A3A"][k % 3]); }
-      // escada para o quarto (lado direito)
+      // escada para o quarto
       for (let k = 0; k < 13; k++) {
         const z = 2.4 - k * 0.48, y = 0.16 + k * 0.31;
         B.add(new T.BoxGeometry(1.3, 0.1, 0.5), M(5.2, y, z), WOOD);
@@ -1796,50 +1885,58 @@
       }
       { const len = Math.hypot(13 * 0.48, 13 * 0.31); B.add(new T.BoxGeometry(0.08, 0.08, len), M(4.55, 0.16 + 6 * 0.31 + 0.9, 2.4 - 6 * 0.48, Math.atan2(0.31, 0.48), 0, 0), WOOD); }
       B.add(new T.BoxGeometry(1.5, 0.1, 1.6), M(5.2, 4.3, -4.2), "#1A1210");
-      // a porta com o seletor de cores (parede do fundo)
-      const DX = 1.6;
+      // batente da porta principal e placa
       B.add(new T.BoxGeometry(1.7, 0.18, 0.3), M(DX, 2.66, -4.95), WOOD_D);
       for (const sx of [-1, 1]) B.add(new T.BoxGeometry(0.18, 2.66, 0.3), M(DX + sx * 0.76, 1.33, -4.95), WOOD_D);
       B.add(new T.CylinderGeometry(0.5, 0.5, 0.08, 32), M(DX, 3.3, -4.98, Math.PI / 2, 0, 0), "#3A2618");
       scene.add(new T.Mesh(B.build(), mat));
 
-      // seletor: quatro quadrantes coloridos e o ponteiro
+      // seletor: quadrantes clicáveis e ponteiro
       const dial = new T.Group(); dial.position.set(DX, 3.3, -4.92); scene.add(dial);
       DOORS.forEach((d, i) => {
         const a0 = Math.PI / 2 - (i + 1) * Math.PI / 2;
         const sec = new T.Mesh(new T.CircleGeometry(0.42, 24, a0, Math.PI / 2), new T.MeshBasicMaterial({ color: d.color }));
-        sec.position.z = 0.01; dial.add(sec);
+        sec.position.z = 0.01; sec.userData.sector = i; dial.add(sec); sectors.push(sec);
       });
       { const hub = new T.Mesh(new T.CircleGeometry(0.1, 20), new T.MeshBasicMaterial({ color: 0xc9a24a })); hub.position.z = 0.05; dial.add(hub); }
       dialPtr = new T.Mesh(new T.PlaneGeometry(0.06, 0.4), new T.MeshBasicMaterial({ color: 0xe8dcc2 }));
       dialPtr.geometry.translate(0, 0.2, 0); dialPtr.position.z = 0.04; dial.add(dialPtr);
-      // portal atrás da porta
-      portalMat = new T.ShaderMaterial({ uniforms: { uCol: { value: new T.Color("#FFD9A0") }, uT: { value: 0 }, uOpen: { value: 0 } },
+      // placa com o destino escrito
+      plateDraw = (txt, col) => (g, w, h) => { g.fillStyle = "#2A1C14"; g.fillRect(0, 0, w, h); g.strokeStyle = col || "#C9A24A"; g.lineWidth = 4; g.strokeRect(4, 4, w - 8, h - 8); g.fillStyle = "#EFE6D2"; g.font = "600 30px 'Shippori Mincho', serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(txt, w / 2, h / 2 + 2); };
+      plateTex = tex(320, 64, plateDraw("Gire o seletor"));
+      const plate = new T.Mesh(new T.PlaneGeometry(1.4, 0.28), new T.MeshBasicMaterial({ map: plateTex })); plate.position.set(DX, 2.92 + 0.0, -4.93); plate.position.y = 3.95; scene.add(plate);
+      // vão da porta com a prévia do destino
+      Object.keys(previews).forEach((k) => { previewTex[k] = tex(256, 512, previews[k]); });
+      portalMat = new T.ShaderMaterial({ uniforms: { map: { value: previewTex.fechado }, uT: { value: 0 }, uOpen: { value: 0 } },
         vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
-        fragmentShader: `${NOISE} uniform vec3 uCol; uniform float uT, uOpen; varying vec2 vUv;
-          void main(){ vec2 p=vUv-0.5; float n=snoise(vec2(p.x*3.0+uT*0.3, p.y*3.0-uT*0.5))*0.5+0.5; float r=length(p*vec2(1.6,1.0));
-            vec3 c=mix(uCol*0.5, uCol*1.4+0.15, n)*(1.0-r*0.8); c=mix(vec3(0.05,0.03,0.03), c, uOpen); gl_FragColor=vec4(c,1.0); }` });
+        fragmentShader: `uniform sampler2D map; uniform float uT, uOpen; varying vec2 vUv;
+          void main(){ vec2 uv=vUv; uv.x+=sin(uv.y*14.0+uT*2.0)*0.006*(1.0-uOpen); vec3 c=texture2D(map,uv).rgb; float v=1.0-length((vUv-0.5)*vec2(1.2,0.7))*0.6; gl_FragColor=vec4(c*v*(0.25+uOpen*0.95),1.0); }` });
       const portal = new T.Mesh(new T.PlaneGeometry(1.36, 2.5), portalMat); portal.position.set(DX, 1.25, -5.02); scene.add(portal);
-      // folha da porta, com dobradiça à esquerda
       doorHinge = new T.Group(); doorHinge.position.set(DX - 0.68, 0, -4.9); scene.add(doorHinge);
       const DB = Builder();
       DB.add(new T.BoxGeometry(1.36, 2.5, 0.1), M(0.68, 1.25, 0), WOOD);
       for (const y of [0.5, 1.25, 2.0]) DB.add(new T.BoxGeometry(1.36, 0.1, 0.03), M(0.68, y, 0.06), WOOD_D);
       DB.add(new T.SphereGeometry(0.06, 10, 8), M(1.18, 1.2, 0.1), "#C9A24A");
       doorHinge.add(new T.Mesh(DB.build(), mat));
+      // porta dos fundos (abre para dentro)
+      backHinge = new T.Group(); backHinge.position.set(BACKX - 0.6, 0, 4.62); scene.add(backHinge);
+      const BB = Builder();
+      BB.add(new T.BoxGeometry(1.2, 2.28, 0.1), M(0.6, 1.14, 0), "#5A3B26");
+      for (const y of [0.4, 1.14, 1.9]) BB.add(new T.BoxGeometry(1.2, 0.08, 0.14), M(0.6, y, 0), "#3A2618");
+      BB.add(new T.SphereGeometry(0.05, 8, 6), M(1.05, 1.1, 0.08), "#C9A24A"); BB.add(new T.SphereGeometry(0.05, 8, 6), M(1.05, 1.1, -0.08), "#C9A24A");
+      backHinge.add(new T.Mesh(BB.build(), mat));
 
-      // vista pela janela
       const view = tex(256, 200, (g, w, h) => {
         const s = g.createLinearGradient(0, 0, 0, h); s.addColorStop(0, "#7FA4D4"); s.addColorStop(0.7, "#E9C9A0"); s.addColorStop(1, "#7FA864");
         g.fillStyle = s; g.fillRect(0, 0, w, h); g.fillStyle = "#7FA864"; g.fillRect(0, 140, w, 60);
         g.fillStyle = "#9AA6BC"; g.beginPath(); g.moveTo(20, 140); g.lineTo(110, 70); g.lineTo(200, 140); g.fill();
         g.fillStyle = "#F4F1EC"; g.beginPath(); g.moveTo(90, 86); g.lineTo(110, 70); g.lineTo(130, 86); g.fill();
-        g.fillStyle = "rgba(255,255,255,0.8)"; for (const [x, y, rr] of [[60, 40, 18], [84, 34, 22], [200, 50, 16]]) { g.beginPath(); g.arc(x, y, rr, 0, Math.PI * 2); g.fill(); }
         g.strokeStyle = "#3A2618"; g.lineWidth = 8; g.beginPath(); g.moveTo(w / 2, 0); g.lineTo(w / 2, h); g.moveTo(0, h / 2); g.lineTo(w, h / 2); g.stroke();
       });
       const wv = new T.Mesh(new T.PlaneGeometry(1.6, 1.3), new T.MeshBasicMaterial({ map: view })); wv.position.set(-3.6, 2.6, -4.94); scene.add(wv);
+      // estrelas do lado de fora
+      { const sg = new T.BufferGeometry(), sp = []; for (let k = 0; k < 180; k++) sp.push((r() - 0.5) * 60, 2 + r() * 30, 14 + r() * 30); sg.setAttribute("position", new T.Float32BufferAttribute(sp, 3)); scene.add(new T.Points(sg, new T.PointsMaterial({ color: 0xfff2d6, size: 0.12 }))); }
 
-      // Calcifer na lareira
       calc = makeCalcifer(1.05); calc.group.position.set(-5.35, 0.66, HZ); scene.add(calc.group);
       const LB = Builder();
       LB.add(new T.CylinderGeometry(0.1, 0.1, 0.9, 8), M(-5.35, 0.76, HZ, 0.4, 0, Math.PI / 2), "#4A3020");
@@ -1847,138 +1944,384 @@
       scene.add(new T.Mesh(LB.build(), mat));
 
       const hitBox = (id, size, pos) => { const m = new T.Mesh(new T.BoxGeometry(...size), new T.MeshBasicMaterial()); m.visible = false; m.position.set(...pos); m.userData.spot = id; scene.add(m); hits.push(m); };
-      hitBox("door", [1.8, 3.9, 0.5], [DX, 1.9, -4.8]);
+      hitBox("door", [1.8, 2.7, 0.5], [DX, 1.3, -4.8]);
       hitBox("calcifer", [1.2, 1.8, 2.0], [-5.3, 1.3, HZ]);
       hitBox("stairs", [1.4, 4.0, 6.4], [5.2, 2.0, -0.6]);
 
       env.uPL.value[0].set(-4.6, 1.3, HZ); env.uPLC.value[0].set("#FF8A3A"); env.uPLR.value[0] = 3.0;
-      env.uPL.value[1].set(-3.6, 2.6, -4.3); env.uPLC.value[1].set("#C9A27A"); env.uPLR.value[1] = 2.2;
+      env.uPL.value[1].set(5.0, 3.6, -3.6); env.uPLC.value[1].set("#FFD39A"); env.uPLR.value[1] = 0.001;
       env.uPL.value[2].set(DX, 1.4, -4.3); env.uPLC.value[2].set("#FFD9A0"); env.uPLR.value[2] = 0.001;
 
       tip = document.createElement("div"); tip.className = "w-label"; tip.style.opacity = "0";
-      chips = document.createElement("div"); chips.className = "dial-chips"; chips.setAttribute("role", "group"); chips.setAttribute("aria-label", "Seletor de cores da porta");
-      DOORS.forEach((d) => {
-        const b = document.createElement("button"); b.type = "button"; b.className = "dial-chip"; b.dataset.door = d.id; b.setAttribute("aria-pressed", "false");
-        b.style.setProperty("--door", d.color); b.innerHTML = `<i aria-hidden="true"></i><b>${esc(d.name)}</b><small>${esc(d.sub)}</small>`;
-        b.addEventListener("click", () => choose(d.id)); chips.appendChild(b);
-      });
+      spinBtn = document.createElement("button"); spinBtn.type = "button"; spinBtn.className = "w-btn"; spinBtn.textContent = "Girar o seletor";
+      stairTip = document.createElement("div"); stairTip.className = "w-label w-label-call"; stairTip.style.opacity = "0"; stairTip.innerHTML = "<b>Suba primeiro</b><span>o quarto fica lá em cima</span>";
     }
 
-    function choose(id) {
-      const d = DOORS.find((x) => x.id === id); if (!d || opening) return;
-      choice = d;
-      chips.querySelectorAll(".dial-chip").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.door === id)));
-      portalMat.uniforms.uCol.value.set(d.color === "#0B0809" ? "#3A2A4A" : d.color);
+    function choose(i) {
+      if (opening === 1) return;
+      if (!unlocked()) { setView("stairs"); say("Calma. Antes de qualquer porta, suba ao quarto."); return; }
+      choiceIdx = (i + DOORS.length) % DOORS.length;
+      const d = DOORS[choiceIdx];
+      portalMat.uniforms.map.value = previewTex[d.id];
       env.uPLC.value[2].set(d.color === "#0B0809" ? "#6A4A8A" : d.color);
+      plateDraw(d.name, d.color)(plateTex.image.getContext("2d"), 320, 64); plateTex.needsUpdate = true;
       setView("door"); say(d.say);
-      const act = $("worldAction"); act.hidden = false; act.textContent = d.back ? "Sair pela porta verde" : `Abrir a porta ${{ vermelho: "vermelha", preto: "preta", azul: "azul" }[id]}`;
+      const act = $("worldAction"); act.hidden = false; act.textContent = d.back ? "Sair pela porta" : "Abrir a porta";
+      spinBtn.hidden = false;
     }
     function openDoor() {
-      if (!choice || opening) return;
+      if (choiceIdx < 0 || opening === 1) return;
       opening = 1;
-      const d = choice;
+      const d = DOORS[choiceIdx];
       clearTimeout(timer);
       timer = setTimeout(() => {
         if (current !== api) return;
         if (d.href) { window.open(d.href, "_blank", "noopener"); opening = -1; return; }
         if (d.back) { close(); return; }
         close(); open(d.world, "castelo");
-      }, 1300);
+      }, 1400);
     }
-    function overviewHTML() {
-      return `<span class="w-kicker">Os projetos</span><h2 class="d-title">O castelo</h2>
-        <p class="d-sub">Cada cor do seletor abre a porta para um mundo diferente.</p>
-        <div class="c-doors">${DOORS.map((d) => `<button type="button" class="c-door" data-door="${d.id}" style="--door:${d.color}"><i aria-hidden="true"></i><span><b>${esc(d.name)}</b><small>${esc(d.text)}</small></span></button>`).join("")}</div>
-        <button type="button" class="c-door c-stairs" data-up><i aria-hidden="true"></i><span><b>Subir ao quarto</b><small>Os gostos, no alto do castelo.</small></span></button>`;
+    function goUp() {
+      setView("stairs"); say(unlocked() ? "O quarto continua lá em cima, do jeito que você deixou." : "Isso. Suba, o quarto fica lá em cima.");
+      clearTimeout(timer); timer = setTimeout(() => { if (current === api) { close(); open("quarto", "castelo"); } }, 1500);
     }
-    function bindDossier() {
-      const body = $("dossierBody");
-      body.querySelectorAll("[data-door]").forEach((b) => b.addEventListener("click", () => { hideDossier(); dossierBtn.hidden = false; choose(b.dataset.door); }));
-      const up = body.querySelector("[data-up]"); if (up) up.addEventListener("click", goUp);
-    }
-    function goUp() { setView("stairs"); say("Lá em cima fica o quarto. Cuidado com o terceiro degrau."); clearTimeout(timer); timer = setTimeout(() => { if (current === api) { close(); open("quarto", "castelo"); } }, 1400); }
     function pick(e) {
       const rc = canvas.getBoundingClientRect();
       ndc.set((e.clientX - rc.left) / rc.width * 2 - 1, -((e.clientY - rc.top) / rc.height) * 2 + 1);
       ray.setFromCamera(ndc, camera);
+      const s = ray.intersectObjects(sectors)[0]; if (s) return "dial:" + s.object.userData.sector;
       const h = ray.intersectObjects(hits)[0];
       return h ? h.object.userData.spot : null;
     }
-    const onMove = (e) => { if (e.target !== canvas) return; hovered = pick(e); canvas.style.cursor = hovered ? "pointer" : ""; };
+    const onMove = (e) => { if (e.target !== canvas || entryT >= 0) return; hovered = pick(e); canvas.style.cursor = hovered ? "pointer" : ""; };
     const onClick = (e) => {
       if (e.target !== canvas) return;
+      if (entryT >= 0) { entryT = 99; return; }
       const s = pick(e);
-      if (s === "door") { if (choice) openDoor(); else { setView("door"); say("Primeiro escolha uma cor no seletor, logo acima da porta."); } }
-      else if (s === "calcifer") { setView("calcifer"); say("Eu sou o Calcifer. Mantenho o castelo andando e as portas abrindo."); setTimeout(() => { if (current === api) showDossier(); }, 1200); }
+      if (!s) return;
+      if (s.startsWith("dial:")) choose(+s.slice(5));
+      else if (s === "door") { if (!unlocked()) choose(0); else if (choiceIdx >= 0) openDoor(); else { setView("door"); say("Gire o seletor acima da porta: cada cor leva a um lugar."); } }
+      else if (s === "calcifer") { setView("calcifer"); say(unlocked() ? "Eu sou o Calcifer. Mantenho o castelo andando e as portas abrindo." : "Eu sou o Calcifer. Suba ao quarto primeiro, depois a gente fala de portas."); }
       else if (s === "stairs") goUp();
     };
     const onAction = () => openDoor();
+    const onSpin = () => choose(choiceIdx + 1);
     const LABELS = { door: ["Porta", "o seletor de cores"], calcifer: ["Calcifer", "o guia"], stairs: ["Escada", "sobe ao quarto"] };
+    const labelFor = (h) => (h.startsWith("dial:") ? [DOORS[+h.slice(5)].name, DOORS[+h.slice(5)].sub] : LABELS[h]);
 
     const api = {
-      template: "", dossierLabel: "Ver os projetos", choose: (id) => choose(id), openDoor: () => openDoor(),
+      template: "", dossierLabel: "Girar o seletor", choose: (i) => choose(i), openDoor: () => openDoor(),
       titleHTML: `<span class="w-kicker">Por dentro</span><span class="w-name">Castelo do Howl</span>`,
-      hintText: "Escolha uma cor no seletor da porta, ou suba a escada.",
+      hintText: "",
       build,
       start() {
-        time = 0; hovered = null; choice = null; opening = 0; openK = 0; view = "idle"; camK = 1; camFrom = null;
-        camera.position.set(...VIEWS.idle.pos); camera.userData.tgt = new T.Vector3(...VIEWS.idle.tgt);
-        labels.appendChild(tip);
+        time = 0; hovered = null; choiceIdx = -1; opening = 0; openK = 0; camK = 1; camFrom = null;
+        const ret = api.returnFrom; api.returnFrom = null;
+        if (ret === "quarto") { try { sessionStorage.setItem(ROOM_KEY, "1"); } catch (e) { /* sem storage */ } }
+        portalMat.uniforms.map.value = previewTex.fechado; portalMat.uniforms.uOpen.value = 0;
+        plateDraw(unlocked() ? "Gire o seletor" : "Trancada")(plateTex.image.getContext("2d"), 320, 64); plateTex.needsUpdate = true;
+        labels.appendChild(tip); labels.appendChild(stairTip);
         $("worldAction").hidden = true; $("worldAction").addEventListener("click", onAction);
-        document.querySelector(".world-bottom").insertBefore(chips, document.querySelector(".world-actions"));
-        chips.querySelectorAll(".dial-chip").forEach((b) => b.setAttribute("aria-pressed", "false"));
+        spinBtn.addEventListener("click", onSpin); document.querySelector(".world-actions").prepend(spinBtn); spinBtn.hidden = true;
         canvas.addEventListener("click", onClick); canvas.addEventListener("pointermove", onMove);
-        $("dossierBody").innerHTML = overviewHTML(); bindDossier();
-        api.dossierReady = true; dossierBtn.hidden = false;
-        api.onDossierClose = () => {};
-        env.uPLR.value[2] = 0.001; portalMat.uniforms.uOpen.value = 0;
-        clearTimeout(timer); timer = setTimeout(() => { if (current === api && !choice) say("Bem-vindo ao castelo. Gire o seletor da porta e escolha um mundo."); }, 600);
+        api.dossierReady = false; dossierBtn.hidden = true;
+        clearTimeout(timer);
+        if (ret) {
+          entryT = -1; backK = 0;
+          view = ret === "quarto" ? "stairs" : "door";
+          camera.position.set(...VIEWS[view].pos); camera.userData.tgt = new T.Vector3(...VIEWS[view].tgt);
+          if (ret === "quarto") setTimeout(() => { if (current === api) setView("door"); }, 300);
+          hint.textContent = "Toque numa cor do seletor, acima da porta.";
+          spinBtn.hidden = false;
+          timer = setTimeout(() => { if (current === api) say(ret === "quarto" ? "Agora sim. Gire o seletor e escolha uma porta." : "De volta. Quer outra porta?"); }, 500);
+        } else {
+          // entrada pela porta dos fundos
+          entryT = 0; backK = 0; view = "outside";
+          camera.position.set(...VIEWS.outside.pos); camera.userData.tgt = new T.Vector3(...VIEWS.outside.tgt);
+          hint.textContent = "";
+        }
       },
       stop() {
         clearTimeout(timer); canvas.removeEventListener("click", onClick); canvas.removeEventListener("pointermove", onMove); canvas.style.cursor = "";
         $("worldAction").removeEventListener("click", onAction); $("worldAction").hidden = true;
-        if (chips.parentNode) chips.parentNode.removeChild(chips);
+        spinBtn.removeEventListener("click", onSpin); if (spinBtn.parentNode) spinBtn.parentNode.removeChild(spinBtn);
       },
       resize(w, h) { camera.aspect = w / h; camera.fov = w / h < 0.9 ? 74 : 55; camera.updateProjectionMatrix(); },
       update(dt) {
         time += dt;
         portalMat.uniforms.uT.value = time;
-        // seletor gira até a cor escolhida
-        const idx = choice ? DOORS.indexOf(choice) : -1;
+        // entrada: a porta dos fundos abre e a câmera atravessa
+        if (entryT >= 0) {
+          entryT += dt;
+          backK = smooth(0.6, 1.6, entryT);
+          if (entryT > 1.3 && view === "outside") setView("idle");
+          if (entryT > 3.4) {
+            entryT = -1; view = "idle";
+            hint.textContent = unlocked() ? "Toque numa cor do seletor, acima da porta, ou suba a escada." : "Suba a escada: o quarto vem primeiro.";
+            if (unlocked()) spinBtn.hidden = false;
+            say(unlocked() ? "De volta ao castelo. Gire o seletor e escolha uma porta." : "Ah, visita. Antes de qualquer porta, suba. O quarto fica lá em cima.");
+          }
+        } else backK += ((view === "outside" ? 1 : 0) - backK) * Math.min(1, dt * 2);
+        backHinge.rotation.y = backK * 1.7;
+        const idx = choiceIdx;
         const target = idx < 0 ? Math.sin(time * 0.6) * 0.1 : -(idx * Math.PI / 2 + Math.PI / 4);
         dialPtr.rotation.z += (target - dialPtr.rotation.z) * Math.min(1, dt * 5);
-        // porta abre e o portal acende
-        openK += ((opening === 1 ? 1 : 0) - openK) * Math.min(1, dt * (opening === 1 ? 2.2 : 3));
-        if (opening === -1 && openK < 0.05) opening = 0;
-        if (opening === -1) openK += (0 - openK) * Math.min(1, dt * 3);
+        if (opening === -1) { openK += (0 - openK) * Math.min(1, dt * 3); if (openK < 0.03) opening = 0; }
+        else openK += ((opening === 1 ? 1 : 0) - openK) * Math.min(1, dt * 2.2);
         doorHinge.rotation.y = -openK * 1.9;
-        portalMat.uniforms.uOpen.value = Math.max(openK, choice ? 0.15 : 0);
-        env.uPLR.value[2] = 0.001 + openK * 3.2 + (choice ? 0.6 : 0);
+        portalMat.uniforms.uOpen.value = Math.max(openK, idx >= 0 ? 0.18 : 0);
+        env.uPLR.value[2] = 0.001 + openK * 3.2 + (idx >= 0 ? 0.6 : 0);
+        env.uPLR.value[1] = unlocked() ? 0.001 : 2.2 + Math.sin(time * 2) * 0.3;
         calc.U.uHot.value += ((hovered === "calcifer" ? 1 : 0) - calc.U.uHot.value) * Math.min(1, dt * 5);
         calc.update(dt, camera, talking());
         env.uPLC.value[0].setRGB(1.0, 0.54 + Math.sin(time * 7) * 0.04, 0.23).multiplyScalar(0.75 + Math.sin(time * 13) * 0.07);
-        // câmera
         const V = VIEWS[view];
         const dp = new T.Vector3(...V.pos), dtg = new T.Vector3(...V.tgt);
         if (view === "idle") { dp.x += pointer.sx * 0.6; dp.y -= pointer.sy * 0.25; }
         if (opening === 1) dp.lerp(new T.Vector3(1.6, 1.6, -3.6), openK * 0.6);
-        camK = Math.min(1, camK + dt / 1.8);
+        camK = Math.min(1, camK + dt / (entryT >= 0 ? 2.1 : 1.8));
         if (camK < 1 && camFrom) { const e = ease(camK); camera.position.copy(camFrom.pos).lerp(dp, e); camera.userData.tgt.copy(camFrom.tgt).lerp(dtg, e); }
         else { camera.position.lerp(dp, Math.min(1, dt * 3)); camera.userData.tgt.lerp(dtg, Math.min(1, dt * 3)); }
         camera.lookAt(camera.userData.tgt);
-        if (hovered) {
-          const hm = hits.find((x) => x.userData.spot === hovered);
-          const v = hm.position.clone().add(new T.Vector3(0, hovered === "door" ? 2.2 : 1.2, 0)).project(camera);
-          tip.innerHTML = `<b>${LABELS[hovered][0]}</b><span>${LABELS[hovered][1]}</span>`;
-          tip.style.transform = `translate(-50%, -100%) translate(${(v.x * 0.5 + 0.5) * W}px, ${(-v.y * 0.5 + 0.5) * H}px)`;
-          tip.style.opacity = "1";
+        const place = (elx, p) => { const v = p.clone().project(camera); elx.style.transform = `translate(-50%, -100%) translate(${(v.x * 0.5 + 0.5) * W}px, ${(-v.y * 0.5 + 0.5) * H}px)`; return v.z < 1; };
+        if (hovered && entryT < 0) {
+          const L = labelFor(hovered);
+          const at = hovered.startsWith("dial:") ? new T.Vector3(DX, 3.85, -4.9) : hits.find((x) => x.userData.spot === hovered).position.clone().add(new T.Vector3(0, hovered === "door" ? 1.8 : 1.2, 0));
+          tip.innerHTML = `<b>${L[0]}</b><span>${L[1]}</span>`; place(tip, at); tip.style.opacity = "1";
         } else tip.style.opacity = "0";
+        const showStair = !unlocked() && entryT < 0 && hovered !== "stairs";
+        stairTip.style.opacity = showStair && place(stairTip, new T.Vector3(5.2, 3.4, 0.4)) ? "1" : "0";
       },
       render(rr) { rr.setRenderTarget(null); rr.render(scene, camera); },
     };
     return api;
   })();
 
-  const worlds = { templo, nos, torre, trem, quarto, castelo };
+  /* =================================================================== */
+  /* ÁRVORE DO TOTORO (AcousticBuild): proteja o sono com a barreira certa */
+  /* =================================================================== */
+  function makeTotoro(o) {
+    const { body: BODY, belly: BELLY, s = 1, mat } = o;
+    const g = new T.Group();
+    const B = Builder();
+    B.add(new T.SphereGeometry(1, 28, 20), M(0, 1.2, 0, 0, 0, 0, 1.0, 1.22, 0.86), BODY);
+    B.add(new T.SphereGeometry(0.82, 26, 18), M(0, 0.95, 0.5, 0, 0, 0, 0.8, 0.88, 0.45), BELLY);
+    for (const [x, y] of [[-0.3, 1.5], [0, 1.55], [0.3, 1.5], [-0.15, 1.3], [0.15, 1.3], [-0.38, 1.25], [0.38, 1.25]]) {
+      for (const sx of [-1, 1]) B.add(new T.BoxGeometry(0.11, 0.03, 0.03), M(x + sx * 0.045, y - 0.025, 0.86 - Math.abs(x) * 0.12, 0, 0, sx * 0.6), BODY);
+    }
+    for (const sx of [-1, 1]) {
+      B.add(new T.ConeGeometry(0.15, 0.62, 10), M(sx * 0.38, 2.5, -0.05, 0, 0, -sx * 0.14), BODY);
+      B.add(new T.SphereGeometry(1, 12, 10), M(sx * 0.98, 1.15, 0.12, 0, 0, sx * 0.25, 0.26, 0.52, 0.26), BODY);
+      for (let k = 0; k < 3; k++) B.add(new T.ConeGeometry(0.03, 0.12, 5), M(sx * (1.02 + k * 0.03), 0.66, 0.2 + (k - 1) * 0.07, Math.PI, 0, 0), "#EFE9DA");
+      B.add(new T.SphereGeometry(1, 12, 8), M(sx * 0.45, 0.1, 0.42, 0, 0, 0, 0.34, 0.14, 0.42), BODY);
+      for (let k = 0; k < 3; k++) B.add(new T.ConeGeometry(0.03, 0.1, 5), M(sx * 0.45 + (k - 1) * 0.1, 0.08, 0.82, -Math.PI / 2, 0, 0), "#EFE9DA");
+      for (let k = 0; k < 3; k++) B.add(new T.BoxGeometry(0.5, 0.012, 0.012), M(sx * 0.62, 1.8 + (k - 1) * 0.06, 0.66, 0, sx * 0.35, sx * (k - 1) * 0.12), "#2A2626");
+    }
+    B.add(new T.SphereGeometry(1, 10, 8), M(0, 1.9, 0.83, 0, 0, 0, 0.09, 0.04, 0.04), "#2A2626");
+    const mesh = new T.Mesh(B.build(), mat); g.add(mesh);
+    // olhos: fechados (dormindo) e abertos (acordado)
+    const shut = Builder(), open = Builder();
+    for (const sx of [-1, 1]) {
+      shut.add(new T.TorusGeometry(0.1, 0.018, 6, 14, Math.PI), M(sx * 0.32, 1.98, 0.76, 0, 0, Math.PI), "#2A2626");
+      open.add(new T.SphereGeometry(0.15, 16, 12), M(sx * 0.32, 1.98, 0.72, 0, 0, 0, 1, 1, 0.45), "#FFFFFF");
+      open.add(new T.SphereGeometry(0.06, 12, 8), M(sx * 0.31, 1.98, 0.79), "#1A1616");
+    }
+    const eyesShut = new T.Mesh(shut.build(), mat), eyesOpen = new T.Mesh(open.build(), mat);
+    eyesOpen.visible = false; g.add(eyesShut, eyesOpen);
+    g.scale.setScalar(s);
+    return { g, eyesShut, eyesOpen, base: 1 };
+  }
+
+  const arvore = (() => {
+    const scene = new T.Scene();
+    const camera = new T.PerspectiveCamera(50, 1, 0.1, 400);
+    const env = envUniforms({ sun: [0.45, 0.8, 0.5], sunCol: "#E8D6A8", amb: "#4E5A48", fog: "#B9CDB0", fogDen: 0.016, glowCol: "#FFE6A8" });
+    const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    const MATS = [
+      { id: "folhas", name: "Folhas", r: 4, cut: 7000, k: "葉" },
+      { id: "papel", name: "Papel shōji", r: 8, cut: 3200, k: "紙" },
+      { id: "madeira", name: "Madeira", r: 22, cut: 1000, k: "木" },
+      { id: "pedra", name: "Pedra", r: 48, cut: 320, k: "石" },
+    ];
+    const SOURCES = [
+      { id: "chuva", name: "Chuva", db: 60, k: "雨" },
+      { id: "trem", name: "Trem passando", db: 80, k: "汽" },
+      { id: "trovao", name: "Trovão", db: 100, k: "雷" },
+    ];
+    const SLEEP = 35;
+    let time = 0, matIdx = 2, busy = false, slide = 0, slideTo = 0, wake = 0, wakeUntil = 0, totoro, chu, chibi, panels = [], zs = [], ctrl, meter, audio = null, sayUntil = 0, timer = null, motes;
+    function say(text) { line.textContent = text; line.classList.remove("show"); void line.offsetWidth; line.classList.add("show"); }
+
+    function build() {
+      const mat = toon(env);
+      scene.background = new T.Color("#CFE0C6");
+      const B = Builder(); const r = mulberry(88);
+      // chão de musgo e campo
+      B.add(new T.CircleGeometry(60, 64), M(0, 0, 0, -Math.PI / 2, 0, 0), (x, y) => (Math.hypot(x, y) < 9 ? "#5E8A44" : "#6E9A4E"));
+      // tronco da cânfora, com a toca aberta na frente
+      const BARK = (x, y, z) => { const a = Math.atan2(x, z); const v = Math.sin(a * 9 + y * 0.9 + Math.sin(y * 1.7 + a * 3) * 1.5) * 0.5 + 0.5; return v > 0.7 ? "#5A4434" : v > 0.35 ? "#66503E" : "#715846"; };
+      const gnarl = (geo, amp) => { const g = geo.index ? geo.toNonIndexed() : geo; const p = g.attributes.position; for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i), z = p.getZ(i), a = Math.atan2(x, z); const k = 1 + amp * (Math.sin(a * 5 + y * 0.7) * 0.6 + Math.sin(a * 11 - y * 1.3) * 0.4); p.setXYZ(i, x * k, y, z * k); } g.computeVertexNormals(); return g; };
+      B.add(gnarl(new T.CylinderGeometry(3.0, 3.9, 4.4, 56, 8, true, 0.62, Math.PI * 2 - 1.24), 0.07), M(0, 2.2, 0), BARK);
+      B.add(inwardM(new T.CylinderGeometry(2.7, 3.35, 4.4, 56, 4, true, 0.62, Math.PI * 2 - 1.24)), M(0, 2.2, 0), "#3E2C20");
+      B.add(gnarl(new T.CylinderGeometry(2.95, 3.1, 1.6, 24, 3, true, -0.62, 1.24), 0.05), M(0, 3.7, 0), BARK);
+      B.add(new T.CircleGeometry(3.3, 40), M(0, 0.04, 0, -Math.PI / 2, 0, 0), "#4E7A3A");
+      for (const sx of [-1, 1]) B.add(new T.CylinderGeometry(0.35, 0.55, 3.2, 12), M(sx * 2.05, 1.5, 2.9, 0, 0, sx * 0.08), BARK);
+      for (let k = 0; k < 7; k++) { const x = -1.8 + k * 0.6; B.add(new T.IcosahedronGeometry(0.42 + (k % 3) * 0.08, 1), M(x, 2.95 + Math.sin(k * 1.7) * 0.12, 2.92, 0, 0, 0, 1, 0.8, 0.7), BARK); }
+      B.add(gnarl(new T.CylinderGeometry(2.2, 3.0, 7, 48, 10), 0.08), M(0, 7.9, 0), BARK);
+      for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2 + 0.3; B.add(new T.CylinderGeometry(0.5, 0.9, 7, 10), M(Math.sin(a) * 3.2, 12.2, Math.cos(a) * 3.2, Math.cos(a) * 0.7, 0, -Math.sin(a) * 0.7), BARK); }
+      for (let k = 0; k < 9; k++) { const a = k / 9 * Math.PI * 2 + 0.35; if (Math.abs(Math.atan2(Math.sin(a), Math.cos(a))) < 0.5) continue; B.add(new T.CylinderGeometry(0.25, 0.7, 4.4, 8), M(Math.sin(a) * 4.4, 0.35, Math.cos(a) * 4.4, Math.cos(a) * 1.35, 0, -Math.sin(a) * 1.35), BARK); }
+      // shimenawa (corda sagrada) com shide de papel
+      B.add(new T.TorusGeometry(2.92, 0.17, 10, 64), M(0, 5.3, 0, Math.PI / 2, 0, 0), (x, y, z) => (Math.floor((Math.atan2(z, x) + Math.PI) * 12) % 2 ? "#E2CE96" : "#C9B278"));
+      for (const a of [-0.6, -0.2, 0.2, 0.6]) {
+        const x = Math.sin(a) * 3.05, z = Math.cos(a) * 3.05;
+        for (let k = 0; k < 4; k++) B.add(new T.PlaneGeometry(0.12, 0.17), M(x + Math.sin(a + Math.PI / 2) * (k % 2 ? 0.05 : -0.05), 5.02 - k * 0.15, z + 0.02, 0, a, (k % 2 ? 0.5 : -0.5)), "#F7F4EC");
+      }
+      // copa enorme
+      for (let k = 0; k < 52; k++) { const a = r() * Math.PI * 2, rr = r() * 10.5, y = 11 + r() * 5.5 - rr * 0.22; B.add(new T.IcosahedronGeometry(2.6 + r() * 2.2, 1), M(Math.cos(a) * rr, y, Math.sin(a) * rr * 0.9), ["#3E6E3E", "#4A7C46", "#5A8C50", "#36603A"][k % 4]); }
+      // floresta ao redor
+      for (let k = 0; k < 34; k++) {
+        const a = k / 34 * Math.PI * 2 + r() * 0.1, rr = 26 + r() * 14, x = Math.cos(a) * rr, z = Math.sin(a) * rr;
+        if (z > 10 && Math.abs(x) < 16) continue;
+        const h = 6 + r() * 6;
+        B.add(new T.CylinderGeometry(0.4, 0.7, h, 8), M(x, h / 2, z), "#5A4434");
+        for (let j = 0; j < 4; j++) B.add(new T.IcosahedronGeometry(2.4 + r() * 1.6, 1), M(x + (r() - 0.5) * 3, h + r() * 3, z + (r() - 0.5) * 3), ["#4A7C46", "#5A8C50", "#3E6E3E"][j % 3]);
+      }
+      // samambaias, pedras e flores
+      for (let k = 0; k < 40; k++) { const a = r() * Math.PI * 2, rr = 4.6 + r() * 7; const x = Math.cos(a) * rr, z = Math.sin(a) * rr; if (z > 3 && Math.abs(x) < 3) continue; B.add(new T.ConeGeometry(0.35 + r() * 0.3, 0.9 + r() * 0.6, 5), M(x, 0.4, z, (r() - 0.5) * 0.3, r(), (r() - 0.5) * 0.3), r() < 0.5 ? "#4E8A3E" : "#6AA04E"); }
+      for (let k = 0; k < 10; k++) { const a = r() * Math.PI * 2, rr = 5 + r() * 6; B.add(new T.IcosahedronGeometry(0.3 + r() * 0.4, 0), M(Math.cos(a) * rr, 0.15, Math.sin(a) * rr), "#8A8890"); }
+      for (let k = 0; k < 60; k++) { const a = r() * Math.PI * 2, rr = 4 + r() * 9; B.add(new T.SphereGeometry(0.07, 6, 4), M(Math.cos(a) * rr, 0.12, Math.sin(a) * rr), ["#F4F0E2", "#F2D24A", "#E8A0B4"][k % 3]); }
+      scene.add(new T.Mesh(B.build(), mat));
+      const line2 = outline(0.035, "#2A2018", env);
+      const envIn = Object.assign({}, env, { uSunCol: { value: new T.Color("#9A8A6E") }, uAmb: { value: new T.Color("#3A4038") } });
+      const totoroMat = toon(envIn);
+      // Totoro grande, o médio e o pequeno, dormindo na toca
+      totoro = makeTotoro({ body: "#5E6672", belly: "#E2DAC4", s: 1.05, mat: totoroMat });
+      totoro.g.position.set(0, 0.1, -0.7); totoro.g.rotation.x = -0.22; scene.add(totoro.g);
+      chu = makeTotoro({ body: "#5E7EB4", belly: "#D6E0EE", s: 0.42, mat: totoroMat });
+      chu.g.position.set(-1.55, 0.05, 0.6); chu.g.rotation.set(-0.1, 0.4, 0.25); scene.add(chu.g);
+      chibi = makeTotoro({ body: "#ECECE6", belly: "#FFFFFF", s: 0.26, mat: totoroMat });
+      chibi.g.position.set(0.05, 1.3, 0.25); chibi.g.rotation.set(-0.5, 0, 0); scene.add(chibi.g);
+      [totoro, chu, chibi].forEach((t) => { const o = new T.Mesh(t.g.children[0].geometry, line2); t.g.add(o); });
+      // barreiras que deslizam até a entrada
+      MATS.forEach((m) => {
+        const P = Builder();
+        if (m.id === "folhas") { for (let k = 0; k < 26; k++) P.add(new T.BoxGeometry(0.16, 3.2, 0.05), M(-2 + k * 0.16, 1.6, (k % 2) * 0.05, 0, 0, Math.sin(k) * 0.05), k % 3 ? "#5E9A4A" : "#4A8040"); }
+        if (m.id === "papel") { P.add(new T.BoxGeometry(4.2, 3.2, 0.05), M(0, 1.6, 0), "#F6F0DE"); for (let x = -2; x <= 2.01; x += 0.6) P.add(new T.BoxGeometry(0.07, 3.2, 0.1), M(x, 1.6, 0), "#6B4A32"); for (let y = 0.1; y <= 3.21; y += 0.62) P.add(new T.BoxGeometry(4.2, 0.07, 0.1), M(0, y, 0), "#6B4A32"); }
+        if (m.id === "madeira") { for (let k = 0; k < 9; k++) P.add(new T.BoxGeometry(0.46, 3.2, 0.14), M(-1.86 + k * 0.465, 1.6, 0), k % 2 ? "#9A6A42" : "#8A5E3A"); P.add(new T.BoxGeometry(4.3, 0.18, 0.2), M(0, 0.6, 0.08), "#6B4A32"); P.add(new T.BoxGeometry(4.3, 0.18, 0.2), M(0, 2.6, 0.08), "#6B4A32"); }
+        if (m.id === "pedra") { for (let y = 0; y < 5; y++) for (let x = 0; x < 6; x++) P.add(new T.BoxGeometry(0.66, 0.6, 0.4), M(-1.8 + x * 0.7 + (y % 2) * 0.32, 0.32 + y * 0.64, 0), (x + y) % 3 ? "#9A9690" : "#86827C"); }
+        const pm = new T.Mesh(P.build(), mat); pm.visible = false; pm.position.set(5.6, 0, 3.75); scene.add(pm); panels.push(pm);
+      });
+      // Zzz
+      const zt = (() => { const c = document.createElement("canvas"); c.width = 64; c.height = 64; const g = c.getContext("2d"); g.fillStyle = "#FFFFFF"; g.font = "700 50px 'Zen Maru Gothic', sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("z", 32, 34); return new T.CanvasTexture(c); })();
+      for (let k = 0; k < 3; k++) { const sp = new T.Sprite(new T.SpriteMaterial({ map: zt, transparent: true, depthWrite: false })); sp.scale.setScalar(0.4); scene.add(sp); zs.push({ sp, ph: k / 3 }); }
+      // poeira dourada nos raios de luz
+      const mg = new T.BufferGeometry(), mp = []; for (let k = 0; k < 120; k++) mp.push((r() - 0.5) * 16, r() * 9, (r() - 0.5) * 10 + 4);
+      mg.setAttribute("position", new T.Float32BufferAttribute(mp, 3));
+      motes = new T.Points(mg, new T.PointsMaterial({ color: 0xfff2c0, size: 0.07, transparent: true, opacity: 0.8 })); scene.add(motes);
+      env.uPL.value[0].set(0, 2.4, 0.6); env.uPLC.value[0].set("#FFD9A0"); env.uPLR.value[0] = 2.4;
+      env.uPL.value[1].set(-6, 6, 6); env.uPLC.value[1].set("#FFF0C8"); env.uPLR.value[1] = 0.001;
+      env.uPL.value[2].set(6, 6, 6); env.uPLC.value[2].set("#FFF0C8"); env.uPLR.value[2] = 0.001;
+
+      // controles: barreira e barulho
+      ctrl = document.createElement("div"); ctrl.className = "tt-ctrl";
+      ctrl.innerHTML = `<div class="tt-group" role="group" aria-label="Barreira na entrada da toca"><span class="tt-label">Barreira</span>${MATS.map((m, i) => `<button type="button" class="tt-ema" data-mat="${i}" aria-pressed="${i === matIdx}"><b aria-hidden="true">${m.k}</b><span>${esc(m.name)}</span><small>isola ${m.r} dB</small></button>`).join("")}</div>
+        <div class="tt-group" role="group" aria-label="Fazer barulho"><span class="tt-label">Barulho</span>${SOURCES.map((s, i) => `<button type="button" class="tt-ema tt-noise" data-src="${i}"><b aria-hidden="true">${s.k}</b><span>${esc(s.name)}</span><small>${s.db} dB</small></button>`).join("")}</div>`;
+      ctrl.querySelectorAll("[data-mat]").forEach((b) => b.addEventListener("click", () => { matIdx = +b.dataset.mat; ctrl.querySelectorAll("[data-mat]").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); }));
+      ctrl.querySelectorAll("[data-src]").forEach((b) => b.addEventListener("click", () => noise(+b.dataset.src)));
+      meter = document.createElement("div"); meter.className = "w-label tt-meter"; meter.style.opacity = "0";
+    }
+    function inwardM(geo) {
+      const g = geo.index ? geo.toNonIndexed() : geo; g.computeVertexNormals();
+      const p = g.attributes.position.array, n = g.attributes.normal.array;
+      for (let i = 0; i < p.length; i += 9) for (let k = 0; k < 3; k++) { const a = p[i + 3 + k]; p[i + 3 + k] = p[i + 6 + k]; p[i + 6 + k] = a; const b2 = n[i + 3 + k]; n[i + 3 + k] = n[i + 6 + k]; n[i + 6 + k] = b2; }
+      for (let i = 0; i < n.length; i++) n[i] = -n[i];
+      return g;
+    }
+
+    // sons sintetizados, abafados pela barreira
+    function play(src, m, inside) {
+      try {
+        audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+        if (audio.state === "suspended") audio.resume();
+        const ctx = audio, now = ctx.currentTime, dur = 3.0;
+        const out = ctx.createGain(); out.gain.value = Math.min(0.9, Math.pow(10, (inside - 85) / 30));
+        const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = m.cut; lp.connect(out); out.connect(ctx.destination);
+        const nb = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate), d = nb.getChannelData(0);
+        if (src.id === "chuva") { for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (0.5 + 0.5 * Math.random() * (Math.random() < 0.002 ? 4 : 1)); }
+        else if (src.id === "trovao") { let l = 0; for (let i = 0; i < d.length; i++) { const t = i / ctx.sampleRate; l = (l + 0.04 * (Math.random() * 2 - 1)) / 1.04; d[i] = (t < 0.08 ? (Math.random() * 2 - 1) : l * 6) * Math.exp(-t * 1.1) * (1 + 0.6 * Math.sin(t * 7)); } }
+        else { let l = 0; for (let i = 0; i < d.length; i++) { const t = i / ctx.sampleRate; l = (l + 0.03 * (Math.random() * 2 - 1)) / 1.03; const clack = (t % 0.42 < 0.03 || (t + 0.13) % 0.42 < 0.03) ? (Math.random() * 2 - 1) * 1.4 : 0; d[i] = l * 4 + clack; } }
+        const s = ctx.createBufferSource(); s.buffer = nb;
+        const env2 = ctx.createGain(); env2.gain.setValueAtTime(0, now); env2.gain.linearRampToValueAtTime(1, now + 0.15); env2.gain.setValueAtTime(1, now + dur - 0.6); env2.gain.linearRampToValueAtTime(0, now + dur);
+        s.connect(env2); env2.connect(lp); s.start(now);
+      } catch (e) { /* sem áudio */ }
+    }
+    function noise(i) {
+      if (busy) return;
+      busy = true;
+      const src = SOURCES[i], m = MATS[matIdx], inside = Math.max(0, src.db - m.r);
+      panels.forEach((p, j) => { p.visible = j === matIdx; });
+      slideTo = 1;
+      ctrl.classList.add("busy");
+      setTimeout(() => {
+        if (current !== api) return;
+        play(src, m, inside);
+        meter.innerHTML = `<b>Dentro da toca: ${inside} dB</b><span>${src.name} ${src.db} dB · ${m.name} isola ${m.r} dB</span>`;
+        meter.style.opacity = "1";
+        const woke = inside > SLEEP;
+        setTimeout(() => {
+          if (current !== api) return;
+          if (woke) { wake = 1; wakeUntil = time + 3.6; say(i === 2 && matIdx === 3 ? `Nem a pedra segura um trovão: ${inside} dB. Acordaram.` : `${inside} dB lá dentro. O Totoro acordou.`); }
+          else say(`${inside} dB lá dentro. Ninguém acordou.`);
+        }, 700);
+        setTimeout(() => { if (current !== api) return; slideTo = 0; }, 3100);
+        setTimeout(() => { if (current !== api) return; busy = false; ctrl.classList.remove("busy"); }, 4200);
+      }, 900);
+    }
+
+    const api = {
+      template: "dossierArvore", dossierLabel: "Ver a história do AcousticBuild", kamiColor: "totoro",
+      noise: (i) => noise(i), mat: (i) => { matIdx = i; },
+      titleHTML: `<span class="w-kicker">Porta vermelha · AcousticBuild</span><span class="w-name">O sono do Totoro</span>`,
+      hintText: "Escolha a barreira da toca e faça barulho. Acima de 35 dB, eles acordam.",
+      build,
+      start() {
+        time = 0; busy = false; slide = 0; slideTo = 0; wake = 0;
+        camera.position.set(0, 5.0, 14); camera.userData = { tgt: new T.Vector3(0, 2.9, 0) };
+        document.querySelector(".world-bottom").insertBefore(ctrl, document.querySelector(".world-actions"));
+        ctrl.classList.remove("busy");
+        labels.appendChild(meter); meter.style.opacity = "0";
+        $("worldAction").hidden = true;
+        api.dossierReady = true; dossierBtn.hidden = false;
+        clearTimeout(timer); timer = setTimeout(() => { if (current === api) say("Shh. Eles estão dormindo."); }, 600);
+      },
+      stop() { clearTimeout(timer); if (ctrl.parentNode) ctrl.parentNode.removeChild(ctrl); },
+      resize(w, h) { camera.aspect = w / h; camera.fov = w / h < 0.9 ? 70 : 50; camera.updateProjectionMatrix(); },
+      update(dt) {
+        time += dt;
+        slide += (slideTo - slide) * Math.min(1, dt * 3.2);
+        panels.forEach((p) => { p.position.x = lerp(5.6, 0, ease(Math.min(1, Math.max(0, slide)))); });
+        if (wake && time > wakeUntil) wake = 0;
+        const w = wake;
+        [totoro, chu, chibi].forEach((t, i) => { t.eyesOpen.visible = !!w; t.eyesShut.visible = !w; });
+        // respiração e sustos
+        const br = Math.sin(time * 1.3);
+        totoro.g.scale.set(1.05 * (1 + br * 0.012), 1.05 * (1 + br * 0.018), 1.05 * (1 + br * 0.012));
+        totoro.g.rotation.x = -0.22 + (w ? 0.18 : 0);
+        chibi.g.position.y = 1.3 + Math.max(0, br) * 0.03 + (w ? Math.abs(Math.sin(time * 9)) * 0.35 : 0);
+        chu.g.position.y = 0.05 + (w ? Math.abs(Math.sin(time * 8 + 1)) * 0.25 : 0);
+        zs.forEach((z) => { const k = (time * 0.35 + z.ph) % 1; z.sp.position.set(0.6 + k * 0.9 + Math.sin(k * 6) * 0.15, 2.9 + k * 1.6, 0.4); z.sp.material.opacity = w || slide > 0.2 ? 0 : Math.sin(k * Math.PI) * 0.9; z.sp.scale.setScalar(0.25 + k * 0.35); });
+        motes.rotation.y = time * 0.02; motes.position.y = Math.sin(time * 0.3) * 0.2;
+        // câmera
+        const pos = new T.Vector3(pointer.sx * 1.2, 5.0 - pointer.sy * 0.5, 14);
+        camera.position.lerp(pos, Math.min(1, dt * 2)); camera.lookAt(camera.userData.tgt);
+        const v = new T.Vector3(0, 4.6, 3).project(camera);
+        meter.style.transform = `translate(-50%, -100%) translate(${(v.x * 0.5 + 0.5) * W}px, ${(-v.y * 0.5 + 0.5) * H}px)`;
+      },
+      render(rr) { rr.setRenderTarget(null); rr.render(scene, camera); },
+    };
+    return api;
+  })();
+
+  const worlds = { templo, nos, torre, trem, quarto, castelo, arvore };
   window.mundos = { open, close, worlds };
 })();

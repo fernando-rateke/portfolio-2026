@@ -448,6 +448,24 @@ a.q { text-decoration: none; }
 .mundo[data-world="quarto"] .dossier { background: #F4EBDD; color: #2A2018; }
 .mundo[data-world="castelo"] .dossier { background: #F4EBDD; color: #2A2018; }
 .mundo[data-world="castelo"] .dossier .w-btn { color: #2A2018; border-color: rgba(42,32,24,0.35); background: transparent; }
+.tt-ctrl { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 18px; pointer-events: auto; max-width: 980px; }
+.tt-ctrl.busy { opacity: 0.55; pointer-events: none; }
+.tt-group { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px; }
+.tt-label { font: 500 0.62rem/1 var(--f-label); letter-spacing: 0.16em; text-transform: uppercase; color: #FFF6DE; text-shadow: 0 1px 8px rgba(0,0,0,0.6); margin-right: 4px; }
+.tt-ema { position: relative; display: grid; grid-template-columns: auto auto; column-gap: 8px; align-items: center; text-align: left; padding: 8px 12px 8px 10px; border: 0; cursor: pointer; color: #3A2618; font: inherit;
+  background: linear-gradient(180deg, #E9C99A, #D4AE78); clip-path: polygon(12% 0, 88% 0, 100% 22%, 100% 100%, 0 100%, 0 22%); box-shadow: inset 0 -3px 0 rgba(0,0,0,0.15); }
+.tt-ema b { grid-row: span 2; font: 800 1.3rem/1 var(--f-display); color: #9A2A20; }
+.tt-ema span { font: 600 0.88rem/1.1 var(--f-display); }
+.tt-ema small { font: 500 0.58rem/1.2 var(--f-label); letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.75; }
+.tt-ema[aria-pressed="true"] { background: linear-gradient(180deg, #FFF0D0, #F2D29C); box-shadow: inset 0 0 0 2px #9A2A20; }
+.tt-noise { background: linear-gradient(180deg, #C9DDB8, #A9C694); }
+.tt-ema:hover, .tt-ema:focus-visible { filter: brightness(1.06); transform: translateY(-1px); }
+.tt-meter { background: rgba(30, 40, 26, 0.82) !important; }
+.mundo[data-world="arvore"] .world-line { font-family: "Zen Maru Gothic", var(--f-display); font-style: normal; color: #FFFBEA; max-width: 28ch; font-size: clamp(1.1rem, 0.9rem + 1.4vw, 1.9rem); top: 18%; }
+.mundo[data-world="arvore"] .world-title .w-name, .mundo[data-world="arvore"] .w-kicker { text-shadow: 0 2px 14px rgba(0,0,0,0.45); }
+@media (max-width: 640px) { .tt-ema small { display: none; } .tt-ema { padding: 6px 9px; } .tt-label { width: 100%; text-align: center; } }
+.w-label-call { background: rgba(194, 32, 38, 0.88) !important; animation: callpulse 1.8s ease-in-out infinite; }
+@keyframes callpulse { 50% { box-shadow: 0 0 0 6px rgba(194, 32, 38, 0.25); } }
 .mundo[data-world="castelo"] .world-line { font-family: var(--f-display); font-style: normal; color: #FFE2B8; max-width: 26ch; font-size: clamp(1.2rem, 0.9rem + 1.6vw, 2.1rem); }
 .dial-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; pointer-events: auto; }
 .dial-chip { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px 8px 8px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.3); background: rgba(20,14,12,0.72); color: #F4EBDD; cursor: pointer; font: inherit; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
@@ -538,6 +556,70 @@ a.q { text-decoration: none; }
 .w-label em { font-style: normal; color: #FFD58A; }
 .w-label em:empty { display: none; }
 .w-label.hit { background: rgba(130, 64, 22, 0.78); }
+/* ---------- Kamishibai: o teatro de papel que substitui o dossiê ---------- */
+.kami { position: absolute; inset: 0; z-index: 4; display: grid; place-items: center; padding: 70px 16px 20px; background: rgba(10, 8, 12, 0.5); opacity: 0; transition: opacity .35s ease; }
+.kami.open { opacity: 1; }
+.kami[hidden] { display: none; }
+.kami-stage { width: min(880px, 100%); display: grid; gap: 12px; justify-items: center; }
+.kami-butai { position: relative; width: 100%; padding: 18px 18px 22px; border-radius: 10px 10px 6px 6px;
+  background: linear-gradient(180deg, #7A4E30, #5A3822 60%, #4A2E1C); box-shadow: inset 0 0 0 3px #3A2214, inset 0 0 0 7px #8A5E3C, 0 24px 60px rgba(0,0,0,0.5); }
+.kami-butai::before { content: ""; position: absolute; left: -14px; right: -14px; top: -16px; height: 18px; border-radius: 8px 8px 2px 2px; background: linear-gradient(180deg, #3E5A58, #2E4442); box-shadow: 0 3px 0 #22302F; }
+.kami-butai::after { content: ""; position: absolute; left: 40%; right: 40%; bottom: -12px; height: 12px; background: #3A2214; border-radius: 0 0 6px 6px; }
+.kami-window { position: relative; aspect-ratio: 16 / 10; overflow: hidden; border-radius: 4px; background: #1A120C; perspective: 1400px; }
+.kami-doors { position: absolute; inset: 0; z-index: 5; pointer-events: none; display: flex; }
+.kami-doors span { flex: 1; background: repeating-linear-gradient(90deg, #6B4A32 0 22px, #5E4030 22px 24px); box-shadow: inset 0 0 0 3px #3A2214; transition: transform .9s cubic-bezier(.6,.05,.3,1); }
+.kami-doors span:first-child { transform-origin: left center; }
+.kami-doors span:last-child { transform-origin: right center; }
+.kami.open .kami-doors span:first-child { transform: rotateY(-100deg); }
+.kami.open .kami-doors span:last-child { transform: rotateY(100deg); }
+.kami-card { position: absolute; inset: 0; overflow-y: auto; padding: clamp(18px, 3.4vw, 40px) clamp(20px, 4vw, 48px); color: var(--ink, #2A2018);
+  font-family: "Zen Maru Gothic", var(--f-body, sans-serif); background: var(--bg); transition: transform .7s cubic-bezier(.7,0,.3,1); }
+.kami-card.out { transform: translateX(105%); }
+.kami-card.back { transform: none; z-index: 0; }
+.kami-card.front { z-index: 1; }
+.kami-card::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle at 20% 15%, rgba(255,255,255,0.35), transparent 45%), radial-gradient(rgba(0,0,0,0.05) 1px, transparent 1.4px) 0 0 / 9px 9px; }
+.kami-card::after { content: ""; position: absolute; inset: 10px; border: 2px solid var(--line, rgba(0,0,0,0.18)); border-radius: 4px; pointer-events: none; }
+.kami-card .kk { position: absolute; right: 4%; bottom: -6%; font: 800 clamp(9rem, 22vw, 15rem)/1 var(--f-display); color: var(--wm, rgba(0,0,0,0.07)); pointer-events: none; user-select: none; }
+.kami-card > * { position: relative; }
+.kami-card .kc-kicker { font: 500 0.66rem/1.3 var(--f-label); letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent, #C22026); }
+.kami-card h2 { font: 600 clamp(1.6rem, 1.1rem + 2vw, 2.5rem)/1.1 var(--f-display); margin: 8px 0 10px; max-width: 22ch; }
+.kami-card h3 { font: 600 1.05rem/1.25 var(--f-display); margin: 16px 0 6px; }
+.kami-card p { font-size: clamp(0.95rem, 0.88rem + 0.3vw, 1.08rem); line-height: 1.7; margin: 0 0 10px; max-width: 58ch; }
+.kami-card ul { margin: 6px 0 10px; padding-left: 20px; line-height: 1.7; }
+.kami-card .kc-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-top: 10px; }
+.kami-card .kc-box { background: rgba(255,255,255,0.5); border-radius: 8px; padding: 12px 14px; box-shadow: 0 2px 0 rgba(0,0,0,0.08); }
+.kami-card .kc-box b { display: block; font: 600 1rem/1.25 var(--f-display); margin-bottom: 4px; }
+.kami-card .kc-box small { display: block; font-size: 0.86rem; line-height: 1.5; opacity: 0.85; }
+.kami-card .kc-img { display: block; width: 100%; max-height: 52%; object-fit: cover; border-radius: 6px; margin: 8px 0 10px; box-shadow: 0 6px 16px rgba(0,0,0,0.2); transform: rotate(-0.6deg); background: #fff; padding: 6px; }
+.kami-card .kc-imgs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 8px 0; }
+.kami-card .kc-imgs img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 4px; background: #fff; padding: 5px; box-shadow: 0 4px 12px rgba(0,0,0,0.18); }
+.kami-card .kc-imgs img:nth-child(odd) { transform: rotate(-1.4deg); } .kami-card .kc-imgs img:nth-child(even) { transform: rotate(1.2deg); }
+.kami-card .chips span { border-color: currentColor; }
+.kami-card a { color: inherit; }
+.kami-card .kc-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; list-style: none; padding: 0; }
+.kami-card .kc-links a, .kami-card .kc-links button { display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px; border-radius: 999px; background: var(--accent, #C22026); color: #fff; text-decoration: none; font: 500 0.72rem/1 var(--f-label); letter-spacing: 0.12em; text-transform: uppercase; border: 0; cursor: pointer; }
+.kami-card .d-fairs .res { border-color: currentColor; }
+.kami-card[data-c="sky"] { --bg: linear-gradient(160deg, #DCEBF5, #A9CBE4); --accent: #2E6E9A; --wm: rgba(46,110,154,0.12); }
+.kami-card[data-c="sakura"] { --bg: linear-gradient(160deg, #FBE6EA, #F1C3CE); --accent: #B23A5A; --wm: rgba(178,58,90,0.12); }
+.kami-card[data-c="matcha"] { --bg: linear-gradient(160deg, #E8F0D2, #C2D69A); --accent: #4E7A2E; --wm: rgba(78,122,46,0.14); }
+.kami-card[data-c="sunset"] { --bg: linear-gradient(160deg, #FCE3C8, #F2B48A); --accent: #B5481E; --wm: rgba(181,72,30,0.13); }
+.kami-card[data-c="lavender"] { --bg: linear-gradient(160deg, #ECE6F7, #CFC2EA); --accent: #5E4A9A; --wm: rgba(94,74,154,0.13); }
+.kami-card[data-c="gold"] { --bg: linear-gradient(160deg, #FBF1CF, #EDD48A); --accent: #946A12; --wm: rgba(148,106,18,0.14); }
+.kami-card[data-c="totoro"] { --bg: linear-gradient(160deg, #E4EDE0, #9FB89A); --accent: #3E5A3A; --wm: rgba(62,90,58,0.15); }
+.kami-card[data-c="night"] { --bg: radial-gradient(circle at 70% 30%, #2A2440, #0C0A14 70%); --ink: #EDE3D1; --accent: #FFC86A; --wm: rgba(255,200,106,0.08); --line: rgba(255,200,106,0.25); }
+.kami-card[data-c="ink"] { --bg: linear-gradient(160deg, #1E1A1C, #0B0809); --ink: #EDE3D1; --accent: #E0B04A; --wm: rgba(224,176,74,0.08); --line: rgba(224,176,74,0.2); }
+.kami-card[data-c="night"] .kc-box, .kami-card[data-c="ink"] .kc-box { background: rgba(255,255,255,0.06); }
+.kami-card[data-c="night"] .kc-links a, .kami-card[data-c="ink"] .kc-links a { color: #1A1210; }
+.kami-nav { display: flex; align-items: center; gap: 14px; color: #F4EBDD; }
+.kami-nav button { width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(244,235,221,0.4); background: rgba(20,14,12,0.6); color: #F4EBDD; font-size: 1.3rem; cursor: pointer; }
+.kami-nav button:disabled { opacity: 0.3; cursor: default; }
+.kami-nav .kami-count { font: 500 0.72rem/1 var(--f-label); letter-spacing: 0.16em; min-width: 64px; text-align: center; }
+.kami-dots { display: flex; gap: 6px; }
+.kami-dots i { width: 7px; height: 7px; border-radius: 50%; background: rgba(244,235,221,0.3); }
+.kami-dots i.on { background: #F4EBDD; }
+.kami-close { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 18px); right: 18px; }
+@media (max-width: 640px) { .kami { padding: 64px 8px 12px; } .kami-window { aspect-ratio: 3 / 4; } .kami-butai { padding: 10px 10px 14px; } }
+@media (prefers-reduced-motion: reduce) { .kami-card, .kami-doors span { transition: none; } }
 .dossier { position: absolute; top: 0; right: 0; bottom: 0; z-index: 3; width: min(460px, 100%); overflow-y: auto; outline: none;
   padding: calc(env(safe-area-inset-top, 0px) + 70px) 28px calc(env(safe-area-inset-bottom, 0px) + 40px); transform: translateX(100%); transition: transform 0.7s cubic-bezier(.2,.8,.2,1); }
 .dossier.open { transform: none; }
@@ -805,6 +887,13 @@ a.q { text-decoration: none; }
       <button class="w-btn primary" id="worldDossierBtn" type="button" hidden></button>
     </div>
   </div>
+  <div class="kami" id="kami" hidden role="dialog" aria-modal="true" aria-label="Kamishibai">
+    <button class="w-btn kami-close" id="kamiClose" type="button">Fechar</button>
+    <div class="kami-stage">
+      <div class="kami-butai"><div class="kami-window" id="kamiWindow"><div class="kami-doors" aria-hidden="true"><span></span><span></span></div></div></div>
+      <div class="kami-nav"><button type="button" id="kamiPrev" aria-label="Cartão anterior">&#8249;</button><div class="kami-dots" id="kamiDots" aria-hidden="true"></div><span class="kami-count" id="kamiCount" aria-live="polite"></span><button type="button" id="kamiNext" aria-label="Próximo cartão">&#8250;</button></div>
+    </div>
+  </div>
   <aside class="dossier" id="dossier" hidden tabindex="-1" aria-label="Dossiê do projeto">
     <button class="w-btn dossier-close" id="dossierClose" type="button">Fechar</button>
     <div id="dossierBody"></div>
@@ -869,6 +958,75 @@ a.q { text-decoration: none; }
   </ul>
   <p class="d-note">Os decibéis do templo são ilustrativos. No AcousticBuild, o cálculo segue as normas com os dados reais de cada parede.</p>
 </template>
+
+<template id="dossierArvore">
+  <section class="kc" data-c="totoro" data-k="音">
+    <span class="kc-kicker">Projeto · AcousticBuild</span>
+    <h2>O sono do Totoro</h2>
+    <p>O AcousticBuild prevê quanto ruído atravessa as paredes de um prédio antes de ele existir. Aqui a pergunta é a mesma, só que mais importante: quanto barulho chega até o Totoro?</p>
+    <p>Cada barreira da toca isola uma quantidade de decibéis. Se o som que sobra lá dentro passa de 35 dB, eles acordam. Prever isso antes de construir é exatamente o trabalho do AcousticBuild.</p>
+  </section>
+  <section class="kc" data-c="sky" data-k="問">
+    <span class="kc-kicker">O problema</span>
+    <h2>Barulho a gente só descobre depois</h2>
+    <p>Antecipar o desempenho acústico de uma edificação exige cálculos normativos complexos, difíceis de interpretar na hora de decidir o projeto. Quando o problema aparece, a parede já está de pé.</p>
+  </section>
+  <section class="kc" data-c="matcha" data-k="案">
+    <span class="kc-kicker">A proposta</span>
+    <h2>As normas viram uma interface</h2>
+    <p>Uma plataforma que traduz as normas europeias numa interface visual e automática: você monta a parede, escolhe os materiais e vê a previsão do ruído direto no navegador, ainda na fase de projeto.</p>
+    <div class="kc-cols">
+      <div class="kc-box"><b>EN 12354-1</b><small>Isolamento a ruído aéreo entre ambientes. É o que a toca do Totoro demonstra.</small></div>
+      <div class="kc-box"><b>EN 12354-2</b><small>Isolamento a ruído de impacto, como passos no andar de cima.</small></div>
+    </div>
+  </section>
+  <section class="kc" data-c="sakura" data-k="手">
+    <span class="kc-kicker">Minha parte</span>
+    <h2>Da norma ao código</h2>
+    <p>Pesquisa das normas, formulação dos algoritmos de cálculo, arquitetura do software, protótipo de interface e desenvolvimento da interface interativa.</p>
+    <div class="chips"><span>React</span><span>Python</span><span>FastAPI</span><span>SQLite</span><span>SQLAlchemy</span><span>JWT</span><span>Bcrypt</span></div>
+    <p style="margin-top:12px">Projeto full-stack do curso técnico, integrado à Iniciação Científica de Matemática.</p>
+  </section>
+  <section class="kc" data-c="sunset" data-k="旅">
+    <span class="kc-kicker">Jornada nas feiras</span>
+    <h2>O projeto saiu da sala de aula</h2>
+    <ol class="d-fairs">
+    <li class="win"><span class="yr">2025</span><div><b>Infomatrix</b><small>Credencial para a MILSET Expo 2026, em Fortaleza.</small></div><span class="res">Credencial</span></li>
+    <li><span class="yr">2025</span><div><b>DUAL International Fair</b><small>Apresentação do projeto.</small></div><span class="res">Participação</span></li>
+    <li><span class="yr">2026</span><div><b>DUAL International Fair</b><small>Apresentação do projeto, pelo segundo ano.</small></div><span class="res">Participação</span></li>
+    <li><span class="yr">2026</span><div><b>FEBRACE</b><small>Feira Brasileira de Ciências e Engenharia, em São Paulo.</small></div><span class="res">Participação</span></li>
+    <li class="win"><span class="yr">2026</span><div><b>XI FEBIC</b><small>2º lugar em Ciências Exatas e da Terra, no Ensino Médio, em Joinville. Credencial para a FoCiTeCu 2027, na Argentina.</small></div><span class="res">2º lugar</span></li>
+  </ol>
+  </section>
+  <section class="kc" data-c="gold" data-k="賞">
+    <span class="kc-kicker">XI FEBIC · Joinville</span>
+    <h2>2º lugar e uma credencial</h2>
+    <div class="kc-imgs"><img src="/vale/trem/febic-estande.jpg" alt="Estande do AcousticBuild na XI FEBIC, com a equipe" loading="lazy"><img src="/vale/trem/febic-palco.jpg" alt="Equipe no palco recebendo o 2º lugar" loading="lazy"></div>
+    <p>Segundo lugar em Ciências Exatas e da Terra, no Ensino Médio, com credencial para a FoCiTeCu 2027, na Argentina.</p>
+  </section>
+  <section class="kc" data-c="lavender" data-k="次">
+    <span class="kc-kicker">Próximas paradas</span>
+    <h2>A viagem continua</h2>
+    <ol class="d-fairs">
+    <li class="next"><span class="yr">2026</span><div><b>FENIC</b><small>A próxima feira na mira, ainda este ano.</small></div><span class="res">Tentando</span></li>
+    <li class="next"><span class="yr">2027</span><div><b>FEBRACE</b><small>A volta a São Paulo, agora com o projeto mais maduro.</small></div><span class="res">Tentando</span></li>
+    <li class="next win"><span class="yr">2027</span><div><b>FoCiTeCu</b><small>Credencial garantida pela FEBIC. Falta reunir os recursos para a viagem à Argentina.</small></div><span class="res">Credenciado</span></li>
+    <li class="next"><span class="yr">2027</span><div><b>GENIUS Olympiad</b><small>Olimpíada internacional de projetos, nos Estados Unidos.</small></div><span class="res">Tentando</span></li>
+  </ol>
+  </section>
+  <section class="kc" data-c="totoro" data-k="見">
+    <span class="kc-kicker">Ver mais</span>
+    <h2>O AcousticBuild de verdade</h2>
+    <p>Os decibéis da toca são ilustrativos. No AcousticBuild, o cálculo segue as normas com os dados reais de cada parede.</p>
+    <ul class="kc-links">
+    <li><a href="https://drive.google.com/file/d/1kC-pFY_rgKTiVAEkhKXlEsYN6WP5YFrU/view" target="_blank" rel="noreferrer">Assistir ao vídeo do projeto</a></li>
+    <li><a href="https://www.canva.com/design/DAHOEXsnSiU/twMjG-Quo00LmeoNuiPzQg/view" target="_blank" rel="noreferrer">Apresentação no Canva</a></li>
+    <li><a href="https://www.figma.com/design/itGMzpxwezLRZ5aq1XkDc3/AcousticBuild?node-id=0-1" target="_blank" rel="noreferrer">Protótipo no Figma</a></li>
+    <li><a href="https://github.com/jjoaohartmann/SA-acousticBuild" target="_blank" rel="noreferrer">Código no GitHub</a></li>
+  </ul>
+  </section>
+</template>
+
 
 <template id="dossierNos">
   <span class="w-kicker">Jogo · em desenvolvimento</span>

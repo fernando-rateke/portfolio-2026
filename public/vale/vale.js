@@ -1931,12 +1931,11 @@
     },
     castelo: {
       k: "城", name: "Castelo do Howl", kicker: "Os projetos",
-      text: "Dentro, o Calcifer cuida da lareira e a porta de quatro cores leva aos projetos.",
+      text: "Entra-se pela porta dos fundos, como no filme. Lá dentro, o Calcifer guia: primeiro o quarto, depois as portas.",
       anchor: () => castle.position.clone().add(new T.Vector3(0, 15, 0)),
       view: () => { const cp = castle.position; return { pos: new T.Vector3(cp.x - 30, cp.y + 5, cp.z + 36), tgt: new T.Vector3(cp.x, cp.y + 7, cp.z) }; },
       actions: [
         { label: "Entrar no castelo", primary: true, run: () => openWorld("castelo") },
-        { label: "Subir ao quarto", run: () => openWorld("quarto") },
       ],
     },
     torre: {
@@ -2080,7 +2079,7 @@
         <rect x="-6" y="-34" width="14" height="10" fill="#C22026"/><circle cx="-6" cy="-2" r="3.2" fill="#FFB65A"/>
         <g class="vm-label" transform="translate(0 -66)"><text class="vm-n" text-anchor="middle">CASTELO DO HOWL · PROJETOS</text><text class="vm-s" y="15" text-anchor="middle">城 · AS QUATRO PORTAS</text></g>
       </g>
-      <g class="vm-place vm-moving vm-room" data-world="quarto" tabindex="0" role="button" aria-label="Quarto no topo do castelo: os gostos" id="vmRoom">
+      <g class="vm-place vm-moving vm-room" data-world="castelo" tabindex="0" role="button" aria-label="Quarto no topo do castelo: os gostos" id="vmRoom">
         <g class="vm-label"><text class="vm-s vm-up" text-anchor="middle">火 QUARTO NO TOPO · GOSTOS</text></g>
       </g>
 

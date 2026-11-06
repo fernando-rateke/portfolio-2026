@@ -464,6 +464,14 @@ a.q { text-decoration: none; }
 .mundo[data-world="arvore"] .world-line { font-family: "Zen Maru Gothic", var(--f-display); font-style: normal; color: #FFFBEA; max-width: 28ch; font-size: clamp(1.1rem, 0.9rem + 1.4vw, 1.9rem); top: 18%; }
 .mundo[data-world="arvore"] .world-title .w-name, .mundo[data-world="arvore"] .w-kicker { text-shadow: 0 2px 14px rgba(0,0,0,0.45); }
 @media (max-width: 640px) { .tt-ema small { display: none; } .tt-ema { padding: 6px 9px; } .tt-label { width: 100%; text-align: center; } }
+.nos-reveal { position: absolute; inset: 0 0 38% 0; z-index: 3; display: grid; place-content: center; text-align: center; pointer-events: none; color: #F4E2B8; opacity: 0; }
+.nos-reveal span { font: 500 clamp(3rem, 2rem + 7vw, 7.5rem)/1 var(--f-nos); letter-spacing: 0.1em; text-shadow: 0 0 40px rgba(255, 190, 90, 0.6); }
+.nos-reveal small { font: italic 500 clamp(1rem, 0.9rem + 0.8vw, 1.5rem)/1.4 var(--f-nos); opacity: 0.8; margin-top: 10px; }
+.nos-reveal.show { animation: nosreveal 3.6s ease forwards; }
+.nos-reveal.show span { animation: nosspace 3.6s cubic-bezier(.2,.8,.2,1) forwards; }
+@keyframes nosreveal { 0% { opacity: 0; filter: blur(14px); } 25% { opacity: 1; filter: blur(0); } 82% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes nosspace { from { letter-spacing: 0.1em; } to { letter-spacing: 0.5em; } }
+.kami-card .kc-nos { font: 500 clamp(2.4rem, 1.6rem + 3vw, 3.6rem)/1 var(--f-nos); letter-spacing: 0.45em; }
 .w-label-call { background: rgba(194, 32, 38, 0.88) !important; animation: callpulse 1.8s ease-in-out infinite; }
 @keyframes callpulse { 50% { box-shadow: 0 0 0 6px rgba(194, 32, 38, 0.25); } }
 .mundo[data-world="castelo"] .world-line { font-family: var(--f-display); font-style: normal; color: #FFE2B8; max-width: 26ch; font-size: clamp(1.2rem, 0.9rem + 1.6vw, 2.1rem); }
@@ -599,6 +607,19 @@ a.q { text-decoration: none; }
 .kami-card .kc-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; list-style: none; padding: 0; }
 .kami-card .kc-links a, .kami-card .kc-links button { display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px; border-radius: 999px; background: var(--accent, #C22026); color: #fff; text-decoration: none; font: 500 0.72rem/1 var(--f-label); letter-spacing: 0.12em; text-transform: uppercase; border: 0; cursor: pointer; }
 .kami-card .d-fairs .res { border-color: currentColor; }
+.kami-card .w-kicker { font: 500 0.66rem/1.3 var(--f-label); letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent, #C22026); opacity: 1; }
+.kami-card .d-title { font: 600 clamp(1.6rem, 1.1rem + 2vw, 2.5rem)/1.1 var(--f-display); margin: 8px 0 8px; }
+.kami-card .d-sub { font-family: var(--f-display); opacity: 0.8; margin: 0 0 12px; }
+.kami-card .d-note { font-size: 0.86rem; opacity: 0.75; }
+.kami-card .w-btn { color: inherit; border-color: currentColor; background: transparent; text-shadow: none; }
+.kami-card .q-list li { border-top-color: rgba(0,0,0,0.12); }
+.kami-card .kc-count { font: 500 0.7rem/1.4 var(--f-label); letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.75; }
+.kami-card .kc-img { max-height: 46vh; width: auto; max-width: 100%; }
+.kami-card.kc-photo { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); grid-template-rows: auto auto 1fr; column-gap: 26px; align-content: start; }
+.kami-card.kc-photo .kc-img { grid-column: 1; grid-row: 1 / span 3; max-height: none; width: 100%; height: 100%; object-fit: cover; margin: 0; }
+.kami-card.kc-photo .kc-kicker, .kami-card.kc-photo h2, .kami-card.kc-photo p { grid-column: 2; }
+.kami-card.kc-photo .kk { grid-column: 1 / -1; }
+@media (max-width: 640px) { .kami-card.kc-photo { display: block; } .kami-card.kc-photo .kc-img { height: auto; max-height: 40vh; margin: 8px 0; } }
 .kami-card[data-c="sky"] { --bg: linear-gradient(160deg, #DCEBF5, #A9CBE4); --accent: #2E6E9A; --wm: rgba(46,110,154,0.12); }
 .kami-card[data-c="sakura"] { --bg: linear-gradient(160deg, #FBE6EA, #F1C3CE); --accent: #B23A5A; --wm: rgba(178,58,90,0.12); }
 .kami-card[data-c="matcha"] { --bg: linear-gradient(160deg, #E8F0D2, #C2D69A); --accent: #4E7A2E; --wm: rgba(78,122,46,0.14); }
@@ -851,7 +872,7 @@ a.q { text-decoration: none; }
       <div role="tabpanel" id="pn-q" aria-labelledby="tab-q" hidden>
         <p class="panel-intro">As duas primeiras abrem os seus mundos no castelo.</p>
         <div class="quests">
-          <button class="q" type="button" data-world="templo"><i style="background:#C22026"></i><div><h3>AcousticBuild</h3><p>Previsão de ruído em edificações pelas normas EN 12354. React, FastAPI e SQLite.</p></div><small class="on">Porta vermelha</small></button>
+          <button class="q" type="button" data-world="arvore"><i style="background:#C22026"></i><div><h3>AcousticBuild</h3><p>Previsão de ruído em edificações pelas normas EN 12354. React, FastAPI e SQLite.</p></div><small class="on">Árvore do Totoro</small></button>
           <button class="q" type="button" data-world="nos"><i style="background:#0B0809"></i><div><h3>Nós</h3><p>Narrativa de exploração psicológica em TypeScript e Canvas, com Luana Lupi Vergara.</p></div><small class="on">Em andamento</small></button>
           <a class="q" href="https://game-nauy.onrender.com/" target="_blank" rel="noreferrer"><i style="background:#2E7896"></i><div><h3>Hollow Depths</h3><p>RPG de turno guiado por probabilidade, cartas e leitura de variáveis.</p></div><small>Jogar</small></a>
           <div class="q"><i style="background:#78AB5A"></i><div><h3>Semáforo e LEDs</h3><p>Montagem e programação de circuitos no Arduino: LED, semáforo com temporização e botão com lógica de alternância.</p></div><small>Concluída</small></div>
@@ -1029,28 +1050,49 @@ a.q { text-decoration: none; }
 
 
 <template id="dossierNos">
-  <span class="w-kicker">Jogo · em desenvolvimento</span>
-  <h2 class="d-title nos">NÓS</h2>
-  <p class="d-sub">entre fios e sombras</p>
-  <img class="d-cover" src="/vale/nos/capa.jpg" alt="Capa do Nós: Liam, de costas, sob um fio dourado na casa do Tear" width="1600" height="900">
-  <p>Liam desperta dentro de uma casa construída pelo próprio coma, sem saber o que aconteceu na noite do incêndio nem por que as lembranças da família não se encaixam. Os cômodos são maiores do que deveriam, os corredores mudam de comprimento, e há objetos de uma pessoa que ninguém consegue nomear.</p>
-  <p>Escondido sob o assoalho, o Tear desloca para alguém aquilo que impediria a família de continuar unida. Esse alguém é o Nó: Liam.</p>
-  <h3>O que a obra discute</h3>
-  <ul class="d-list">
-    <li>Crianças não devem carregar os conflitos dos adultos.</li>
-    <li>Controle pode se disfarçar de cuidado, proteção e conciliação.</li>
-    <li>Perdão não é obrigação; romper um vínculo pode ser uma forma de sobreviver.</li>
-    <li>Memória não é posse.</li>
-  </ul>
-  <h3>Onde está</h3>
-  <p>A abertura já é jogável: a tela preta e a VOZ, o quarto de Liam, o diário, arrumar o quarto e a porta que abre. Feito em TypeScript e Canvas, sobre um roteiro completo de seis capítulos e quatro finais.</p>
-  <h3>Bastidores</h3>
-  <p>O trailer de 74 segundos foi renderizado por código, quadro a quadro, com Playwright e FFmpeg. Um teste automático lê o brilho do vídeo exportado para conferir a mensagem em código Morse escondida nele.</p>
-  <ul class="d-links">
-    <li><a href="https://nos-brown-psi.vercel.app/" target="_blank" rel="noreferrer">Jogar a demonstração</a></li>
-    <li><a href="https://github.com/Rateke/NOS" target="_blank" rel="noreferrer">Ler o roteiro</a></li>
-  </ul>
-  <p class="d-credit">Criação e desenvolvimento narrativo: Fernando Rateke Neto e Luana Lupi Vergara.</p>
+  <section class="kc" data-c="ink" data-k="結">
+    <span class="kc-kicker">Jogo · em desenvolvimento</span>
+    <h2 class="kc-nos">NÓS</h2>
+    <p><em>entre fios e sombras</em></p>
+    <img class="kc-img" src="/vale/nos/capa.jpg" alt="Capa do Nós: Liam, de costas, sob um fio dourado na casa do Tear">
+  </section>
+  <section class="kc" data-c="night" data-k="家">
+    <span class="kc-kicker">A casa</span>
+    <h2>Um lugar construído pelo coma</h2>
+    <p>Liam desperta dentro de uma casa construída pelo próprio coma, sem saber o que aconteceu na noite do incêndio nem por que as lembranças da família não se encaixam.</p>
+    <p>Os cômodos são maiores do que deveriam, os corredores mudam de comprimento, e há objetos de uma pessoa que ninguém consegue nomear. Como o corredor que você acabou de atravessar.</p>
+  </section>
+  <section class="kc" data-c="ink" data-k="織">
+    <span class="kc-kicker">O Tear</span>
+    <h2>Quem segura os fios</h2>
+    <p>Escondido sob o assoalho, o Tear desloca para alguém aquilo que impediria a família de continuar unida. Esse alguém é o Nó: Liam.</p>
+  </section>
+  <section class="kc" data-c="night" data-k="問">
+    <span class="kc-kicker">O que a obra discute</span>
+    <h2>Quatro ideias no centro</h2>
+    <div class="kc-cols">
+      <div class="kc-box"><b>Crianças</b><small>não devem carregar os conflitos dos adultos.</small></div>
+      <div class="kc-box"><b>Controle</b><small>pode se disfarçar de cuidado, proteção e conciliação.</small></div>
+      <div class="kc-box"><b>Perdão</b><small>não é obrigação; romper um vínculo pode ser uma forma de sobreviver.</small></div>
+      <div class="kc-box"><b>Memória</b><small>não é posse.</small></div>
+    </div>
+  </section>
+  <section class="kc" data-c="ink" data-k="遊">
+    <span class="kc-kicker">Onde está</span>
+    <h2>A abertura já é jogável</h2>
+    <p>A tela preta e a VOZ, o quarto de Liam, o diário, arrumar o quarto e a porta que abre. Feito em TypeScript e Canvas, sobre um roteiro completo de seis capítulos e quatro finais.</p>
+  </section>
+  <section class="kc" data-c="night" data-k="映">
+    <span class="kc-kicker">Bastidores</span>
+    <h2>Um trailer renderizado por código</h2>
+    <p>Os 74 segundos do trailer foram renderizados quadro a quadro, com Playwright e FFmpeg. Um teste automático lê o brilho do vídeo exportado para conferir a mensagem em código Morse escondida nele.</p>
+  </section>
+  <section class="kc" data-c="ink" data-k="糸">
+    <span class="kc-kicker">Seguir o fio</span>
+    <h2>Jogar e ler</h2>
+    <ul class="kc-links"><li><a href="https://nos-brown-psi.vercel.app/" target="_blank" rel="noreferrer">Jogar a demonstração</a></li><li><a href="https://github.com/Rateke/NOS" target="_blank" rel="noreferrer">Ler o roteiro</a></li></ul>
+    <p style="margin-top:14px">Criação e desenvolvimento narrativo: Fernando Rateke Neto e Luana Lupi Vergara.</p>
+  </section>
 </template>
 
 

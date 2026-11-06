@@ -497,6 +497,11 @@ a.q { text-decoration: none; }
 @media (prefers-reduced-motion: reduce) { .fim-frase span span { opacity: 1; transform: none; filter: none; } .fim.show .fim-frase span span, .fim.show .fim-l2 { animation: none; } }
 .tt-fade { position: absolute; inset: 0; z-index: 2; background: #050806; opacity: 0; pointer-events: none; transition: opacity .6s ease; }
 .tt-fade.on { opacity: 1; }
+.w-sound { position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); top: calc(env(safe-area-inset-top, 0px) + 16px); display: inline-flex; align-items: center; gap: 8px; }
+.w-sound svg { width: 18px; height: 18px; }
+.w-sound[aria-pressed="false"] .wave { opacity: 0.25; }
+.mundo:has(.kami.open) .w-sound { opacity: 0; pointer-events: none; }
+@media (max-width: 640px) { .w-sound span { display: none; } }
 .w-label-call { background: rgba(194, 32, 38, 0.88) !important; animation: callpulse 1.8s ease-in-out infinite; }
 @keyframes callpulse { 50% { box-shadow: 0 0 0 6px rgba(194, 32, 38, 0.25); } }
 .mundo[data-world="castelo"] .world-line { font-family: var(--f-display); font-style: normal; color: #FFE2B8; max-width: 26ch; font-size: clamp(1.2rem, 0.9rem + 1.6vw, 2.1rem); }
@@ -992,6 +997,7 @@ a.q { text-decoration: none; }
     <button class="w-btn" id="worldBack" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>Voltar ao vale</button>
     <div class="world-title" id="worldTitle"></div>
     <span class="w-count" id="worldCount" hidden></span>
+    <button class="w-btn w-sound" id="worldSound" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.6L12.5 5v14l-4.9-4.5H4z"/><path class="wave" d="M15.8 9a4.2 4.2 0 0 1 0 6"/><path class="wave" d="M18.4 6.5a7.6 7.6 0 0 1 0 11"/></svg><span id="worldSoundLabel">Ligar a música</span></button>
   </div>
   <div class="world-bottom">
     <p class="world-hint" id="worldHint"></p>
@@ -1187,18 +1193,6 @@ a.q { text-decoration: none; }
       if (k >= 1) { clearInterval(fadeTimer); if (done) done(); }
     }, 40);
   };
-  sound.addEventListener("click", () => {
-    if (audio.paused) {
-      audio.volume = 0;
-      const p = audio.play();
-      const ok = () => { sound.setAttribute("aria-pressed", "true"); soundLabel.textContent = "Pausar o tema"; fadeTo(0.6, 2600); };
-      if (p && p.then) p.then(ok).catch(() => { soundLabel.textContent = "Áudio indisponível"; }); else ok();
-    } else {
-      fadeTo(0, 900, () => audio.pause());
-      sound.setAttribute("aria-pressed", "false"); soundLabel.textContent = "Ouvir o tema";
-    }
-  });
-
   /* ---------- Entrada ---------- */
   const enterBtn = document.getElementById("enterBtn");
   const filmBtn = document.getElementById("filmBtn");
@@ -1209,7 +1203,7 @@ a.q { text-decoration: none; }
   filmBtn.addEventListener("click", () => { if (window.vale) window.vale.playIntro(true); });
   const coverUI = (show) => { enterBtn.hidden = !show; filmBtn.hidden = !show || !seen(); };
   window.addEventListener("vale:intro", (e) => {
-    if (e.detail === "start") { coverUI(false); if (audio.paused) sound.click(); }
+    if (e.detail === "start") { coverUI(false); setSound(true); }
     else { syncCover(); }
   });
   window.addEventListener("vale:explore", (e) => { document.documentElement.classList.toggle("exploring-on", e.detail === "start"); if (e.detail === "start") coverUI(false); else { syncCover(); coverUI(true); } });
@@ -1281,12 +1275,13 @@ a.q { text-decoration: none; }
     el.addEventListener("click", go);
     if (el.tagName !== "BUTTON") el.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
   });
-  /* ---------- Música de cada mundo ---------- */
+  /* ---------- Som: o tema no vale e uma música para cada mundo ---------- */
   // Torre: Time Flows Ever Onward · Trem (e o último trem): One Summer's Day · Castelo e quarto: Clair de Lune
   const BASE = window.VALE_BASE || "";
   const TRACKS = { torre: "audio/torre.mp3", trem: "audio/trem.mp3", ultimo: "audio/trem.mp3", castelo: "audio/castelo.mp3", quarto: "audio/castelo.mp3" };
   const worldAudio = new Audio(); worldAudio.loop = true; worldAudio.preload = "none";
-  let worldFade, themeWasPlaying = false, inWorld = false, leaveTimer = null;
+  const wSound = document.getElementById("worldSound"), wSoundLabel = document.getElementById("worldSoundLabel");
+  let soundWanted = false, inWorld = false, leaveTimer = null, worldFade;
   const fadeEl = (el, target, ms, done) => {
     clearInterval(worldFade);
     const start = el.volume, t0 = performance.now();
@@ -1296,27 +1291,36 @@ a.q { text-decoration: none; }
       if (k >= 1) { clearInterval(worldFade); if (done) done(); }
     }, 40);
   };
-  const soundOn = () => sound.getAttribute("aria-pressed") === "true";
-  window.addEventListener("mundo", (e) => {
-    const name = document.getElementById("world").dataset.world;
-    if (e.detail === "open") {
-      clearTimeout(leaveTimer);
-      if (!inWorld) { themeWasPlaying = soundOn(); inWorld = true; if (!audio.paused) fadeTo(0, 700, () => audio.pause()); }
-      const src = TRACKS[name] ? BASE + TRACKS[name] : null;
-      if (!themeWasPlaying || !src) { if (!worldAudio.paused) fadeEl(worldAudio, 0, 700, () => worldAudio.pause()); return; }
-      if (worldAudio.dataset.src === src && !worldAudio.paused) { fadeEl(worldAudio, 0.55, 800); return; }
-      worldAudio.dataset.src = src; worldAudio.src = src; worldAudio.volume = 0;
-      const pl = worldAudio.play(); if (pl && pl.catch) pl.catch(() => {});
-      fadeEl(worldAudio, 0.55, 2200);
+  const currentTrack = () => { const n = document.getElementById("world").dataset.world; return TRACKS[n] ? BASE + TRACKS[n] : null; };
+  const syncButtons = () => {
+    sound.setAttribute("aria-pressed", String(soundWanted)); soundLabel.textContent = soundWanted ? "Pausar o tema" : "Ouvir o tema";
+    wSound.setAttribute("aria-pressed", String(soundWanted));
+    wSoundLabel.textContent = !currentTrack() ? (soundWanted ? "Som ligado" : "Ligar o som") : soundWanted ? "Pausar a música" : "Ligar a música";
+  };
+  const playEl = (el, vol, ms) => { const pl = el.play(); const ok = () => { const still = soundWanted && (el === audio ? !inWorld : inWorld); if (!still) { el.pause(); return; } if (el === audio) fadeTo(vol, ms); else fadeEl(el, vol, ms); }; if (pl && pl.then) pl.then(ok).catch(() => { soundWanted = false; syncButtons(); }); else ok(); };
+  function applySound() {
+    if (inWorld) {
+      if (!audio.paused) fadeTo(0, 600, () => audio.pause());
+      const src = currentTrack();
+      if (!soundWanted || !src) { if (!worldAudio.paused) fadeEl(worldAudio, 0, 700, () => worldAudio.pause()); }
+      else if (worldAudio.dataset.src === src && !worldAudio.paused) fadeEl(worldAudio, 0.55, 800);
+      else { worldAudio.dataset.src = src; worldAudio.src = src; worldAudio.volume = 0; playEl(worldAudio, 0.55, 2000); }
     } else {
-      // entre dois mundos (castelo para o quarto, por exemplo) a música continua; só sai ao voltar ao vale
+      if (!worldAudio.paused) fadeEl(worldAudio, 0, 800, () => worldAudio.pause());
+      if (soundWanted && audio.paused) { audio.volume = 0; playEl(audio, 0.6, 2400); }
+      if (!soundWanted && !audio.paused) fadeTo(0, 900, () => audio.pause());
+    }
+    syncButtons();
+  }
+  const setSound = (on) => { soundWanted = on; applySound(); };
+  sound.addEventListener("click", () => setSound(!soundWanted));
+  wSound.addEventListener("click", () => setSound(!soundWanted));
+  window.addEventListener("mundo", (e) => {
+    if (e.detail === "open") { clearTimeout(leaveTimer); inWorld = true; applySound(); }
+    else {
+      // entre dois mundos (castelo e quarto) a música continua; só volta ao tema ao sair para o vale
       clearTimeout(leaveTimer);
-      leaveTimer = setTimeout(() => {
-        inWorld = false;
-        if (!worldAudio.paused) fadeEl(worldAudio, 0, 900, () => worldAudio.pause());
-        if (themeWasPlaying && audio.paused) { audio.volume = 0; const pl = audio.play(); if (pl && pl.catch) pl.catch(() => {}); fadeTo(0.6, 2000); }
-        themeWasPlaying = false;
-      }, 250);
+      leaveTimer = setTimeout(() => { inWorld = false; applySound(); }, 250);
     }
   });
 

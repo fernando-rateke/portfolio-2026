@@ -356,6 +356,19 @@ html.perfil-on, html.perfil-on body { overflow: hidden; }
 .d-photos img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 4px; }
 .d-photos figcaption { font-size: 0.74rem; opacity: 0.75; margin-top: 4px; line-height: 1.4; }
 .d-award { border-left: 3px solid #C22026; padding: 4px 0 4px 12px; margin: 14px 0 6px; }
+.d-fairs { list-style: none; margin: 8px 0 14px; padding: 0; position: relative; }
+.d-fairs::before { content: ""; position: absolute; left: 38px; top: 6px; bottom: 6px; width: 1px; background: rgba(127,127,127,0.4); }
+.d-fairs li { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 9px 0; position: relative; }
+.d-fairs li::before { content: ""; position: absolute; left: 34px; top: 15px; width: 9px; height: 9px; border-radius: 50%; background: #F4EFE4; border: 2px solid rgba(127,127,127,0.7); }
+.d-fairs li.win::before { background: #C22026; border-color: #C22026; }
+.d-fairs li.next::before { border-style: dashed; }
+.d-fairs .yr { font: 600 0.7rem/1.9 var(--f-label); letter-spacing: 0.1em; opacity: 0.75; }
+.d-fairs b { display: block; font: 600 1rem/1.3 var(--f-display); }
+.d-fairs small { display: block; font-size: 0.84rem; line-height: 1.5; opacity: 0.85; margin-top: 2px; }
+.d-fairs .res { font: 600 0.6rem/1 var(--f-label); letter-spacing: 0.12em; text-transform: uppercase; padding: 5px 7px; border: 1px solid rgba(127,127,127,0.55); border-radius: 3px; white-space: nowrap; margin-top: 3px; }
+.d-fairs li.win .res { color: #C22026; border-color: #C22026; }
+.d-fairs li.next .res { border-style: dashed; }
+@media (max-width: 520px) { .d-fairs li { grid-template-columns: 44px minmax(0, 1fr); } .d-fairs::before { left: 32px; } .d-fairs li::before { left: 28px; } .d-fairs .res { grid-column: 2; justify-self: start; } }
 .ach h3 { font: 600 1.08rem/1.25 var(--f-display); margin: 0 0 4px; }
 .ach p { margin: 0; font-size: 0.88rem; line-height: 1.55; max-width: none; }
 .ach > div { padding-right: 104px; }
@@ -622,7 +635,7 @@ a.q { text-decoration: none; }
       </dl>
       <div class="bio">
         <p>Desde cedo tive afinidade com as exatas, principalmente matemática, biologia e programação. Gosto de desafios de lógica, de interfaces que se explicam sozinhas e de soluções que funcionam bem.</p>
-        <p>Além do código, levo comigo a pesquisa científica: pela Iniciação Científica apresentei projetos na FEBRACE, em São Paulo, e na DUAL International Fair, e conquistei o 2º lugar na XI FEBIC com o AcousticBuild.</p>
+        <p>Além do código, levo comigo a pesquisa científica: com o AcousticBuild, pela Iniciação Científica, passei pela Infomatrix, pela DUAL International Fair, pela FEBRACE e pela FEBIC, com credenciais para a MILSET Expo 2026 e para a FoCiTeCu 2027.</p>
       </div>
       <div class="quest"><b>Missão principal</b><p>Entrar na faculdade de tecnologia e construir software que melhore a vida das pessoas.</p></div>
       <div class="links">
@@ -677,8 +690,9 @@ a.q { text-decoration: none; }
       <div role="tabpanel" id="pn-ach" aria-labelledby="tab-ach" hidden>
         <div class="ach"><img src="/vale/perfil/febic.jpg" alt="Equipe no palco da XI FEBIC recebendo o 2º lugar" loading="lazy"><div><h3>2º lugar na XI FEBIC</h3><p>Feira Brasileira de Iniciação Científica 2026, em Joinville. Segundo lugar em Ciências Exatas e da Terra, no Ensino Médio, com o AcousticBuild.</p></div><span class="stamp">2º lugar</span></div>
         <div class="ach"><img src="/vale/perfil/febic-equipe.jpg" alt="Equipe do AcousticBuild com o certificado, o troféu e as medalhas da FEBIC" loading="lazy"><div><h3>Credencial para a FoCiTeCu 2027</h3><p>O resultado na FEBIC rendeu credencial para a feira internacional FoCiTeCu 2027, na Argentina.</p></div><span class="stamp">Credenciado</span></div>
-        <div class="ach"><img src="/vale/perfil/dual.jpg" alt="Equipe da Iniciação Científica com a bandeira na DUAL International Fair" loading="lazy"><div><h3>DUAL International Fair 2026</h3><p>Apresentação de projeto numa feira científica internacional, com a equipe da Iniciação Científica.</p></div><span class="stamp">Conquistado</span></div>
-        <div class="ach"><img src="/vale/perfil/febrace.jpg" alt="Equipe com a bandeira do SESI SENAI na FEBRACE" loading="lazy"><div><h3>FEBRACE</h3><p>Apresentação e defesa de projeto na Feira Brasileira de Ciências e Engenharia, em São Paulo.</p></div><span class="stamp">Conquistado</span></div>
+        <div class="ach"><img src="/vale/perfil/iniciacao-cientifica.jpg" alt="Equipe da Iniciação Científica" loading="lazy"><div><h3>Credencial na Infomatrix 2025</h3><p>O AcousticBuild conquistou credencial para a MILSET Expo 2026, em Fortaleza.</p></div><span class="stamp">Credenciado</span></div>
+        <div class="ach"><img src="/vale/perfil/febrace.jpg" alt="Equipe com a bandeira do SESI SENAI na FEBRACE" loading="lazy"><div><h3>FEBRACE 2026</h3><p>Apresentação e defesa de projeto na Feira Brasileira de Ciências e Engenharia, em São Paulo.</p></div><span class="stamp">Participação</span></div>
+        <div class="ach"><img src="/vale/perfil/dual.jpg" alt="Equipe da Iniciação Científica com a bandeira na DUAL International Fair" loading="lazy"><div><h3>DUAL International Fair 2025 e 2026</h3><p>Dois anos seguidos apresentando projeto numa feira científica internacional, com a equipe da Iniciação Científica.</p></div><span class="stamp">Participação</span></div>
         <div class="ach"><img src="/vale/perfil/ic-2026.jpg" alt="Seleção da Iniciação Científica 2026" loading="lazy" style="object-position: 50% 70%"><div><h3>Iniciação Científica</h3><p>Pesquisador na seleção da Iniciação Científica 2026, depois de passar pelo antigo Grupo 5.</p></div><span class="stamp">Conquistado</span></div>
         <div class="ach"><img src="/vale/perfil/red1000.jpg" alt="Nota 960 na plataforma Red1000"><div><h3>Redação 960</h3><p>960 de 1000 numa redação dissertativo-argumentativa na plataforma Red1000, com nota máxima em quatro das cinco competências.</p></div><span class="stamp">Conquistado</span></div>
       </div>
@@ -756,11 +770,26 @@ a.q { text-decoration: none; }
   <h3>Como foi feito</h3>
   <div class="chips"><span>React</span><span>Python</span><span>FastAPI</span><span>SQLite</span><span>SQLAlchemy</span><span>JWT</span><span>Bcrypt</span></div>
   <p class="d-note">Projeto full-stack do curso técnico, integrado à Iniciação Científica de Matemática.</p>
-  <div class="d-award"><h3>2º lugar na XI FEBIC</h3><p>Na Feira Brasileira de Iniciação Científica 2026, em Joinville, o AcousticBuild ficou em segundo lugar em Ciências Exatas e da Terra, no Ensino Médio, e ganhou credencial para a FoCiTeCu 2027, na Argentina.</p></div>
+  <h3>Jornada nas feiras</h3>
+  <p>O AcousticBuild saiu da sala de aula e rodou feiras científicas. Duas delas renderam credencial para feiras internacionais.</p>
+  <ol class="d-fairs">
+    <li class="win"><span class="yr">2025</span><div><b>Infomatrix</b><small>Credencial para a MILSET Expo 2026, em Fortaleza.</small></div><span class="res">Credencial</span></li>
+    <li><span class="yr">2025</span><div><b>DUAL International Fair</b><small>Apresentação do projeto.</small></div><span class="res">Participação</span></li>
+    <li><span class="yr">2026</span><div><b>DUAL International Fair</b><small>Apresentação do projeto, pelo segundo ano.</small></div><span class="res">Participação</span></li>
+    <li><span class="yr">2026</span><div><b>FEBRACE</b><small>Feira Brasileira de Ciências e Engenharia, em São Paulo.</small></div><span class="res">Participação</span></li>
+    <li class="win"><span class="yr">2026</span><div><b>XI FEBIC</b><small>2º lugar em Ciências Exatas e da Terra, no Ensino Médio, em Joinville. Credencial para a FoCiTeCu 2027, na Argentina.</small></div><span class="res">2º lugar</span></li>
+  </ol>
   <div class="d-photos">
     <figure><img src="/vale/trem/febic-estande.jpg" alt="Estande do AcousticBuild na XI FEBIC, com a equipe" loading="lazy"><figcaption>O estande na feira</figcaption></figure>
     <figure><img src="/vale/trem/febic-palco.jpg" alt="Equipe no palco recebendo o 2º lugar" loading="lazy"><figcaption>O 2º lugar no palco</figcaption></figure>
   </div>
+  <h3>Próximas paradas</h3>
+  <ol class="d-fairs">
+    <li class="next"><span class="yr">2026</span><div><b>FENIC</b><small>A próxima feira na mira, ainda este ano.</small></div><span class="res">Tentando</span></li>
+    <li class="next"><span class="yr">2027</span><div><b>FEBRACE</b><small>A volta a São Paulo, agora com o projeto mais maduro.</small></div><span class="res">Tentando</span></li>
+    <li class="next win"><span class="yr">2027</span><div><b>FoCiTeCu</b><small>Credencial garantida pela FEBIC. Falta reunir os recursos para a viagem à Argentina.</small></div><span class="res">Credenciado</span></li>
+    <li class="next"><span class="yr">2027</span><div><b>GENIUS Olympiad</b><small>Olimpíada internacional de projetos, nos Estados Unidos.</small></div><span class="res">Tentando</span></li>
+  </ol>
   <h3>Ver mais</h3>
   <ul class="d-links">
     <li><a href="https://drive.google.com/file/d/1kC-pFY_rgKTiVAEkhKXlEsYN6WP5YFrU/view" target="_blank" rel="noreferrer">Assistir ao vídeo do projeto</a></li>

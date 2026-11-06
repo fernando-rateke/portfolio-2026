@@ -565,71 +565,75 @@ a.q { text-decoration: none; }
 .w-label em:empty { display: none; }
 .w-label.hit { background: rgba(130, 64, 22, 0.78); }
 /* ---------- Kamishibai: o teatro de papel que substitui o dossiê ---------- */
-.kami { position: absolute; inset: 0; z-index: 4; display: grid; place-items: center; padding: 70px 16px 20px; background: rgba(10, 8, 12, 0.5); opacity: 0; transition: opacity .35s ease; }
+.kami { position: absolute; inset: 0; z-index: 4; display: grid; place-items: center; padding: 70px 16px 20px; background: rgba(10, 8, 12, 0.55); opacity: 0; transition: opacity .35s ease; }
 .kami.open { opacity: 1; }
 .kami[hidden] { display: none; }
-.kami-stage { width: min(880px, 100%); display: grid; gap: 12px; justify-items: center; }
+.kami-stage { width: min(920px, 100%); display: grid; gap: 12px; justify-items: center; }
 .kami-butai { position: relative; width: 100%; padding: 18px 18px 22px; border-radius: 10px 10px 6px 6px;
   background: linear-gradient(180deg, #7A4E30, #5A3822 60%, #4A2E1C); box-shadow: inset 0 0 0 3px #3A2214, inset 0 0 0 7px #8A5E3C, 0 24px 60px rgba(0,0,0,0.5); }
 .kami-butai::before { content: ""; position: absolute; left: -14px; right: -14px; top: -16px; height: 18px; border-radius: 8px 8px 2px 2px; background: linear-gradient(180deg, #3E5A58, #2E4442); box-shadow: 0 3px 0 #22302F; }
 .kami-butai::after { content: ""; position: absolute; left: 40%; right: 40%; bottom: -12px; height: 12px; background: #3A2214; border-radius: 0 0 6px 6px; }
-.kami-window { position: relative; aspect-ratio: 16 / 10; overflow: hidden; border-radius: 4px; background: #1A120C; perspective: 1400px; }
+.kami-window { position: relative; aspect-ratio: 16 / 11; max-height: calc(100svh - 170px); width: 100%; overflow: hidden; border-radius: 4px; background: #1A120C; perspective: 1400px; }
 .kami-doors { position: absolute; inset: 0; z-index: 5; pointer-events: none; display: flex; }
 .kami-doors span { flex: 1; background: repeating-linear-gradient(90deg, #6B4A32 0 22px, #5E4030 22px 24px); box-shadow: inset 0 0 0 3px #3A2214; transition: transform .9s cubic-bezier(.6,.05,.3,1); }
 .kami-doors span:first-child { transform-origin: left center; }
 .kami-doors span:last-child { transform-origin: right center; }
 .kami.open .kami-doors span:first-child { transform: rotateY(-100deg); }
 .kami.open .kami-doors span:last-child { transform: rotateY(100deg); }
-.kami-card { position: absolute; inset: 0; overflow-y: auto; padding: clamp(18px, 3.4vw, 40px) clamp(20px, 4vw, 48px); color: var(--ink, #2A2018);
-  font-family: "Zen Maru Gothic", var(--f-body, sans-serif); background: var(--bg); transition: transform .7s cubic-bezier(.7,0,.3,1); }
+.kami-card { --kc-bg: #F6EEDC; --kc-ink: #2A2018; --kc-accent: #C22026; --kc-wm: rgba(0,0,0,0.07); --kc-line: rgba(42,32,24,0.2); --kc-box: rgba(255,255,255,0.55);
+  position: absolute; inset: 0; overflow: hidden; color: var(--kc-ink); background: var(--kc-bg); font-family: "Zen Maru Gothic", sans-serif; transition: transform .7s cubic-bezier(.7,0,.3,1); }
 .kami-card.out { transform: translateX(105%); }
-.kami-card.back { transform: none; z-index: 0; }
-.kami-card.front { z-index: 1; }
-.kami-card::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle at 20% 15%, rgba(255,255,255,0.35), transparent 45%), radial-gradient(rgba(0,0,0,0.05) 1px, transparent 1.4px) 0 0 / 9px 9px; }
-.kami-card::after { content: ""; position: absolute; inset: 10px; border: 2px solid var(--line, rgba(0,0,0,0.18)); border-radius: 4px; pointer-events: none; }
-.kami-card .kk { position: absolute; right: 4%; bottom: -6%; font: 800 clamp(9rem, 22vw, 15rem)/1 var(--f-display); color: var(--wm, rgba(0,0,0,0.07)); pointer-events: none; user-select: none; }
-.kami-card > * { position: relative; }
-.kami-card .kc-kicker { font: 500 0.66rem/1.3 var(--f-label); letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent, #C22026); }
-.kami-card h2 { font: 600 clamp(1.6rem, 1.1rem + 2vw, 2.5rem)/1.1 var(--f-display); margin: 8px 0 10px; max-width: 22ch; }
-.kami-card h3 { font: 600 1.05rem/1.25 var(--f-display); margin: 16px 0 6px; }
-.kami-card p { font-size: clamp(0.95rem, 0.88rem + 0.3vw, 1.08rem); line-height: 1.7; margin: 0 0 10px; max-width: 58ch; }
-.kami-card ul { margin: 6px 0 10px; padding-left: 20px; line-height: 1.7; }
-.kami-card .kc-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-top: 10px; }
-.kami-card .kc-box { background: rgba(255,255,255,0.5); border-radius: 8px; padding: 12px 14px; box-shadow: 0 2px 0 rgba(0,0,0,0.08); }
-.kami-card .kc-box b { display: block; font: 600 1rem/1.25 var(--f-display); margin-bottom: 4px; }
-.kami-card .kc-box small { display: block; font-size: 0.86rem; line-height: 1.5; opacity: 0.85; }
-.kami-card .kc-img { display: block; width: 100%; max-height: 52%; object-fit: cover; border-radius: 6px; margin: 8px 0 10px; box-shadow: 0 6px 16px rgba(0,0,0,0.2); transform: rotate(-0.6deg); background: #fff; padding: 6px; }
-.kami-card .kc-imgs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 8px 0; }
+.kami-card::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle at 18% 12%, rgba(255,255,255,0.4), transparent 45%), radial-gradient(rgba(0,0,0,0.05) 1px, transparent 1.4px) 0 0 / 9px 9px; }
+.kami-card::after { content: ""; position: absolute; inset: 10px; border: 2px solid var(--kc-line); border-radius: 4px; pointer-events: none; z-index: 2; }
+.kami-card .kk { position: absolute; right: 28px; bottom: 22px; z-index: 0; font: 800 clamp(5rem, 13vw, 10rem)/0.9 var(--f-display); color: var(--kc-wm); pointer-events: none; user-select: none; }
+.kc-body { position: absolute; inset: 12px; z-index: 1; overflow-y: auto; -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 26px), transparent); mask-image: linear-gradient(180deg, #000 calc(100% - 26px), transparent); overscroll-behavior: contain; padding: clamp(16px, 2.6vw, 30px) clamp(18px, 3.4vw, 40px) 28px; scrollbar-width: thin; scrollbar-color: var(--kc-line) transparent; }
+.kc-body::-webkit-scrollbar { width: 8px; } .kc-body::-webkit-scrollbar-thumb { background: var(--kc-line); border-radius: 8px; }
+.kami-card .kc-kicker, .kami-card .w-kicker { display: block; font: 600 0.74rem/1.3 var(--f-label); letter-spacing: 0.16em; text-transform: uppercase; color: var(--kc-accent); opacity: 1; text-shadow: none; }
+.kami-card h2, .kami-card .d-title { font: 600 clamp(1.7rem, 1.2rem + 2vw, 2.6rem)/1.12 var(--f-display); margin: 8px 0 12px; max-width: 24ch; color: var(--kc-ink); }
+.kami-card h3 { font: 600 1.12rem/1.25 var(--f-display); margin: 18px 0 8px; color: var(--kc-ink); }
+.kami-card p { font-size: clamp(1rem, 0.92rem + 0.35vw, 1.14rem); line-height: 1.7; margin: 0 0 12px; max-width: 60ch; color: var(--kc-ink); }
+.kami-card em { color: var(--kc-ink); opacity: 0.8; }
+.kami-card .d-sub { font-family: var(--f-display); font-size: 1.1rem; opacity: 0.85; margin: 0 0 14px; }
+.kami-card .d-note { font-size: 0.92rem; opacity: 0.8; }
+.kami-card ul { margin: 6px 0 12px; padding-left: 20px; line-height: 1.7; }
+.kami-card .kc-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin: 12px 0; }
+.kami-card .kc-box { background: var(--kc-box); border-radius: 8px; padding: 12px 14px; box-shadow: 0 2px 0 rgba(0,0,0,0.08); }
+.kami-card .kc-box b { display: block; font: 600 1.05rem/1.25 var(--f-display); margin-bottom: 4px; }
+.kami-card .kc-box small { display: block; font-size: 0.92rem; line-height: 1.55; opacity: 0.9; }
+.kami-card .kc-img { display: block; max-width: 100%; max-height: 42vh; width: auto; object-fit: cover; border-radius: 6px; margin: 8px 0 14px; box-shadow: 0 6px 16px rgba(0,0,0,0.2); transform: rotate(-0.6deg); background: #fff; padding: 6px; }
+.kami-card .kc-imgs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 8px 0 14px; }
 .kami-card .kc-imgs img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 4px; background: #fff; padding: 5px; box-shadow: 0 4px 12px rgba(0,0,0,0.18); }
 .kami-card .kc-imgs img:nth-child(odd) { transform: rotate(-1.4deg); } .kami-card .kc-imgs img:nth-child(even) { transform: rotate(1.2deg); }
-.kami-card .chips span { border-color: currentColor; }
+.kami-card .chips span { border-color: currentColor; color: var(--kc-ink); }
 .kami-card a { color: inherit; }
-.kami-card .kc-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; list-style: none; padding: 0; }
-.kami-card .kc-links a, .kami-card .kc-links button { display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px; border-radius: 999px; background: var(--accent, #C22026); color: #fff; text-decoration: none; font: 500 0.72rem/1 var(--f-label); letter-spacing: 0.12em; text-transform: uppercase; border: 0; cursor: pointer; }
+.kami-card .kc-links { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0 6px; list-style: none; padding: 0; }
+.kami-card .kc-links a, .kami-card .kc-links button { display: inline-flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: 999px; background: var(--kc-accent); color: #fff; text-decoration: none; font: 600 0.78rem/1 var(--f-label); letter-spacing: 0.12em; text-transform: uppercase; border: 0; cursor: pointer; box-shadow: 0 3px 0 rgba(0,0,0,0.18); }
+.kami-card .kc-links a::after { content: "↗"; font-size: 0.9rem; }
+.kami-card .kc-nolink { font-size: 0.86rem; opacity: 0.7; font-style: italic; }
+.kami-card .kc-count { font: 600 0.74rem/1.4 var(--f-label); letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.8; }
+.kami-card .kc-toc { list-style: none; padding: 0; margin: 14px 0 4px; display: grid; gap: 8px; max-width: 62ch; }
+.kami-card .kc-toc button { width: 100%; display: grid; grid-template-columns: 34px 1fr auto; gap: 12px; align-items: center; text-align: left; padding: 10px 12px; border-radius: 8px; border: 0; background: var(--kc-box); color: var(--kc-ink); cursor: pointer; font: inherit; box-shadow: 0 2px 0 rgba(0,0,0,0.07); }
+.kami-card .kc-toc button:hover, .kami-card .kc-toc button:focus-visible { box-shadow: inset 0 0 0 2px var(--kc-accent); }
+.kami-card .kc-toc i { font: 700 0.8rem/1 var(--f-label); font-style: normal; color: var(--kc-accent); }
+.kami-card .kc-toc b { font: 600 1.02rem/1.25 var(--f-display); }
+.kami-card .kc-toc small { font: 500 0.66rem/1 var(--f-label); letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.7; }
+.kami-card .w-btn { color: var(--kc-ink); border-color: currentColor; background: transparent; text-shadow: none; }
+.kami-card .q-list li { border-top-color: var(--kc-line); }
 .kami-card .d-fairs .res { border-color: currentColor; }
-.kami-card .w-kicker { font: 500 0.66rem/1.3 var(--f-label); letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent, #C22026); opacity: 1; }
-.kami-card .d-title { font: 600 clamp(1.6rem, 1.1rem + 2vw, 2.5rem)/1.1 var(--f-display); margin: 8px 0 8px; }
-.kami-card .d-sub { font-family: var(--f-display); opacity: 0.8; margin: 0 0 12px; }
-.kami-card .d-note { font-size: 0.86rem; opacity: 0.75; }
-.kami-card .w-btn { color: inherit; border-color: currentColor; background: transparent; text-shadow: none; }
-.kami-card .q-list li { border-top-color: rgba(0,0,0,0.12); }
-.kami-card .kc-count { font: 500 0.7rem/1.4 var(--f-label); letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.75; }
-.kami-card .kc-img { max-height: 46vh; width: auto; max-width: 100%; }
-.kami-card.kc-photo { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); grid-template-rows: auto auto 1fr; column-gap: 26px; align-content: start; }
-.kami-card.kc-photo .kc-img { grid-column: 1; grid-row: 1 / span 3; max-height: none; width: 100%; height: 100%; object-fit: cover; margin: 0; }
+.kami-card .d-fairs::before { background: var(--kc-line); }
+.kami-card .d-fairs li::before { background: var(--kc-bg); }
+.kami-card.kc-photo .kc-body { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); grid-template-rows: auto auto 1fr; column-gap: 26px; align-content: start; }
+.kami-card.kc-photo .kc-img { grid-column: 1; grid-row: 1 / span 3; max-height: none; width: 100%; height: 100%; max-height: calc(100% - 4px); object-fit: cover; margin: 0; }
 .kami-card.kc-photo .kc-kicker, .kami-card.kc-photo h2, .kami-card.kc-photo p { grid-column: 2; }
-.kami-card.kc-photo .kk { grid-column: 1 / -1; }
-@media (max-width: 640px) { .kami-card.kc-photo { display: block; } .kami-card.kc-photo .kc-img { height: auto; max-height: 40vh; margin: 8px 0; } }
-.kami-card[data-c="sky"] { --bg: linear-gradient(160deg, #DCEBF5, #A9CBE4); --accent: #2E6E9A; --wm: rgba(46,110,154,0.12); }
-.kami-card[data-c="sakura"] { --bg: linear-gradient(160deg, #FBE6EA, #F1C3CE); --accent: #B23A5A; --wm: rgba(178,58,90,0.12); }
-.kami-card[data-c="matcha"] { --bg: linear-gradient(160deg, #E8F0D2, #C2D69A); --accent: #4E7A2E; --wm: rgba(78,122,46,0.14); }
-.kami-card[data-c="sunset"] { --bg: linear-gradient(160deg, #FCE3C8, #F2B48A); --accent: #B5481E; --wm: rgba(181,72,30,0.13); }
-.kami-card[data-c="lavender"] { --bg: linear-gradient(160deg, #ECE6F7, #CFC2EA); --accent: #5E4A9A; --wm: rgba(94,74,154,0.13); }
-.kami-card[data-c="gold"] { --bg: linear-gradient(160deg, #FBF1CF, #EDD48A); --accent: #946A12; --wm: rgba(148,106,18,0.14); }
-.kami-card[data-c="totoro"] { --bg: linear-gradient(160deg, #E4EDE0, #9FB89A); --accent: #3E5A3A; --wm: rgba(62,90,58,0.15); }
-.kami-card[data-c="night"] { --bg: radial-gradient(circle at 70% 30%, #2A2440, #0C0A14 70%); --ink: #EDE3D1; --accent: #FFC86A; --wm: rgba(255,200,106,0.08); --line: rgba(255,200,106,0.25); }
-.kami-card[data-c="ink"] { --bg: linear-gradient(160deg, #1E1A1C, #0B0809); --ink: #EDE3D1; --accent: #E0B04A; --wm: rgba(224,176,74,0.08); --line: rgba(224,176,74,0.2); }
-.kami-card[data-c="night"] .kc-box, .kami-card[data-c="ink"] .kc-box { background: rgba(255,255,255,0.06); }
+.kami-card[data-c="sky"] { --kc-bg: linear-gradient(160deg, #DCEBF5, #A9CBE4); --kc-ink: #142836; --kc-accent: #1F5F8C; --kc-wm: rgba(31,95,140,0.13); --kc-line: rgba(20,40,54,0.22); }
+.kami-card[data-c="sakura"] { --kc-bg: linear-gradient(160deg, #FBE6EA, #F1C3CE); --kc-ink: #3A1620; --kc-accent: #A3304F; --kc-wm: rgba(163,48,79,0.13); --kc-line: rgba(58,22,32,0.2); }
+.kami-card[data-c="matcha"] { --kc-bg: linear-gradient(160deg, #EAF2D6, #C2D69A); --kc-ink: #1E2C14; --kc-accent: #3E6A22; --kc-wm: rgba(62,106,34,0.15); --kc-line: rgba(30,44,20,0.22); }
+.kami-card[data-c="sunset"] { --kc-bg: linear-gradient(160deg, #FCE3C8, #F2B48A); --kc-ink: #3A1A0C; --kc-accent: #A33E14; --kc-wm: rgba(163,62,20,0.14); --kc-line: rgba(58,26,12,0.2); }
+.kami-card[data-c="lavender"] { --kc-bg: linear-gradient(160deg, #EEE8F8, #CFC2EA); --kc-ink: #241A3C; --kc-accent: #4E3A8C; --kc-wm: rgba(78,58,140,0.14); --kc-line: rgba(36,26,60,0.22); }
+.kami-card[data-c="gold"] { --kc-bg: linear-gradient(160deg, #FBF2D2, #EDD48A); --kc-ink: #2E2208; --kc-accent: #7E5A0C; --kc-wm: rgba(126,90,12,0.15); --kc-line: rgba(46,34,8,0.22); }
+.kami-card[data-c="totoro"] { --kc-bg: linear-gradient(160deg, #E6EFE2, #A9C2A2); --kc-ink: #18241A; --kc-accent: #2E5A30; --kc-wm: rgba(46,90,48,0.16); --kc-line: rgba(24,36,26,0.22); }
+.kami-card[data-c="night"] { --kc-bg: radial-gradient(circle at 70% 30%, #2A2440, #0C0A14 70%); --kc-ink: #F1E8D6; --kc-accent: #FFC86A; --kc-wm: rgba(255,200,106,0.09); --kc-line: rgba(255,200,106,0.28); --kc-box: rgba(255,255,255,0.07); }
+.kami-card[data-c="ink"] { --kc-bg: linear-gradient(160deg, #1E1A1C, #0B0809); --kc-ink: #F1E8D6; --kc-accent: #E0B04A; --kc-wm: rgba(224,176,74,0.09); --kc-line: rgba(224,176,74,0.24); --kc-box: rgba(255,255,255,0.07); }
 .kami-card[data-c="night"] .kc-links a, .kami-card[data-c="ink"] .kc-links a { color: #1A1210; }
 .kami-nav { display: flex; align-items: center; gap: 14px; color: #F4EBDD; }
 .kami-nav button { width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(244,235,221,0.4); background: rgba(20,14,12,0.6); color: #F4EBDD; font-size: 1.3rem; cursor: pointer; }
@@ -638,8 +642,9 @@ a.q { text-decoration: none; }
 .kami-dots { display: flex; gap: 6px; }
 .kami-dots i { width: 7px; height: 7px; border-radius: 50%; background: rgba(244,235,221,0.3); }
 .kami-dots i.on { background: #F4EBDD; }
+.mundo:has(.kami.open) .world-title, .mundo:has(.kami.open) .world-line { opacity: 0; transition: opacity .3s; }
 .kami-close { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 18px); right: 18px; }
-@media (max-width: 640px) { .kami { padding: 64px 8px 12px; } .kami-window { aspect-ratio: 3 / 4; } .kami-butai { padding: 10px 10px 14px; } }
+@media (max-width: 640px) { .kami { padding: 64px 8px 12px; } .kami-window { aspect-ratio: 3 / 4; } .kami-butai { padding: 10px 10px 14px; } .kami-card.kc-photo .kc-body { display: block; } .kami-card.kc-photo .kc-img { height: auto; max-height: 38vh; margin: 8px 0 12px; } .kami-card .kk { font-size: 6rem; } }
 @media (prefers-reduced-motion: reduce) { .kami-card, .kami-doors span { transition: none; } }
 .dossier { position: absolute; top: 0; right: 0; bottom: 0; z-index: 3; width: min(460px, 100%); overflow-y: auto; outline: none;
   padding: calc(env(safe-area-inset-top, 0px) + 70px) 28px calc(env(safe-area-inset-bottom, 0px) + 40px); transform: translateX(100%); transition: transform 0.7s cubic-bezier(.2,.8,.2,1); }

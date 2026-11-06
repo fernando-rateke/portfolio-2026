@@ -253,7 +253,9 @@
       const card = document.createElement("article"); card.className = "kami-card"; sec.classList.forEach((c) => { if (c !== "kc") card.classList.add(c); });
       card.dataset.c = sec.dataset.c || (current && current.kamiColor) || "gold";
       if (sec.dataset.k) { const k = document.createElement("span"); k.className = "kk"; k.setAttribute("aria-hidden", "true"); k.textContent = sec.dataset.k; card.appendChild(k); }
-      while (sec.firstChild) card.appendChild(sec.firstChild);
+      const inner = document.createElement("div"); inner.className = "kc-body";
+      while (sec.firstChild) inner.appendChild(sec.firstChild);
+      card.appendChild(inner);
       kWin.insertBefore(card, kWin.firstChild);
       return card;
     });
@@ -269,7 +271,7 @@
       c.style.zIndex = j < kIdx ? 3 : j === kIdx ? 2 : j === kIdx + 1 ? 1 : 0;
       c.style.visibility = j < kIdx - 1 || j > kIdx + 1 ? "hidden" : "visible";
       c.setAttribute("aria-hidden", String(j !== kIdx));
-      if (j === kIdx) c.scrollTop = 0;
+      if (j === kIdx) c.querySelector(".kc-body").scrollTop = 0;
     });
     [...kDots.children].forEach((d, j) => d.classList.toggle("on", j === kIdx));
     kCount.textContent = kCards.length > 1 ? `${kIdx + 1} / ${kCards.length}` : "";
@@ -296,6 +298,7 @@
   dossierBtn.addEventListener("click", showDossier);
   $("kamiClose").addEventListener("click", closeKami);
   $("dossierClose").addEventListener("click", closeKami);
+  kWin.addEventListener("click", (e) => { const g = e.target.closest("[data-goto]"); if (g) setCard(+g.dataset.goto); });
   $("kamiPrev").addEventListener("click", () => setCard(kIdx - 1));
   $("kamiNext").addEventListener("click", () => setCard(kIdx + 1));
   kami.addEventListener("click", (e) => { if (e.target === kami) closeKami(); });
@@ -1005,13 +1008,14 @@
       const cat = sub.cat === "curso-tecnico" ? "Curso Técnico" : "Ensino Médio";
       const kj = (META[sub.code] || ["書"])[0], pal = PAL[sub.code] || "gold";
       const cover = `<section class="kc" data-c="${pal}" data-k="${kj}"><span class="kc-kicker">Grimório · ${cat}</span><h2>${esc(sub.name)}</h2><p>${esc(sub.desc)}</p>
-        <p class="kc-count">${sub.acts.length} ${sub.acts.length === 1 ? "feitiço aprendido" : "feitiços aprendidos"}. Passe as páginas para ver cada um.</p></section>`;
+        <p class="kc-count">${sub.acts.length} ${sub.acts.length === 1 ? "feitiço aprendido" : "feitiços aprendidos"}</p>
+        <ol class="kc-toc">${sub.acts.map((a, n) => `<li><button type="button" data-goto="${n + 1}"><i>${String(n + 1).padStart(2, "0")}</i><b>${esc(a.t)}</b><small>${a.tri}º tri</small></button></li>`).join("")}</ol></section>`;
       const spells = sub.acts.map((a, n) => {
         const imgs = [a.img, a.img2 && a.img2 !== a.img ? a.img2 : null].filter(Boolean).map((u) => `<img src="${esc(u.startsWith("http") ? u : BASE + u)}" alt="" loading="lazy" onerror="this.remove()">`);
         const pics = imgs.length === 2 ? `<div class="kc-imgs">${imgs.join("")}</div>` : imgs.length ? imgs[0].replace("<img ", '<img class="kc-img" ') : "";
-        const k = a.k ? `<div class="kc-cols">${a.k.map(([c, d]) => `<div class="kc-box"><b>${esc(c)}</b><small>${esc(d)}</small></div>`).join("")}</div>` : "";
-        const l = a.l ? `<ul class="kc-links">${a.l.map(([t, u]) => `<li><a href="${esc(u)}" target="_blank" rel="noreferrer">${esc(t)}</a></li>`).join("")}</ul>` : "";
-        return `<section class="kc" data-c="${pal}" data-k="${kj}"><span class="kc-kicker">Feitiço ${n + 1} · ${a.tri}º trimestre</span><h2>${esc(a.t)}</h2><p><em>${esc(a.s)}</em></p>${pics}${a.r ? `<p>${esc(a.r)}</p>` : ""}${k}${l}</section>`;
+        const k = a.k ? `<h3>Competências</h3><div class="kc-cols">${a.k.map(([c, d]) => `<div class="kc-box"><b>${esc(c)}</b><small>${esc(d)}</small></div>`).join("")}</div>` : "";
+        const l = a.l && a.l.length ? `<h3>Ver a atividade</h3><ul class="kc-links">${a.l.map(([t, u]) => `<li><a href="${esc(u)}" target="_blank" rel="noreferrer">${esc(t)}</a></li>`).join("")}</ul>` : `<p class="kc-nolink">Esta atividade não tem link público.</p>`;
+        return `<section class="kc" data-c="${pal}" data-k="${kj}"><span class="kc-kicker">Feitiço ${n + 1} · ${a.tri}º trimestre</span><h2>${esc(a.t)}</h2><p><em>${esc(a.s)}</em></p>${pics}${a.r ? `<p>${esc(a.r)}</p>` : ""}${l}${k}</section>`;
       }).join("");
       return cover + spells;
     }

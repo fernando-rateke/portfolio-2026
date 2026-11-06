@@ -228,7 +228,7 @@
     if (renderer) return true;
     try { renderer = new T.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" }); }
     catch (e) { return false; }
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, small ? 1.5 : 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, small ? 1.25 : 1.5));
     return true;
   }
   function resize() {
@@ -239,6 +239,9 @@
   }
   function loop(now) {
     if (!running || !current) return;
+    // no máximo 60 quadros por segundo; com os cartões abertos, bem menos
+    const minGap = !kami.hidden && kami.classList.contains("open") ? 1000 / 24 : 1000 / 60 - 1.5;
+    if (now - last < minGap) { requestAnimationFrame(loop); return; }
     const dt = Math.max(0, Math.min(0.05, (now - last) / 1000)); last = now;
     pointer.sx += (pointer.x - pointer.sx) * Math.min(1, dt * 1.8);
     pointer.sy += (pointer.y - pointer.sy) * Math.min(1, dt * 1.8);
@@ -1121,7 +1124,7 @@
         html: () => `<span class="w-kicker">Mesa · jogos</span><h2 class="d-title">Jogos</h2>
           <p class="d-sub">Jogar e criar mundos.</p>
           <ul class="q-list"><li><b>Nós</b><small>narrativa de exploração psicológica, em desenvolvimento</small></li><li><b>Hollow Depths</b><small>RPG de turno guiado por probabilidade</small></li></ul>
-          <div class="q-actions"><button type="button" class="w-btn" data-go-world="nos">Abrir a porta preta</button><a class="w-btn" href="https://game-nauy.onrender.com/" target="_blank" rel="noreferrer">Jogar Hollow Depths</a></div>`,
+          <ul class="kc-links"><li><a href="https://game-nauy.onrender.com/" target="_blank" rel="noreferrer">Jogar Hollow Depths</a></li></ul><p class="d-note">O Nós fica atrás da porta preta, lá embaixo, no seletor do castelo.</p>`,
       },
       japao: {
         name: "Pergaminho", sub: "Japão", k: "日",

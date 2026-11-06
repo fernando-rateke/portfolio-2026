@@ -15,6 +15,7 @@
     renderer = new T.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
   } catch (e) {
     canvas.classList.add("no-webgl");
+    document.documentElement.classList.add("no-webgl");
     return;
   }
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, small ? 1.5 : 2));
@@ -691,19 +692,38 @@
   const castleLine = outlineMat(0.09, "#2A1D18");
   {
     const B = Builder(); const r = mulberry(404);
-    const RUST = ["#8C5B43", "#7A4D3B", "#9B6A4B", "#6E5246", "#A07052"];
-    const METAL = "#4D4848", METAL_D = "#383333", WOOD = "#7B5A3E", CANVAS = "#C4B49A", COPPER = "#6F8D7E", SLATE = "#6E7C86";
+    // metal grafite azulado, com remendos de ferrugem e a base suja, como no filme
+    const HULL = ["#6C7480", "#626A74", "#78808A", "#5A616A", "#707882"];
+    const RUSTS = ["#8A5E48", "#7A5040", "#93684C"];
+    const hull = (base) => (x, y, z) => {
+      const n = Math.sin(x * 2.1 + z * 1.7 + y * 0.6) * Math.sin(y * 2.6 - x * 0.9);
+      if (y < -0.5) return "#3E434A";
+      return n > 0.62 ? RUSTS[0] : n < -0.7 ? "#454B53" : base;
+    };
+    const RUST = HULL.map((c) => hull(c));
+    const METAL = "#3E434A", METAL_D = "#2C3036", WOOD = "#7B5A3E", CANVAS = "#C9BBA0", COPPER = "#6F8D7E", SLATE = "#7C8A96";
     const WALL = ["#ECE2CF", "#E2D3B8", "#D9CDB6"], ROOF = ["#A8473A", "#8E3C33", "#5E6B76", "#7C4A3A"];
 
     // Casco: massas sobrepostas, como uma sucata que virou casa
     [[0, 9.6, 0, 6.4, 4.0, 4.8, RUST[0]], [-3.4, 10.4, 0.3, 4.8, 3.8, 4.2, RUST[1]], [3.8, 10.2, 0, 3.6, 3.3, 3.6, RUST[2]],
      [-0.6, 12.8, 0.4, 4.4, 2.8, 3.6, RUST[3]], [1.6, 7.6, 0, 4.6, 2.2, 3.8, RUST[4]]]
       .forEach(([x, y, z, sx, sy, sz, c]) => B.add(new T.SphereGeometry(1, 28, 18), M(x, y, z, 0, 0, 0, sx, sy, sz), c));
-    // Placas de metal remendadas
-    for (let i = 0; i < 28; i++) {
+    // Placas de metal remendadas (umas cinza, outras de ferrugem)
+    for (let i = 0; i < 40; i++) {
       const a = r() * Math.PI * 2, y = 7.2 + r() * 6.5;
       const rad = 4.7 - Math.abs(y - 10) * 0.28;
-      B.add(new T.BoxGeometry(1.6 + r(), 1.0 + r() * 0.8, 0.22), M(Math.cos(a) * rad * 1.28, y, Math.sin(a) * rad, (r() - 0.5) * 0.3, -a + Math.PI / 2, (r() - 0.5) * 0.3), RUST[(i + 2) % 5]);
+      B.add(new T.BoxGeometry(1.4 + r() * 1.2, 0.9 + r() * 0.9, 0.22), M(Math.cos(a) * rad * 1.28, y, Math.sin(a) * rad, (r() - 0.5) * 0.3, -a + Math.PI / 2, (r() - 0.5) * 0.4), i % 4 === 0 ? RUSTS[i % 3] : HULL[(i + 2) % 5]);
+    }
+    // Abas de metal nas laterais, como asas dobradas
+    for (const z of [-1, 1]) for (let k = 0; k < 3; k++) {
+      B.add(new T.BoxGeometry(2.6 - k * 0.4, 1.6, 0.14), M(-1.6 + k * 2.2, 10.6 - k * 0.5, z * (4.9 - k * 0.3), z * (0.35 + k * 0.1), 0, (k - 1) * 0.25), k === 1 ? RUSTS[1] : HULL[k]);
+      for (let j = 0; j < 4; j++) B.add(new T.SphereGeometry(0.09, 5, 4), M(-2.4 + k * 2.2 + j * 0.5, 11.2 - k * 0.5, z * (5.0 - k * 0.3)), METAL_D);
+    }
+    // Canhões saindo dos flancos
+    for (const z of [-1, 1]) for (let k = 0; k < 3; k++) {
+      const Mg = M(-2.4 + k * 2.6, 9.4 + (k % 2) * 1.3, z * 4.7, z * Math.PI / 2 + z * 0.15, 0, 0);
+      B.add(new T.CylinderGeometry(0.22, 0.3, 2.2, 10), Mg.clone().multiply(M(0, 1.0, 0)), METAL);
+      B.add(new T.TorusGeometry(0.24, 0.07, 6, 12), Mg.clone().multiply(M(0, 2.1, 0, Math.PI / 2, 0, 0)), METAL_D);
     }
     // Rebites no cinturão do casco
     for (let i = 0; i < 52; i++) { const a = i / 52 * Math.PI * 2; B.add(new T.SphereGeometry(0.13, 6, 4), M(Math.cos(a) * 6.32, 9.2 + Math.sin(a * 3) * 0.25, Math.sin(a) * 4.74), METAL_D); }
@@ -720,7 +740,7 @@
     B.add(new T.BoxGeometry(0.1, 0.9, 1.8), M(9.25, 8.4, 0), WOOD);
 
     // Cúpulas do alto
-    [[0.2, 14.6, 0.2, 3.0, 2.3, 2.8, RUST[2]], [-2.9, 14.9, 1.2, 2.0, 2.2, 1.9, SLATE], [2.6, 15.2, -1.2, 1.9, 2.0, 1.9, COPPER]]
+    [[0.2, 14.6, 0.2, 3.0, 2.3, 2.8, RUST[2]], [-2.9, 14.9, 1.2, 2.0, 2.2, 1.9, SLATE], [2.6, 15.2, -1.2, 1.9, 2.0, 1.9, COPPER], [-4.4, 13.0, -2.2, 1.6, 1.5, 1.5, RUSTS[2]]]
       .forEach(([x, y, z, sx, sy, sz, c]) => B.add(new T.SphereGeometry(1, 24, 14), M(x, y, z, 0, 0, 0, sx, sy, sz), c));
 
     // Casinhas com telhado de duas águas e janelas que acendem à noite
@@ -744,7 +764,8 @@
      [-4.8, 13.2, -1.6, 2.6, 0.18], [0.4, 15.4, 2.2, 2.4, 0.0], [4.8, 13.4, 1.4, 2.2, -0.2]].forEach(([x, y, z, h, lean]) => {
       const Mc = M(x, y, z, 0, 0, lean);
       B.add(new T.CylinderGeometry(0.36, 0.46, h, 12), Mc, METAL);
-      B.add(new T.CylinderGeometry(0.5, 0.42, 0.3, 12), Mc.clone().multiply(M(0, h / 2, 0)), METAL_D);
+      B.add(new T.CylinderGeometry(0.62, 0.38, 0.55, 12), Mc.clone().multiply(M(0, h / 2 + 0.1, 0)), METAL_D);
+      B.add(new T.TorusGeometry(0.4, 0.08, 6, 12), Mc.clone().multiply(M(0, h * 0.15, 0, Math.PI / 2, 0, 0)), METAL_D);
       chimneyTops.push(new T.Vector3(0, h / 2 + 0.35, 0).applyMatrix4(Mc));
     });
 
@@ -753,6 +774,7 @@
       B.add(new T.CylinderGeometry(rr, rr * 1.08, h, 14), M(x, y, z), WALL[0]);
       B.add(new T.ConeGeometry(rr * 1.35, h * 0.62, 14), M(x, y + h / 2 + h * 0.31, z), roof);
       B.add(new T.CylinderGeometry(0.05, 0.05, 1.6, 5), M(x, y + h / 2 + h * 0.62 + 0.6, z), METAL_D);
+      B.add(new T.BoxGeometry(0.7, 0.32, 0.03), M(x + 0.38, y + h / 2 + h * 0.62 + 1.2, z), "#C22026", 0, 1.2);
       B.add(new T.PlaneGeometry(0.24, 0.36), M(x, y + h * 0.1, z + rr + 0.02), "#2D2624", 1);
       B.add(new T.PlaneGeometry(0.24, 0.36), M(x + rr + 0.02, y + h * 0.1, z, 0, Math.PI / 2, 0), "#2D2624", 1);
     };
@@ -772,21 +794,24 @@
       B.add(new T.BoxGeometry(3.4, 2.6, 0.08), M(-7.2, 11.0, z * 2.6, 0, z * 0.5, 0.15), CANVAS);
       for (let k = 0; k < 4; k++) B.add(new T.CylinderGeometry(0.05, 0.05, 2.8, 4), M(-8.4 + k * 0.8, 11.0, z * 2.6, 0, z * 0.5, 0.15), WOOD);
     }
-    for (let i = 0; i < 7; i++) B.add(new T.BoxGeometry(1 + r(), 0.8 + r() * 0.6, 1 + r()), M(-6.2 + r() * 1.2, 7.4 + r() * 2.2, (r() - 0.5) * 3.6, 0, r(), 0), i % 2 ? WOOD : RUST[3]);
+    for (let i = 0; i < 7; i++) B.add(new T.BoxGeometry(1 + r(), 0.8 + r() * 0.6, 1 + r()), M(-6.2 + r() * 1.2, 7.4 + r() * 2.2, (r() - 0.5) * 3.6, 0, r(), 0), i % 2 ? WOOD : HULL[3]);
+    B.add(new T.SphereGeometry(1, 20, 14), M(-6.4, 9.6, 0, 0, 0, 0, 2.2, 1.8, 2.4), RUST[1]);
+    for (const z of [-0.9, 0, 0.9]) { B.add(new T.CylinderGeometry(0.28, 0.36, 1.8, 10), M(-8.4, 9.6 + Math.abs(z) * 0.3, z, 0, 0, Math.PI / 2 + 0.2), METAL); B.add(new T.TorusGeometry(0.3, 0.08, 6, 12), M(-9.3, 9.4 + Math.abs(z) * 0.3, z, 0, Math.PI / 2, 0.2), METAL_D); }
 
     const bodyGeo = B.build();
     castleBody.add(new T.Mesh(bodyGeo, objMat));
     castleBody.add(new T.Mesh(bodyGeo, castleLine));
 
     // Pernas de ave com joelho invertido e pés de três dedos
-    const LEG = "#3E3634";
+    const LEG = "#34383E";
     const thighGeo = (() => { const b = Builder();
-      b.add(new T.CylinderGeometry(0.34, 0.26, 3.6, 10), M(0, -1.8, 0), LEG);
-      b.add(new T.SphereGeometry(0.52, 12, 8), M(0, 0, 0), METAL_D);
+      b.add(new T.CylinderGeometry(0.46, 0.32, 3.6, 10), M(0, -1.8, 0), LEG);
+      b.add(new T.SphereGeometry(0.62, 12, 8), M(0, 0, 0), METAL_D);
+      b.add(new T.CylinderGeometry(0.62, 0.5, 1.2, 10, 1, true), M(0, -0.7, 0), HULL[1]);
       b.add(new T.SphereGeometry(0.4, 12, 8), M(0, -3.6, 0), METAL_D);
       return b.build(); })();
     const shinGeo = (() => { const b = Builder();
-      b.add(new T.CylinderGeometry(0.22, 0.18, 3.8, 10), M(0, -1.9, 0), LEG);
+      b.add(new T.CylinderGeometry(0.28, 0.22, 3.8, 10), M(0, -1.9, 0), LEG);
       b.add(new T.BoxGeometry(1.6, 0.22, 0.3), M(0.7, -3.85, 0), LEG);
       b.add(new T.BoxGeometry(1.2, 0.2, 0.26), M(0.5, -3.86, 0.4, 0, -0.55, 0), LEG);
       b.add(new T.BoxGeometry(1.2, 0.2, 0.26), M(0.5, -3.86, -0.4, 0, 0.55, 0), LEG);
@@ -1500,7 +1525,7 @@
       rot[n] = r() * Math.PI; tone[n] = r();
       n++;
     }
-    ig.instanceCount = n;
+    ig.instanceCount = n; ig.userData.full = n;
     ig.setAttribute("aOff", new T.InstancedBufferAttribute(off, 3));
     ig.setAttribute("aSc", new T.InstancedBufferAttribute(sc, 2));
     ig.setAttribute("aRot", new T.InstancedBufferAttribute(rot, 1));
@@ -1565,7 +1590,7 @@
       sz[n] = (0.085 + r() * 0.075) * (1 + d * 0.009);
       n++;
     }
-    ig.instanceCount = n;
+    ig.instanceCount = n; ig.userData.full = n;
     ig.setAttribute("aOff", new T.InstancedBufferAttribute(off, 3));
     ig.setAttribute("aCol", new T.InstancedBufferAttribute(cl, 3));
     ig.setAttribute("aSize", new T.InstancedBufferAttribute(sz, 1));
@@ -1675,6 +1700,7 @@
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { nightTarget = wantNight(); });
 
   let W = 1, H = 1;
+  let reflScale = 0.5;
   function resize() {
     const r = canvas.getBoundingClientRect();
     W = Math.max(1, Math.round(r.width)); H = Math.max(1, Math.round(r.height));
@@ -1682,7 +1708,7 @@
     camera.aspect = W / H; camera.updateProjectionMatrix();
     const db = renderer.getDrawingBufferSize(new T.Vector2());
     water.material.uniforms.uRes.value.copy(db);
-    rt.setSize(Math.round(db.x * 0.5), Math.round(db.y * 0.5));
+    rt.setSize(Math.round(db.x * reflScale), Math.round(db.y * reflScale));
   }
 
   const hidden = [];
@@ -1871,9 +1897,33 @@
     sky.position.copy(camera.position);
   }
 
+  // Qualidade adaptativa: se o computador sofrer, baixa resolução, reflexo e grama; se sobrar, sobe de novo
+  const DPR = Math.min(window.devicePixelRatio || 1, 2);
+  const LEVELS = [
+    { dpr: DPR, refl: 0.5, grass: 1, reflEvery: 1 },
+    { dpr: Math.min(DPR, 1.5), refl: 0.42, grass: 0.8, reflEvery: 2 },
+    { dpr: Math.min(DPR, 1.25), refl: 0.36, grass: 0.62, reflEvery: 2 },
+    { dpr: 1, refl: 0.3, grass: 0.45, reflEvery: 3 },
+  ];
+  const Q = { level: small ? 1 : 0, frames: 0, acc: 0, n: 0, since: 0, good: 0 };
+  function applyQuality() {
+    const L = LEVELS[Q.level];
+    renderer.setPixelRatio(L.dpr); reflScale = L.refl;
+    [grass, flowers].forEach((m) => { if (m && m.geometry.userData.full) m.geometry.instanceCount = Math.round(m.geometry.userData.full * L.grass); });
+    resize();
+  }
+  function measure(ms) {
+    Q.acc += ms; Q.n++; Q.since += ms;
+    if (Q.acc < 2000) return;
+    const avg = Q.acc / Q.n; Q.acc = 0; Q.n = 0;
+    if (avg > 23 && Q.level < LEVELS.length - 1 && Q.since > 2500) { Q.level++; Q.since = 0; Q.good = 0; applyQuality(); }
+    else if (avg < 17.6 && Q.level > 0) { Q.good += 2000; if (Q.good > 16000) { Q.level--; Q.since = 0; Q.good = 0; applyQuality(); } }
+    else Q.good = 0;
+  }
   function render() {
     sky.position.copy(camera.position);
-    renderReflection();
+    Q.frames++;
+    if (Q.frames % LEVELS[Q.level].reflEvery === 0) renderReflection();
     sky.position.copy(camera.position);
     renderer.render(scene, camera);
   }
@@ -2003,7 +2053,7 @@
   if ($("introSkip")) $("introSkip").addEventListener("click", skipFilm);
   // seek: posiciona a entrada num corte e num ponto do corte (usado para revisar quadros)
   let peekCam = null;
-  window.vale = { peek: (p, t) => { peekCam = p ? { p: new T.Vector3(p[0], p[1] + hillTop, p[2]), t: new T.Vector3(t[0], t[1] + hillTop, t[2]) } : null; }, star: (k) => meteors.launch(k || "vale"), playIntro, go: (id) => { if (!explore.active) startExplore(); go(id); }, seek(i, frac = 0.5) { if (!intro.active) playIntro(); startShot(i); intro.t = intro.shots[i].d * frac; } };
+  window.vale = { info: () => ({ mem: Object.assign({}, renderer.info.memory), prog: renderer.info.programs ? renderer.info.programs.length : 0, calls: renderer.info.render.calls, tris: renderer.info.render.triangles, nodes: scene.children.length }), peek: (p, t) => { peekCam = p ? { p: new T.Vector3(p[0], p[1] + hillTop, p[2]), t: new T.Vector3(t[0], t[1] + hillTop, t[2]) } : null; }, star: (k) => meteors.launch(k || "vale"), playIntro, go: (id) => { if (!explore.active) startExplore(); go(id); }, seek(i, frac = 0.5) { if (!intro.active) playIntro(); startShot(i); intro.t = intro.shots[i].d * frac; } };
 
 
   /* ------------------------------------------------------------------ */
@@ -2067,8 +2117,7 @@
     const mx = (x) => (x + 130) / 260 * 200, mz = (z) => (z + 220) / 250 * 130;
     const lakes = LAKES.map((L) => `<ellipse cx="${mx(L.x).toFixed(1)}" cy="${mz(L.z).toFixed(1)}" rx="${(L.rx / 260 * 200 * 0.8).toFixed(1)}" ry="${(L.rz / 250 * 130 * 0.85).toFixed(1)}"/>`).join("");
     mm.innerHTML = `<svg viewBox="0 0 200 130" aria-hidden="true"><rect width="200" height="130" rx="6" class="mm-land"/><g class="mm-lake">${lakes}</g>
-      <line class="mm-track" x1="0" x2="200" y1="${mz(TRACK_Z)}" y2="${mz(TRACK_Z)}"/>
-      <ellipse class="mm-path" cx="${mx(CASTLE_PATH.cx)}" cy="${mz(CASTLE_PATH.cz)}" rx="${CASTLE_PATH.rx / 260 * 200}" ry="${CASTLE_PATH.rz / 250 * 130}"/></svg>`;
+      <line class="mm-track" x1="0" x2="200" y1="${mz(TRACK_Z)}" y2="${mz(TRACK_Z)}"/></svg>`;
     Object.entries(PLACES).forEach(([id, P]) => {
       const d = document.createElement("button");
       d.type = "button"; d.className = "mm-dot"; d.dataset.place = id; d.textContent = P.k;
@@ -2130,48 +2179,74 @@
       <ellipse cx="${f(X(62))}" cy="${f(Y(-100))}" rx="20" ry="10" fill="#2C4A32" stroke="#3E6446" stroke-width="1.4"/>
       <ellipse cx="${f(X(6))}" cy="${f(Y(18))}" rx="70" ry="20" fill="#24382A"/>
       <g fill="#2B4632">${trees}</g>
-      <ellipse class="vm-route" cx="${f(X(P.cx))}" cy="${f(Y(P.cz))}" rx="${f(SX(P.rx))}" ry="${f(SZ(P.rz))}" fill="none" stroke="#D8CDB4" stroke-opacity="0.55" stroke-width="1.6" stroke-dasharray="7 6"/>
       <line x1="${f(X(-136))}" x2="${f(X(136))}" y1="${f(Y(TRACK_Z))}" y2="${f(Y(TRACK_Z))}" stroke="#EFE6D2" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="0.1 7" opacity="0.85"/>
       <path d="M${f(X(TORII.x))} ${f(Y(TORII.z) + 8)} Q ${f(X(8))} ${f(Y(6))} ${f(X(HILL.x))} ${f(Y(HILL.z))}" fill="none" stroke="#B9A98A" stroke-width="1.4" stroke-dasharray="2 5" opacity="0.7"/>
 
       <g class="vm-place" data-place="torre" tabindex="0" role="button" aria-label="Torre dos Grimórios: as matérias" transform="translate(${f(X(62))} ${f(Y(-100))})">
-        <circle class="vm-halo" r="46" cy="-26"/>
-        <rect x="-8" y="-52" width="16" height="48" fill="#0E0B10"/><path d="M-13 -52 L0 -74 L13 -52Z" fill="#0E0B10"/>
-        <rect x="-3" y="-42" width="6" height="8" fill="#FFB65A"/><rect x="-3" y="-24" width="6" height="7" fill="#FFB65A" opacity="0.7"/>
-        <g class="vm-label" transform="translate(0 -96)"><text class="vm-n" text-anchor="middle">TORRE DOS GRIMÓRIOS</text><text class="vm-s" y="15" text-anchor="middle">塔 · MATÉRIAS</text></g>
+        <circle class="vm-halo" r="48" cy="-30"/>
+        <ellipse cx="0" cy="2" rx="26" ry="9" fill="#2F5236" stroke="#47724E" stroke-width="1.2"/>
+        <g fill="#5A6470"><circle cx="-16" cy="1" r="3"/><circle cx="15" cy="3" r="2.5"/><circle cx="-6" cy="5" r="2"/></g>
+        <path d="M-9 0 L-7.5 -50 L7.5 -50 L9 0Z" fill="#8D8790"/>
+        <path d="M-9 0 L-7.5 -50 L-2 -50 L-3 0Z" fill="#6E6872"/>
+        <g stroke="#5E5862" stroke-width="0.8"><line x1="-8.6" x2="8.6" y1="-12" y2="-12"/><line x1="-8.3" x2="8.3" y1="-26" y2="-26"/><line x1="-8" x2="8" y1="-40" y2="-40"/></g>
+        <rect x="-11" y="-54" width="22" height="4" rx="1" fill="#6E6872"/>
+        <path d="M-12 -54 Q0 -86 12 -54Z" fill="#33456A"/><path d="M-12 -54 Q-3 -84 0 -84 L-2 -54Z" fill="#26344F"/>
+        <line x1="0" y1="-84" x2="0" y2="-92" stroke="#2A2A30" stroke-width="1.2"/><path d="M0 -92 L7 -90 L0 -88Z" fill="#C22026"/>
+        <g fill="#FFC86A"><rect x="-2.5" y="-47" width="5" height="6" rx="2.5"/><rect x="2" y="-33" width="4" height="5" rx="2"/><rect x="-5" y="-21" width="4" height="5" rx="2"/></g>
+        <rect x="-3" y="-8" width="6" height="8" rx="3" fill="#2A1C16"/>
+        <g><rect x="-22" y="-70" width="6" height="8" rx="1" fill="#9C3434" transform="rotate(-18 -19 -66)"/><rect x="16" y="-64" width="6" height="8" rx="1" fill="#3E4C86" transform="rotate(14 19 -60)"/><rect x="-26" y="-44" width="5" height="7" rx="1" fill="#4E7A4C" transform="rotate(10 -23 -40)"/><rect x="21" y="-40" width="5" height="7" rx="1" fill="#A4743A" transform="rotate(-12 23 -36)"/></g>
+        <g class="vm-label" transform="translate(0 -104)"><text class="vm-n" text-anchor="middle">TORRE DOS GRIMÓRIOS</text><text class="vm-s" y="15" text-anchor="middle">塔 · MATÉRIAS</text></g>
       </g>
       <g class="vm-place" data-place="torii" tabindex="0" role="button" aria-label="Torii: a entrada" transform="translate(${f(X(TORII.x))} ${f(Y(TORII.z))})">
-        <circle class="vm-halo" r="44" cy="-8"/>
-        <path d="M-34 -30 Q0 -38 34 -30 L31 -25 Q0 -31 -31 -25Z" fill="#1C1414"/>
-        <rect x="-27" y="-24" width="54" height="5" fill="#C22026"/><rect x="-27" y="-14" width="54" height="4" fill="#C22026"/>
-        <rect x="-21" y="-24" width="6" height="34" fill="#C22026"/><rect x="15" y="-24" width="6" height="34" fill="#C22026"/>
-        <rect x="-4" y="-21" width="8" height="7" fill="#1C1414"/>
-        <g fill="#8C8A90"><rect x="-44" y="-6" width="6" height="14"/><rect x="38" y="-6" width="6" height="14"/></g><g fill="#FFB65A"><rect x="-43" y="-4" width="4" height="4"/><rect x="39" y="-4" width="4" height="4"/></g>
-        <g class="vm-label" transform="translate(0 30)"><text class="vm-n" text-anchor="middle">TORII · ENTRADA</text><text class="vm-s" y="15" text-anchor="middle">門 · VOLTAR À CAPA</text></g>
+        <circle class="vm-halo" r="46" cy="-10"/>
+        <ellipse cx="0" cy="12" rx="34" ry="6" fill="rgba(0,0,0,0.25)"/>
+        <path d="M-36 -32 Q0 -42 36 -32 L37 -27 Q0 -36 -37 -27Z" fill="#1C1414"/>
+        <path d="M-33 -27 Q0 -34 33 -27 L33 -22 Q0 -29 -33 -22Z" fill="#C22026"/>
+        <rect x="-28" y="-14" width="56" height="4.5" rx="1" fill="#C22026"/>
+        <rect x="-22" y="-24" width="6.5" height="36" fill="#C22026"/><rect x="15.5" y="-24" width="6.5" height="36" fill="#C22026"/>
+        <rect x="-22" y="-24" width="2.5" height="36" fill="#9A1A1A"/><rect x="15.5" y="-24" width="2.5" height="36" fill="#9A1A1A"/>
+        <rect x="-23.5" y="8" width="9.5" height="4" fill="#1C1414"/><rect x="14" y="8" width="9.5" height="4" fill="#1C1414"/>
+        <rect x="-4.5" y="-23" width="9" height="9" fill="#1C1414"/><rect x="-2.5" y="-21" width="5" height="5" fill="#C9A24A"/>
+        <g><rect x="-47" y="-2" width="7" height="3" fill="#8C8A90"/><rect x="-45.5" y="1" width="4" height="5" fill="#FFB65A"/><rect x="-46.5" y="6" width="6" height="7" fill="#8C8A90"/>
+           <rect x="40" y="-2" width="7" height="3" fill="#8C8A90"/><rect x="41.5" y="1" width="4" height="5" fill="#FFB65A"/><rect x="40.5" y="6" width="6" height="7" fill="#8C8A90"/></g>
+        <g class="vm-label" transform="translate(0 34)"><text class="vm-n" text-anchor="middle">TORII · ENTRADA</text><text class="vm-s" y="15" text-anchor="middle">門 · VOLTAR À CAPA</text></g>
       </g>
       <g class="vm-place" data-place="estacao" tabindex="0" role="button" aria-label="Estação do fim da linha: contato e créditos" transform="translate(${f(X(STATION.x))} ${f(Y(STATION.z))})">
         <circle class="vm-halo" r="40" cy="-8"/>
-        <rect x="-26" y="-3" width="52" height="6" fill="#6B4A32"/><path d="M-20 -20 L20 -20 L24 -14 L-24 -14Z" fill="#3E5A58"/>
-        <rect x="-18" y="-14" width="3" height="11" fill="#3A2618"/><rect x="15" y="-14" width="3" height="11" fill="#3A2618"/>
-        <rect x="-10" y="-12" width="20" height="8" fill="#F4EFE4"/><text x="0" y="-5.5" class="vm-tiny" text-anchor="middle">駅</text>
-        <g class="vm-label" transform="translate(0 28)"><text class="vm-n" text-anchor="middle">ESTAÇÃO</text><text class="vm-s" y="15" text-anchor="middle">駅 · CONTATO</text></g>
+        <rect x="-30" y="0" width="60" height="6" rx="1" fill="#7A5A3E"/><rect x="-30" y="6" width="60" height="2" fill="#4A3424"/>
+        <path d="M-22 -22 L22 -22 L27 -15 L-27 -15Z" fill="#3E5A58"/><path d="M-22 -22 L22 -22 L23 -20 L-23 -20Z" fill="#5A7A76"/>
+        <rect x="-20" y="-15" width="2.5" height="15" fill="#3A2618"/><rect x="17.5" y="-15" width="2.5" height="15" fill="#3A2618"/>
+        <rect x="-14" y="-14" width="28" height="12" fill="#CDB894"/><rect x="-8" y="-12" width="10" height="7" fill="#F4EFE4"/>
+        <rect x="-5" y="-4" width="12" height="2.5" fill="#6B4A32"/>
+        <rect x="26" y="-24" width="1.6" height="24" fill="#2E2A2C"/><circle cx="26.8" cy="-25" r="3" fill="#FFB65A"/>
+        <g class="vm-label" transform="translate(0 30)"><text class="vm-n" text-anchor="middle">ESTAÇÃO</text><text class="vm-s" y="15" text-anchor="middle">駅 · CONTATO</text></g>
       </g>
       <g class="vm-place vm-moving" data-place="trem" tabindex="0" role="button" aria-label="Trem sobre a água: a galeria" id="vmTrain">
-        <circle class="vm-halo" r="44"/>
-        <g transform="translate(-48 -9)"><rect width="30" height="16" rx="3" fill="#C22026"/><rect x="33" width="30" height="16" rx="3" fill="#C22026"/><rect x="66" width="30" height="16" rx="3" fill="#C22026"/>
-        <g fill="#FFD58A"><rect x="5" y="4" width="6" height="5"/><rect x="17" y="4" width="6" height="5"/><rect x="38" y="4" width="6" height="5"/><rect x="50" y="4" width="6" height="5"/><rect x="71" y="4" width="6" height="5"/><rect x="83" y="4" width="6" height="5"/></g></g>
+        <circle class="vm-halo" r="46"/>
+        <g transform="translate(-50 -10)">
+          ${[0, 34, 68].map((x) => `<g transform="translate(${x} 0)"><rect width="31" height="8" y="8" rx="1.5" fill="#7A2A26"/><rect width="31" height="8" rx="2" fill="#E8DCC2"/><path d="M0 1 Q15.5 -5 31 1 L31 2 L0 2Z" fill="#2E2A2C"/><g fill="#FFD58A"><rect x="3" y="2" width="5" height="4.5" rx="0.6"/><rect x="10" y="2" width="5" height="4.5" rx="0.6"/><rect x="17" y="2" width="5" height="4.5" rx="0.6"/><rect x="24" y="2" width="4" height="4.5" rx="0.6"/></g><circle cx="6" cy="17" r="2.2" fill="#2E2A2C"/><circle cx="25" cy="17" r="2.2" fill="#2E2A2C"/></g>`).join("")}
+          <circle cx="100" cy="11" r="2" fill="#FFE9B0"/>
+        </g>
         <g class="vm-label" transform="translate(0 30)"><text class="vm-n" text-anchor="middle">TREM · GALERIA</text><text class="vm-s" y="15" text-anchor="middle">汽 · LEMBRANÇAS</text></g>
       </g>
       <g class="vm-place vm-moving" data-place="castelo" tabindex="0" role="button" aria-label="Castelo do Howl: os projetos" id="vmCastle">
-        <circle class="vm-halo" r="50" cy="-14"/>
-        <g stroke="#0E0B10" stroke-width="3" stroke-linecap="round"><path d="M-14 6 L-19 30"/><path d="M-4 8 L-6 32"/><path d="M6 8 L8 32"/><path d="M15 6 L21 30"/></g>
-        <ellipse cx="0" cy="-6" rx="34" ry="20" fill="#0E0B10"/>
-        <rect x="-16" y="-38" width="7" height="14" fill="#0E0B10"/><rect x="10" y="-36" width="6" height="12" fill="#0E0B10"/>
-        <rect x="-6" y="-34" width="14" height="10" fill="#C22026"/><circle cx="-6" cy="-2" r="3.2" fill="#FFB65A"/>
-        <g class="vm-label" transform="translate(0 -66)"><text class="vm-n" text-anchor="middle">CASTELO DO HOWL · PROJETOS</text><text class="vm-s" y="15" text-anchor="middle">城 · AS QUATRO PORTAS</text></g>
-      </g>
-      <g class="vm-place vm-moving vm-room" data-world="castelo" tabindex="0" role="button" aria-label="Quarto no topo do castelo: os gostos" id="vmRoom">
-        <g class="vm-label"><text class="vm-s vm-up" text-anchor="middle">火 QUARTO NO TOPO · GOSTOS</text></g>
+        <circle class="vm-halo" r="56" cy="-18"/>
+        <ellipse cx="0" cy="34" rx="30" ry="5" fill="rgba(0,0,0,0.28)"/>
+        <g fill="none" stroke="#A89CA6" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M-14 6 L-21 19 L-15 32 M-15 32 L-21 33 M-15 32 L-10 33"/><path d="M14 6 L21 19 L15 32 M15 32 L21 33 M15 32 L10 33"/>
+        </g>
+        <path d="M-40 4 C-47 -9 -40 -25 -27 -29 C-22 -40 -6 -45 6 -38 C18 -45 34 -36 36 -24 C46 -18 46 -2 36 6 C30 12 18 12 6 10 L-24 10 C-34 12 -42 10 -40 4Z" fill="#5E5660" stroke="#2A1E1A" stroke-width="1.6"/>
+        <path d="M-36 -2 C-38 -14 -30 -24 -18 -26 C-10 -34 4 -36 12 -30 C2 -30 -8 -26 -14 -18 C-24 -16 -32 -10 -36 -2Z" fill="#7C7480"/>
+        <g fill="none" stroke="#3E3640" stroke-width="0.9" opacity="0.8"><path d="M-30 -10 Q-20 -14 -10 -10"/><path d="M-6 -16 Q6 -20 18 -14"/><path d="M14 -2 Q24 -6 34 -2"/><path d="M-24 2 Q-12 -1 0 3"/></g>
+        <g fill="#B0A8B2"><circle cx="-26" cy="-8" r="0.9"/><circle cx="-12" cy="-12" r="0.9"/><circle cx="4" cy="-18" r="0.9"/><circle cx="20" cy="-10" r="0.9"/><circle cx="28" cy="0" r="0.9"/></g>
+        <rect x="-26" y="-44" width="11" height="10" fill="#D8C9A8" stroke="#2A1E1A" stroke-width="1"/><path d="M-28 -44 L-20.5 -51 L-13 -44Z" fill="#B8483A" stroke="#2A1E1A" stroke-width="1"/><rect x="-23" y="-41" width="3" height="3" fill="#FFC86A"/>
+        <rect x="-6" y="-52" width="10" height="13" fill="#CFC0A0" stroke="#2A1E1A" stroke-width="1"/><path d="M-8 -52 L-1 -60 L6 -52Z" fill="#4E6E96" stroke="#2A1E1A" stroke-width="1"/><rect x="-3" y="-48" width="3" height="3" fill="#FFC86A"/>
+        <rect x="12" y="-47" width="7" height="12" fill="#BDB0A0" stroke="#2A1E1A" stroke-width="1"/><path d="M11 -47 L15.5 -58 L20 -47Z" fill="#B8483A" stroke="#2A1E1A" stroke-width="1"/>
+        <rect x="24" y="-38" width="4" height="10" fill="#3A3236"/><rect x="-34" y="-30" width="4" height="9" fill="#3A3236"/>
+        <g fill="#D8D4D0" opacity="0.75"><circle cx="26" cy="-44" r="3.2"/><circle cx="29" cy="-51" r="4.2"/><circle cx="25" cy="-59" r="5"/><circle cx="-32" cy="-36" r="2.6"/><circle cx="-35" cy="-42" r="3.4"/></g>
+        <path d="M-44 -4 L-54 -6 L-54 0 L-44 1Z" fill="#3A3236" stroke="#2A1E1A" stroke-width="1"/>
+        <ellipse cx="-30" cy="2" rx="6" ry="3.4" fill="#1A1416"/><circle cx="-14" cy="-4" r="3.6" fill="#FFB65A" stroke="#2A1E1A" stroke-width="1"/>
+        <g class="vm-label" transform="translate(0 -74)"><text class="vm-n" text-anchor="middle">CASTELO DO HOWL · PROJETOS</text><text class="vm-s" y="15" text-anchor="middle">城 · ENTRA-SE PELOS FUNDOS</text></g>
       </g>
 
       <g transform="translate(64 540)" class="vm-compass"><circle r="22" fill="none" stroke="#EFE6D2" stroke-width="1.4" opacity="0.8"/><path d="M0 -30 L6 0 L0 30 L-6 0Z" fill="#EFE6D2" opacity="0.9"/><path d="M0 -30 L6 0 L-6 0Z" fill="#C22026"/><text y="-38" text-anchor="middle" class="vm-k">北</text></g>
@@ -2187,7 +2262,7 @@
         <div class="vm-foot"><button type="button" class="vm-explore">Explorar o vale em 3D</button></div>
       </div>`;
     exploreEl.appendChild(el);
-    const trainG = el.querySelector("#vmTrain"), castleG = el.querySelector("#vmCastle"), room = el.querySelector("#vmRoom");
+    const trainG = el.querySelector("#vmTrain"), castleG = el.querySelector("#vmCastle");
     const close = () => { el.classList.remove("open"); setTimeout(() => { if (!el.classList.contains("open")) el.hidden = true; }, 380); exploreEl.classList.remove("map-on"); };
     const openM = () => { el.hidden = false; requestAnimationFrame(() => el.classList.add("open")); exploreEl.classList.add("map-on"); showCard(null); };
     el.querySelectorAll(".vm-place").forEach((g) => {
@@ -2210,7 +2285,6 @@
         trainG.setAttribute("transform", `translate(${f(X(tx))} ${f(Y(TRACK_Z))})`);
         trainG.style.opacity = Math.abs(train.position.x) > 138 ? "0.25" : "1";
         castleG.setAttribute("transform", `translate(${f(X(castle.position.x))} ${f(Y(castle.position.z))})`);
-        room.setAttribute("transform", `translate(${f(X(castle.position.x))} ${f(Y(castle.position.z) - 104)})`);
       },
     };
   })();
@@ -2307,8 +2381,13 @@
   }
 
   let running = false, visible = true, last = performance.now(), clock = 30;
+  // no máximo 60 quadros por segundo; com o mapa ou o perfil cobrindo a cena, bem menos
+  const covered = () => (vmap && vmap.isOpen()) || root.classList.contains("perfil-on");
   function frame(now) {
+    const minGap = covered() ? 1000 / 20 : 1000 / 60 - 1.5;
+    if (now - last < minGap) { if (running) requestAnimationFrame(frame); return; }
     const raw = Math.max(0, (now - last) / 1000); last = now;
+    if (!covered() && raw < 0.25) measure(raw * 1000);
     const dt = Math.min(0.05, raw), tdt = Math.min(0.25, raw); // tdt: transições seguem o relógio real
     clock += dt;
     if (intro.active) {
@@ -2347,7 +2426,7 @@
   }
 
   function start() {
-    resize();
+    applyQuality();
     if (plaque) plaque.userData.redraw();
     signRedraws.forEach((f) => f());
     captureFrames();

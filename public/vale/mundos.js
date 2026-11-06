@@ -1002,6 +1002,270 @@
     return api;
   })();
 
-  const worlds = { templo, nos, torre };
+  /* =================================================================== */
+  /* TREM SOBRE A ÁGUA (galeria)                                          */
+  /* =================================================================== */
+  const trem = (() => {
+    const scene = new T.Scene();
+    const camera = new T.PerspectiveCamera(58, 1, 0.1, 1500);
+    const env = envUniforms({ sun: [-0.35, 0.32, -0.88], sunCol: "#FFC59A", amb: "#4A3A44", fog: "#E9B9A2", fogDen: 0.006, glowCol: "#FFD49A" });
+    const BASE = window.VALE_BASE || "";
+    const MEMS = [
+      { src: "trem/florianopolis.jpg", tag: "Florianópolis", t: "Fernando Rateke", d: "Registro pessoal e início do percurso como desenvolvedor e pesquisador." },
+      { src: "trem/aeroporto.jpg", tag: "Florianópolis", t: "Aeroporto de Florianópolis", d: "Embarque da delegação no Aeroporto Internacional de Florianópolis, rumo à FEBRACE." },
+      { src: "trem/sao-paulo.jpg", tag: "São Paulo", t: "São Paulo", d: "A roda-gigante e a imersão durante a participação num evento científico e acadêmico nacional." },
+      { src: "trem/febrace.jpg", tag: "FEBRACE · São Paulo", t: "FEBRACE", d: "Apresentação e defesa de projeto na Feira Brasileira de Ciências e Engenharia, em São Paulo." },
+      { src: "trem/grupo-5.jpg", tag: "Iniciação Científica", t: "Antigo Grupo 5", d: "O antigo Grupo 5 de Iniciação Científica: pesquisa e desenvolvimento em equipe." },
+    ];
+    const L = 112, SPEED0 = 3.6;
+    let time = 0, travel = 0, speed = SPEED0, target = SPEED0, movers = [], photos = [], hovered = null, open = null, audio = null, clackTimer = null, rumble = null;
+    const ray = new T.Raycaster(), ndc = new T.Vector2();
+    const wrap = (x) => ((x % L) + L) % L - L / 2;
+    const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    const SKY = `
+      vec3 skyCol(vec3 d){
+        float y=d.y;
+        vec3 top=vec3(0.30,0.40,0.66), mid=vec3(0.90,0.66,0.66), low=vec3(1.0,0.84,0.64);
+        vec3 c=mix(low,mid,smoothstep(0.0,0.16,y)); c=mix(c,top,smoothstep(0.14,0.62,y));
+        float s=max(dot(d,normalize(vec3(-0.45,0.09,-0.89))),0.0);
+        c+=vec3(1.0,0.78,0.5)*pow(s,10.0)*0.6+vec3(1.0,0.96,0.85)*smoothstep(0.9986,0.9993,s);
+        return c;
+      }`;
+
+    function build() {
+      const mat = toon(env);
+      // céu
+      const sky = new T.Mesh(new T.SphereGeometry(1200, 40, 20), new T.ShaderMaterial({
+        side: T.BackSide, depthWrite: false,
+        vertexShader: `varying vec3 vD; void main(){ vD=normalize(position); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+        fragmentShader: `${NOISE} ${SKY} varying vec3 vD;
+          void main(){ vec3 d=normalize(vD); vec3 c=skyCol(d);
+            float band=snoise(vec2(atan(d.z,d.x)*2.4,d.y*11.0))*0.5+0.5;
+            float cl=smoothstep(0.6,0.82,band)*smoothstep(0.04,0.1,d.y)*smoothstep(0.36,0.16,d.y);
+            c=mix(c,vec3(0.99,0.74,0.72),cl*0.7);
+            gl_FragColor=vec4(c,1.0); }`,
+      }));
+      sky.renderOrder = -1; scene.add(sky); scene.userData.sky = sky;
+
+      // água que reflete o céu, com ondulações e o caminho de brilho do sol
+      const water = new T.Mesh(new T.PlaneGeometry(1600, 1600, 1, 1), new T.ShaderMaterial({
+        uniforms: { uTravel: { value: 0 }, uTime: { value: 0 } },
+        vertexShader: `varying vec3 vW; void main(){ vec4 w=modelMatrix*vec4(position,1.0); vW=w.xyz; gl_Position=projectionMatrix*viewMatrix*w; }`,
+        fragmentShader: `${NOISE} ${SKY} uniform float uTravel; uniform float uTime; varying vec3 vW;
+          void main(){
+            vec2 q=vW.xz+vec2(uTravel,0.0);
+            float n=snoise(q*vec2(0.08,0.35)+uTime*0.05)*0.6+snoise(q*vec2(0.3,1.2)-uTime*0.2)*0.4;
+            vec3 V=normalize(vW-cameraPosition);
+            vec3 R=reflect(V,normalize(vec3(n*0.04,1.0,n*0.06)));
+            vec3 c=skyCol(R)*0.92;
+            float d=length(vW-cameraPosition);
+            c=mix(c*vec3(0.78,0.84,0.92),c,smoothstep(4.0,60.0,d));
+            c+=vec3(1.0,0.86,0.6)*smoothstep(0.55,0.95,n)*0.12*(1.0-smoothstep(10.0,120.0,d));
+            gl_FragColor=vec4(c,1.0);
+          }`,
+      }));
+      water.rotation.x = -Math.PI / 2; water.position.y = -0.35; scene.add(water); scene.userData.water = water;
+
+      // o vagão
+      const B = Builder();
+      const WOOD = "#3E2418", WOOD_L = "#5E3A26", SEAT = "#4E1C1A", BRASS = "#B8913E";
+      B.add(new T.BoxGeometry(16, 0.12, 3.0), M(0, -0.06, 0), "#3E271B");
+      B.add(new T.BoxGeometry(16, 0.08, 3.0), M(0, 2.66, 0), "#4A3022");
+      const winX = [-6.4, -3.2, 0, 3.2, 6.4], ww = 2.8, wy0 = 0.9, wy1 = 2.4;
+      B.add(new T.BoxGeometry(16, wy0, 0.12), M(0, wy0 / 2, -1.45), WOOD);
+      B.add(new T.BoxGeometry(16, 2.66 - wy1, 0.12), M(0, (wy1 + 2.66) / 2, -1.45), WOOD);
+      for (let k = 0; k <= winX.length; k++) {
+        const xa = k === 0 ? -8 : winX[k - 1] + ww / 2, xb = k === winX.length ? 8 : winX[k] - ww / 2;
+        B.add(new T.BoxGeometry(xb - xa, wy1 - wy0, 0.12), M((xa + xb) / 2, (wy0 + wy1) / 2, -1.45), WOOD);
+      }
+      winX.forEach((x) => {
+        B.add(new T.BoxGeometry(ww + 0.12, 0.08, 0.2), M(x, wy0, -1.38), WOOD_L);
+        B.add(new T.BoxGeometry(ww + 0.12, 0.08, 0.2), M(x, wy1, -1.38), WOOD_L);
+      });
+      // bancos dos dois lados
+      for (const [z, back] of [[-1.05, -1.32], [1.05, 1.32]]) {
+        B.add(new T.BoxGeometry(15, 0.16, 0.6), M(0, 0.48, z), SEAT);
+        B.add(new T.BoxGeometry(15, 0.42, 0.5), M(0, 0.2, z), WOOD);
+        B.add(new T.BoxGeometry(15, 0.36, 0.12), M(0, 0.74, back), SEAT);
+      }
+      // alças e lâmpadas no teto
+      for (let x = -6.5; x <= 6.5; x += 1.3) {
+        B.add(new T.CylinderGeometry(0.008, 0.008, 0.28, 4), M(x, 2.48, 0), "#3A2A20");
+        B.add(new T.TorusGeometry(0.06, 0.01, 6, 14), M(x, 2.3, 0, 0, Math.PI / 2, 0), BRASS);
+      }
+      B.add(new T.CylinderGeometry(0.02, 0.02, 16, 6), M(0, 2.6, 0, 0, 0, Math.PI / 2), BRASS);
+      for (const x of [-4.8, 0, 4.8]) {
+        B.add(new T.SphereGeometry(0.14, 12, 8), M(x, 2.48, 0), "#FFE2A8", 1);
+        B.add(new T.CylinderGeometry(0.16, 0.2, 0.06, 12), M(x, 2.6, 0), BRASS);
+      }
+      // parede do lado da câmera (vista ao olhar em volta)
+      B.add(new T.BoxGeometry(16, 2.66, 0.12), M(0, 1.33, 1.5), WOOD);
+      scene.add(new T.Mesh(B.build(), mat));
+
+      // passageiro-sombra, translúcido, no banco da janela
+      const shadow = new T.Group(); shadow.position.set(-4.6, 0.56, -1.0); scene.add(shadow);
+      const sm = new T.MeshBasicMaterial({ color: 0x0b0a12, transparent: true, opacity: 0.62, depthWrite: false });
+      const s1 = new T.Mesh(new T.CapsuleGeometry(0.22, 0.5, 6, 12), sm); s1.position.y = 0.45; shadow.add(s1);
+      const s2 = new T.Mesh(new T.SphereGeometry(0.17, 16, 12), sm); s2.position.y = 1.0; shadow.add(s2);
+      const s3 = new T.Mesh(new T.CapsuleGeometry(0.09, 0.35, 4, 8), sm); s3.position.set(0, 0.0, 0.3); s3.rotation.x = Math.PI / 2; shadow.add(s3);
+
+      // cenário que passa: postes com fios, ilhotas, casinhas, uma estação
+      const r = mulberry(18);
+      const poleGeo = Builder().add(new T.CylinderGeometry(0.07, 0.09, 6, 6), M(0, 2.6, 0), "#2A2224").add(new T.BoxGeometry(1.4, 0.08, 0.08), M(0, 5.2, 0), "#2A2224").add(new T.BoxGeometry(1.0, 0.07, 0.07), M(0, 4.7, 0), "#2A2224").build();
+      for (let k = 0; k < 14; k++) { const m = new T.Mesh(poleGeo, mat); m.position.set(0, -0.35, -10.5); scene.add(m); movers.push({ m, base: k * (L / 14), z: -10.5 }); }
+      // L/14 = 8 unidades entre postes
+      const wireGeo = new T.BufferGeometry();
+      const wpts = []; for (let k = 0; k <= 64; k++) { const x = -L / 2 + k * (L + L / 14) / 64; wpts.push(x, 4.85 - 0.35 * Math.pow(Math.sin(((x / (L / 14)) % 1) * Math.PI), 1), -10.5); }
+      wireGeo.setAttribute("position", new T.Float32BufferAttribute(wpts, 3));
+      const wire = new T.Line(wireGeo, new T.LineBasicMaterial({ color: 0x2a2224 })); scene.add(wire); scene.userData.wire = wire;
+      const isle = (houses) => {
+        const b = Builder();
+        b.add(new T.CylinderGeometry(3.4, 4.2, 0.6, 18), M(0, 0, 0), "#5E7A4E");
+        if (houses) {
+          b.add(new T.BoxGeometry(1.6, 1.2, 1.3), M(-0.6, 0.9, 0), "#E6D8BE");
+          b.add(new T.CylinderGeometry(0.95, 0.95, 1.9, 3, 1, false, Math.PI / 2), M(-0.6, 1.75, 0, 0, 0, Math.PI / 2), "#8E3C33");
+          b.add(new T.BoxGeometry(0.22, 0.3, 0.02), M(-0.3, 0.95, 0.66), "#FFD58A", 1);
+        }
+        for (let k = 0; k < 4; k++) b.add(new T.IcosahedronGeometry(0.7 + r() * 0.6, 1), M(1.2 + r() * 1.4, 1.2 + r() * 0.8, (r() - 0.5) * 1.6), k % 2 ? "#3E5E3E" : "#4E6E46");
+        return b.build();
+      };
+      [[0.12, -34, true], [0.45, -52, false], [0.7, -28, true], [0.92, -60, false]].forEach(([f, z, h]) => {
+        const m = new T.Mesh(isle(h), mat); m.position.set(0, -0.25, z); scene.add(m); movers.push({ m, base: f * L, z, par: z < -50 ? 0.55 : 0.75 });
+      });
+      {
+        const b = Builder();
+        b.add(new T.BoxGeometry(14, 0.5, 3), M(0, 0.1, 0), "#7E7470");
+        b.add(new T.BoxGeometry(4, 2.4, 2.4), M(2, 1.5, 0), "#D8C6A8");
+        b.add(new T.CylinderGeometry(1.8, 1.8, 4.6, 3, 1, false, Math.PI / 2), M(2, 3.2, 0, 0, 0, Math.PI / 2), "#4E5A66");
+        b.add(new T.BoxGeometry(0.4, 0.5, 0.02), M(1.2, 1.6, 1.21), "#FFD58A", 1);
+        b.add(new T.BoxGeometry(0.4, 0.5, 0.02), M(2.8, 1.6, 1.21), "#FFD58A", 1);
+        for (const x of [-5, -2, 1, 4]) b.add(new T.CylinderGeometry(0.06, 0.06, 2.4, 6), M(x, 1.5, -1.2), "#3A3030");
+        const m = new T.Mesh(b.build(), mat); m.position.set(0, -0.3, -22); scene.add(m); movers.push({ m, base: 0.3 * L, z: -22, par: 0.85 });
+      }
+      // colinas distantes (quase paradas)
+      {
+        const b = Builder();
+        for (let k = 0; k < 10; k++) b.add(new T.SphereGeometry(1, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), M(-300 + k * 66, -1, -260 - (k % 3) * 40, 0, 0, 0, 70, 16 + (k % 3) * 8, 30), k % 2 ? "#8E7C96" : "#9A86A0");
+        scene.add(new T.Mesh(b.build(), mat));
+      }
+
+      // as lembranças: fotos em molduras flutuando sobre a água
+      const loader = new T.TextureLoader();
+      MEMS.forEach((mm, i) => {
+        const g = new T.Group();
+        const tex = loader.load(BASE + mm.src, (t) => {
+          const a = t.image.width / t.image.height;
+          const h = a < 1 ? 2.6 : 1.9, w = h * a;
+          photo.scale.set(w, h, 1); frame.scale.set(w + 0.22, h + 0.22, 1); glowM.scale.set(w + 0.9, h + 0.9, 1);
+        });
+        const photo = new T.Mesh(new T.PlaneGeometry(1, 1), new T.MeshBasicMaterial({ map: tex })); photo.position.z = 0.02;
+        const frame = new T.Mesh(new T.PlaneGeometry(1, 1), new T.MeshBasicMaterial({ color: 0xe8d9b8 }));
+        const glowM = new T.Mesh(new T.PlaneGeometry(1, 1), new T.ShaderMaterial({ transparent: true, depthWrite: false, blending: T.AdditiveBlending, uniforms: { uOn: { value: 0 } },
+          vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+          fragmentShader: `uniform float uOn; varying vec2 vUv; void main(){ vec2 q=abs(vUv-0.5)*2.0; float d=max(q.x,q.y); float g=smoothstep(1.0,0.75,d)*(0.18+uOn*0.5); gl_FragColor=vec4(vec3(1.0,0.85,0.6)*g,g); }` }));
+        glowM.position.z = -0.02;
+        g.add(glowM, frame, photo);
+        g.position.set(0, 1.6, -7.2);
+        scene.add(g);
+        const item = { m: g, base: i * (L / MEMS.length) + 8, z: -7.2, photo, glowM, i };
+        photo.userData.i = i;
+        movers.push(item); photos.push(item);
+      });
+
+      env.uPL.value[0].set(-4.8, 2.3, 0); env.uPLC.value[0].set("#C98A50"); env.uPLR.value[0] = 2.0;
+      env.uPL.value[1].set(0, 2.3, 0); env.uPLC.value[1].set("#C98A50"); env.uPLR.value[1] = 2.0;
+      env.uPL.value[2].set(4.8, 2.3, 0); env.uPLC.value[2].set("#C98A50"); env.uPLR.value[2] = 2.0;
+    }
+
+    // som dos trilhos: batidas duplas e um ronco grave
+    function startSound() {
+      try {
+        audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+        if (audio.state === "suspended") audio.resume();
+        const ctx = audio;
+        const nb = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate), d = nb.getChannelData(0);
+        let last = 0; for (let i = 0; i < d.length; i++) { const w = Math.random() * 2 - 1; last = (last + 0.02 * w) / 1.02; d[i] = last * 3.5; }
+        const src = ctx.createBufferSource(); src.buffer = nb; src.loop = true;
+        const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 220;
+        const g = ctx.createGain(); g.gain.value = 0; g.gain.linearRampToValueAtTime(0.22, ctx.currentTime + 1.5);
+        src.connect(lp); lp.connect(g); g.connect(ctx.destination); src.start();
+        rumble = { src, g };
+        const click = (when, amp) => {
+          const b = ctx.createBuffer(1, Math.round(ctx.sampleRate * 0.05), ctx.sampleRate), dd = b.getChannelData(0);
+          for (let i = 0; i < dd.length; i++) dd[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / dd.length, 4);
+          const s = ctx.createBufferSource(); s.buffer = b;
+          const f = ctx.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 520; f.Q.value = 1.2;
+          const gg = ctx.createGain(); gg.gain.value = amp; s.connect(f); f.connect(gg); gg.connect(ctx.destination); s.start(when);
+        };
+        const tick = () => {
+          if (speed > 0.3) { const now = ctx.currentTime; click(now, 0.5 * speed / SPEED0); click(now + 0.13, 0.38 * speed / SPEED0); }
+          clackTimer = setTimeout(tick, Math.max(380, 4200 / Math.max(speed, 0.4)));
+        };
+        tick();
+      } catch (e) { /* sem áudio */ }
+    }
+    function stopSound() {
+      clearTimeout(clackTimer); clackTimer = null;
+      if (rumble && audio) { try { rumble.g.gain.linearRampToValueAtTime(0, audio.currentTime + 0.5); rumble.src.stop(audio.currentTime + 0.6); } catch (e) { /* já parado */ } }
+      rumble = null;
+    }
+
+    function showMem(i) {
+      open = i; target = 0.25;
+      const mm = MEMS[i];
+      $("dossierBody").innerHTML = `<span class="w-kicker">Lembrança · ${esc(mm.tag)}</span><h2 class="d-title">${esc(mm.t)}</h2><img class="d-cover" src="${esc(BASE + mm.src)}" alt="${esc(mm.t)}"><p>${esc(mm.d)}</p><p class="d-note">${i + 1} de ${MEMS.length}</p>`;
+      showDossier();
+      hint.textContent = "";
+    }
+    function pick(e) {
+      const rc = canvas.getBoundingClientRect();
+      ndc.set((e.clientX - rc.left) / rc.width * 2 - 1, -((e.clientY - rc.top) / rc.height) * 2 + 1);
+      ray.setFromCamera(ndc, camera);
+      const h = ray.intersectObjects(photos.map((p) => p.photo))[0];
+      return h ? h.object.userData.i : null;
+    }
+    const onMove = (e) => { if (e.target !== canvas) return; hovered = pick(e); canvas.style.cursor = hovered !== null ? "pointer" : ""; };
+    const onClick = (e) => { if (e.target !== canvas) return; const i = pick(e); if (i !== null) showMem(i); };
+
+    const api = {
+      template: "dossierTrem", dossierLabel: "", show: (i) => showMem(i), at: (i) => { travel = (i * (L / MEMS.length) + 8 - L / 2 + L * 10) % L; },
+      titleHTML: `<span class="w-kicker">Sobre o lago</span><span class="w-name">Trem sobre a água</span>`,
+      hintText: "Toque numa lembrança quando ela passar pela janela.",
+      build,
+      start() {
+        time = 0; open = null; hovered = null; speed = SPEED0; target = SPEED0;
+        canvas.addEventListener("click", onClick); canvas.addEventListener("pointermove", onMove);
+        $("worldAction").hidden = true;
+        api.onDossierClose = () => { open = null; target = SPEED0; hint.textContent = "Toque numa lembrança quando ela passar pela janela."; };
+        startSound();
+      },
+      stop() { canvas.removeEventListener("click", onClick); canvas.removeEventListener("pointermove", onMove); canvas.style.cursor = ""; stopSound(); },
+      resize(w, h) { camera.aspect = w / h; camera.fov = w / h < 0.9 ? 78 : 58; camera.updateProjectionMatrix(); },
+      update(dt) {
+        time += dt;
+        speed += (target - speed) * Math.min(1, dt * 1.2);
+        travel += speed * dt;
+        scene.userData.water.material.uniforms.uTravel.value = travel;
+        scene.userData.water.material.uniforms.uTime.value = time;
+        movers.forEach((o) => {
+          const x = wrap(o.base - travel * (o.par || 1));
+          o.m.position.x = x;
+          if (o.photo) o.m.position.y = 1.6 + Math.sin(time * 0.8 + o.i) * 0.06;
+        });
+        scene.userData.wire.position.x = -(travel % (L / 14));
+        photos.forEach((p) => { const on = hovered === p.i || open === p.i ? 1 : 0; p.glowM.material.uniforms.uOn.value += (on - p.glowM.material.uniforms.uOn.value) * Math.min(1, dt * 6); });
+        // balanço do vagão
+        const bump = Math.sin(time * 7.3) * 0.006 * speed / SPEED0 + Math.sin(time * 1.3) * 0.004;
+        camera.position.set(0.0 + pointer.sx * 0.35, 1.42 + bump, 0.55);
+        camera.lookAt(pointer.sx * 1.6, 1.66 - pointer.sy * 0.35, -6);
+        camera.rotation.z += Math.sin(time * 0.9) * 0.004;
+        scene.userData.sky.position.copy(camera.position);
+      },
+      render(rr) { rr.setRenderTarget(null); rr.render(scene, camera); },
+    };
+    return api;
+  })();
+
+  const worlds = { templo, nos, torre, trem };
   window.mundos = { open, close, worlds };
 })();

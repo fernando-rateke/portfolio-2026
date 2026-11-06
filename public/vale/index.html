@@ -486,6 +486,9 @@ a.q { text-decoration: none; }
 @media (prefers-reduced-motion: reduce) { .perfil .book { transition: none; } }
 
 
+/* ---------- Trem ---------- */
+.mundo[data-world="trem"] .dossier { background: #F6EEE4; color: #2A2420; }
+.mundo[data-world="trem"] .dossier .w-btn { color: #2A2420; border-color: rgba(42,36,32,0.35); background: transparent; }
 /* ---------- Torre dos Grimórios ---------- */
 .mundo[data-world="torre"] .dossier { background: #EFE4CC; color: #2B2118; }
 .mundo[data-world="torre"] .dossier .w-btn { color: #2B2118; border-color: rgba(43,33,24,0.35); background: transparent; }
@@ -770,7 +773,7 @@ footer .inner { max-width: 1180px; margin-inline: auto; display: flex; flex-wrap
           <div class="place"><span class="label">Campo central</span><h3>Castelo do Howl</h3><p>Caminha pelo vale. Dentro, Calcifer na lareira guia o visitante, e a porta com o seletor de cores leva aos projetos.</p></div>
           <div class="place"><span class="label">Topo do castelo</span><h3>Seu quarto</h3><p>Objetos que contam seus gostos: estante de mangás, controle, vitrola, a janela para o vale.</p></div>
           <div class="place"><span class="label">Ilhota norte</span><h3>Torre dos Grimórios</h3><p>As matérias. Cada uma é um grimório; cada atividade, um feitiço.</p><button class="w-enter" type="button" data-world="torre">Entrar na Torre</button></div>
-          <div class="place"><span class="label">Sobre o lago</span><h3>Trem sobre a água</h3><p>A galeria. As fotos passam pelas janelas como lembranças, ao entardecer.</p></div>
+          <div class="place"><span class="label">Sobre o lago</span><h3>Trem sobre a água</h3><p>A galeria. As fotos passam pelas janelas como lembranças, ao entardecer.</p><button class="w-enter" type="button" data-world="trem">Embarcar no trem</button></div>
           <div class="place"><span class="label">Em qualquer lugar</span><h3>Selo do perfil</h3><p>Abre a ficha: quem sou, atributos, inventário, conquistas, missões e currículo.</p></div>
         </div>
       </div>
@@ -937,6 +940,7 @@ footer .inner { max-width: 1180px; margin-inline: auto; display: flex; flex-wrap
           <li><div><h3>Conceito do Vale, slogan, Calcifer como guia, trem de Chihiro</h3><p>Aprovados por você.</p></div><span class="state ok">Decidido</span></li>
           <li><div><h3>Personagens da capa, de costas e animados</h3><p>Howl, Sofia, Markl, Cabeça de Nabo e Heen. Primeira versão em 3D feita.</p></div><span class="state wip">Em andamento</span></li>
           <li><div><h3>Assinatura Rateke com o selo ラテケ</h3><p>Trocado a seu pedido. Falta aprovar.</p></div><span class="state open">Para aprovar</span></li>
+          <li><div><h3>Trem sobre a água</h3><p>A galeria: as cinco lembranças passam pela janela do trem ao entardecer; tocar numa delas desacelera o trem e abre a lembrança.</p></div><span class="state wip">Em andamento</span></li>
           <li><div><h3>Torre dos Grimórios</h3><p>As nove matérias como grimórios flutuantes; as 30 atividades como feitiços, com imagens, reflexões, competências e links.</p></div><span class="state wip">Em andamento</span></li>
           <li><div><h3>Perfil: ficha de personagem</h3><p>Abre pelo selo no canto ou pela assinatura da capa. Retrato, dados, bio, missão, currículo, contatos e cinco abas.</p></div><span class="state wip">Em andamento</span></li>
           <li><div><h3>Mundos de destaque</h3><p>Templo do Sino e Nós, cada um com cena 3D própria e dossiê. Primeira versão pronta para revisão.</p></div><span class="state wip">Em andamento</span></li>

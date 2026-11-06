@@ -2053,7 +2053,7 @@
   if ($("introSkip")) $("introSkip").addEventListener("click", skipFilm);
   // seek: posiciona a entrada num corte e num ponto do corte (usado para revisar quadros)
   let peekCam = null;
-  window.vale = { info: () => ({ mem: Object.assign({}, renderer.info.memory), prog: renderer.info.programs ? renderer.info.programs.length : 0, calls: renderer.info.render.calls, tris: renderer.info.render.triangles, nodes: scene.children.length }), peek: (p, t) => { peekCam = p ? { p: new T.Vector3(p[0], p[1] + hillTop, p[2]), t: new T.Vector3(t[0], t[1] + hillTop, t[2]) } : null; }, star: (k) => meteors.launch(k || "vale"), playIntro, go: (id) => { if (!explore.active) startExplore(); go(id); }, seek(i, frac = 0.5) { if (!intro.active) playIntro(); startShot(i); intro.t = intro.shots[i].d * frac; } };
+  window.vale = { toCover: () => { if (explore.active) exitExplore(true); }, info: () => ({ mem: Object.assign({}, renderer.info.memory), prog: renderer.info.programs ? renderer.info.programs.length : 0, calls: renderer.info.render.calls, tris: renderer.info.render.triangles, nodes: scene.children.length }), peek: (p, t) => { peekCam = p ? { p: new T.Vector3(p[0], p[1] + hillTop, p[2]), t: new T.Vector3(t[0], t[1] + hillTop, t[2]) } : null; }, star: (k) => meteors.launch(k || "vale"), playIntro, go: (id) => { if (!explore.active) startExplore(); go(id); }, seek(i, frac = 0.5) { if (!intro.active) playIntro(); startShot(i); intro.t = intro.shots[i].d * frac; } };
 
 
   /* ------------------------------------------------------------------ */
@@ -2095,11 +2095,11 @@
     },
     estacao: {
       k: "駅", name: "Estação do fim da linha", kicker: "Fim da linha",
-      text: "Toda viagem termina numa estação. Aqui ficam o contato, as redes, o currículo e os créditos.",
+      text: "Toda viagem termina numa estação. Aqui ficam o contato, as redes e os créditos. E o último trem, o que não volta mais.",
       anchor: () => new T.Vector3(STATION.x, STATION.y + 6.4, STATION.z),
       view: () => { const wide = innerWidth > 900; return wide ? { pos: new T.Vector3(STATION.x - 7.5, STATION.y + 4.4, STATION.z + 14), tgt: new T.Vector3(STATION.x - 6.2, STATION.y + 1.6, STATION.z - 1) } : { pos: new T.Vector3(STATION.x - 1, STATION.y + 6.5, STATION.z + 17), tgt: new T.Vector3(STATION.x - 1, STATION.y - 2.5, STATION.z - 1) }; },
       footer: true,
-      actions: [{ label: "Voltar à capa", primary: true, run: () => exitExplore(true) }, { label: "Ver o filme de novo", run: () => playIntro(true) }],
+      actions: [{ label: "Pegar o último trem", primary: true, run: () => openWorld("ultimo") }, { label: "Voltar à capa", run: () => exitExplore(true) }, { label: "Ver o filme de novo", run: () => playIntro(true) }],
     },
   };
   const explore = { active: false, place: null, from: null, k: 1, markers: {}, coverFrom: null, coverK: 1 };

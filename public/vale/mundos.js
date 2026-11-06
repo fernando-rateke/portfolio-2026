@@ -326,7 +326,6 @@
   function open(name, from) {
     const w = worlds[name];
     if (!w) return;
-    if (name === "nos" && !w.entered) { showGate(from); return; }
     w.from = from || null;
     backBtn.innerHTML = w.from ? backHTML.replace("Voltar ao vale", name === "quarto" ? "Descer ao castelo" : "Voltar ao castelo") : backHTML;
     if (!ensureRenderer()) return;
@@ -394,7 +393,7 @@
         }`,
     });
     post.add(new T.Mesh(new T.PlaneGeometry(2, 2), postMat));
-    const audioEl = $("nosAudio");
+    const audioEl = null;
 
     function build() {
       const mat = toon(env);
@@ -464,6 +463,25 @@
         drone = { g, o1, o2 };
       } catch (e) { /* sem áudio */ }
     }
+    // som do nó encontrado: um sino suave com brilho
+    function chime() {
+      try {
+        audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+        if (audio.state === "suspended") audio.resume();
+        const ctx = audio, now = ctx.currentTime, out = ctx.createGain(); out.gain.value = 0.22; out.connect(ctx.destination);
+        [[523.25, 1], [784, 0.5], [1046.5, 0.35], [1318.5, 0.22], [2093, 0.12]].forEach(([f, a], i) => {
+          const o = ctx.createOscillator(), g = ctx.createGain(); o.type = "sine"; o.frequency.value = f * (1 + (i % 2) * 0.002);
+          g.gain.setValueAtTime(0, now + i * 0.04); g.gain.linearRampToValueAtTime(a, now + i * 0.04 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, now + 4.5 + i * 0.3);
+          o.connect(g); g.connect(out); o.start(now + i * 0.04); o.stop(now + 5.5);
+        });
+        for (let k = 0; k < 9; k++) { const o = ctx.createOscillator(), g = ctx.createGain(), t0 = now + 0.3 + k * 0.11; o.type = "triangle"; o.frequency.value = 1800 + Math.random() * 1600; g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(0.05, t0 + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.5); o.connect(g); g.connect(out); o.start(t0); o.stop(t0 + 0.6); }
+      } catch (e) { /* sem áudio */ }
+    }
+    function creak() {
+      if (!audio) return;
+      try { const ctx = audio, o = ctx.createOscillator(), g = ctx.createGain(), f = ctx.createBiquadFilter(), now = ctx.currentTime; o.type = "sawtooth"; o.frequency.setValueAtTime(140 + Math.random() * 60, now); o.frequency.linearRampToValueAtTime(90 + Math.random() * 40, now + 0.5);
+        f.type = "bandpass"; f.frequency.value = 600; f.Q.value = 6; g.gain.setValueAtTime(0, now); g.gain.linearRampToValueAtTime(0.05, now + 0.08); g.gain.linearRampToValueAtTime(0, now + 0.55); o.connect(f); f.connect(g); g.connect(ctx.destination); o.start(now); o.stop(now + 0.6); } catch (e) { /* sem áudio */ }
+    }
     function stopDrone() { if (drone && audio) { try { drone.g.gain.linearRampToValueAtTime(0, audio.currentTime + 0.6); drone.o1.stop(audio.currentTime + 0.7); drone.o2.stop(audio.currentTime + 0.7); } catch (e) { /* parado */ } } drone = null; }
     function footstep() {
       if (!audio) return;
@@ -474,8 +492,7 @@
     function reveal() {
       if (found) return;
       found = 0.001; flash = 1;
-      stopDrone();
-      if (audioEl) { audioEl.currentTime = 0; audioEl.volume = 0; const p = audioEl.play(); if (p && p.catch) p.catch(() => {}); }
+      stopDrone(); chime();
       el.appendChild(titleEl); titleEl.classList.remove("show"); void titleEl.offsetWidth; titleEl.classList.add("show");
       $("worldAction").hidden = true; hint.textContent = "";
       clearTimeout(timer); timer = setTimeout(() => { if (current !== api) return; api.dossierReady = true; showDossier(); }, 3600);
@@ -504,7 +521,7 @@
         act.hidden = false; act.textContent = "Segurar para andar"; act.onclick = null;
         act.addEventListener("pointerdown", actDown); act.addEventListener("click", api._actClick = () => { if (arrived) reveal(); });
         $("worldCount").hidden = true;
-        startDrone();
+        try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); if (audio.state === "suspended") audio.resume(); } catch (e) { /* sem áudio */ }
       },
       stop() {
         clearTimeout(timer); stopDrone();
@@ -526,7 +543,7 @@
         if (!arrived) { walk -= (speed + wheel * 2.4) * dt; wheel = Math.max(0, wheel - dt * 2); }
         if (walk <= END && !arrived) { walk = END; arrived = true; act.textContent = "Tocar no nó"; hint.textContent = "Toque no nó que brilha."; }
         const moving = before - walk > 0.0001;
-        stepAcc += before - walk; if (stepAcc > 0.85) { stepAcc = 0; footstep(); }
+        stepAcc += before - walk; if (stepAcc > 0.85) { stepAcc = 0; footstep(); if (Math.random() < 0.18) setTimeout(creak, 120); }
         const prog = (START - walk) / (START - END);
         const nextLine = Math.floor(prog * (LINES.length + 1));
         if (nextLine > said && said < LINES.length && nextLine <= LINES.length) { said = nextLine; say(LINES[said - 1]); }
@@ -833,38 +850,45 @@
       { src: "trem/febic-amigos.jpg", tag: "XI FEBIC · Joinville", t: "Fim de feira", d: "Medalhas, troféus e amigos de outro país no encerramento da XI FEBIC." },
     ];
     const L = Math.max(112, MEMS.length * 10), SPEED0 = 3.6;
-    let time = 0, travel = 0, speed = SPEED0, target = SPEED0, movers = [], photos = [], hovered = null, open = null, audio = null, clackTimer = null, rumble = null;
+    let time = 0, travel = 0, speed = SPEED0, target = SPEED0, movers = [], photos = [], hovered = null, open = null, audio = null, clackTimer = null, rumble = null, final = false, fimEl = null;
     const ray = new T.Raycaster(), ndc = new T.Vector2();
     const wrap = (x) => ((x % L) + L) % L - L / 2;
     const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
     const SKY = `
+      uniform float uDark;
+      float hsh(vec3 p){ return fract(sin(dot(p,vec3(12.9898,78.233,37.719)))*43758.5453); }
       vec3 skyCol(vec3 d){
         float y=d.y;
         vec3 top=vec3(0.30,0.40,0.66), mid=vec3(0.90,0.66,0.66), low=vec3(1.0,0.84,0.64);
         vec3 c=mix(low,mid,smoothstep(0.0,0.16,y)); c=mix(c,top,smoothstep(0.14,0.62,y));
         float s=max(dot(d,normalize(vec3(-0.45,0.09,-0.89))),0.0);
-        c+=vec3(1.0,0.78,0.5)*pow(s,10.0)*0.6+vec3(1.0,0.96,0.85)*smoothstep(0.9986,0.9993,s);
-        return c;
+        c+=vec3(1.0,0.78,0.5)*pow(s,10.0)*0.6+vec3(1.0,0.96,0.85)*smoothstep(0.9986,0.9993,s)*(1.0-uDark);
+        vec3 n=mix(vec3(0.16,0.12,0.26),vec3(0.03,0.04,0.11),smoothstep(0.0,0.5,y));
+        n+=vec3(0.32,0.16,0.26)*pow(s,6.0)*0.6;
+        float st=step(0.9962,hsh(floor(d*360.0)))*smoothstep(0.04,0.2,y);
+        n+=vec3(0.9,0.92,1.0)*st*(0.6+0.4*sin(hsh(floor(d*360.0))*80.0));
+        return mix(c,n,uDark);
       }`;
+    const UD = { value: 0 };
 
     function build() {
       const mat = toon(env);
       // céu
       const sky = new T.Mesh(new T.SphereGeometry(1200, 40, 20), new T.ShaderMaterial({
-        side: T.BackSide, depthWrite: false,
+        side: T.BackSide, depthWrite: false, uniforms: { uDark: UD },
         vertexShader: `varying vec3 vD; void main(){ vD=normalize(position); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
         fragmentShader: `${NOISE} ${SKY} varying vec3 vD;
           void main(){ vec3 d=normalize(vD); vec3 c=skyCol(d);
             float band=snoise(vec2(atan(d.z,d.x)*2.4,d.y*11.0))*0.5+0.5;
             float cl=smoothstep(0.6,0.82,band)*smoothstep(0.04,0.1,d.y)*smoothstep(0.36,0.16,d.y);
-            c=mix(c,vec3(0.99,0.74,0.72),cl*0.7);
+            c=mix(c,mix(vec3(0.99,0.74,0.72),vec3(0.22,0.2,0.34),uDark),cl*0.7);
             gl_FragColor=vec4(c,1.0); }`,
       }));
       sky.renderOrder = -1; scene.add(sky); scene.userData.sky = sky;
 
       // água que reflete o céu, com ondulações e o caminho de brilho do sol
       const water = new T.Mesh(new T.PlaneGeometry(1600, 1600, 1, 1), new T.ShaderMaterial({
-        uniforms: { uTravel: { value: 0 }, uTime: { value: 0 } },
+        uniforms: { uTravel: { value: 0 }, uTime: { value: 0 }, uDark: UD },
         vertexShader: `varying vec3 vW; void main(){ vec4 w=modelMatrix*vec4(position,1.0); vW=w.xyz; gl_Position=projectionMatrix*viewMatrix*w; }`,
         fragmentShader: `${NOISE} ${SKY} uniform float uTravel; uniform float uTime; varying vec3 vW;
           void main(){
@@ -875,7 +899,7 @@
             vec3 c=skyCol(R)*0.92;
             float d=length(vW-cameraPosition);
             c=mix(c*vec3(0.78,0.84,0.92),c,smoothstep(4.0,60.0,d));
-            c+=vec3(1.0,0.86,0.6)*smoothstep(0.55,0.95,n)*0.12*(1.0-smoothstep(10.0,120.0,d));
+            c+=vec3(1.0,0.86,0.6)*smoothstep(0.55,0.95,n)*0.12*(1.0-smoothstep(10.0,120.0,d))*(1.0-uDark*0.8);
             gl_FragColor=vec4(c,1.0);
           }`,
       }));
@@ -916,6 +940,25 @@
       // parede do lado da câmera (vista ao olhar em volta)
       B.add(new T.BoxGeometry(16, 2.66, 0.12), M(0, 1.33, 1.5), WOOD);
       scene.add(new T.Mesh(B.build(), mat));
+
+      // o dragão branco, bem longe, cruzando o céu de vez em quando
+      {
+        const dg = new T.Group(); dg.visible = false; scene.add(dg); dg.scale.setScalar(1);
+        const bodyM = new T.MeshBasicMaterial({ color: 0xf1f4f2 }), maneM = new T.MeshBasicMaterial({ color: 0x6fb89a });
+        const segs = [];
+        for (let i = 0; i < 46; i++) {
+          const k = i / 45, r0 = (i < 3 ? 1.5 : 1.25) * (1 - k * 0.75) + 0.15;
+          const sgm = new T.Mesh(new T.SphereGeometry(r0, 10, 8), bodyM); dg.add(sgm);
+          let mane = null;
+          if (i % 2 === 0 && i < 40) { mane = new T.Mesh(new T.ConeGeometry(r0 * 0.5, r0 * 1.8, 5), maneM); dg.add(mane); }
+          segs.push({ m: sgm, mane, r: r0 });
+        }
+        const head = new T.Group(); dg.add(head);
+        { const hm = new T.Mesh(new T.SphereGeometry(1, 12, 10), bodyM); hm.scale.set(2.6, 1.3, 1.4); head.add(hm); }
+        for (const sz of [-1, 1]) { const h = new T.Mesh(new T.ConeGeometry(0.22, 2.4, 6), bodyM); h.position.set(-0.8, 1.4, sz * 0.6); h.rotation.set(sz * 0.3, 0, 0.9); head.add(h); }
+        const beard = new T.Mesh(new T.ConeGeometry(0.5, 2.2, 5), maneM); beard.position.set(-1.4, -0.6, 0); beard.rotation.z = -1.2; head.add(beard);
+        scene.userData.dragon = { g: dg, segs, head, t: -1, next: 22 };
+      }
 
       // passageiro-sombra, translúcido, no banco da janela
       const shadow = new T.Group(); shadow.position.set(-4.6, 0.56, -1.0); scene.add(shadow);
@@ -1042,11 +1085,31 @@
       const h = ray.intersectObjects(photos.map((p) => p.photo))[0];
       return h ? h.object.userData.i : null;
     }
-    const onMove = (e) => { if (e.target !== canvas) return; hovered = pick(e); canvas.style.cursor = hovered !== null ? "pointer" : ""; };
-    const onClick = (e) => { if (e.target !== canvas) return; const i = pick(e); if (i !== null) showMem(i); };
+    const onMove = (e) => { if (e.target !== canvas || final) return; hovered = pick(e); canvas.style.cursor = hovered !== null ? "pointer" : ""; };
+    const onClick = (e) => { if (e.target !== canvas || final) return; const i = pick(e); if (i !== null) showMem(i); };
 
+    // o último trem: a viagem que não volta, com a frase na tela
+    const FRASE = ["O momento mais jovem da sua vida é agora.", "Aproveite, porque passa."];
+    function buildFim() {
+      fimEl = document.createElement("div"); fimEl.className = "fim"; fimEl.setAttribute("role", "dialog"); fimEl.setAttribute("aria-label", "O último trem");
+      const letters = (t, d0) => [...t].map((ch, i) => `<span style="animation-delay:${(d0 + i * 0.055).toFixed(2)}s">${ch === " " ? "&nbsp;" : esc(ch)}</span>`).join("");
+      fimEl.innerHTML = `<p class="fim-frase"><span class="fim-l1">${letters(FRASE[0], 2.2)}</span><span class="fim-l2">${letters(FRASE[1], 2.2 + FRASE[0].length * 0.055 + 0.9)}</span></p>
+        <p class="fim-assina">A jornada é o que dá forma ao mundo.<small>Fernando Rateke · Portfólio 2026</small></p>
+        <p class="fim-dica">Para voltar à capa, é só tocar em qualquer lugar da tela.</p>`;
+    }
+    const leaveFim = () => { if (!final) return; close(); if (window.vale && window.vale.toCover) window.vale.toCover(); };
+    const onFimKey = (e) => { if (e.key === "Escape" || e.key === "Enter" || e.key === " ") { e.preventDefault(); leaveFim(); } };
     const api = {
-      template: "dossierTrem", dossierLabel: "", show: (i) => showMem(i), at: (i) => { travel = (i * (L / MEMS.length) + 8 - L / 2 + L * 10) % L; },
+      template: "dossierTrem", dossierLabel: "", show: (i) => showMem(i),
+      dragonNow() { const dr = scene.userData.dragon; dr.next = 0; },
+      startFinal() {
+        final = true; if (!fimEl) buildFim();
+        el.classList.add("fim-on"); el.appendChild(fimEl); fimEl.classList.remove("show"); void fimEl.offsetWidth; fimEl.classList.add("show");
+        photos.forEach((p) => { p.m.visible = false; });
+        target = 2.2; speed = 2.2; UD.value = 0;
+        const dr = scene.userData.dragon; dr.t = -1; dr.next = 20;
+        setTimeout(() => { if (final) { el.addEventListener("click", leaveFim); addEventListener("keydown", onFimKey); } }, 1200);
+      }, at: (i) => { travel = (i * (L / MEMS.length) + 8 - L / 2 + L * 10) % L; },
       titleHTML: `<span class="w-kicker">Sobre o lago</span><span class="w-name">Trem sobre a água</span>`,
       hintText: "Toque numa lembrança quando ela passar pela janela.",
       build,
@@ -1057,7 +1120,10 @@
         api.onDossierClose = () => { open = null; target = SPEED0; hint.textContent = "Toque numa lembrança quando ela passar pela janela."; };
         startSound();
       },
-      stop() { canvas.removeEventListener("click", onClick); canvas.removeEventListener("pointermove", onMove); canvas.style.cursor = ""; stopSound(); },
+      stop() {
+        canvas.removeEventListener("click", onClick); canvas.removeEventListener("pointermove", onMove); canvas.style.cursor = ""; stopSound();
+        if (final) { final = false; el.classList.remove("fim-on"); el.removeEventListener("click", leaveFim); removeEventListener("keydown", onFimKey); if (fimEl && fimEl.parentNode) fimEl.parentNode.removeChild(fimEl); photos.forEach((p) => { p.m.visible = true; }); UD.value = 0; scene.userData.dragon.g.visible = false; }
+      },
       resize(w, h) { camera.aspect = w / h; camera.fov = w / h < 0.9 ? 78 : 58; camera.updateProjectionMatrix(); },
       update(dt) {
         time += dt;
@@ -1071,6 +1137,25 @@
           if (o.photo) o.m.position.y = 1.6 + Math.sin(time * 0.8 + o.i) * 0.06;
         });
         scene.userData.wire.position.x = -(travel % (L / 14));
+        if (final) {
+          UD.value = Math.min(1, UD.value + dt / 40);
+          const dr = scene.userData.dragon;
+          if (dr.t < 0) { dr.next -= dt; if (dr.next <= 0) { dr.t = 0; dr.g.visible = true; } }
+          else {
+            dr.t += dt;
+            const at = (u) => new T.Vector3(-120 + u * 18, 30 + Math.sin(u * 1.7) * 5, -170 + Math.sin(u * 0.6) * 16);
+            const u0 = dr.t;
+            let prev = at(u0);
+            dr.head.position.copy(prev); dr.head.lookAt(at(u0 + 0.05)); dr.head.rotateY(Math.PI / 2);
+            dr.segs.forEach((sg, i) => {
+              const p = at(u0 - (i + 1) * 0.085); p.y += Math.sin(time * 3 - i * 0.45) * 1.4;
+              sg.m.position.copy(p);
+              if (sg.mane) { sg.mane.position.copy(p).add(new T.Vector3(0, sg.r * 1.1, 0)); sg.mane.rotation.z = Math.sin(time * 4 - i) * 0.3 - 0.4; }
+              prev = p;
+            });
+            if (dr.t > 15.5) { dr.t = -1; dr.g.visible = false; dr.next = 55 + Math.random() * 30; }
+          }
+        }
         photos.forEach((p) => { const on = hovered === p.i || open === p.i ? 1 : 0; p.glowM.material.uniforms.uOn.value += (on - p.glowM.material.uniforms.uOn.value) * Math.min(1, dt * 6); });
         // balanço do vagão
         const bump = Math.sin(time * 7.3) * 0.006 * speed / SPEED0 + Math.sin(time * 1.3) * 0.004;
@@ -1123,8 +1208,8 @@
         say: "Aqui é onde os mundos começam. Inclusive este.",
         html: () => `<span class="w-kicker">Mesa · jogos</span><h2 class="d-title">Jogos</h2>
           <p class="d-sub">Jogar e criar mundos.</p>
-          <ul class="q-list"><li><b>Nós</b><small>narrativa de exploração psicológica, em desenvolvimento</small></li><li><b>Hollow Depths</b><small>RPG de turno guiado por probabilidade</small></li></ul>
-          <ul class="kc-links"><li><a href="https://game-nauy.onrender.com/" target="_blank" rel="noreferrer">Jogar Hollow Depths</a></li></ul><p class="d-note">O Nós fica atrás da porta preta, lá embaixo, no seletor do castelo.</p>`,
+          <ul class="q-list"><li><b>Nós</b><small>narrativa de exploração psicológica, em desenvolvimento</small></li><li><b>Este vale</b><small>um portfólio que se atravessa em vez de rolar</small></li></ul>
+          <p class="d-note">O Nós fica atrás da porta preta, lá embaixo, no seletor do castelo.</p>`,
       },
       japao: {
         name: "Pergaminho", sub: "Japão", k: "日",
@@ -1429,7 +1514,7 @@
     const DOORS = [
       { id: "vermelho", color: "#C22026", name: "Árvore do Totoro", sub: "AcousticBuild", world: "arvore", say: "Vermelho: a árvore do Totoro. É lá que mora o AcousticBuild." },
       { id: "preto", color: "#0B0809", name: "Nós", sub: "o jogo", world: "nos", say: "Preto. Um corredor escuro, e o Nós no fim dele. Vá com calma." },
-      { id: "azul", color: "#2E7896", name: "Hollow Depths", sub: "abre o jogo", href: "https://game-nauy.onrender.com/", say: "Azul: as profundezas do Hollow Depths. Ele abre numa aba nova." },
+      { id: "azul", color: "#2E7896", name: "Em breve", sub: "um mundo novo", locked: true, say: "Azul. Essa porta ainda não abre para lugar nenhum. Um dia vai ter outro mundo aqui." },
       { id: "verde", color: "#78AB5A", name: "O vale", sub: "voltar", back: true, say: "Verde: de volta ao vale. O castelo continua andando." },
     ];
     const DX = 1.6, BACKX = -0.6;
@@ -1463,7 +1548,8 @@
         for (let k = 8; k > 0; k--) { const s = k / 8; g.strokeStyle = `rgba(80,70,90,${0.25 * (1 - s)})`; g.lineWidth = 2; g.strokeRect(w / 2 - 120 * s, h / 2 - 220 * s, 240 * s, 440 * s); }
         const r = g.createRadialGradient(w / 2, h * 0.52, 0, w / 2, h * 0.52, 30); r.addColorStop(0, "rgba(255,214,120,1)"); r.addColorStop(1, "rgba(255,170,60,0)"); g.fillStyle = r; g.fillRect(0, 0, w, h);
       },
-      azul: (g, w, h) => {
+      azul: (g, w, h) => { const s0 = g.createLinearGradient(0, 0, 0, h); s0.addColorStop(0, "#1C3442"); s0.addColorStop(1, "#0A1218"); g.fillStyle = s0; g.fillRect(0, 0, w, h); g.fillStyle = "rgba(160,200,220,0.08)"; for (let k = 0; k < 6; k++) { g.beginPath(); g.ellipse(w / 2 + Math.sin(k) * 60, 120 + k * 60, 140, 26, 0, 0, Math.PI * 2); g.fill(); } g.fillStyle = "rgba(220,235,245,0.55)"; g.font = "600 30px 'Shippori Mincho', serif"; g.textAlign = "center"; g.fillText("em breve", w / 2, h / 2); },
+      azulAntigo: (g, w, h) => {
         const s = g.createLinearGradient(0, 0, 0, h); s.addColorStop(0, "#2E7896"); s.addColorStop(1, "#06141E"); g.fillStyle = s; g.fillRect(0, 0, w, h);
         g.fillStyle = "rgba(180,230,255,0.25)"; for (let k = 0; k < 14; k++) { g.beginPath(); g.arc((k * 53) % w, h - (k * 97) % h, 2 + (k % 3), 0, Math.PI * 2); g.fill(); }
         g.fillStyle = "rgba(255,255,255,0.12)"; for (let k = 0; k < 5; k++) { g.beginPath(); g.moveTo(k * 60, 0); g.lineTo(k * 60 + 40, 0); g.lineTo(k * 60 + 120, h); g.lineTo(k * 60 + 90, h); g.fill(); }
@@ -1623,11 +1709,12 @@
       env.uPLC.value[2].set(d.color === "#0B0809" ? "#6A4A8A" : d.color);
       plateDraw(d.name, d.color)(plateTex.image.getContext("2d"), 320, 64); plateTex.needsUpdate = true;
       setView("door"); say(d.say);
-      const act = $("worldAction"); act.hidden = false; act.textContent = d.back ? "Sair pela porta" : "Abrir a porta";
+      const act = $("worldAction"); act.hidden = false; act.textContent = d.back ? "Sair pela porta" : d.locked ? "Trancada" : "Abrir a porta";
       spinBtn.hidden = false;
     }
     function openDoor() {
       if (choiceIdx < 0 || opening === 1) return;
+      if (DOORS[choiceIdx].locked) { say("Está trancada. Ainda não tem nada do outro lado."); return; }
       opening = 1;
       const d = DOORS[choiceIdx];
       clearTimeout(timer);
@@ -1979,6 +2066,14 @@
     return api;
   })();
 
-  const worlds = { nos, torre, trem, quarto, castelo, arvore };
+  // o último trem reaproveita o vagão da galeria, em modo de despedida
+  const ultimo = {
+    template: "", dossierLabel: "", titleHTML: "", hintText: "",
+    build() { if (!trem.built) { trem.build(); trem.built = true; } },
+    start() { trem.start(); trem.startFinal(); $("worldAction").hidden = true; },
+    stop() { trem.stop(); },
+    resize: (w, h) => trem.resize(w, h), update: (dt) => trem.update(dt), render: (r) => trem.render(r), dragon: () => { const d = trem.dragonNow; if (d) d(); },
+  };
+  const worlds = { nos, torre, trem, quarto, castelo, arvore, ultimo };
   window.mundos = { open, close, worlds };
 })();

@@ -72,6 +72,8 @@
     if (lake > 0) isle = smooth(0.42, 0.52, fbm(x * 0.05 + 11, z * 0.11 + 4, 3));
     h -= lake * 1.35;
     h += lake * isle * 1.45;
+    // ilhota da Torre dos Grimórios, no lago do fundo
+    h += 1.6 * Math.exp(-((x - 62) * (x - 62) + (z + 100) * (z + 100)) / 30);
     // colina dos personagens, de onde se vê o vale
     h += 1.35 * Math.exp(-((x - 6) * (x - 6) + (z - 18) * (z - 18)) / 150);
     // leve subida nas bordas do vale
@@ -753,6 +755,64 @@
     });
     scene.add(castle);
   }
+  /* ------------------------------------------------------------------ */
+  /* Torre dos Grimórios na ilhota e o trem sobre os trilhos alagados    */
+  /* ------------------------------------------------------------------ */
+  const TOWER = new T.Vector3(62, 0, -100);
+  const towerBooks = [];
+  {
+    const gy = Math.max(heightAt(TOWER.x, TOWER.z), 0.25);
+    TOWER.y = gy;
+    const B = Builder(); const r = mulberry(77);
+    const STONE = "#8D8790", STONE_D = "#6E6872", ROOFC = "#2F3E5E";
+    B.add(new T.CylinderGeometry(6.4, 7.4, 1.4, 22), M(0, 0.1, 0), "#5E8A4E");
+    B.add(new T.CylinderGeometry(7.4, 8.0, 1.2, 22), M(0, -0.95, 0), "#1F3E4A");
+    for (let k = 0; k < 7; k++) { const a = r() * Math.PI * 2; B.add(new T.IcosahedronGeometry(0.6 + r() * 0.8, 0), M(Math.cos(a) * (4 + r() * 2), 0.7, Math.sin(a) * (4 + r() * 2)), STONE_D); }
+    B.add(new T.CylinderGeometry(2.4, 3.0, 15, 22, 15), M(0, 8.0, 0), (x, y) => (Math.floor((y + 7.5) / 0.75) % 2 ? STONE : "#857F88"));
+    for (const y of [5.5, 11]) B.add(new T.CylinderGeometry(3.3, 3.3, 0.35, 24), M(0, y, 0), STONE_D);
+    B.add(new T.CylinderGeometry(3.0, 2.7, 3.2, 22), M(0, 16.9, 0), STONE);
+    for (let k = 0; k < 8; k++) {
+      const a = k / 8 * Math.PI * 2;
+      B.add(new T.PlaneGeometry(0.62, 1.3), M(Math.cos(a) * 3.02, 16.9, Math.sin(a) * 3.02, 0, Math.PI / 2 - a, 0), "#FFD58A", 1);
+    }
+    for (const [y, a] of [[3.4, 1.4], [7.6, 2.4], [9.8, 0.6], [13.2, 1.9]]) B.add(new T.PlaneGeometry(0.4, 0.9), M(Math.cos(a) * 2.75, y, Math.sin(a) * 2.75, 0, Math.PI / 2 - a, 0), "#FFD58A", 1);
+    B.add(new T.ConeGeometry(3.7, 5.6, 22), M(0, 21.3, 0), ROOFC);
+    B.add(new T.CylinderGeometry(0.06, 0.06, 2.6, 6), M(0, 25.2, 0), "#2A2A30");
+    B.add(new T.PlaneGeometry(1.2, 2.0), M(0, 1.6, 2.95), "#2A1C16");
+    const tm = new T.Mesh(B.build(), objMat); tm.position.set(TOWER.x, gy - 0.15, TOWER.z); scene.add(tm);
+    const tl = new T.Mesh(tm.geometry, castleLine); tl.position.copy(tm.position); scene.add(tl);
+    const covers = ["#4E7A4C", "#A4743A", "#9C3434", "#3E4C86", "#2E6E72", "#2C4A7A", "#5A3E7A", "#7A5A2E", "#4A5560"];
+    covers.forEach((c) => {
+      const bb = Builder(); bb.add(new T.BoxGeometry(0.75, 1.0, 0.22), M(), c); bb.add(new T.BoxGeometry(0.68, 0.94, 0.24), M(0.03, 0, 0), "#EFE4CC");
+      const m = new T.Mesh(bb.build(), objMat); scene.add(m); towerBooks.push(m);
+    });
+  }
+  const TRACK_Z = -33;
+  {
+    const B = Builder();
+    for (let x = -136; x <= 136; x += 1.6) B.add(new T.BoxGeometry(0.22, 0.1, 2.0), M(x, Math.max(heightAt(x, TRACK_Z), 0) + 0.02, TRACK_Z), "#4A3426");
+    for (const dz of [-0.62, 0.62]) for (let x = -136; x < 136; x += 4) {
+      const y0 = Math.max(heightAt(x, TRACK_Z), 0), y1 = Math.max(heightAt(x + 4, TRACK_Z), 0);
+      B.add(new T.BoxGeometry(4.05, 0.09, 0.09), M(x + 2, (y0 + y1) / 2 + 0.11, TRACK_Z + dz, 0, 0, Math.atan2(y1 - y0, 4)), "#5E5A58");
+    }
+    scene.add(new T.Mesh(B.build(), objMat));
+  }
+  const train = new T.Group();
+  {
+    const CREAM = "#E8DCC2", MAROON = "#7A2A26", DARK = "#2E2A2C";
+    for (let c = 0; c < 3; c++) {
+      const B = Builder(); const x0 = -c * 5.5;
+      B.add(new T.BoxGeometry(5, 1.0, 1.7), M(x0, 0.78, 0), MAROON);
+      B.add(new T.BoxGeometry(5, 0.92, 1.7), M(x0, 1.74, 0), CREAM);
+      B.add(new T.CylinderGeometry(0.95, 0.95, 5.1, 18, 1, false, 0, Math.PI), M(x0, 2.18, 0, 0, 0, Math.PI / 2, 0.42, 1, 1), DARK);
+      for (const side of [1, -1]) for (let k = 0; k < 4; k++) B.add(new T.PlaneGeometry(0.72, 0.52), M(x0 - 1.8 + k * 1.2, 1.8, side * 0.86, 0, side > 0 ? 0 : Math.PI, 0), "#FFD58A", 1);
+      for (const wx of [-1.7, 1.7]) for (const side of [1, -1]) B.add(new T.CylinderGeometry(0.28, 0.28, 0.12, 12), M(x0 + wx, 0.3, side * 0.78, Math.PI / 2, 0, 0), DARK);
+      if (c === 0) { B.add(new T.SphereGeometry(0.18, 10, 8), M(2.55, 1.0, 0), "#FFE9B0", 1); B.add(new T.BoxGeometry(0.1, 1.2, 1.5), M(2.52, 1.75, 0), "#3A3A44"); }
+      const m = new T.Mesh(B.build(), objMat); train.add(m); train.add(new T.Mesh(m.geometry, castleLine));
+    }
+    scene.add(train);
+  }
+
   // Percurso: uma elipse pelo fundo do vale, sem sumir e reaparecer
   const CASTLE_PATH = { cx: 10, cz: -190, rx: 120, rz: 34, w: 0.0055, a0: 2.3 };
   function castleAt(t) {
@@ -1474,11 +1534,22 @@
     });
     smoke.g.attributes.position.needsUpdate = true; smoke.g.attributes.aAge.needsUpdate = true;
     actors.forEach((a) => a(t));
+    // trem: corre sobre os trilhos e volta pelo outro lado, fora de vista
+    const tx = -145 + ((t * 7 + 140) % 290);
+    train.position.set(tx, Math.max(heightAt(tx, TRACK_Z), 0) + 0.12 + Math.sin(t * 9) * 0.015, TRACK_Z);
+    // grimórios orbitando o topo da torre
+    towerBooks.forEach((m, i) => {
+      const a = t * 0.35 + i / towerBooks.length * Math.PI * 2;
+      m.position.set(TOWER.x + Math.cos(a) * 4.6, TOWER.y + 19.4 + Math.sin(t * 0.9 + i) * 0.45, TOWER.z + Math.sin(a) * 4.6);
+      m.rotation.set(Math.sin(t + i) * 0.2, -a, 0.15);
+    });
     cloudMesh.position.x = Math.sin(t * 0.006) * 40;
     cloudMesh.userData.mist.opacity = 0.55 * (1 - U.uNight.value * 0.75);
   }
 
+  const lastTgt = new T.Vector3();
   function place(pos, target) {
+    lastTgt.copy(target);
     camera.position.copy(pos); camera.lookAt(target); camera.updateMatrixWorld();
     sky.position.copy(camera.position);
   }
@@ -1541,13 +1612,14 @@
       { d: 6.4, from: [V3([-24, 4, 44]), V3([10, 3, -80])], to: [V3([-12, 13, 34]), V3([10, 2, -80])], night: [1, 0], line: "A jornada é o que dá forma ao mundo.", long: true },
       { d: 3.4, black: true, seal: true, from: [BASE.pos.clone(), BASE.target.clone()], to: [BASE.pos.clone(), BASE.target.clone()] },
       { d: 3.2, arrive: true, from: [V3([0, 70, 70]), V3([0, 0, -60])], to: [V3([0, 38, 52]), V3([4, 0, -70])], night: 0, haze: [1, 0], hazeCurve: 0.6 },
-      { d: 3.6, from: [V3([0, 38, 52]), V3([4, 0, -70])], to: [BASE.pos.clone(), BASE.target.clone()], night: [0, nightTarget] },
+      { d: 3.6, from: [V3([0, 38, 52]), V3([4, 0, -70])], to: exploreEl ? [OVERVIEW.pos.clone(), OVERVIEW.tgt.clone()] : [BASE.pos.clone(), BASE.target.clone()], night: [0, nightTarget] },
     ];
   }
   function startShot(i) {
     intro.i = i; intro.t = 0;
     const s = intro.shots[i];
     if (!s) { endIntro(); return; }
+    if (s.film && intro.noFilm) { startShot(intro.shots.findIndex((x) => x.arrive)); return; }
     if (s.film && !intro.inFilm) {
       intro.inFilm = true; intro.filmStart = performance.now() / 1000;
       introEl.classList.add("film"); $("introSkip").hidden = false;
@@ -1586,9 +1658,10 @@
     }
     if (k >= 1) startShot(intro.i + 1);
   }
-  function playIntro() {
+  function playIntro(full = true) {
     if (intro.active || !introEl) return;
-    intro.shots = buildShots(); intro.active = true; intro.inFilm = false;
+    if (explore.active) exitExplore(false);
+    intro.shots = buildShots(); intro.active = true; intro.inFilm = false; intro.noFilm = !full;
     introEl.hidden = false; hero.classList.add("playing"); document.documentElement.classList.add("intro-on");
     requestAnimationFrame(resize);
     startShot(0);
@@ -1606,19 +1679,159 @@
     U.uHaze.value = 0; U.uNight.value = nightTarget;
     requestAnimationFrame(resize);
     window.dispatchEvent(new CustomEvent("vale:intro", { detail: "end" }));
-    if (reduce) { place(BASE.pos, BASE.target); render(); }
+    try { sessionStorage.setItem("vale-entrou", "1"); } catch (e) { /* sem armazenamento */ }
+    if (exploreEl) startExplore();
+    else if (reduce) { place(BASE.pos, BASE.target); render(); }
   }
   if ($("introSkip")) $("introSkip").addEventListener("click", skipFilm);
   // seek: posiciona a entrada num corte e num ponto do corte (usado para revisar quadros)
-  window.vale = { playIntro, seek(i, frac = 0.5) { if (!intro.active) playIntro(); startShot(i); intro.t = intro.shots[i].d * frac; } };
+  window.vale = { playIntro, go: (id) => { if (!explore.active) startExplore(); go(id); }, seek(i, frac = 0.5) { if (!intro.active) playIntro(); startShot(i); intro.t = intro.shots[i].d * frac; } };
+
+
+  /* ------------------------------------------------------------------ */
+  /* Exploração: lugares do vale, marcadores, minimapa e cartões         */
+  /* ------------------------------------------------------------------ */
+  const exploreEl = $("explore");
+  const OVERVIEW = { pos: new T.Vector3(-6, 44, 60), tgt: new T.Vector3(12, 0, -74) };
+  const openWorld = (n) => { if (window.mundos) window.mundos.open(n); };
+  const PLACES = {
+    torii: {
+      k: "門", name: "Torii", kicker: "A entrada",
+      text: "Por aqui se entra no vale. Daqui você volta para a capa ou revê o filme.",
+      anchor: () => new T.Vector3(TORII.x, heightAt(TORII.x, TORII.z) + 8.4, TORII.z),
+      view: () => ({ pos: new T.Vector3(TORII.x + 2.2, 4.4, TORII.z + 13.5), tgt: new T.Vector3(TORII.x, 3.6, TORII.z - 6) }),
+      actions: [{ label: "Voltar à capa", primary: true, run: () => exitExplore(true) }, { label: "Ver o filme de novo", run: () => playIntro(true) }],
+    },
+    castelo: {
+      k: "城", name: "Castelo do Howl", kicker: "Os projetos",
+      text: "A porta de quatro cores leva a um mundo diferente em cada cor.",
+      anchor: () => castle.position.clone().add(new T.Vector3(0, 15, 0)),
+      view: () => { const cp = castle.position; return { pos: new T.Vector3(cp.x - 30, cp.y + 5, cp.z + 36), tgt: new T.Vector3(cp.x, cp.y + 7, cp.z) }; },
+      actions: [
+        { label: "Templo do Sino", sub: "AcousticBuild", door: "#C22026", run: () => openWorld("templo") },
+        { label: "Nós", sub: "o jogo", door: "#0B0809", run: () => openWorld("nos") },
+        { label: "Hollow Depths", sub: "abre o jogo", door: "#2E7896", href: "https://game-nauy.onrender.com/" },
+        { label: "Ficar no vale", sub: "visão geral", door: "#78AB5A", run: () => go(null) },
+      ],
+    },
+    torre: {
+      k: "塔", name: "Torre dos Grimórios", kicker: "As matérias",
+      text: "Nove grimórios, um para cada matéria. Cada atividade é um feitiço aprendido.",
+      anchor: () => new T.Vector3(TOWER.x, TOWER.y + 26.5, TOWER.z),
+      view: () => ({ pos: new T.Vector3(TOWER.x - 21, TOWER.y + 10, TOWER.z + 30), tgt: new T.Vector3(TOWER.x, TOWER.y + 11, TOWER.z) }),
+      actions: [{ label: "Entrar na Torre", primary: true, run: () => openWorld("torre") }],
+    },
+    trem: {
+      k: "汽", name: "Trem sobre a água", kicker: "A galeria",
+      text: "As lembranças passam pela janela, ao entardecer.",
+      anchor: () => train.position.clone().add(new T.Vector3(-5.5, 4.2, 0)),
+      view: () => { const tp = train.position; return { pos: new T.Vector3(tp.x - 15, tp.y + 6.5, TRACK_Z + 21), tgt: new T.Vector3(tp.x - 3, tp.y + 0.6, TRACK_Z) }; },
+      actions: [{ label: "Embarcar", primary: true, run: () => openWorld("trem") }],
+    },
+  };
+  const explore = { active: false, place: null, from: null, k: 1, markers: {}, coverFrom: null, coverK: 1 };
+  if (exploreEl) {
+    const mk = $("markers");
+    Object.entries(PLACES).forEach(([id, P]) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "marker"; b.dataset.place = id;
+      b.innerHTML = `<b aria-hidden="true">${P.k}</b><span>${P.name}</span>`;
+      b.addEventListener("click", () => go(id));
+      mk.appendChild(b); explore.markers[id] = b;
+    });
+    // minimapa desenhado com os lagos reais do terreno
+    const mm = $("minimap");
+    const mx = (x) => (x + 130) / 260 * 200, mz = (z) => (z + 220) / 250 * 130;
+    const lakes = LAKES.map((L) => `<ellipse cx="${mx(L.x).toFixed(1)}" cy="${mz(L.z).toFixed(1)}" rx="${(L.rx / 260 * 200 * 0.8).toFixed(1)}" ry="${(L.rz / 250 * 130 * 0.85).toFixed(1)}"/>`).join("");
+    mm.innerHTML = `<svg viewBox="0 0 200 130" aria-hidden="true"><rect width="200" height="130" rx="6" class="mm-land"/><g class="mm-lake">${lakes}</g>
+      <line class="mm-track" x1="0" x2="200" y1="${mz(TRACK_Z)}" y2="${mz(TRACK_Z)}"/>
+      <ellipse class="mm-path" cx="${mx(CASTLE_PATH.cx)}" cy="${mz(CASTLE_PATH.cz)}" rx="${CASTLE_PATH.rx / 260 * 200}" ry="${CASTLE_PATH.rz / 250 * 130}"/></svg>`;
+    Object.entries(PLACES).forEach(([id, P]) => {
+      const d = document.createElement("button");
+      d.type = "button"; d.className = "mm-dot"; d.dataset.place = id; d.textContent = P.k;
+      d.setAttribute("aria-label", P.name);
+      d.addEventListener("click", () => go(id));
+      mm.appendChild(d); explore.markers[id + "-mm"] = d;
+    });
+    explore.mm = { mx, mz };
+    $("overviewBtn").addEventListener("click", () => go(null));
+    $("placeClose").addEventListener("click", () => go(null));
+    addEventListener("keydown", (e) => { if (e.key === "Escape" && explore.active && explore.place && !document.documentElement.classList.contains("perfil-on") && $("world").hidden) go(null); });
+  }
+  function camState() { return { pos: camera.position.clone(), tgt: lastTgt.clone() }; }
+  function showCard(id) {
+    const card = $("placeCard");
+    if (!id) { card.hidden = true; return; }
+    const P = PLACES[id];
+    $("pcKicker").textContent = P.kicker;
+    $("pcTitle").innerHTML = `<span aria-hidden="true">${P.k}</span>${P.name}`;
+    $("pcText").textContent = P.text;
+    const box = $("pcActions"); box.innerHTML = ""; box.classList.toggle("doors", P.actions.some((a) => a.door));
+    P.actions.forEach((a) => {
+      const b = document.createElement(a.href ? "a" : "button");
+      b.className = "pc-btn" + (a.primary ? " primary" : "") + (a.door ? " door" : "");
+      if (a.door) b.style.setProperty("--door", a.door);
+      b.innerHTML = a.sub ? `<b>${a.label}</b><small>${a.sub}</small>` : a.label;
+      if (a.href) { b.href = a.href; b.target = "_blank"; b.rel = "noreferrer"; } else { b.type = "button"; b.addEventListener("click", a.run); }
+      box.appendChild(b);
+    });
+    card.hidden = false;
+  }
+  function go(id) {
+    explore.from = camState(); explore.k = 0; explore.place = id;
+    showCard(id);
+    Object.entries(explore.markers).forEach(([key, el]) => el.classList.toggle("on", key.replace("-mm", "") === id));
+  }
+  function startExplore() {
+    explore.active = true; explore.place = null; explore.from = camState(); explore.k = 0;
+    exploreEl.hidden = false; hero.classList.add("exploring");
+    showCard(null);
+    window.dispatchEvent(new CustomEvent("vale:explore", { detail: "start" }));
+    setRunning(true);
+  }
+  function exitExplore(toCover) {
+    explore.active = false; exploreEl.hidden = true; hero.classList.remove("exploring");
+    showCard(null);
+    if (toCover) { explore.coverFrom = camState(); explore.coverK = 0; }
+    window.dispatchEvent(new CustomEvent("vale:explore", { detail: "end" }));
+  }
+  function exploreStep(dt, tdt = dt) {
+    const P = explore.place ? PLACES[explore.place] : null;
+    const v = P ? P.view() : { pos: OVERVIEW.pos.clone().add(new T.Vector3(Math.sin(clock * 0.05) * 6, 0, 0)), tgt: OVERVIEW.tgt.clone() };
+    explore.k = Math.min(1, explore.k + tdt / 2.3);
+    const e = ease(explore.k);
+    const pos = explore.from ? explore.from.pos.clone().lerp(v.pos, e) : v.pos;
+    const tgt = explore.from ? explore.from.tgt.clone().lerp(v.tgt, e) : v.tgt;
+    pos.x += pointer.sx * (P ? 1.2 : 3) * e; pos.y += -pointer.sy * (P ? 0.5 : 2) * e;
+    place(pos, tgt);
+    // marcadores e pontos do minimapa acompanham a cena
+    const W2 = canvas.clientWidth, H2 = canvas.clientHeight;
+    Object.entries(PLACES).forEach(([id, Pl]) => {
+      const el = explore.markers[id]; const p = Pl.anchor().project(camera);
+      const vis = p.z < 1 && Math.abs(p.x) < 1.1 && Math.abs(p.y) < 1.1;
+      el.style.transform = `translate(-50%, -100%) translate(${((p.x * 0.5 + 0.5) * W2).toFixed(1)}px, ${((-p.y * 0.5 + 0.5) * H2).toFixed(1)}px)`;
+      el.style.opacity = vis ? "1" : "0"; el.tabIndex = vis ? 0 : -1;
+    });
+    const cpos = { torii: [TORII.x, TORII.z], castelo: [castle.position.x, castle.position.z], torre: [TOWER.x, TOWER.z], trem: [Math.max(-128, Math.min(128, train.position.x)), TRACK_Z] };
+    Object.entries(cpos).forEach(([id, [x, z]]) => {
+      const d = explore.markers[id + "-mm"]; d.style.left = `${(explore.mm.mx(x) / 200 * 100).toFixed(2)}%`; d.style.top = `${(explore.mm.mz(z) / 130 * 100).toFixed(2)}%`;
+    });
+  }
 
   let running = false, visible = true, last = performance.now(), clock = 30;
   function frame(now) {
-    const dt = Math.max(0, Math.min(0.05, (now - last) / 1000)); last = now;
+    const raw = Math.max(0, (now - last) / 1000); last = now;
+    const dt = Math.min(0.05, raw), tdt = Math.min(0.25, raw); // tdt: transições seguem o relógio real
     clock += dt;
     if (intro.active) {
       updateWorld(clock);
       introStep(dt);
+    } else if (explore.active) {
+      U.uNight.value += (nightTarget - U.uNight.value) * Math.min(1, dt * 2.2);
+      pointer.sx += (pointer.x - pointer.sx) * Math.min(1, dt * 1.6);
+      pointer.sy += (pointer.y - pointer.sy) * Math.min(1, dt * 1.6);
+      updateWorld(clock);
+      exploreStep(dt, tdt);
     } else {
       U.uNight.value += (nightTarget - U.uNight.value) * Math.min(1, dt * 2.2);
       pointer.sx += (pointer.x - pointer.sx) * Math.min(1, dt * 1.6);
@@ -1627,7 +1840,11 @@
       const p = BASE.pos.clone();
       p.x += pointer.sx * 1.4 + Math.sin(clock * 0.07) * 0.6;
       p.y += -pointer.sy * 0.45 + Math.sin(clock * 0.11) * 0.08;
-      place(p, BASE.target);
+      if (explore.coverK < 1) {
+        explore.coverK = Math.min(1, explore.coverK + tdt / 2.4);
+        const e = ease(explore.coverK);
+        place(explore.coverFrom.pos.clone().lerp(p, e), explore.coverFrom.tgt.clone().lerp(BASE.target, e));
+      } else place(p, BASE.target);
     }
     render();
     if (running) requestAnimationFrame(frame);

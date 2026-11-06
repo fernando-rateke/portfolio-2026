@@ -201,187 +201,64 @@ html.intro-on, html.intro-on body { overflow: hidden; }
 .is-night .theme-toggle .sun { display: none; }
 .is-night .theme-toggle .moon { display: block; }
 
-/* ---------- Folhas ---------- */
-.sheet {
-  padding-block: clamp(56px, 8vw, 104px);
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
-  border-top: 1px solid var(--line);
-}
-.sheet-inner {
-  max-width: 1180px; margin-inline: auto;
-  display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: clamp(24px, 4vw, 64px);
-}
-.margin-note { display: grid; align-content: start; gap: 6px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); height: fit-content; }
-.margin-note .kanji { font-family: var(--f-display); font-size: 3.4rem; line-height: 1; color: var(--accent); font-weight: 800; }
-.content { display: grid; gap: 28px; min-width: 0; }
-.content > h2 { font-size: var(--step-2); }
-.lede { font-size: var(--step-1); line-height: 1.6; font-family: var(--f-display); font-weight: 400; max-width: 46ch; }
-.muted { color: var(--muted); }
 
+/* ---------- Site: tela cheia e exploração ---------- */
+html, body { height: 100%; overflow: hidden; background: #0c0c0c; }
+.hero canvas { height: 100svh; }
+.hero::before { background: linear-gradient(75deg, rgba(8, 22, 32, 0.45) 0%, rgba(8, 22, 32, 0.12) 40%, transparent 62%); }
+.hero.exploring::before { opacity: 0; }
+.hero.exploring .hero-title { opacity: 0; pointer-events: none; }
+.hero-title { transition: opacity 0.6s ease; }
+.enter-btn[hidden], .film-btn[hidden], .explore[hidden], .place-card[hidden] { display: none; }
+.film-btn { position: absolute; z-index: 2; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(clamp(18px, 3vw, 32px) + 62px);
+  font: 500 0.7rem/1 var(--f-label); letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.9); background: none; border: 0; border-bottom: 1px solid rgba(255,255,255,0.5); padding: 6px 2px; cursor: pointer; }
+.explore { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.explore > * { pointer-events: auto; }
+.markers { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.marker { pointer-events: auto; position: absolute; left: 0; top: 0; display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px 6px 6px; border-radius: 999px; cursor: pointer;
+  background: rgba(12, 16, 24, 0.55); border: 1px solid rgba(255,255,255,0.45); color: #fff; font: 500 0.7rem/1 var(--f-label); letter-spacing: 0.12em; text-transform: uppercase;
+  backdrop-filter: blur(6px); transition: opacity 0.4s ease, background 0.3s ease; white-space: nowrap; margin-top: -22px; }
+.marker::after { content: ""; position: absolute; left: 50%; top: 100%; width: 1px; height: 20px; background: linear-gradient(rgba(255,255,255,0.8), transparent); }
+.marker b { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: #C22026; font: 700 0.95rem/1 var(--f-display); letter-spacing: 0; }
+.marker:hover, .marker:focus-visible, .marker.on { background: rgba(194, 32, 38, 0.75); }
+.marker.on b { background: #fff; color: #C22026; }
+.place-card { position: absolute; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); transform: translateX(-50%); width: min(560px, calc(100% - 32px));
+  background: #F4EEE1; color: #2A2420; border-radius: 8px; padding: 22px 24px 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.35); animation: cardin 0.6s cubic-bezier(.2,.8,.2,1); }
+@keyframes cardin { from { opacity: 0; transform: translate(-50%, 16px); } to { opacity: 1; transform: translate(-50%, 0); } }
+.place-card .w-kicker { color: #C22026; opacity: 1; }
+.place-card h2 { font: 600 clamp(1.4rem, 1.1rem + 1vw, 1.9rem)/1.1 var(--f-display); margin: 8px 0 6px; display: flex; gap: 12px; align-items: baseline; }
+.place-card h2 span { color: #C22026; font-weight: 800; }
+.place-card p { font-size: 0.94rem; line-height: 1.6; margin: 0 0 14px; color: #4A4038; max-width: none; }
+.pc-close { position: absolute; top: 10px; right: 12px; width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(42,36,32,0.25); background: transparent; color: #2A2420; font-size: 1.2rem; line-height: 1; cursor: pointer; }
+.pc-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.pc-actions.doors { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.pc-btn { font: 500 0.74rem/1 var(--f-label); letter-spacing: 0.12em; text-transform: uppercase; color: #2A2420; background: transparent; border: 1px solid rgba(42,36,32,0.3);
+  border-radius: 999px; padding: 12px 16px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 10px; }
+.pc-btn.primary { background: #C22026; color: #fff; border-color: #C22026; }
+.pc-btn:hover { border-color: #C22026; }
+.pc-btn.door { border-radius: 8px; padding: 12px; text-align: left; }
+.pc-btn.door::before { content: ""; width: 18px; height: 18px; border-radius: 50%; background: var(--door); border: 2px solid rgba(42,36,32,0.2); flex: none; }
+.pc-btn.door b { display: block; font: 600 0.98rem/1.1 var(--f-display); letter-spacing: 0; text-transform: none; }
+.pc-btn.door small { display: block; margin-top: 4px; font: 500 0.62rem/1 var(--f-label); letter-spacing: 0.12em; color: #6C6156; }
+.mm-wrap { position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); width: 220px;
+  background: rgba(244, 238, 225, 0.92); color: #2A2420; border-radius: 8px; padding: 10px; box-shadow: 0 12px 40px rgba(0,0,0,0.3); }
+.mm-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font: 500 0.62rem/1 var(--f-label); letter-spacing: 0.14em; text-transform: uppercase; }
+.mm-head button { font: inherit; letter-spacing: inherit; text-transform: inherit; color: #C22026; background: none; border: 0; cursor: pointer; padding: 4px 0; }
+.minimap { position: relative; aspect-ratio: 200 / 130; }
+.minimap svg { display: block; width: 100%; height: 100%; }
+.mm-land { fill: #A9C48C; }
+.mm-lake ellipse { fill: #4E8FB0; }
+.mm-track { stroke: #5A3B26; stroke-width: 1.2; stroke-dasharray: 2 2; }
+.mm-path { fill: none; stroke: #7A5A44; stroke-width: 0.8; stroke-dasharray: 3 3; }
+.mm-dot { position: absolute; transform: translate(-50%, -50%); width: 22px; height: 22px; border-radius: 50%; border: 0; background: #C22026; color: #fff; font: 700 0.7rem/1 var(--f-display); cursor: pointer; display: grid; place-items: center; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+.mm-dot.on { background: #fff; color: #C22026; outline: 2px solid #C22026; }
 @media (max-width: 760px) {
-  .sheet-inner { grid-template-columns: minmax(0, 1fr); }
-  .margin-note { position: static; grid-auto-flow: column; justify-content: start; align-items: end; gap: 14px; }
-  .margin-note .kanji { font-size: 2.4rem; }
+  .mm-wrap { display: none; }
+  .place-card { bottom: calc(env(safe-area-inset-bottom, 0px) + 92px); }
+  .pc-actions.doors { grid-template-columns: minmax(0, 1fr); }
+  .marker span { display: none; }
+  .marker { padding: 6px; }
 }
-
-/* ---------- Conceito ---------- */
-.inspo { display: flex; flex-wrap: wrap; gap: 10px; }
-.inspo span {
-  font-size: var(--step--1); padding: 6px 12px; border-radius: 999px;
-  border: 1px solid var(--line); background: var(--surface);
-}
-.pillars { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
-.pillars div { display: grid; gap: 8px; align-content: start; border-top: 2px solid var(--ink); padding-top: 14px; }
-.pillars h3 { font-size: var(--step-1); }
-@media (max-width: 760px) { .pillars { grid-template-columns: minmax(0, 1fr); } }
-
-/* ---------- Marca ---------- */
-.seals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
-.seal-card { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 28px 20px 18px; display: grid; justify-items: center; gap: 16px; }
-.seal-card svg { width: min(150px, 100%); height: auto; }
-.seal-card p { font-size: var(--step--1); text-align: center; color: var(--muted); }
-.seal-card strong { color: var(--ink); font-weight: 500; display: block; }
-.seal-card .lockup svg { width: 64px; height: 64px; filter: none; }
-.seal-card .lockup .wordmark { font-size: 2.3rem; color: var(--ink); }
-.seal-card .sign { min-height: 150px; display: grid; place-items: center; }
-@media (max-width: 760px) { .seals { grid-template-columns: minmax(0, 1fr); } }
-.rules { display: grid; gap: 10px; padding: 0; margin: 0; list-style: none; }
-.rules li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; }
-.rules li::before { content: ""; width: 10px; height: 10px; margin-top: 0.62em; background: var(--accent); border-radius: 2px; transform: rotate(45deg); }
-
-/* ---------- Paleta ---------- */
-.palettes { display: grid; gap: 34px; }
-.palette h3 { font-size: var(--step-1); margin-bottom: 4px; }
-.palette > p { font-size: var(--step--1); color: var(--muted); margin-bottom: 14px; }
-.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 12px; }
-.swatch { display: grid; gap: 8px; }
-.chip { aspect-ratio: 4 / 3; max-width: 100%; border-radius: 4px; border: 1px solid rgba(0,0,0,0.08); }
-.swatch .jp { font-family: var(--f-display); font-size: 1.05rem; line-height: 1.2; }
-.swatch .meta { font-family: var(--f-label); font-size: 0.7rem; color: var(--muted); line-height: 1.5; }
-
-/* ---------- Tipografia ---------- */
-.type-grid { display: grid; gap: 18px; }
-.type-row { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 24px; padding-block: 22px; border-top: 1px solid var(--line); align-items: baseline; }
-.type-row .sample-display { font-family: var(--f-display); font-size: var(--step-3); line-height: 1.1; font-weight: 600; }
-.type-row .sample-body { font-family: var(--f-body); font-size: var(--step-1); line-height: 1.6; }
-.type-row .sample-label { font-family: var(--f-label); font-size: 0.9rem; letter-spacing: 0.14em; text-transform: uppercase; }
-.type-row .sample-nos { font-family: var(--f-nos); font-size: var(--step-2); font-style: italic; }
-@media (max-width: 760px) { .type-row { grid-template-columns: minmax(0, 1fr); gap: 8px; } }
-
-/* ---------- Mapa ---------- */
-.map-wrap { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; overflow-x: auto; }
-.map-wrap svg { display: block; width: 100%; min-width: 640px; height: auto; }
-.places { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 32px; }
-.place { display: grid; gap: 4px; padding-top: 12px; border-top: 1px solid var(--line); }
-.place h3 { font-size: var(--step-1); }
-.place p { font-size: var(--step--1); color: var(--muted); }
-@media (max-width: 760px) { .places { grid-template-columns: minmax(0, 1fr); } }
-
-/* ---------- Jornada (sequência real) ---------- */
-.journey { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; padding: 0; margin: 0; list-style: none; counter-reset: step; }
-.journey li { display: grid; gap: 10px; align-content: start; counter-increment: step; }
-.frame { aspect-ratio: 16 / 10; max-width: 100%; border-radius: 4px; position: relative; overflow: hidden; border: 1px solid var(--line); background-size: cover !important; background-position: center !important; }
-.skip-chip { position: absolute; right: 8px; top: 8px; font: 500 0.62rem/1 var(--f-label); color: #fff; border: 1px solid rgba(255,255,255,0.55); border-radius: 999px; padding: 5px 8px; letter-spacing: 0.08em; background: rgba(0,0,0,0.25); }
-.frame-seal { position: absolute; right: 8px; top: 8px; width: 26px; height: 26px; }
-.journey .step { font-family: var(--f-label); font-size: 0.7rem; letter-spacing: 0.14em; color: var(--accent); }
-.journey .step::before { content: counter(step, decimal-leading-zero) "  "; }
-.journey h3 { font-size: 1.05rem; }
-.journey p { font-size: var(--step--1); color: var(--muted); }
-@media (max-width: 900px) { .journey { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 480px) { .journey { grid-template-columns: minmax(0, 1fr); } }
-.frame { background: linear-gradient(#2468AA, #BCDBEA 55%, #78AB5A 55%); }
-.frame[data-shot="filme"] { background: #07090D; }
-
-/* ---------- Capa (esboço) ---------- */
-.cover-mock { position: relative; border-radius: 6px; overflow: hidden; border: 1px solid var(--line); aspect-ratio: 16 / 9; max-width: 100%; background: linear-gradient(#2468AA, #BCDBEA 55%, #86B866 55%, #5F9450); background-size: cover !important; background-position: center !important; }
-.cover-mock .cm-title { position: absolute; left: 6%; top: 10%; color: #fff; display: grid; gap: 6px; text-shadow: 0 2px 16px rgba(0,0,0,0.35); }
-.cover-mock .cm-title b { font: 600 clamp(1.1rem, 3vw, 2.2rem)/1.1 var(--f-display); max-width: 14ch; }
-.cover-mock .cm-title span { font: 500 0.66rem/1 var(--f-label); letter-spacing: 0.18em; text-transform: uppercase; }
-.cover-mock .enter { position: absolute; left: 50%; bottom: 7%; transform: translateX(-50%); font: 500 0.7rem/1 var(--f-label); letter-spacing: 0.2em; color: #fff; text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.7); padding-bottom: 6px; }
-.cutout { position: absolute; border: 1.5px dashed rgba(255,255,255,0.9); border-radius: 50% 50% 8px 8px / 30% 30% 8px 8px; display: grid; place-items: center; text-align: center; color: #fff; font: 500 clamp(0.5rem, 1.1vw, 0.7rem)/1.3 var(--f-label); letter-spacing: 0.06em; background: rgba(20, 40, 30, 0.32); padding: 6px; backdrop-filter: blur(1.5px); }
-.cover-notes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
-.cover-notes div { display: grid; gap: 6px; align-content: start; }
-.cover-notes h3 { font-size: 1.05rem; }
-.cover-notes p { font-size: var(--step--1); color: var(--muted); }
-@media (max-width: 760px) { .cover-notes { grid-template-columns: minmax(0, 1fr); } }
-
-/* ---------- Mundos de destaque ---------- */
-.worlds { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
-.world { border-radius: 6px; overflow: hidden; display: grid; grid-template-rows: auto 1fr; border: 1px solid var(--line); background: var(--surface); }
-.world-art { aspect-ratio: 16 / 9; max-width: 100%; position: relative; }
-.world-body { padding: 22px; display: grid; gap: 12px; align-content: start; }
-.world-body h3 { font-size: var(--step-2); }
-.world-body p { font-size: var(--step--1); }
-.world-body ul { margin: 0; padding-left: 18px; font-size: var(--step--1); color: var(--muted); display: grid; gap: 4px; }
-.mini-pal { display: flex; gap: 6px; }
-.mini-pal i { width: 26px; height: 26px; border-radius: 3px; border: 1px solid rgba(0,0,0,0.12); }
-.temple { background: radial-gradient(circle at 50% 40%, rgba(242,165,65,0.55) 0 6%, transparent 7%), repeating-radial-gradient(circle at 50% 40%, rgba(255,255,255,0.0) 0 16px, rgba(255,240,210,0.35) 17px 18px), linear-gradient(#3B5560, #22333B); }
-.temple::after { content: ""; position: absolute; left: 50%; top: 40%; width: 40px; height: 48px; transform: translate(-50%, -30%); background: #8A5A3C; border-radius: 20px 20px 6px 6px; box-shadow: inset 0 -8px 0 #6B4228; }
-.nos-art { background: radial-gradient(ellipse at 50% 100%, rgba(224,164,88,0.45), transparent 55%), #0B0809; display: grid; place-items: center; }
-.nos-art b { font: 500 clamp(2rem, 6vw, 3.6rem)/1 var(--f-nos); color: #EDE3D1; letter-spacing: 0.5em; padding-left: 0.5em; }
-.nos-art::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 30%; width: 2px; background: linear-gradient(#E0A458, #E0A45800); }
-.warning { font-size: var(--step--1); border-left: 3px solid var(--accent); padding: 8px 12px; background: var(--bg); }
-.credit { font-family: var(--f-nos); font-style: italic; font-size: 1.05rem; }
-@media (max-width: 760px) { .worlds { grid-template-columns: minmax(0, 1fr); } }
-
-.dial-row { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 28px; align-items: center; }
-.dial-row svg { width: 100%; max-width: 220px; height: auto; }
-.dial-list { display: grid; gap: 10px; padding: 0; margin: 0; list-style: none; }
-.dial-list li { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 12px; align-items: baseline; }
-.dial-list i { width: 14px; height: 14px; border-radius: 50%; display: block; transform: translateY(2px); border: 1px solid rgba(0,0,0,0.15); }
-@media (max-width: 760px) { .dial-row { grid-template-columns: minmax(0, 1fr); } }
-
-/* ---------- Som ---------- */
-.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
-table { width: 100%; border-collapse: collapse; min-width: 560px; font-size: var(--step--1); }
-th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
-th { font-family: var(--f-label); font-weight: 500; font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
-tr:last-child td { border-bottom: 0; }
-td:first-child { font-family: var(--f-display); font-size: 1rem; white-space: nowrap; }
-.tbd { color: var(--muted); font-style: italic; }
-
-/* ---------- Movimento ---------- */
-.motion { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
-.motion div { display: grid; gap: 10px; align-content: start; }
-.motion h3 { font-size: 1.05rem; }
-.motion p { font-size: var(--step--1); color: var(--muted); }
-.demo { height: 120px; border-radius: 4px; background: var(--surface); border: 1px solid var(--line); position: relative; overflow: hidden; }
-.wind-canvas { display: block; width: 100%; height: 120px; }
-.demo .ink { position: absolute; left: 50%; top: 50%; width: 12px; height: 12px; border-radius: 50%; background: var(--ink); transform: translate(-50%, -50%) scale(0.2); animation: ink 4.2s cubic-bezier(.2,.7,.2,1) infinite; opacity: 0.85; }
-@keyframes ink { 0% { transform: translate(-50%,-50%) scale(0.2); opacity: 0.9; border-radius: 50%; } 70% { transform: translate(-50%,-50%) scale(7); opacity: 0.12; border-radius: 46% 54% 50% 50%; } 100% { transform: translate(-50%,-50%) scale(7.4); opacity: 0; } }
-.demo .lamp { position: absolute; left: 50%; top: 50%; width: 22px; height: 30px; transform: translate(-50%, -50%); background: var(--accent); border-radius: 6px; box-shadow: 0 0 0 0 var(--lantern); animation: glow 3.6s ease-in-out infinite; }
-@keyframes glow { 0%, 100% { box-shadow: 0 0 6px 0 rgba(242,165,65,0.4); } 50% { box-shadow: 0 0 28px 8px rgba(242,165,65,0.65); } }
-@media (max-width: 760px) { .motion { grid-template-columns: minmax(0, 1fr); } }
-@media (prefers-reduced-motion: reduce) { .demo * { animation: none !important; } }
-
-/* ---------- Aplicações ---------- */
-.apps { display: grid; grid-template-columns: 1.4fr 1fr; gap: 20px; }
-.app { border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--surface); display: grid; }
-.app .cap { padding: 10px 14px; border-top: 1px solid var(--line); }
-.banner { aspect-ratio: 4 / 1; max-width: 100%; background: linear-gradient(#2468AA, #BCDBEA 55%, #78AB5A 55%); background-size: cover !important; background-position: center 62% !important; display: flex; align-items: center; gap: 14px; padding: 0 5%; color: #fff; text-shadow: 0 2px 14px rgba(5,20,30,0.6); }
-.banner .wordmark { font-size: clamp(1.1rem, 2.6vw, 1.8rem); }
-.banner b { font: 600 clamp(0.9rem, 2.2vw, 1.4rem)/1.15 var(--f-display); max-width: 18ch; }
-.banner svg { width: clamp(34px, 7vw, 56px); height: auto; flex: none; }
-.cv { padding: 18px; display: grid; gap: 10px; align-content: start; }
-.cv-head { display: flex; gap: 12px; align-items: center; border-bottom: 2px solid var(--ink); padding-bottom: 10px; }
-.cv-head svg { width: 38px; height: 38px; flex: none; }
-.cv-head b { font: 600 1.15rem/1.1 var(--f-display); display: block; }
-.cv-line { height: 7px; border-radius: 4px; background: var(--line); }
-.cv-line.s { width: 60%; }
-@media (max-width: 760px) { .apps { grid-template-columns: minmax(0, 1fr); } }
-
-/* ---------- Decisões ---------- */
-.decisions { display: grid; gap: 0; padding: 0; margin: 0; list-style: none; border-top: 1px solid var(--line); }
-.state.wip { background: color-mix(in srgb, var(--lantern) 26%, transparent); color: var(--ink); }
-.decisions li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; padding-block: 16px; border-bottom: 1px solid var(--line); align-items: baseline; }
-.decisions h3 { font-size: 1.05rem; }
-.decisions p { font-size: var(--step--1); color: var(--muted); }
-.state { font-family: var(--f-label); font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
-.state.ok { background: color-mix(in srgb, var(--grass) 22%, transparent); color: var(--ink); }
-.state.open { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); }
-
-
 
 /* ---------- Perfil: ficha de personagem ---------- */
 .seal-fab { position: fixed; z-index: 120; left: max(16px, env(safe-area-inset-left, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);
@@ -598,8 +475,6 @@ a.q { text-decoration: none; }
   .w-count { grid-column: 1 / -1; justify-self: center; padding: 0; }
 }
 
-footer { padding-block: 40px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); border-top: 1px solid var(--line); }
-footer .inner { max-width: 1180px; margin-inline: auto; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; }
 </style>
 </head>
 <body>
@@ -643,11 +518,26 @@ footer .inner { max-width: 1180px; margin-inline: auto; display: flex; flex-wrap
   </div>
   <button class="enter-btn" id="enterBtn" type="button">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M3.5 8.2 Q12 5.6 20.5 8.2 L20 9.6 Q12 7.3 4 9.6 Z"/><path d="M5.6 11.2h12.8"/><path d="M7.3 9.4v11.1M16.7 9.4v11.1"/></svg>
-    Toque para entrar
+    <span>Toque para entrar</span>
   </button>
+  <button class="film-btn" id="filmBtn" type="button" hidden>Ver o filme de novo</button>
+  <div class="explore" id="explore" hidden>
+    <div class="markers" id="markers"></div>
+    <div class="place-card" id="placeCard" hidden role="region" aria-live="polite">
+      <button class="pc-close" id="placeClose" type="button" aria-label="Fechar e voltar à visão geral">&times;</button>
+      <span class="w-kicker" id="pcKicker"></span>
+      <h2 id="pcTitle"></h2>
+      <p id="pcText"></p>
+      <div class="pc-actions" id="pcActions"></div>
+    </div>
+    <nav class="mm-wrap" aria-label="Mapa do vale">
+      <div class="mm-head"><span>Mapa do vale</span><button type="button" id="overviewBtn">Visão geral</button></div>
+      <div class="minimap" id="minimap"></div>
+    </nav>
+  </div>
   <div class="hero-copy">
     <div class="hero-top">
-      <span class="label">Guia de identidade visual · proposta 1</span>
+      <span></span>
       <div class="hero-actions">
       <button class="sound-toggle" id="soundToggle" type="button" aria-pressed="false">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.6L12.5 5v14l-4.9-4.5H4z"/><path class="wave" d="M15.8 9a4.2 4.2 0 0 1 0 6"/><path class="wave" d="M18.4 6.5a7.6 7.6 0 0 1 0 11"/></svg>
@@ -668,292 +558,7 @@ footer .inner { max-width: 1180px; margin-inline: auto; display: flex; flex-wrap
   </div>
 </header>
 
-<main>
-  <section class="sheet" id="conceito">
-    <div class="sheet-inner">
-      <div class="margin-note"><span class="kanji" aria-hidden="true">旅</span><span class="label">Conceito</span></div>
-      <div class="content">
-        <h2>Um vale para atravessar, não um site para rolar.</h2>
-        <p class="lede">O portfólio é um lugar: um vale de flores e lagos sob nuvens enormes, por onde o castelo caminha. Cada parte da sua trajetória mora num ponto do vale, e quem visita descobre explorando.</p>
-        <p>A frase guia todo o resto. Nada aparece pronto: as coisas se formam aos poucos, como a paisagem que o vento revela, como as matérias que se acumulam ao longo do ano, como um jogo que nasce de um roteiro. A identidade junta três mundos que já são seus.</p>
-        <div class="pillars">
-          <div><span class="label">Atmosfera</span><h3>Studio Ghibli</h3><p class="muted">Luz de fim de tarde, céu pintado, vento na grama. O Castelo Animado, A Viagem de Chihiro e Meu Amigo Totoro como referências diretas.</p></div>
-          <div><span class="label">Raiz</span><h3>Japão</h3><p class="muted">Torii, selo hanko, cores tradicionais com nome próprio, lanternas, mincho nos títulos. Frieren entra na ideia de aprender devagar.</p></div>
-          <div><span class="label">Ofício</span><h3>Mundos jogáveis</h3><p class="muted">Navegação de jogo, ficha de personagem, um mapa. Ninguém precisa ler que você quer fazer jogos: a experiência mostra.</p></div>
-        </div>
-        <div class="inspo" aria-label="Referências">
-          <span>O Castelo Animado</span><span>A Viagem de Chihiro</span><span>Meu Amigo Totoro</span><span>Frieren</span><span>Attack on Titan</span><span>Tokyo Ghoul</span><span>Nós</span>
-        </div>
-      </div>
-    </div>
-  </section>
 
-  <section class="sheet" id="marca">
-    <div class="sheet-inner">
-      <div class="margin-note"><span class="kanji" aria-hidden="true">印</span><span class="label">Marca</span></div>
-      <div class="content">
-        <h2>Rateke, ラテケ</h2>
-        <p>Artistas japoneses assinam com um <em>hanko</em>, um carimbo vermelho. O seu traz o sobrenome em katakana, ラテケ (<em>ra-te-ke</em>), escrito de cima para baixo como nos carimbos de verdade. Ao lado, o nome em mincho. A borda irregular vem do carimbo físico: ele nunca é um quadrado perfeito.</p>
-        <div class="seals">
-          <div class="seal-card">
-            <div class="sign"><div class="lockup" role="img" aria-label="Assinatura: selo ラテケ e o nome Rateke"><svg viewBox="0 0 120 120" aria-hidden="true"><use href="#seal"/></svg><span class="wordmark">Rateke</span></div></div>
-            <p><strong>Assinatura</strong>Capa, currículo, slides, fim do vídeo.</p>
-          </div>
-          <div class="seal-card">
-            <div class="sign"><svg viewBox="0 0 120 120" role="img" aria-label="Selo ラテケ sozinho"><use href="#seal"/></svg></div>
-            <p><strong>Selo</strong>Favicon, botão do perfil, carimbo sobre fotos.</p>
-          </div>
-          <div class="seal-card">
-            <svg viewBox="0 0 120 120" role="img" aria-label="Selo redondo só com o kanji jornada">
-              <g filter="url(#stamp)">
-                <circle cx="60" cy="60" r="52" fill="var(--accent)"/>
-                <circle cx="60" cy="60" r="43" fill="none" stroke="var(--accent-ink)" stroke-width="2.5"/>
-                <text x="60" y="64" text-anchor="middle" dominant-baseline="middle" font-family="Shippori Mincho, serif" font-weight="800" font-size="48" fill="var(--accent-ink)">旅</text>
-              </g>
-            </svg>
-            <p><strong>Selo da frase</strong>Acompanha "A jornada é o que dá forma ao mundo." e marca o vídeo.</p>
-          </div>
-        </div>
-        <ul class="rules">
-          <li>Nunca emoji, em lugar nenhum do portfólio. Ícones são desenhados à mão em SVG ou fazem parte da cena 3D.</li>
-          <li>O vermelho do selo é a única cor "de marca". Ele aparece pouco: no selo, no torii, nas lanternas à noite.</li>
-          <li>Tamanho mínimo do selo: 32 px. Abaixo disso, o katakana vira mancha.</li>
-        </ul>
-      </div>
-    </div>
-  </section>
-
-  <section class="sheet" id="cores">
-    <div class="sheet-inner">
-      <div class="margin-note"><span class="kanji" aria-hidden="true">色</span><span class="label">Cores</span></div>
-      <div class="content">
-        <h2>Quatro luzes, cores com nome</h2>
-        <p>As cores foram tiradas das suas duas imagens do Castelo Animado e da capa do Nós, e cada uma ganhou o nome tradicional japonês mais próximo. Cada luz é um estado do mundo, não uma página.</p>
-        <div class="palettes" id="palettes"></div>
-      </div>
-    </div>
-  </section>
-
-  <section class="sheet" id="tipografia">
-    <div class="sheet-inner">
-      <div class="margin-note"><span class="kanji" aria-hidden="true">文</span><span class="label">Tipografia</span></div>
-      <div class="content">
-        <h2>Três vozes, mais uma emprestada</h2>
-        <div class="type-grid">
-          <div class="type-row">
-            <div><span class="label">Títulos</span><p class="muted">Shippori Mincho. Mincho é o estilo serifado dos livros japoneses; esta tem acentos do português e kanji no mesmo desenho.</p></div>
-            <div class="sample-display">Torre dos Grimórios 旅</div>
-          </div>
-          <div class="type-row">
-            <div><span class="label">Texto</span><p class="muted">Zen Maru Gothic. Cantos arredondados, leitura calma, combina com a suavidade Ghibli.</p></div>
-            <div class="sample-body">Cada matéria é um grimório, e cada atividade é um feitiço aprendido ao longo da jornada.</div>
-          </div>
-          <div class="type-row">
-            <div><span class="label">Rótulos técnicos</span><p class="muted">Geist Mono. Coordenadas do mapa, datas, stack de projetos. É a sua parte de código, pequena e precisa.</p></div>
-            <div class="sample-label">AcousticBuild · EN 12354-1 · React + FastAPI</div>
-          </div>
-          <div class="type-row">
-            <div><span class="label">Só no mundo do Nós</span><p class="muted">Cormorant Garamond, a fonte do próprio jogo. Quando você entra pela porta preta, a tipografia muda junto.</p></div>
-            <div class="sample-nos">A casa conhece você.</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="sheet" id="mapa">
-    <div class="sheet-inner">
-      <div class="margin-note"><span class="kanji" aria-hidden="true">地図</span><span class="label">Mapa do Vale</span></div>
-      <div class="content">
-        <h2>Onde cada coisa mora</h2>
-        <p>Sem menu e sem rolagem. O visitante toca num lugar e a câmera viaja até ele. Este mapa desenhado também fica no canto da tela, como num jogo.</p>
-        <div class="map-wrap" id="mapWrap"></div>
-        <div class="places">
-          <div class="place"><span class="label">Margem sul</span><h3>Torii</h3><p>A entrada. A capa acontece aqui, e atravessar o torii leva ao filme.</p></div>
-          <div class="place"><span class="label">Campo central</span><h3>Castelo do Howl</h3><p>Caminha pelo vale. Dentro, Calcifer na lareira guia o visitante, e a porta com o seletor de cores leva aos projetos.</p></div>
-          <div class="place"><span class="label">Topo do castelo</span><h3>Seu quarto</h3><p>Objetos que contam seus gostos: estante de mangás, controle, vitrola, a janela para o vale.</p></div>
-          <div class="place"><span class="label">Ilhota norte</span><h3>Torre dos Grimórios</h3><p>As matérias. Cada uma é um grimório; cada atividade, um feitiço.</p><button class="w-enter" type="button" data-world="torre">Entrar na Torre</button></div>
-          <div class="place"><span class="label">Sobre o lago</span><h3>Trem sobre a água</h3><p>A galeria. As fotos passam pelas janelas como lembranças, ao entardecer.</p><button class="w-enter" type="button" data-world="trem">Embarcar no trem</button></div>
-          <div class="place"><span class="label">Em qualquer lugar</span><h3>Selo do perfil</h3><p>Abre a ficha: quem sou, atributos, inventário, conquistas, missões e currículo.</p></div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="sheet" id="jornada">
-    <div class="sheet-inner">
-      <div class="margin-note"><span class="kanji" aria-hidden="true">道</span><span class="label">A entrada</span></div>
-      <div class="content">
-        <h2>Da capa ao vale, em cinco momentos</h2>
-        <ol class="journey">
-          <li><div class="frame" data-shot="capa" aria-hidden="true"></div><span class="step">Capa</span><h3>O campo calmo</h3><p>Vento, flores, piano. Os personagens de costas olhando o vale. "Toque para entrar".</p></li>
-          <li><div class="frame" data-shot="torii" aria-hidden="true"></div><span class="step">Toque</span><h3>Atravessar o torii</h3><p>A câmera passa sob o torii, o vento aumenta e ela sobe para dentro das nuvens.</p></li>
-          <li><div class="frame" data-shot="filme" aria-hidden="true"><span class="skip-chip">Pular vídeo</span></div><span class="step">Filme</span><h3>30 a 60 segundos</h3><p>Torii, lagos, o castelo, a colina à noite e a frase, com faixas de cinema e um feixe de luz. "Pular vídeo" nos primeiros 5 segundos.</p></li>
-          <li><div class="frame" data-shot="nuvens" aria-hidden="true"></div><span class="step">Chegada</span><h3>Sair das nuvens</h3><p>A câmera desce sobre o vale, sem corte, já no mundo.</p></li>
-          <li><div class="frame" data-shot="vale" aria-hidden="true"><svg class="frame-seal" viewBox="0 0 120 120"><use href="#seal"/></svg></div><span class="step">Vale</span><h3>Explorar</h3><p>Mapa no canto, selo do perfil, botão de dia e noite.</p></li>
-        </ol>
-        <p class="muted">Para assistir, use o botão "Toque para entrar" no topo desta página: a entrada completa, com o filme, toca na própria cena 3D. Na segunda visita da mesma sessão, a capa leva direto ao vale, sem repetir o filme.</p>
-      </div>
-    </div>
-  </section>
-
-  <section class="sheet" id="capa">
-    <div class="sheet-inner">
-      <div class="margin-note"><span class="kanji" aria-hidden="true">表紙</span><span class="label">Capa</span></div>
-      <div class="content">
-        <h2>Esboço da capa</h2>
-        <p>Howl, Sofia, Markl, o Cabeça de Nabo e o Heen estão no alto da colina, de costas, olhando o vale. Howl e Sofia de braço dado, o Markl correndo em volta, o Cabeça de Nabo pulando na estaca e o Heen ofegante ao lado da Sofia. O vento move cabelo, casaco, vestido e trapos.</p>
-        <div class="cover-mock" data-shot="capa" role="img" aria-label="Capa: os cinco personagens de costas no alto da colina, olhando o vale, o torii e o castelo">
-          <div class="cm-title"><span>Fernando Rateke</span><b>A jornada é o que dá forma ao mundo.</b></div>
-          <div class="enter">Toque para entrar</div>
-        </div>
-        <div class="cover-notes">
-          <div><h3>Personagens em 3D</h3><p class="muted">Primeira versão modelada em código, com contorno de desenho como no anime. Rostos e roupas ganham detalhe nas próximas etapas, e no Blender depois.</p></div>
-          <div><h3>O castelo, em código</h3><p class="muted">Caminha pelo fundo do vale em pernas de ave, com casinhas, torres, canhões, canos e fumaça. À noite as janelas acendem. O refinamento final vem do Blender.</p></div>
-          <div><h3>Som da capa</h3><p class="muted">Começa só com vento. A música entra quando o visitante toca, porque o navegador só libera áudio depois de um toque.</p></div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="sheet" id="mundos">
-    <div class="sheet-inner">
-      <div class="margin-note"><span class="kanji" aria-hidden="true">扉</span><span class="label">A porta</span></div>
-      <div class="content">
-        <h2>A porta de quatro cores</h2>
-        <div class="dial-row">
-          <svg viewBox="0 0 200 200" aria-label="Seletor de cores da porta com quatro setores. Vermelho e preto abrem os mundos.">
-            <circle cx="100" cy="100" r="92" fill="var(--surface)" stroke="var(--ink)" stroke-width="3"/>
-            <path class="dial-seg" data-world="templo" role="button" tabindex="0" aria-label="Porta vermelha: entrar no Templo do Sino" d="M100 100 L100 14 A86 86 0 0 1 186 100 Z" fill="#C22026"/>
-            <path class="dial-seg" data-world="nos" role="button" tabindex="0" aria-label="Porta preta: entrar no mundo do Nós" d="M100 100 L186 100 A86 86 0 0 1 100 186 Z" fill="#0B0809"/>
-            <path d="M100 100 L100 186 A86 86 0 0 1 14 100 Z" fill="#2E7896"/>
-            <path d="M100 100 L14 100 A86 86 0 0 1 100 14 Z" fill="#78AB5A"/>
-            <circle cx="100" cy="100" r="20" fill="var(--surface)" stroke="var(--ink)" stroke-width="3"/>
-            <path d="M100 100 L140 60" stroke="var(--ink)" stroke-width="6" stroke-linecap="round"/>
-            <circle cx="100" cy="100" r="6" fill="var(--ink)"/>
-          </svg>
-          <ul class="dial-list">
-            <li><i style="background:#C22026"></i><div><strong>Vermelho</strong> · Templo do Sino, o AcousticBuild</div></li>
-            <li><i style="background:#0B0809"></i><div><strong>Preto</strong> · o mundo do Nós. No filme, o lado preto leva ao lugar mais sombrio, e o Nós é o seu mundo sombrio.</div></li>
-            <li><i style="background:#2E7896"></i><div><strong>Azul</strong> · a sala do Hollow Depths e projetos menores</div></li>
-            <li><i style="background:#78AB5A"></i><div><strong>Verde</strong> · de volta ao vale</div></li>
-          </ul>
-        </div>
-        <div class="worlds">
-          <article class="world">
-            <div class="world-art temple" aria-hidden="true"></div>
-            <div class="world-body">
-              <span class="label">Porta vermelha · destaque</span>
-              <h3>Templo do Sino</h3>
-              <p>Um pavilhão de sino ao entardecer, num pátio de cascalho rastelado. O visitante toca o sino: o tronco recua e bate, e o som sai em ondas douradas que atravessam paredes de papel, madeira e pedra, perdendo força em cada uma, com a leitura em decibéis. Depois, abre o dossiê completo do projeto:</p>
-              <ul><li>descrição, normas e o problema que o projeto resolve</li><li>o vídeo e a apresentação no Canva</li><li>o estudo completo e o link do site do AcousticBuild</li><li>o código no GitHub</li></ul>
-              <button class="w-enter" type="button" data-world="templo">Entrar no Templo do Sino</button>
-              <div class="mini-pal" aria-label="Paleta do templo"><i style="background:#22333B"></i><i style="background:#3B5560"></i><i style="background:#8A5A3C"></i><i style="background:#F2A541"></i><i style="background:#F3EBDD"></i></div>
-            </div>
-          </article>
-          <article class="world">
-            <div class="world-art nos-art" aria-hidden="true"><b>NÓS</b></div>
-            <div class="world-body">
-              <span class="label">Porta preta · destaque</span>
-              <h3 style="font-family:var(--f-nos);font-weight:500">Nós entre fios e sombras</h3>
-              <p>A casa do Tear, renderizada em pixel art como o próprio jogo. Liam está de costas sob a luminária, e um fio dourado atravessa a casa com cinco nós. Cada nó tocado revela uma frase do trailer e leva a câmera adiante, até o Tear acender. A trilha do trailer toca ao fundo.</p>
-              <ul><li>premissa: Liam desperta numa casa construída pelo próprio coma</li><li>o trailer de 74 segundos</li><li>jogar a demonstração e ler o roteiro</li><li>bastidores: o trailer também foi renderizado por código</li></ul>
-              <p class="warning">Antes de entrar, um aviso: "Contém luzes intermitentes e susto." A porta só abre depois que o visitante confirma.</p>
-              <button class="w-enter" type="button" data-world="nos">Abrir a porta preta</button>
-              <p class="credit">Criação de Fernando Rateke Neto e Luana Lupi Vergara.</p>
-              <div class="mini-pal" aria-label="Paleta do Nós"><i style="background:#0B0809"></i><i style="background:#2A1812"></i><i style="background:#39261E"></i><i style="background:#E0A458"></i><i style="background:#EDE3D1"></i></div>
-            </div>
-          </article>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="sheet" id="som">
-    <div class="sheet-inner">
-      <div class="margin-note"><span class="kanji" aria-hidden="true">音</span><span class="label">Som</span></div>
-      <div class="content">
-        <h2>Cada lugar tem a sua música</h2>
-        <p>A trilha troca suavemente quando a câmera muda de lugar, e um som ambiente fica por baixo. Os arquivos de música são seus; o portfólio lê uma lista, então trocar uma faixa é mudar uma linha.</p>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th scope="col">Lugar</th><th scope="col">Música (você fornece)</th><th scope="col">Ambiente</th></tr></thead>
-            <tbody>
-              <tr><td>Capa e vale</td><td>Castelo Animado, tema principal (recebido, toca no topo desta página)</td><td>vento, pássaros, água</td></tr>
-              <tr><td>Castelo</td><td>Castelo Animado, outra faixa</td><td>fogo do Calcifer, rangidos, vapor</td></tr>
-              <tr><td>Trem</td><td>A Viagem de Chihiro, a cena do trem</td><td>trilhos sobre a água</td></tr>
-              <tr><td>Torre dos Grimórios</td><td>Frieren</td><td>páginas, vento na torre</td></tr>
-              <tr><td>Templo do Sino</td><td class="tbd">a definir</td><td>o próprio sino, eco</td></tr>
-              <tr><td>Seu quarto</td><td>Meu Amigo Totoro</td><td>chuva leve na janela</td></tr>
-              <tr><td>Nós</td><td>a trilha do trailer do jogo</td><td>casa vazia, madeira</td></tr>
-              <tr><td>Noite</td><td class="tbd">a definir</td><td>grilos, vagalumes</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="sheet" id="movimento">
-    <div class="sheet-inner">
-      <div class="margin-note"><span class="kanji" aria-hidden="true">風</span><span class="label">Movimento</span></div>
-      <div class="content">
-        <h2>Nada é brusco</h2>
-        <div class="motion">
-          <div><div class="demo" aria-hidden="true"><canvas class="wind-canvas" id="windDemo"></canvas></div><h3>Vento</h3><p>O vento vem em rajadas que atravessam o campo: a grama verga e clareia por onde ele passa, e as pétalas viajam junto. Trocas de lugar seguem o mesmo ritmo: câmera entre lugares em 1,8 a 2,4 segundos.</p></div>
-          <div><div class="demo" aria-hidden="true"><span class="ink"></span></div><h3>Tinta</h3><p>Painéis e dossiês se abrem como tinta se espalhando no papel, nunca com um fade genérico.</p></div>
-          <div><div class="demo" aria-hidden="true"><span class="lamp"></span></div><h3>Respiração</h3><p>Tudo que está parado respira: lanternas, Calcifer, nuvens. Ciclos lentos, de 3 a 8 segundos.</p></div>
-        </div>
-        <p class="muted">Quem pede menos movimento no sistema recebe transições curtas e cenas paradas.</p>
-      </div>
-    </div>
-  </section>
-
-  <section class="sheet" id="aplicacoes">
-    <div class="sheet-inner">
-      <div class="margin-note"><span class="kanji" aria-hidden="true">用</span><span class="label">Aplicações</span></div>
-      <div class="content">
-        <h2>A mesma identidade fora do site</h2>
-        <div class="apps">
-          <div class="app">
-            <div class="banner" data-shot="vale"><svg viewBox="0 0 120 120" aria-hidden="true"><use href="#seal"/></svg><div><span class="wordmark">Rateke</span><br><b>A jornada é o que dá forma ao mundo.</b></div></div>
-            <div class="cap"><span class="label">Capa do LinkedIn e slide de abertura</span></div>
-          </div>
-          <div class="app">
-            <div class="cv">
-              <div class="cv-head"><svg viewBox="0 0 120 120" aria-hidden="true"><use href="#seal"/></svg><div><b>Fernando Rateke Neto</b><span class="label">Desenvolvimento de Sistemas · Florianópolis</span></div></div>
-              <div class="cv-line"></div><div class="cv-line s"></div><div class="cv-line"></div><div class="cv-line s"></div>
-            </div>
-            <div class="cap"><span class="label">Cabeçalho do currículo</span></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="sheet" id="decisoes">
-    <div class="sheet-inner">
-      <div class="margin-note"><span class="kanji" aria-hidden="true">決</span><span class="label">Decisões</span></div>
-      <div class="content">
-        <h2>O que já está decidido e o que falta</h2>
-        <ul class="decisions">
-          <li><div><h3>Conceito do Vale, slogan, Calcifer como guia, trem de Chihiro</h3><p>Aprovados por você.</p></div><span class="state ok">Decidido</span></li>
-          <li><div><h3>Personagens da capa, de costas e animados</h3><p>Howl, Sofia, Markl, Cabeça de Nabo e Heen. Primeira versão em 3D feita.</p></div><span class="state wip">Em andamento</span></li>
-          <li><div><h3>Assinatura Rateke com o selo ラテケ</h3><p>Trocado a seu pedido. Falta aprovar.</p></div><span class="state open">Para aprovar</span></li>
-          <li><div><h3>Trem sobre a água</h3><p>A galeria: as cinco lembranças passam pela janela do trem ao entardecer; tocar numa delas desacelera o trem e abre a lembrança.</p></div><span class="state wip">Em andamento</span></li>
-          <li><div><h3>Torre dos Grimórios</h3><p>As nove matérias como grimórios flutuantes; as 30 atividades como feitiços, com imagens, reflexões, competências e links.</p></div><span class="state wip">Em andamento</span></li>
-          <li><div><h3>Perfil: ficha de personagem</h3><p>Abre pelo selo no canto ou pela assinatura da capa. Retrato, dados, bio, missão, currículo, contatos e cinco abas.</p></div><span class="state wip">Em andamento</span></li>
-          <li><div><h3>Mundos de destaque</h3><p>Templo do Sino e Nós, cada um com cena 3D própria e dossiê. Primeira versão pronta para revisão.</p></div><span class="state wip">Em andamento</span></li>
-          <li><div><h3>Entrada e filme</h3><p>Primeira versão tocando na cena: caminho, torii, nuvens, cinco cortes com frases, selo e chegada. Cerca de 40 segundos.</p></div><span class="state wip">Em andamento</span></li>
-          <li><div><h3>Paisagem do Vale em 3D</h3><p>Primeira versão em código: relevo, lagos, reflexo, nuvens, grama ao vento, torii, lanternas e o castelo caminhando pelo vale.</p></div><span class="state wip">Em andamento</span></li>
-          <li><div><h3>Paleta, tipografia e regras de movimento</h3><p>Esta página.</p></div><span class="state open">Para aprovar</span></li>
-          <li><div><h3>Cores da porta</h3><p>Vermelho, preto, azul e verde.</p></div><span class="state ok">Decidido</span></li>
-          <li><div><h3>Músicas por lugar</h3><p>Tema do Castelo Animado recebido. Faltam as faixas do Templo do Sino e da noite.</p></div><span class="state open">Para aprovar</span></li>
-        </ul>
-      </div>
-    </div>
-  </section>
-</main>
 
 
 
@@ -1147,103 +752,12 @@ footer .inner { max-width: 1180px; margin-inline: auto; display: flex; flex-wrap
   <p class="d-credit">Criação e desenvolvimento narrativo: Fernando Rateke Neto e Luana Lupi Vergara.</p>
 </template>
 
-<footer>
-  <div class="inner">
-    <span class="label">Proposta de identidade · Portfólio 2026</span>
-    <span class="label">Prévia em construção</span>
-  </div>
-</footer>
+
 
 <script>
 (() => {
   const root = document.documentElement;
   const css = (n) => getComputedStyle(root).getPropertyValue(n).trim();
-
-  /* ---------- Paletas ---------- */
-  const palettes = [
-    { name: "Dia no Vale", note: "Da imagem do campo: céu, nuvem, prado, lago e flores. É a luz padrão.", colors: [
-      ["空色", "Sorairo · céu", "#3A86C2"], ["白群", "Byakugun · céu baixo", "#A7D0EC"], ["雲", "Kumo · nuvem", "#F8F7F0"],
-      ["若草色", "Wakakusa · prado", "#78AB5A"], ["千歳緑", "Chitose · prado na sombra", "#4D7A4C"], ["水縹", "Mizuhanada · lago", "#2E7896"],
-      ["桜色", "Sakura · flor", "#E8A3B5"], ["山吹色", "Yamabuki · flor", "#F0C94A"] ] },
-    { name: "Castelo ao entardecer", note: "Da imagem do castelo: ferrugem, telhas, fumaça e o céu carregado.", colors: [
-      ["錆色", "Sabi · ferrugem", "#8A5A44"], ["弁柄", "Bengara · telha", "#A9473A"], ["鈍色", "Nibi · fumaça", "#8E9497"],
-      ["藍鼠", "Ainezu · céu de tempestade", "#445860"], ["鉄紺", "Tetsukon · nuvem escura", "#28363C"], ["薄紅", "Usubeni · horizonte", "#D9A3A0"] ] },
-    { name: "Noite das lanternas", note: "O vermelho e o preto do portfólio atual viram a noite do vale.", colors: [
-      ["墨", "Sumi · céu noturno", "#0D1422"], ["紺青", "Konjō · água à noite", "#142A44"], ["紅", "Kurenai · selo e torii", "#C22026"],
-      ["蜜柑色", "Mikan · luz da lanterna", "#F2A541"], ["蛍", "Hotaru · vagalume", "#D9EE7A"], ["月白", "Geppaku · lua", "#E6EBF2"] ] },
-    { name: "Nós", note: "Só dentro da porta preta. Tirada da capa do jogo.", colors: [
-      ["漆黒", "Shikkoku · a casa", "#0B0809"], ["焦茶", "Kogecha · madeira", "#39261E"], ["金茶", "Kincha · o fio", "#E0A458"], ["生成", "Kinari · papel do diário", "#EDE3D1"] ] },
-  ];
-  const pWrap = document.getElementById("palettes");
-  pWrap.innerHTML = palettes.map(p => `
-    <div class="palette">
-      <h3>${p.name}</h3><p>${p.note}</p>
-      <div class="swatches">${p.colors.map(([jp, label, hex]) => `
-        <div class="swatch"><div class="chip" style="background:${hex}"></div>
-          <div><div class="jp">${jp}</div><div class="meta">${label}<br>${hex}</div></div></div>`).join("")}
-      </div>
-    </div>`).join("");
-
-  /* ---------- Mapa ---------- */
-  document.getElementById("mapWrap").innerHTML = `
-  <svg viewBox="0 0 900 520" role="img" aria-label="Mapa ilustrado do Vale com o torii, o castelo, a torre, o trem e o lago">
-    <defs>
-      <pattern id="dots" width="14" height="14" patternUnits="userSpaceOnUse"><circle cx="3" cy="3" r="1.4" fill="var(--grass-deep)" opacity=".35"/><circle cx="10" cy="9" r="1.1" fill="var(--accent)" opacity=".25"/></pattern>
-    </defs>
-    <rect width="900" height="520" fill="var(--surface)"/>
-    <path d="M0 120 L80 60 L140 95 L210 40 L300 110 L380 70 L470 118 L560 52 L650 104 L740 48 L820 92 L900 64 L900 0 L0 0 Z" fill="var(--mount)" opacity=".55"/>
-    <path d="M196 52 L210 40 L226 55 Z M548 62 L560 52 L574 64 Z M728 58 L740 48 L754 60 Z" fill="var(--snow)"/>
-    <rect x="0" y="110" width="900" height="410" fill="var(--grass)" opacity=".5"/>
-    <rect x="0" y="110" width="900" height="410" fill="url(#dots)"/>
-    <path d="M120 300 C 150 220, 330 200, 440 230 C 560 262, 700 200, 800 250 C 870 290, 820 380, 700 380 C 560 382, 520 420, 380 410 C 240 400, 90 380, 120 300 Z" fill="var(--water)" opacity=".85"/>
-    <path d="M200 300 C 230 280, 300 285, 310 305 C 300 322, 220 322, 200 300 Z" fill="var(--grass)" stroke="var(--islet-edge)" stroke-width="2"/>
-    <path d="M590 286 C 620 262, 700 266, 712 292 C 700 314, 610 314, 590 286 Z" fill="var(--grass)" stroke="var(--islet-edge)" stroke-width="2"/>
-    <path d="M430 330 C 450 318, 500 320, 506 336 C 496 350, 440 348, 430 330 Z" fill="var(--grass)" stroke="var(--islet-edge)" stroke-width="2"/>
-    <!-- trilho do trem -->
-    <path d="M60 260 C 220 250, 380 340, 520 330 C 660 320, 760 330, 880 300" fill="none" stroke="var(--ink)" stroke-width="3" stroke-dasharray="2 7" opacity=".8"/>
-    <g transform="translate(470 324)"><rect x="-26" y="-9" width="52" height="16" rx="3" fill="var(--accent)"/><rect x="-20" y="-6" width="9" height="6" fill="var(--surface)"/><rect x="-7" y="-6" width="9" height="6" fill="var(--surface)"/><rect x="6" y="-6" width="9" height="6" fill="var(--surface)"/></g>
-    <!-- torre -->
-    <g transform="translate(650 280)"><rect x="-12" y="-62" width="24" height="62" fill="var(--castle)"/><path d="M-18 -62 L0 -86 L18 -62 Z" fill="var(--castle)"/><rect x="-4" y="-48" width="8" height="10" fill="var(--lantern)"/></g>
-    <!-- caminho do castelo -->
-    <path d="M250 180 C 330 150, 470 150, 560 175 C 620 192, 600 205, 520 205 C 420 205, 300 210, 250 180 Z" fill="none" stroke="var(--castle)" stroke-width="2" stroke-dasharray="6 6"/>
-    <g transform="translate(420 168)">
-      <path d="M-34 6 C -36 -18, -16 -34, 0 -30 C 14 -40, 36 -24, 34 6 Z" fill="var(--castle)"/>
-      <rect x="-22" y="-44" width="6" height="16" fill="var(--castle)"/><rect x="14" y="-46" width="6" height="18" fill="var(--castle)"/>
-      <rect x="-6" y="-38" width="12" height="9" fill="var(--accent)"/><path d="M-8 -38 L0 -46 L8 -38 Z" fill="var(--castle)"/>
-      <path d="M-20 6 L-24 22 M-6 6 L-8 22 M8 6 L10 22 M20 6 L24 22" stroke="var(--castle)" stroke-width="3" stroke-linecap="round"/>
-      <circle cx="-4" cy="-8" r="3" fill="var(--lantern)"/>
-    </g>
-    <!-- torii -->
-    <g transform="translate(450 472)">
-      <ellipse cx="0" cy="3" rx="40" ry="4" fill="var(--grass-deep)" opacity=".35"/>
-      <path d="M-27.5 -35 L-24 -35 L-23 0 L-28.5 0 Z" fill="var(--accent)"/>
-      <path d="M24 -35 L27.5 -35 L28.5 0 L23 0 Z" fill="var(--accent)"/>
-      <rect x="-29.5" y="-4" width="7.5" height="5" rx="1" fill="#221E1F"/><rect x="22" y="-4" width="7.5" height="5" rx="1" fill="#221E1F"/>
-      <rect x="-31" y="0.5" width="10.5" height="2.5" fill="#8F8D84"/><rect x="20.5" y="0.5" width="10.5" height="2.5" fill="#8F8D84"/>
-      <rect x="-36" y="-25.5" width="72" height="4" fill="var(--accent)"/>
-      <rect x="-31.5" y="-26" width="2.2" height="5" fill="#221E1F"/><rect x="29.3" y="-26" width="2.2" height="5" fill="#221E1F"/>
-      <rect x="-2" y="-34" width="4" height="9" fill="var(--accent)"/>
-      <rect x="-5" y="-33.5" width="10" height="8.5" fill="#221E1F" stroke="#C9A24A" stroke-width="0.8"/>
-      <path d="M-38 -38.5 Q 0 -35.5 38 -38.5 L 37.5 -35 Q 0 -32 -37.5 -35 Z" fill="var(--accent)"/>
-      <path d="M-47 -46 Q -32 -40.5 0 -40.5 Q 32 -40.5 47 -46 L 45 -40 Q 30 -36.5 0 -36.5 Q -30 -36.5 -45 -40 Z" fill="#221E1F"/>
-      <g fill="#8F8D84"><rect x="-49" y="-14" width="6" height="16"/><rect x="-51" y="-20" width="10" height="7"/><path d="M-53 -20 L-46 -25 L-39 -20 Z"/><rect x="43" y="-14" width="6" height="16"/><rect x="41" y="-20" width="10" height="7"/><path d="M39 -20 L46 -25 L53 -20 Z"/></g>
-      <rect x="-48" y="-18.5" width="4" height="3" fill="var(--lantern)"/><rect x="44" y="-18.5" width="4" height="3" fill="var(--lantern)"/>
-    </g>
-    <!-- rótulos -->
-    <g font-family="Geist Mono, monospace" font-size="12" letter-spacing="1.4" fill="var(--ink)">
-      <text x="450" y="506" text-anchor="middle">TORII · ENTRADA</text>
-      <text x="420" y="122" text-anchor="middle">CASTELO DO HOWL · PROJETOS</text>
-      <text x="420" y="104" text-anchor="middle" fill="var(--muted)">QUARTO NO TOPO · GOSTOS</text>
-      <text x="650" y="178" text-anchor="middle">TORRE DOS GRIMÓRIOS</text>
-      <text x="650" y="194" text-anchor="middle" fill="var(--muted)">MATÉRIAS</text>
-      <text x="470" y="356" text-anchor="middle" fill="var(--surface)">TREM · GALERIA</text>
-    </g>
-    <g transform="translate(830 470)"><use href="#seal" x="-26" y="-26" width="52" height="52"/></g>
-    <text x="830" y="510" text-anchor="middle" font-family="Geist Mono, monospace" font-size="11" letter-spacing="1.2" fill="var(--muted)">PERFIL</text>
-    <!-- rosa dos ventos -->
-    <g transform="translate(70 460)" stroke="var(--ink)" fill="none" stroke-width="1.5"><circle r="22"/><path d="M0 -30 L5 0 L0 30 L-5 0 Z" fill="var(--ink)"/></g>
-    <text x="70" y="420" text-anchor="middle" font-family="Shippori Mincho, serif" font-size="16" fill="var(--ink)">北</text>
-  </svg>`;
 
   /* ---------- Tema ---------- */
   const toggle = document.getElementById("themeToggle");
@@ -1296,11 +810,18 @@ footer .inner { max-width: 1180px; margin-inline: auto; display: flex; flex-wrap
 
   /* ---------- Entrada ---------- */
   const enterBtn = document.getElementById("enterBtn");
-  enterBtn.addEventListener("click", () => { if (window.vale) window.vale.playIntro(); });
+  const filmBtn = document.getElementById("filmBtn");
+  const seen = () => { try { return sessionStorage.getItem("vale-entrou") === "1"; } catch (e) { return false; } };
+  const syncCover = () => { filmBtn.hidden = !seen(); enterBtn.querySelector("span").textContent = seen() ? "Entrar no vale" : "Toque para entrar"; };
+  syncCover();
+  enterBtn.addEventListener("click", () => { if (window.vale) window.vale.playIntro(!seen()); });
+  filmBtn.addEventListener("click", () => { if (window.vale) window.vale.playIntro(true); });
+  const coverUI = (show) => { enterBtn.hidden = !show; filmBtn.hidden = !show || !seen(); };
   window.addEventListener("vale:intro", (e) => {
-    enterBtn.hidden = e.detail === "start";
-    if (e.detail === "start" && audio.paused) sound.click();
+    if (e.detail === "start") { coverUI(false); if (audio.paused) sound.click(); }
+    else { syncCover(); }
   });
+  window.addEventListener("vale:explore", (e) => { if (e.detail === "start") coverUI(false); else { syncCover(); coverUI(true); } });
 
 
   /* ---------- Perfil ---------- */
@@ -1367,48 +888,6 @@ footer .inner { max-width: 1180px; margin-inline: auto; display: flex; flex-wrap
     else if (themeWasPlaying) { themeWasPlaying = false; sound.click(); }
   });
 
-  /* ---------- Demonstração do vento ---------- */
-  const wc = document.getElementById("windDemo");
-  if (wc) {
-    const g = wc.getContext("2d");
-    const reduceM = matchMedia("(prefers-reduced-motion: reduce)").matches;
-    let ww = 0, wh = 0, dpr = 1, blades = [], petals = [], on = false;
-    const seed = (n) => { let a = n; return () => { a = (a * 16807) % 2147483647; return a / 2147483647; }; };
-    const setup = () => {
-      dpr = Math.min(devicePixelRatio || 1, 2);
-      ww = wc.clientWidth; wh = wc.clientHeight; wc.width = ww * dpr; wc.height = wh * dpr;
-      const r = seed(7); blades = [];
-      for (let i = 0; i < Math.round(ww * 1.6); i++) blades.push({ x: r() * ww, h: 26 + r() * 46, w: 1 + r() * 1.6, t: r(), ph: r() * 6.28 });
-      blades.sort((a, b) => a.h - b.h);
-      petals = Array.from({ length: 14 }, (_, i) => ({ s: r(), y: 20 + r() * 50, sp: 50 + r() * 60, ph: r() * 6.28, pink: i % 3 !== 0 }));
-    };
-    const draw = (ms) => {
-      const t = ms / 1000;
-      g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, ww, wh);
-      const base = css("--grass-deep"), tip = css("--grass"), sheen = isNight() ? "#5E7F6A" : "#DCE89A";
-      const front = ((t * 70) % (ww + 260)) - 130;
-      for (const b of blades) {
-        const gst = Math.exp(-Math.pow((b.x - front) / 70, 2)) + 0.25 * Math.exp(-Math.pow((b.x - front + 150) / 90, 2));
-        const bend = (6 + gst * 30) + Math.sin(t * 4 + b.ph) * 2;
-        const x0 = b.x, y0 = wh + 2, x1 = x0 + bend, y1 = wh - b.h + bend * bend * 0.012;
-        const grad = g.createLinearGradient(0, y0, 0, y1);
-        grad.addColorStop(0, base); grad.addColorStop(1, gst > 0.35 ? sheen : tip);
-        g.strokeStyle = grad; g.lineWidth = b.w; g.lineCap = "round";
-        g.beginPath(); g.moveTo(x0, y0); g.quadraticCurveTo(x0 + bend * 0.25, wh - b.h * 0.55, x1, y1); g.stroke();
-      }
-      for (const p of petals) {
-        const x = ((p.s * (ww + 80) + t * p.sp) % (ww + 80)) - 40;
-        const y = p.y + Math.sin(t * 1.6 + p.ph) * 10;
-        g.save(); g.translate(x, y); g.rotate(t * 2.4 + p.ph); g.scale(1, 0.45 + 0.4 * Math.abs(Math.sin(t * 1.8 + p.ph)));
-        g.fillStyle = p.pink ? "#F2A7BC" : css("--accent"); g.beginPath(); g.ellipse(0, 0, 5, 3, 0, 0, 7); g.fill(); g.restore();
-      }
-      if (on && !reduceM) requestAnimationFrame(draw);
-    };
-    setup();
-    new IntersectionObserver((es) => { const v = es[0].isIntersecting; if (v && !on) { on = true; requestAnimationFrame(draw); } else if (!v) on = false; }).observe(wc);
-    addEventListener("resize", () => { setup(); if (reduceM) draw(0); });
-    if (reduceM) draw(0);
-  }
 })();
 </script>
 <script src="/vale/three.min.js"></script>

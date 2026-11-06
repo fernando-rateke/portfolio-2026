@@ -1878,188 +1878,208 @@
 
   const arvore = (() => {
     const scene = new T.Scene();
-    const camera = new T.PerspectiveCamera(50, 1, 0.1, 400);
-    const env = envUniforms({ sun: [0.45, 0.8, 0.5], sunCol: "#E8D6A8", amb: "#4E5A48", fog: "#B9CDB0", fogDen: 0.016, glowCol: "#FFE6A8" });
-    const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-    const MATS = [
-      { id: "folhas", name: "Folhas", r: 4, cut: 7000, k: "葉" },
-      { id: "papel", name: "Papel shōji", r: 8, cut: 3200, k: "紙" },
-      { id: "madeira", name: "Madeira", r: 22, cut: 1000, k: "木" },
-      { id: "pedra", name: "Pedra", r: 48, cut: 320, k: "石" },
-    ];
-    const SOURCES = [
-      { id: "chuva", name: "Chuva", db: 60, k: "雨" },
-      { id: "trem", name: "Trem passando", db: 80, k: "汽" },
-      { id: "trovao", name: "Trovão", db: 100, k: "雷" },
-    ];
-    const SLEEP = 35;
-    let time = 0, matIdx = 2, busy = false, slide = 0, slideTo = 0, wake = 0, wakeUntil = 0, totoro, chu, chibi, panels = [], zs = [], ctrl, meter, audio = null, sayUntil = 0, timer = null, motes;
-    function say(text) { line.textContent = text; line.classList.remove("show"); void line.offsetWidth; line.classList.add("show"); }
+    scene.background = new T.Color("#1A3A26");
+    const camera = new T.PerspectiveCamera(52, 1, 0.1, 600);
+    const env = envUniforms({ sun: [0.3, 0.85, 0.45], sunCol: "#A8C496", amb: "#2C4632", fog: "#1A3A26", fogDen: 0.016, glowCol: "#E8F0B0" });
+    const HY = -80;                      // a toca fica num "andar" separado, longe da árvore
+    let time = 0, phase = 0, k = 0, totoro, chu, chibi, smalls = [], flies = [], fade, audio = null, hush = null, timer = null, motes, camA, camB;
+    const r0 = mulberry(5);
+
+    function gnarlTrunk(geo, twist, amp) {
+      const g = geo.index ? geo.toNonIndexed() : geo; const p = g.attributes.position;
+      for (let i = 0; i < p.count; i++) {
+        let x = p.getX(i), y = p.getY(i), z = p.getZ(i);
+        const a0 = Math.atan2(z, x) + y * twist, rr = Math.hypot(x, z);
+        const f = 1 + amp * (Math.sin(a0 * 5 + y * 0.35) * 0.6 + Math.sin(a0 * 11 - y * 0.8) * 0.3 + Math.sin(y * 0.25) * 0.4);
+        p.setXYZ(i, Math.cos(a0) * rr * f, y, Math.sin(a0) * rr * f);
+      }
+      g.computeVertexNormals(); return g;
+    }
+    function limb(B, pts, r1, r2, color) {
+      const c = new T.CatmullRomCurve3(pts.map((q) => new T.Vector3(...q)));
+      const N = 4;
+      for (let s = 0; s < N; s++) {
+        const sub = new T.CatmullRomCurve3(c.getPoints(24).slice(s * 6, s * 6 + 7));
+        B.add(new T.TubeGeometry(sub, 10, lerp(r1, r2, (s + 0.5) / N), 9, false), M(), color);
+      }
+    }
+    const MOSS = (x, y, z) => { const n = Math.sin(x * 0.9 + y * 0.45) * Math.sin(z * 0.8 - y * 0.35); return n > 0.45 ? "#4A6A40" : n < -0.4 ? "#262E28" : "#34443A"; };
 
     function build() {
       const mat = toon(env);
-      scene.background = new T.Color("#CFE0C6");
-      const B = Builder(); const r = mulberry(88);
-      // chão de musgo e campo
-      B.add(new T.CircleGeometry(60, 64), M(0, 0, 0, -Math.PI / 2, 0, 0), (x, y) => (Math.hypot(x, y) < 9 ? "#5E8A44" : "#6E9A4E"));
-      // tronco da cânfora, com a toca aberta na frente
-      const BARK = (x, y, z) => { const a = Math.atan2(x, z); const v = Math.sin(a * 9 + y * 0.9 + Math.sin(y * 1.7 + a * 3) * 1.5) * 0.5 + 0.5; return v > 0.7 ? "#5A4434" : v > 0.35 ? "#66503E" : "#715846"; };
-      const gnarl = (geo, amp) => { const g = geo.index ? geo.toNonIndexed() : geo; const p = g.attributes.position; for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i), z = p.getZ(i), a = Math.atan2(x, z); const k = 1 + amp * (Math.sin(a * 5 + y * 0.7) * 0.6 + Math.sin(a * 11 - y * 1.3) * 0.4); p.setXYZ(i, x * k, y, z * k); } g.computeVertexNormals(); return g; };
-      B.add(gnarl(new T.CylinderGeometry(3.0, 3.9, 4.4, 56, 8, true, 0.62, Math.PI * 2 - 1.24), 0.07), M(0, 2.2, 0), BARK);
-      B.add(inwardM(new T.CylinderGeometry(2.7, 3.35, 4.4, 56, 4, true, 0.62, Math.PI * 2 - 1.24)), M(0, 2.2, 0), "#3E2C20");
-      B.add(gnarl(new T.CylinderGeometry(2.95, 3.1, 1.6, 24, 3, true, -0.62, 1.24), 0.05), M(0, 3.7, 0), BARK);
-      B.add(new T.CircleGeometry(3.3, 40), M(0, 0.04, 0, -Math.PI / 2, 0, 0), "#4E7A3A");
-      for (const sx of [-1, 1]) B.add(new T.CylinderGeometry(0.35, 0.55, 3.2, 12), M(sx * 2.05, 1.5, 2.9, 0, 0, sx * 0.08), BARK);
-      for (let k = 0; k < 7; k++) { const x = -1.8 + k * 0.6; B.add(new T.IcosahedronGeometry(0.42 + (k % 3) * 0.08, 1), M(x, 2.95 + Math.sin(k * 1.7) * 0.12, 2.92, 0, 0, 0, 1, 0.8, 0.7), BARK); }
-      B.add(gnarl(new T.CylinderGeometry(2.2, 3.0, 7, 48, 10), 0.08), M(0, 7.9, 0), BARK);
-      for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2 + 0.3; B.add(new T.CylinderGeometry(0.5, 0.9, 7, 10), M(Math.sin(a) * 3.2, 12.2, Math.cos(a) * 3.2, Math.cos(a) * 0.7, 0, -Math.sin(a) * 0.7), BARK); }
-      for (let k = 0; k < 9; k++) { const a = k / 9 * Math.PI * 2 + 0.35; if (Math.abs(Math.atan2(Math.sin(a), Math.cos(a))) < 0.5) continue; B.add(new T.CylinderGeometry(0.25, 0.7, 4.4, 8), M(Math.sin(a) * 4.4, 0.35, Math.cos(a) * 4.4, Math.cos(a) * 1.35, 0, -Math.sin(a) * 1.35), BARK); }
-      // shimenawa (corda sagrada) com shide de papel
-      B.add(new T.TorusGeometry(2.92, 0.17, 10, 64), M(0, 5.3, 0, Math.PI / 2, 0, 0), (x, y, z) => (Math.floor((Math.atan2(z, x) + Math.PI) * 12) % 2 ? "#E2CE96" : "#C9B278"));
-      for (const a of [-0.6, -0.2, 0.2, 0.6]) {
-        const x = Math.sin(a) * 3.05, z = Math.cos(a) * 3.05;
-        for (let k = 0; k < 4; k++) B.add(new T.PlaneGeometry(0.12, 0.17), M(x + Math.sin(a + Math.PI / 2) * (k % 2 ? 0.05 : -0.05), 5.02 - k * 0.15, z + 0.02, 0, a, (k % 2 ? 0.5 : -0.5)), "#F7F4EC");
+      const B = Builder();
+      // chão de musgo e samambaias
+      B.add(new T.CircleGeometry(90, 48), M(0, 0, 0, -Math.PI / 2, 0, 0), (x, y) => (Math.hypot(x, y) < 14 ? "#22381F" : "#1C2E1C"));
+      // tronco gigante, torcido e coberto de musgo
+      B.add(gnarlTrunk(new T.CylinderGeometry(4.2, 7.2, 22, 56, 40, true), 0.045, 0.1), M(0, 11, 0), MOSS);
+      B.add(gnarlTrunk(new T.CylinderGeometry(3.0, 4.3, 8, 40, 16, true), 0.06, 0.12), M(0, 25.5, 0), MOSS);
+      // o nó escuro no tronco
+      B.add(new T.SphereGeometry(1, 16, 12), M(0.6, 15, 4.3, 0, 0, 0, 1.0, 1.3, 0.4), "#0E1410");
+      B.add(new T.TorusGeometry(1.1, 0.35, 8, 20), M(0.6, 15, 4.25, 0, 0, 0, 1, 1.25, 1), "#3E5C34");
+      // galhos enormes que se abrem
+      [[[0, 22, 0], [5, 26, 2], [11, 29, 1], [17, 33, -2]], [[0, 23, 0], [-6, 27, 1], [-12, 31, 3], [-18, 32, 2]], [[0, 26, 0], [2, 31, -4], [3, 37, -9], [1, 43, -12]],
+       [[0, 27, 0], [-3, 32, -3], [-8, 37, -6], [-14, 41, -6]], [[0, 24, 0], [4, 28, 5], [7, 33, 9], [9, 38, 12]], [[0, 28, 0], [1, 34, 2], [-1, 40, 4], [-3, 46, 3]]]
+        .forEach((pts, i) => limb(B, pts, 2.2 - i * 0.12, 0.5, MOSS));
+      // galhos finos escuros no alto
+      for (let i = 0; i < 22; i++) { const a = r0() * Math.PI * 2, y = 30 + r0() * 14, rr = 6 + r0() * 14; limb(B, [[Math.cos(a) * rr * 0.4, y - 4, Math.sin(a) * rr * 0.4], [Math.cos(a) * rr * 0.7, y, Math.sin(a) * rr * 0.7], [Math.cos(a + 0.3) * rr, y + 3 + r0() * 4, Math.sin(a + 0.3) * rr]], 0.45, 0.12, "#1E2A20"); }
+      // copa escura, quase toda na névoa
+      for (let i = 0; i < 70; i++) { const a = r0() * Math.PI * 2, rr = 4 + r0() * 22, y = 34 + r0() * 16 - rr * 0.2; B.add(new T.IcosahedronGeometry(3 + r0() * 3.5, 1), M(Math.cos(a) * rr, y, Math.sin(a) * rr), ["#1E3A24", "#24442A", "#2C5032", "#183020"][i % 4]); }
+      // raízes que se espalham pelo chão
+      for (let i = 0; i < 11; i++) {
+        const a = i / 11 * Math.PI * 2 + 0.2; if (Math.abs(Math.atan2(Math.sin(a - Math.PI / 2), Math.cos(a - Math.PI / 2))) < 0.25) continue;
+        const c = Math.cos(a), s = Math.sin(a);
+        limb(B, [[c * 5.5, 3.5, s * 5.5], [c * 8.5, 1.6, s * 8.5], [c * 12, 0.5, s * 12], [c * 16, -0.3, s * 16]], 1.5, 0.35, MOSS);
       }
-      // copa enorme
-      for (let k = 0; k < 52; k++) { const a = r() * Math.PI * 2, rr = r() * 10.5, y = 11 + r() * 5.5 - rr * 0.22; B.add(new T.IcosahedronGeometry(2.6 + r() * 2.2, 1), M(Math.cos(a) * rr, y, Math.sin(a) * rr * 0.9), ["#3E6E3E", "#4A7C46", "#5A8C50", "#36603A"][k % 4]); }
-      // floresta ao redor
-      for (let k = 0; k < 34; k++) {
-        const a = k / 34 * Math.PI * 2 + r() * 0.1, rr = 26 + r() * 14, x = Math.cos(a) * rr, z = Math.sin(a) * rr;
-        if (z > 10 && Math.abs(x) < 16) continue;
-        const h = 6 + r() * 6;
-        B.add(new T.CylinderGeometry(0.4, 0.7, h, 8), M(x, h / 2, z), "#5A4434");
-        for (let j = 0; j < 4; j++) B.add(new T.IcosahedronGeometry(2.4 + r() * 1.6, 1), M(x + (r() - 0.5) * 3, h + r() * 3, z + (r() - 0.5) * 3), ["#4A7C46", "#5A8C50", "#3E6E3E"][j % 3]);
+      // o buraco entre as raízes, na frente
+      B.add(new T.CircleGeometry(1.9, 24), M(0, 0.06, 9.2, -Math.PI / 2, 0, 0, 1.3, 1, 1), "#050806");
+      B.add(new T.TorusGeometry(2.0, 0.45, 8, 24), M(0, 0.15, 9.2, Math.PI / 2, 0, 0, 1.3, 1, 0.6), "#2E4A2C");
+      // corda sagrada fina, caída na frente
+      { const pts = []; for (let i = 0; i <= 48; i++) { const a = i / 48 * Math.PI * 2; const rr = 6.9 + Math.sin(a * 5) * 0.15; pts.push(new T.Vector3(Math.cos(a) * rr, 4.2 - Math.max(0, Math.sin(a)) * 1.1, Math.sin(a) * rr)); }
+        B.add(new T.TubeGeometry(new T.CatmullRomCurve3(pts, true), 120, 0.07, 6, true), M(), "#9A9886"); }
+      // floresta ao fundo, mais clara (a luz atrás das árvores)
+      for (let i = 0; i < 40; i++) {
+        const a = i / 40 * Math.PI * 2 + r0() * 0.1, rr = 52 + r0() * 24, x = Math.cos(a) * rr, z = Math.sin(a) * rr, h = 18 + r0() * 16;
+        if (z > 0) continue;
+        B.add(new T.CylinderGeometry(0.6, 1.1, h, 8), M(x, h / 2, z), "#1A2A1E");
+        for (let j = 0; j < 4; j++) B.add(new T.IcosahedronGeometry(3.2 + r0() * 2.6, 1), M(x + (r0() - 0.5) * 5, h * 0.6 + j * 3, z + (r0() - 0.5) * 5), ["#5E9A5A", "#6EAE62", "#4E8A50"][j % 3], 0.45);
       }
-      // samambaias, pedras e flores
-      for (let k = 0; k < 40; k++) { const a = r() * Math.PI * 2, rr = 4.6 + r() * 7; const x = Math.cos(a) * rr, z = Math.sin(a) * rr; if (z > 3 && Math.abs(x) < 3) continue; B.add(new T.ConeGeometry(0.35 + r() * 0.3, 0.9 + r() * 0.6, 5), M(x, 0.4, z, (r() - 0.5) * 0.3, r(), (r() - 0.5) * 0.3), r() < 0.5 ? "#4E8A3E" : "#6AA04E"); }
-      for (let k = 0; k < 10; k++) { const a = r() * Math.PI * 2, rr = 5 + r() * 6; B.add(new T.IcosahedronGeometry(0.3 + r() * 0.4, 0), M(Math.cos(a) * rr, 0.15, Math.sin(a) * rr), "#8A8890"); }
-      for (let k = 0; k < 60; k++) { const a = r() * Math.PI * 2, rr = 4 + r() * 9; B.add(new T.SphereGeometry(0.07, 6, 4), M(Math.cos(a) * rr, 0.12, Math.sin(a) * rr), ["#F4F0E2", "#F2D24A", "#E8A0B4"][k % 3]); }
+      for (let i = 0; i < 60; i++) { const a = r0() * Math.PI * 2, rr = 9 + r0() * 22; B.add(new T.ConeGeometry(0.6 + r0() * 0.6, 1.4 + r0(), 5), M(Math.cos(a) * rr, 0.6, Math.sin(a) * rr, (r0() - 0.5) * 0.4, r0() * 3, (r0() - 0.5) * 0.4), r0() < 0.5 ? "#2E5A2C" : "#3A6E34"); }
       scene.add(new T.Mesh(B.build(), mat));
-      const line2 = outline(0.035, "#2A2018", env);
-      const envIn = Object.assign({}, env, { uSunCol: { value: new T.Color("#9A8A6E") }, uAmb: { value: new T.Color("#3A4038") } });
-      const totoroMat = toon(envIn);
-      // Totoro grande, o médio e o pequeno, dormindo na toca
-      totoro = makeTotoro({ body: "#5E6672", belly: "#E2DAC4", s: 1.05, mat: totoroMat });
-      totoro.g.position.set(0, 0.1, -0.7); totoro.g.rotation.x = -0.22; scene.add(totoro.g);
-      chu = makeTotoro({ body: "#5E7EB4", belly: "#D6E0EE", s: 0.42, mat: totoroMat });
-      chu.g.position.set(-1.55, 0.05, 0.6); chu.g.rotation.set(-0.1, 0.4, 0.25); scene.add(chu.g);
-      chibi = makeTotoro({ body: "#ECECE6", belly: "#FFFFFF", s: 0.26, mat: totoroMat });
-      chibi.g.position.set(0.05, 1.3, 0.25); chibi.g.rotation.set(-0.5, 0, 0); scene.add(chibi.g);
-      [totoro, chu, chibi].forEach((t) => { const o = new T.Mesh(t.g.children[0].geometry, line2); t.g.add(o); });
-      // barreiras que deslizam até a entrada
-      MATS.forEach((m) => {
-        const P = Builder();
-        if (m.id === "folhas") { for (let k = 0; k < 26; k++) P.add(new T.BoxGeometry(0.16, 3.2, 0.05), M(-2 + k * 0.16, 1.6, (k % 2) * 0.05, 0, 0, Math.sin(k) * 0.05), k % 3 ? "#5E9A4A" : "#4A8040"); }
-        if (m.id === "papel") { P.add(new T.BoxGeometry(4.2, 3.2, 0.05), M(0, 1.6, 0), "#F6F0DE"); for (let x = -2; x <= 2.01; x += 0.6) P.add(new T.BoxGeometry(0.07, 3.2, 0.1), M(x, 1.6, 0), "#6B4A32"); for (let y = 0.1; y <= 3.21; y += 0.62) P.add(new T.BoxGeometry(4.2, 0.07, 0.1), M(0, y, 0), "#6B4A32"); }
-        if (m.id === "madeira") { for (let k = 0; k < 9; k++) P.add(new T.BoxGeometry(0.46, 3.2, 0.14), M(-1.86 + k * 0.465, 1.6, 0), k % 2 ? "#9A6A42" : "#8A5E3A"); P.add(new T.BoxGeometry(4.3, 0.18, 0.2), M(0, 0.6, 0.08), "#6B4A32"); P.add(new T.BoxGeometry(4.3, 0.18, 0.2), M(0, 2.6, 0.08), "#6B4A32"); }
-        if (m.id === "pedra") { for (let y = 0; y < 5; y++) for (let x = 0; x < 6; x++) P.add(new T.BoxGeometry(0.66, 0.6, 0.4), M(-1.8 + x * 0.7 + (y % 2) * 0.32, 0.32 + y * 0.64, 0), (x + y) % 3 ? "#9A9690" : "#86827C"); }
-        const pm = new T.Mesh(P.build(), mat); pm.visible = false; pm.position.set(5.6, 0, 3.75); scene.add(pm); panels.push(pm);
-      });
-      // Zzz
-      const zt = (() => { const c = document.createElement("canvas"); c.width = 64; c.height = 64; const g = c.getContext("2d"); g.fillStyle = "#FFFFFF"; g.font = "700 50px 'Zen Maru Gothic', sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("z", 32, 34); return new T.CanvasTexture(c); })();
-      for (let k = 0; k < 3; k++) { const sp = new T.Sprite(new T.SpriteMaterial({ map: zt, transparent: true, depthWrite: false })); sp.scale.setScalar(0.4); scene.add(sp); zs.push({ sp, ph: k / 3 }); }
-      // poeira dourada nos raios de luz
-      const mg = new T.BufferGeometry(), mp = []; for (let k = 0; k < 120; k++) mp.push((r() - 0.5) * 16, r() * 9, (r() - 0.5) * 10 + 4);
+      // os pequenos subindo na raiz
+      const tm = toon(env);
+      chu = makeTotoro({ body: "#5E7EB4", belly: "#D6E0EE", s: 0.32, mat: tm }); chu.g.position.set(-2.2, 1.2, 9.6); chu.g.rotation.y = -0.6; scene.add(chu.g);
+      chibi = makeTotoro({ body: "#ECECE6", belly: "#FFFFFF", s: 0.2, mat: tm }); chibi.g.position.set(-3.2, 1.0, 9.9); chibi.g.rotation.y = -0.4; scene.add(chibi.g);
+      [chu, chibi].forEach((t) => { t.eyesOpen.visible = true; t.eyesShut.visible = false; });
+      // raios de luz caindo da copa
+      const shaftMat = new T.ShaderMaterial({ transparent: true, depthWrite: false, blending: T.AdditiveBlending, side: T.DoubleSide,
+        vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+        fragmentShader: `varying vec2 vUv; void main(){ float a=smoothstep(0.0,0.5,vUv.x)*smoothstep(1.0,0.5,vUv.x)*smoothstep(0.0,0.6,vUv.y)*0.09; gl_FragColor=vec4(vec3(0.85,1.0,0.7)*a,a); }` });
+      for (let i = 0; i < 5; i++) { const sh = new T.Mesh(new T.PlaneGeometry(3 + i, 40), shaftMat); sh.position.set(-10 + i * 5, 20, -4 + i * 2); sh.rotation.set(0, 0.4 + i * 0.3, 0.25); scene.add(sh); }
+      // poeira de luz
+      const mg = new T.BufferGeometry(), mp = []; for (let i = 0; i < 160; i++) mp.push((r0() - 0.5) * 30, r0() * 20, (r0() - 0.5) * 30);
       mg.setAttribute("position", new T.Float32BufferAttribute(mp, 3));
-      motes = new T.Points(mg, new T.PointsMaterial({ color: 0xfff2c0, size: 0.07, transparent: true, opacity: 0.8 })); scene.add(motes);
-      env.uPL.value[0].set(0, 2.4, 0.6); env.uPLC.value[0].set("#FFD9A0"); env.uPLR.value[0] = 2.4;
-      env.uPL.value[1].set(-6, 6, 6); env.uPLC.value[1].set("#FFF0C8"); env.uPLR.value[1] = 0.001;
-      env.uPL.value[2].set(6, 6, 6); env.uPLC.value[2].set("#FFF0C8"); env.uPLR.value[2] = 0.001;
+      motes = new T.Points(mg, new T.PointsMaterial({ color: 0xd8f0a8, size: 0.08, transparent: true, opacity: 0.6 })); scene.add(motes);
 
-      // controles: barreira e barulho
-      ctrl = document.createElement("div"); ctrl.className = "tt-ctrl";
-      ctrl.innerHTML = `<div class="tt-group" role="group" aria-label="Barreira na entrada da toca"><span class="tt-label">Barreira</span>${MATS.map((m, i) => `<button type="button" class="tt-ema" data-mat="${i}" aria-pressed="${i === matIdx}"><b aria-hidden="true">${m.k}</b><span>${esc(m.name)}</span><small>isola ${m.r} dB</small></button>`).join("")}</div>
-        <div class="tt-group" role="group" aria-label="Fazer barulho"><span class="tt-label">Barulho</span>${SOURCES.map((s, i) => `<button type="button" class="tt-ema tt-noise" data-src="${i}"><b aria-hidden="true">${s.k}</b><span>${esc(s.name)}</span><small>${s.db} dB</small></button>`).join("")}</div>`;
-      ctrl.querySelectorAll("[data-mat]").forEach((b) => b.addEventListener("click", () => { matIdx = +b.dataset.mat; ctrl.querySelectorAll("[data-mat]").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); }));
-      ctrl.querySelectorAll("[data-src]").forEach((b) => b.addEventListener("click", () => noise(+b.dataset.src)));
-      meter = document.createElement("div"); meter.className = "w-label tt-meter"; meter.style.opacity = "0";
-    }
-    function inwardM(geo) {
-      const g = geo.index ? geo.toNonIndexed() : geo; g.computeVertexNormals();
-      const p = g.attributes.position.array, n = g.attributes.normal.array;
-      for (let i = 0; i < p.length; i += 9) for (let k = 0; k < 3; k++) { const a = p[i + 3 + k]; p[i + 3 + k] = p[i + 6 + k]; p[i + 6 + k] = a; const b2 = n[i + 3 + k]; n[i + 3 + k] = n[i + 6 + k]; n[i + 6 + k] = b2; }
-      for (let i = 0; i < n.length; i++) n[i] = -n[i];
-      return g;
+      // ===== a toca, vista de cima =====
+      const H = Builder(), rH = mulberry(77);
+      H.add(new T.CircleGeometry(30, 48), M(0, HY, 0, -Math.PI / 2, 0, 0), (x, y) => { const d = Math.hypot(x * 0.8, y); return d < 4 ? "#7AA048" : d < 7 ? "#4E7A36" : d < 11 ? "#2E5428" : "#1E3A20"; });
+      // a cavidade escura onde ele dorme
+      const cave = new T.Shape(); for (let i = 0; i <= 40; i++) { const a = i / 40 * Math.PI * 2, rr = 1 + 0.12 * Math.sin(a * 3) + 0.08 * Math.sin(a * 7); const x = Math.cos(a) * 4.6 * rr, y = Math.sin(a) * 3.3 * rr; if (i) cave.lineTo(x, y); else cave.moveTo(x, y); }
+      H.add(new T.ShapeGeometry(cave, 6), M(0.6, HY + 0.05, -1.2, -Math.PI / 2, 0, 0), "#0E1A10");
+      H.add(new T.ShapeGeometry(cave, 6), M(0.6, HY + 0.04, -1.2, -Math.PI / 2, 0, 0, 1.12, 1.12, 1), "#20361E");
+      // samambaias, folhas largas, flores e pedras
+      for (let i = 0; i < 70; i++) {
+        const a = rH() * Math.PI * 2, rr = 6 + rH() * 9, x = Math.cos(a) * rr * 1.3, z = Math.sin(a) * rr;
+        const leaf = new T.PlaneGeometry(0.7 + rH() * 0.6, 3 + rH() * 2.5, 1, 6);
+        const pp = leaf.attributes.position; for (let j = 0; j < pp.count; j++) { const y = pp.getY(j); pp.setX(j, pp.getX(j) * (1 - Math.abs(y) / 3) ); }
+        H.add(leaf, M(x, HY + 0.3 + rH() * 0.6, z, -Math.PI / 2 + 0.2, 0, Math.atan2(z, x) - Math.PI / 2), ["#5AA046", "#6EB850", "#3E8034", "#8CC860"][i % 4]);
+      }
+      for (let i = 0; i < 26; i++) { const a = rH() * Math.PI * 2, rr = 5.5 + rH() * 8, x = Math.cos(a) * rr * 1.3, z = Math.sin(a) * rr; for (let p = 0; p < 5; p++) { const pa = p / 5 * Math.PI * 2; H.add(new T.CircleGeometry(0.18, 8), M(x + Math.cos(pa) * 0.22, HY + 0.5, z + Math.sin(pa) * 0.22, -Math.PI / 2, 0, 0), i % 3 ? "#F4F2E6" : "#F2D24A"); } H.add(new T.CircleGeometry(0.1, 8), M(x, HY + 0.52, z, -Math.PI / 2, 0, 0), "#E8B83A"); }
+      for (let i = 0; i < 10; i++) { const a = rH() * Math.PI * 2, rr = 8 + rH() * 6; H.add(new T.IcosahedronGeometry(0.5 + rH() * 0.6, 0), M(Math.cos(a) * rr * 1.3, HY + 0.2, Math.sin(a) * rr), "#3E4A40"); }
+      scene.add(new T.Mesh(H.build(), mat));
+      // poça de luz sobre o musgo
+      const pool = new T.Mesh(new T.CircleGeometry(6, 32), new T.ShaderMaterial({ transparent: true, depthWrite: false, blending: T.AdditiveBlending,
+        vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+        fragmentShader: `varying vec2 vUv; void main(){ float d=length(vUv-0.5)*2.0; float a=smoothstep(1.0,0.0,d)*0.16; gl_FragColor=vec4(vec3(0.95,1.0,0.6)*a,a); }` }));
+      pool.rotation.x = -Math.PI / 2; pool.position.set(-1.2, HY + 0.3, 3.4); pool.scale.set(1.3, 1, 1); scene.add(pool);
+      // o Totoro deitado de barriga para cima, e os pequenos ao lado
+      totoro = makeTotoro({ body: "#5E6672", belly: "#D8D0BA", s: 2.2, mat });
+      const tg = new T.Group(); tg.position.set(0.6, HY + 0.7, -1.2); tg.rotation.y = Math.PI / 2 - 0.2; scene.add(tg);
+      totoro.g.rotation.set(-Math.PI / 2, 0, 0); totoro.g.position.set(0, 0, 2.6); tg.add(totoro.g);
+      const c2 = makeTotoro({ body: "#5E7EB4", belly: "#D6E0EE", s: 0.55, mat }); c2.g.position.set(-2.6, HY + 0.1, 4.2); c2.g.rotation.set(-0.5, 0.3, 0); scene.add(c2.g);
+      const c3 = makeTotoro({ body: "#ECECE6", belly: "#FFFFFF", s: 0.32, mat }); c3.g.position.set(-1.1, HY + 0.1, 4.5); c3.g.rotation.set(-0.5, -0.2, 0); scene.add(c3.g);
+      smalls = [c2, c3];
+      // borboletas claras
+      for (let i = 0; i < 4; i++) {
+        const b = new T.Group(); const wm = new T.MeshBasicMaterial({ color: i % 2 ? 0xbfe6e0 : 0xeef4dc, side: T.DoubleSide, transparent: true, opacity: 0.9 });
+        const wing = new T.Shape(); wing.moveTo(0, 0); wing.bezierCurveTo(0.5, 0.5, 0.9, 0.35, 0.75, -0.05); wing.bezierCurveTo(0.7, -0.4, 0.3, -0.45, 0, 0);
+        const wg = new T.ShapeGeometry(wing, 8);
+        const w1 = new T.Group(), w2 = new T.Group(); w1.add(new T.Mesh(wg, wm)); const m2 = new T.Mesh(wg, wm); m2.scale.x = -1; w2.add(m2); b.add(w1, w2);
+        const bodyB = new T.Mesh(new T.CapsuleGeometry(0.04, 0.3, 4, 6), new T.MeshBasicMaterial({ color: 0x3a3a30 })); bodyB.rotation.x = Math.PI / 2; b.add(bodyB);
+        scene.add(b); flies.push({ b, w1, w2, a: rH() * 6, r: 4 + rH() * 4, y: HY + 1.5 + rH() * 2 });
+      }
+      env.uPL.value[0].set(-1.5, HY + 7, 4); env.uPLC.value[0].set("#C8DC98"); env.uPLR.value[0] = 3.5;
+      env.uPL.value[1].set(-14, 20, 18); env.uPLC.value[1].set("#9FD08A"); env.uPLR.value[1] = 10;
+      env.uPL.value[2].set(0, 3, 12); env.uPLC.value[2].set("#6E9A5E"); env.uPLR.value[2] = 6;
+
+      fade = document.createElement("div"); fade.className = "tt-fade";
+      camA = { pos: new T.Vector3(0, 1.8, 27), tgt: new T.Vector3(0, 17, 0) };
+      camB = { pos: new T.Vector3(0.2, HY + 15, 0.6), tgt: new T.Vector3(0, HY, 0) };
     }
 
-    // sons sintetizados, abafados pela barreira
-    function play(src, m, inside) {
+    function startHush() {
       try {
         audio = audio || new (window.AudioContext || window.webkitAudioContext)();
         if (audio.state === "suspended") audio.resume();
-        const ctx = audio, now = ctx.currentTime, dur = 3.0;
-        const out = ctx.createGain(); out.gain.value = Math.min(0.9, Math.pow(10, (inside - 85) / 30));
-        const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = m.cut; lp.connect(out); out.connect(ctx.destination);
-        const nb = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate), d = nb.getChannelData(0);
-        if (src.id === "chuva") { for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (0.5 + 0.5 * Math.random() * (Math.random() < 0.002 ? 4 : 1)); }
-        else if (src.id === "trovao") { let l = 0; for (let i = 0; i < d.length; i++) { const t = i / ctx.sampleRate; l = (l + 0.04 * (Math.random() * 2 - 1)) / 1.04; d[i] = (t < 0.08 ? (Math.random() * 2 - 1) : l * 6) * Math.exp(-t * 1.1) * (1 + 0.6 * Math.sin(t * 7)); } }
-        else { let l = 0; for (let i = 0; i < d.length; i++) { const t = i / ctx.sampleRate; l = (l + 0.03 * (Math.random() * 2 - 1)) / 1.03; const clack = (t % 0.42 < 0.03 || (t + 0.13) % 0.42 < 0.03) ? (Math.random() * 2 - 1) * 1.4 : 0; d[i] = l * 4 + clack; } }
-        const s = ctx.createBufferSource(); s.buffer = nb;
-        const env2 = ctx.createGain(); env2.gain.setValueAtTime(0, now); env2.gain.linearRampToValueAtTime(1, now + 0.15); env2.gain.setValueAtTime(1, now + dur - 0.6); env2.gain.linearRampToValueAtTime(0, now + dur);
-        s.connect(env2); env2.connect(lp); s.start(now);
+        const ctx = audio, nb = ctx.createBuffer(1, ctx.sampleRate * 3, ctx.sampleRate), d = nb.getChannelData(0);
+        let l = 0; for (let i = 0; i < d.length; i++) { l = (l + 0.02 * (Math.random() * 2 - 1)) / 1.02; d[i] = l * 3; }
+        const src = ctx.createBufferSource(); src.buffer = nb; src.loop = true;
+        const f = ctx.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 500; f.Q.value = 0.6;
+        const g = ctx.createGain(); g.gain.value = 0; g.gain.linearRampToValueAtTime(0.08, ctx.currentTime + 2);
+        src.connect(f); f.connect(g); g.connect(ctx.destination); src.start(); hush = { src, g };
       } catch (e) { /* sem áudio */ }
     }
-    function noise(i) {
-      if (busy) return;
-      busy = true;
-      const src = SOURCES[i], m = MATS[matIdx], inside = Math.max(0, src.db - m.r);
-      panels.forEach((p, j) => { p.visible = j === matIdx; });
-      slideTo = 1;
-      ctrl.classList.add("busy");
-      setTimeout(() => {
-        if (current !== api) return;
-        play(src, m, inside);
-        meter.innerHTML = `<b>Dentro da toca: ${inside} dB</b><span>${src.name} ${src.db} dB · ${m.name} isola ${m.r} dB</span>`;
-        meter.style.opacity = "1";
-        const woke = inside > SLEEP;
-        setTimeout(() => {
-          if (current !== api) return;
-          if (woke) { wake = 1; wakeUntil = time + 3.6; say(i === 2 && matIdx === 3 ? `Nem a pedra segura um trovão: ${inside} dB. Acordaram.` : `${inside} dB lá dentro. O Totoro acordou.`); }
-          else say(`${inside} dB lá dentro. Ninguém acordou.`);
-        }, 700);
-        setTimeout(() => { if (current !== api) return; slideTo = 0; }, 3100);
-        setTimeout(() => { if (current !== api) return; busy = false; ctrl.classList.remove("busy"); }, 4200);
-      }, 900);
+    function stopHush() { if (hush && audio) { try { hush.g.gain.linearRampToValueAtTime(0, audio.currentTime + 0.6); hush.src.stop(audio.currentTime + 0.7); } catch (e) { /* parado */ } } hush = null; }
+    function approach() {
+      if (phase !== 0) return;
+      phase = 1; k = 0; hint.textContent = ""; $("worldAction").hidden = true;
     }
+    const onClick = (e) => { if (e.target === canvas) approach(); };
+    const say = (t) => { line.textContent = t; line.classList.remove("show"); void line.offsetWidth; line.classList.add("show"); };
 
     const api = {
-      template: "dossierArvore", dossierLabel: "Ver a história do AcousticBuild", kamiColor: "totoro",
-      noise: (i) => noise(i), mat: (i) => { matIdx = i; },
-      titleHTML: `<span class="w-kicker">Porta vermelha · AcousticBuild</span><span class="w-name">O sono do Totoro</span>`,
-      hintText: "Escolha a barreira da toca e faça barulho. Acima de 35 dB, eles acordam.",
+      template: "dossierArvore", dossierLabel: "Ver a história do AcousticBuild", kamiColor: "totoro", approach: () => approach(),
+      titleHTML: `<span class="w-kicker">Porta vermelha · AcousticBuild</span><span class="w-name">A árvore</span>`,
+      hintText: "Toque para se aproximar.",
       build,
       start() {
-        time = 0; busy = false; slide = 0; slideTo = 0; wake = 0;
-        camera.position.set(0, 5.0, 14); camera.userData = { tgt: new T.Vector3(0, 2.9, 0) };
-        document.querySelector(".world-bottom").insertBefore(ctrl, document.querySelector(".world-actions"));
-        ctrl.classList.remove("busy");
-        labels.appendChild(meter); meter.style.opacity = "0";
-        $("worldAction").hidden = true;
-        api.dossierReady = true; dossierBtn.hidden = false;
-        clearTimeout(timer); timer = setTimeout(() => { if (current === api) say("Shh. Eles estão dormindo."); }, 600);
+        time = 0; phase = 0; k = 0; api.dossierReady = false; dossierBtn.hidden = true;
+        camera.position.copy(camA.pos); camera.userData.tgt = camA.tgt.clone(); camera.up.set(0, 1, 0);
+        el.appendChild(fade); fade.classList.remove("on");
+        canvas.addEventListener("click", onClick);
+        const act = $("worldAction"); act.hidden = false; act.textContent = "Aproximar"; act.onclick = approach;
+        startHush();
       },
-      stop() { clearTimeout(timer); if (ctrl.parentNode) ctrl.parentNode.removeChild(ctrl); },
-      resize(w, h) { camera.aspect = w / h; camera.fov = w / h < 0.9 ? 70 : 50; camera.updateProjectionMatrix(); },
+      stop() { clearTimeout(timer); canvas.removeEventListener("click", onClick); $("worldAction").onclick = null; stopHush(); if (fade.parentNode) fade.parentNode.removeChild(fade); camera.up.set(0, 1, 0); },
+      resize(w, h) { camera.aspect = w / h; camera.fov = w / h < 0.9 ? 70 : 52; camera.updateProjectionMatrix(); },
       update(dt) {
         time += dt;
-        slide += (slideTo - slide) * Math.min(1, dt * 3.2);
-        panels.forEach((p) => { p.position.x = lerp(5.6, 0, ease(Math.min(1, Math.max(0, slide)))); });
-        if (wake && time > wakeUntil) wake = 0;
-        const w = wake;
-        [totoro, chu, chibi].forEach((t, i) => { t.eyesOpen.visible = !!w; t.eyesShut.visible = !w; });
-        // respiração e sustos
-        const br = Math.sin(time * 1.3);
-        totoro.g.scale.set(1.05 * (1 + br * 0.012), 1.05 * (1 + br * 0.018), 1.05 * (1 + br * 0.012));
-        totoro.g.rotation.x = -0.22 + (w ? 0.18 : 0);
-        chibi.g.position.y = 1.3 + Math.max(0, br) * 0.03 + (w ? Math.abs(Math.sin(time * 9)) * 0.35 : 0);
-        chu.g.position.y = 0.05 + (w ? Math.abs(Math.sin(time * 8 + 1)) * 0.25 : 0);
-        zs.forEach((z) => { const k = (time * 0.35 + z.ph) % 1; z.sp.position.set(0.6 + k * 0.9 + Math.sin(k * 6) * 0.15, 2.9 + k * 1.6, 0.4); z.sp.material.opacity = w || slide > 0.2 ? 0 : Math.sin(k * Math.PI) * 0.9; z.sp.scale.setScalar(0.25 + k * 0.35); });
-        motes.rotation.y = time * 0.02; motes.position.y = Math.sin(time * 0.3) * 0.2;
-        // câmera
-        const pos = new T.Vector3(pointer.sx * 1.2, 5.0 - pointer.sy * 0.5, 14);
-        camera.position.lerp(pos, Math.min(1, dt * 2)); camera.lookAt(camera.userData.tgt);
-        const v = new T.Vector3(0, 4.6, 3).project(camera);
-        meter.style.transform = `translate(-50%, -100%) translate(${(v.x * 0.5 + 0.5) * W}px, ${(-v.y * 0.5 + 0.5) * H}px)`;
+        motes.rotation.y = time * 0.01;
+        // os pequenos andam pela raiz
+        chu.g.position.y = 1.2 + Math.abs(Math.sin(time * 4)) * 0.12; chibi.g.position.y = 1.0 + Math.abs(Math.sin(time * 5 + 1)) * 0.1;
+        // respiração do Totoro e das borboletas
+        const br = Math.sin(time * 1.1);
+        totoro.g.scale.set(2.2 * (1 + br * 0.015), 2.2 * (1 + br * 0.02), 2.2 * (1 + br * 0.03));
+        smalls.forEach((t, i) => { t.g.position.y = HY + 0.1 + Math.abs(Math.sin(time * 1.5 + i)) * 0.04; });
+        flies.forEach((f) => { f.a += dt * 0.35; f.b.position.set(Math.cos(f.a) * f.r, f.y + Math.sin(time * 2 + f.r) * 0.4, Math.sin(f.a * 1.3) * f.r * 0.7); const fl = Math.sin(time * 14 + f.r) * 0.9; f.w1.rotation.y = fl; f.w2.rotation.y = -fl; f.b.rotation.set(-Math.PI / 2, 0, f.a); });
+        if (phase === 0) {
+          const p = camA.pos.clone(); p.x += pointer.sx * 1.5; p.y += -pointer.sy * 0.6 + Math.sin(time * 0.4) * 0.15;
+          camera.position.lerp(p, Math.min(1, dt * 2)); camera.lookAt(camA.tgt);
+        } else if (phase === 1) {
+          // aproxima, abaixa até o buraco e mergulha
+          k = Math.min(1, k + dt / 4.2);
+          const e = ease(k);
+          const p1 = new T.Vector3(0, 6, 15), p2 = new T.Vector3(0, 0.6, 9.2);
+          const pos = k < 0.6 ? camA.pos.clone().lerp(p1, ease(k / 0.6)) : p1.clone().lerp(p2, ease((k - 0.6) / 0.4));
+          const tgt = camA.tgt.clone().lerp(new T.Vector3(0, -2, 9.2), e);
+          camera.position.copy(pos); camera.lookAt(tgt);
+          if (k > 0.82) fade.classList.add("on");
+          if (k >= 1) {
+            phase = 2; k = 0;
+            camera.position.copy(camB.pos).add(new T.Vector3(0, 6, 0)); camera.up.set(0, 0, -1);
+            setTimeout(() => { if (current === api) fade.classList.remove("on"); }, 250);
+          }
+        } else {
+          // dentro: a câmera desce devagar sobre a toca
+          k = Math.min(1, k + dt / 5);
+          const pos = camB.pos.clone().add(new T.Vector3(Math.sin(time * 0.2) * 0.4 + pointer.sx * 0.6, 6 * (1 - ease(k)), Math.cos(time * 0.17) * 0.3 + pointer.sy * 0.4));
+          camera.position.copy(pos); camera.up.set(0, 0, -1); camera.lookAt(camB.tgt);
+          if (phase === 2 && k > 0.55) {
+            phase = 3; say("Shh. Ele está dormindo.");
+            api.dossierReady = true; dossierBtn.hidden = false;
+            timer = setTimeout(() => { if (current === api) showDossier(); }, 3600);
+          }
+        }
       },
       render(rr) { rr.setRenderTarget(null); rr.render(scene, camera); },
     };

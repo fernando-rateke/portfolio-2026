@@ -495,6 +495,8 @@ a.q { text-decoration: none; }
 .fim.show .fim-dica { animation: fimfade 2s ease 10s forwards; }
 @keyframes fimfade { to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .fim-frase span span { opacity: 1; transform: none; filter: none; } .fim.show .fim-frase span span, .fim.show .fim-l2 { animation: none; } }
+.tt-fade { position: absolute; inset: 0; z-index: 2; background: #050806; opacity: 0; pointer-events: none; transition: opacity .6s ease; }
+.tt-fade.on { opacity: 1; }
 .w-label-call { background: rgba(194, 32, 38, 0.88) !important; animation: callpulse 1.8s ease-in-out infinite; }
 @keyframes callpulse { 50% { box-shadow: 0 0 0 6px rgba(194, 32, 38, 0.25); } }
 .mundo[data-world="castelo"] .world-line { font-family: var(--f-display); font-style: normal; color: #FFE2B8; max-width: 26ch; font-size: clamp(1.2rem, 0.9rem + 1.6vw, 2.1rem); }
@@ -1025,10 +1027,10 @@ a.q { text-decoration: none; }
 
 <template id="dossierArvore">
   <section class="kc" data-c="totoro" data-k="音">
-    <span class="kc-kicker">Projeto · AcousticBuild</span>
-    <h2>O sono do Totoro</h2>
-    <p>O AcousticBuild prevê quanto ruído atravessa as paredes de um prédio antes de ele existir. Aqui a pergunta é a mesma, só que mais importante: quanto barulho chega até o Totoro?</p>
-    <p>Cada barreira da toca isola uma quantidade de decibéis. Se o som que sobra lá dentro passa de 35 dB, eles acordam. Prever isso antes de construir é exatamente o trabalho do AcousticBuild.</p>
+    <span class="kc-kicker">Projeto · Desenvolvimento de Sistemas</span>
+    <h2>AcousticBuild</h2>
+    <p>Uma plataforma que prevê os níveis de ruído de uma edificação ainda na fase de planejamento arquitetônico, seguindo as normas europeias EN 12354-1 e EN 12354-2.</p>
+    <p>Em outras palavras: descobrir, antes de construir, quanto barulho vai atravessar cada parede.</p>
   </section>
   <section class="kc" data-c="sky" data-k="問">
     <span class="kc-kicker">O problema</span>
@@ -1040,7 +1042,7 @@ a.q { text-decoration: none; }
     <h2>As normas viram uma interface</h2>
     <p>Uma plataforma que traduz as normas europeias numa interface visual e automática: você monta a parede, escolhe os materiais e vê a previsão do ruído direto no navegador, ainda na fase de projeto.</p>
     <div class="kc-cols">
-      <div class="kc-box"><b>EN 12354-1</b><small>Isolamento a ruído aéreo entre ambientes. É o que a toca do Totoro demonstra.</small></div>
+      <div class="kc-box"><b>EN 12354-1</b><small>Isolamento a ruído aéreo entre ambientes, como vozes e música atravessando a parede.</small></div>
       <div class="kc-box"><b>EN 12354-2</b><small>Isolamento a ruído de impacto, como passos no andar de cima.</small></div>
     </div>
   </section>
@@ -1081,7 +1083,6 @@ a.q { text-decoration: none; }
   <section class="kc" data-c="totoro" data-k="見">
     <span class="kc-kicker">Ver mais</span>
     <h2>O AcousticBuild de verdade</h2>
-    <p>Os decibéis da toca são ilustrativos. No AcousticBuild, o cálculo segue as normas com os dados reais de cada parede.</p>
     <ul class="kc-links">
     <li><a href="https://drive.google.com/file/d/1kC-pFY_rgKTiVAEkhKXlEsYN6WP5YFrU/view" target="_blank" rel="noreferrer">Assistir ao vídeo do projeto</a></li>
     <li><a href="https://www.canva.com/design/DAHOEXsnSiU/twMjG-Quo00LmeoNuiPzQg/view" target="_blank" rel="noreferrer">Apresentação no Canva</a></li>

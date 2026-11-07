@@ -617,6 +617,24 @@ a.q { text-decoration: none; }
 .textual .tx-slogan { font: italic 500 1.2rem/1.4 var(--f-display); }
 .textual .tx-note { font-size: 0.86rem; opacity: 0.75; }
 :root.no-webgl .hero, :root.no-webgl .seal-fab { display: none; }
+/* ---------- Carregamento: o selo se desenha enquanto o vale carrega ---------- */
+.loader { position: fixed; inset: 0; z-index: 200; display: grid; place-content: center; justify-items: center; gap: 14px; background: radial-gradient(ellipse at 50% 40%, #1E2638, #0B0F18 70%); color: #F4EBDD; transition: opacity .9s ease, visibility .9s; }
+.loader.done { opacity: 0; visibility: hidden; pointer-events: none; }
+.ld-seal { width: 112px; height: 112px; overflow: visible; }
+.ld-out, .ld-in { fill: none; stroke: #E8463B; stroke-width: 2.5; stroke-dasharray: 100; stroke-dashoffset: 100; animation: lddraw 1.6s cubic-bezier(.6,.1,.3,1) forwards; }
+.ld-in { stroke: #F4EBDD; stroke-width: 2; animation-delay: .6s; }
+.ld-fill { fill: #C22026; opacity: 0; animation: ldfill .8s ease 2.4s forwards; }
+.ld-k text { fill: transparent; stroke: #F4EBDD; stroke-width: 0.8; stroke-dasharray: 120; stroke-dashoffset: 120; animation: ldk 1.4s ease forwards, ldkfill .6s ease forwards; }
+.ld-k text:nth-child(1) { animation-delay: 1.1s, 2.4s; } .ld-k text:nth-child(2) { animation-delay: 1.5s, 2.6s; } .ld-k text:nth-child(3) { animation-delay: 1.9s, 2.8s; }
+@keyframes lddraw { to { stroke-dashoffset: 0; } }
+@keyframes ldk { to { stroke-dashoffset: 0; } }
+@keyframes ldkfill { to { fill: #FFFFFF; } }
+@keyframes ldfill { to { opacity: 1; } }
+.ld-name { margin: 6px 0 0; font: 600 1.6rem/1 var(--f-display); letter-spacing: 0.04em; opacity: 0; animation: ldfill 1s ease 2.2s forwards; }
+.ld-bar { width: 160px; height: 2px; background: rgba(244,235,221,0.15); border-radius: 2px; overflow: hidden; }
+.ld-bar i { display: block; height: 100%; width: 8%; background: #E8463B; transition: width .5s ease; }
+.ld-msg { margin: 0; font: 500 0.66rem/1.4 var(--f-label); letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.65; }
+@media (prefers-reduced-motion: reduce) { .ld-out, .ld-in, .ld-k text, .ld-fill, .ld-name { animation-duration: .01s; animation-delay: 0s !important; } }
 /* ---------- Kamishibai: o teatro de papel que substitui o dossiê ---------- */
 .kami { position: absolute; inset: 0; z-index: 4; display: grid; place-items: center; padding: 70px 16px 20px; background: rgba(10, 8, 12, 0.55); opacity: 0; transition: opacity .35s ease; }
 .kami.open { opacity: 1; }
@@ -773,6 +791,19 @@ a.q { text-decoration: none; }
   </defs>
 </svg>
 
+<div class="loader" id="loader" role="status" aria-live="polite">
+  <svg class="ld-seal" viewBox="0 0 120 120" aria-hidden="true">
+    <rect class="ld-fill" x="6" y="6" width="108" height="108" rx="12"/>
+    <rect class="ld-out" x="6" y="6" width="108" height="108" rx="12" pathLength="100"/>
+    <rect class="ld-in" x="14" y="14" width="92" height="92" rx="6" pathLength="100"/>
+    <g class="ld-k" font-family="Shippori Mincho, 'Hiragino Mincho ProN', serif" font-weight="800" font-size="27" text-anchor="middle">
+      <text x="60" y="42">ラ</text><text x="60" y="70">テ</text><text x="60" y="98">ケ</text>
+    </g>
+  </svg>
+  <p class="ld-name">Rateke</p>
+  <div class="ld-bar"><i id="loaderBar"></i></div>
+  <p class="ld-msg" id="loaderMsg">Preparando o vale</p>
+</div>
 <a class="skip-text" href="#textual">Ir para a versão em texto</a>
 <header class="hero" id="top">
   <canvas id="valley" role="img" aria-label="O Vale em 3D: nuvens enormes, montanhas nevadas, campo florido com lagos e ilhotas, um torii com lanternas de pedra e o castelo caminhando no horizonte."></canvas>
@@ -1158,6 +1189,18 @@ a.q { text-decoration: none; }
 
 
 <script>
+/* carregamento: barra avança com os arquivos e some quando o vale está pronto (o selo fica pelo menos 3 s) */
+(() => {
+  const ld = document.getElementById("loader"); if (!ld) return;
+  const bar = document.getElementById("loaderBar"), msg = document.getElementById("loaderMsg"), t0 = performance.now();
+  const steps = ["Preparando o vale", "Plantando a grama", "Acendendo as lanternas", "Chamando o trem"]; let si = 0;
+  const tick = setInterval(() => { si = (si + 1) % steps.length; msg.textContent = steps[si]; const w = parseFloat(bar.style.width || "8"); bar.style.width = Math.min(88, w + (90 - w) * 0.18) + "%"; }, 900);
+  const done = () => { clearInterval(tick); bar.style.width = "100%"; setTimeout(() => ld.classList.add("done"), Math.max(250, 3000 - (performance.now() - t0))); setTimeout(() => ld.remove(), Math.max(1200, 4100 - (performance.now() - t0))); };
+  const cv = document.getElementById("valley");
+  if (cv && cv.classList.contains("ready")) done();
+  else if (cv) { const mo = new MutationObserver(() => { if (cv.classList.contains("ready") || cv.classList.contains("no-webgl")) { mo.disconnect(); done(); } }); mo.observe(cv, { attributes: true, attributeFilter: ["class"] }); }
+  setTimeout(() => { if (!ld.classList.contains("done")) done(); }, 25000);
+})();
 (() => {
   const root = document.documentElement;
   const css = (n) => getComputedStyle(root).getPropertyValue(n).trim();

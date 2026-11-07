@@ -1477,11 +1477,13 @@
       stairs: { pos: [1.8, 2.5, 2.6], tgt: [5.2, 2.4, -1.8] },
       down: { pos: [3.6, 2.6, -2.4], tgt: [1.6, 2.0, -5] },
     };
+    let hallBeam, hallMotes;
+    const look = { yaw: 0, pitch: 0, ty: 0, tp: 0, drag: null, moved: 0 };
     let spinBtn, time = 0, hovered = null, view = "idle", choiceIdx = -1, opening = 0, openK = 0, backK = 0, entryT = -1, calc = null, hits = [], sectors = [], doorHinge, backHinge, dialPtr, portalMat, plateTex, plateDraw, tip, stairTip, camFrom = null, camK = 1, sayUntil = 0, timer = null;
     const unlocked = () => { try { return sessionStorage.getItem(ROOM_KEY) === "1"; } catch (e) { return true; } };
     const talking = () => performance.now() < sayUntil;
     function say(text) { sayUntil = performance.now() + Math.min(3400, 900 + text.length * 45); line.textContent = text; line.classList.remove("show"); void line.offsetWidth; line.classList.add("show"); }
-    function setView(v) { if (view === v) return; view = v; camFrom = { pos: camera.position.clone(), tgt: camera.userData.tgt.clone() }; camK = 0; }
+    function setView(v) { if (view === v) return; view = v; look.ty = 0; look.tp = 0; camFrom = { pos: camera.position.clone(), tgt: camera.userData.tgt.clone() }; camK = 0; }
     function tex(w, h, draw) { const c = document.createElement("canvas"); c.width = w; c.height = h; draw(c.getContext("2d"), w, h); const t = new T.CanvasTexture(c); t.anisotropy = 4; return t; }
 
     // o que se vê pelo vão da porta em cada cor
@@ -1541,7 +1543,7 @@
       }
       for (const sx of [-1, 1]) B.add(new T.BoxGeometry(0.14, 2.4, 0.3), M(BACKX + sx * 0.66, 1.2, 4.66), WOOD_D);
       B.add(new T.BoxGeometry(1.46, 0.14, 0.3), M(BACKX, 2.36, 4.66), WOOD_D);
-      B.add(new T.BoxGeometry(0.22, 0.32, 0.22), M(BACKX + 1.1, 2.3, 4.92), "#FFC67A", 1);
+      B.add(new T.BoxGeometry(0.14, 0.2, 0.14), M(BACKX + 1.1, 2.3, 4.92), "#FFC67A", 1); B.add(new T.ConeGeometry(0.14, 0.12, 4), M(BACKX + 1.1, 2.46, 4.92, 0, Math.PI / 4, 0), "#2A2626"); B.add(new T.BoxGeometry(0.18, 0.03, 0.18), M(BACKX + 1.1, 2.19, 4.92), "#2A2626"); B.add(new T.BoxGeometry(0.03, 0.03, 0.22), M(BACKX + 1.1, 2.55, 4.83), "#2A2626");
       B.add(new T.BoxGeometry(4.0, 0.08, 1.6), M(BACKX, 0.0, 6.0), "#3A3436");
       // janela, lareira, mesa, prateleiras, ervas
       B.add(new T.BoxGeometry(1.8, 1.5, 0.1), M(-3.6, 2.6, -5.0), WOOD_D);
@@ -1583,6 +1585,30 @@
       B.add(new T.BoxGeometry(1.7, 0.18, 0.3), M(DX, 2.66, -4.95), WOOD_D);
       for (const sx of [-1, 1]) B.add(new T.BoxGeometry(0.18, 2.66, 0.3), M(DX + sx * 0.76, 1.33, -4.95), WOOD_D);
       B.add(new T.CylinderGeometry(0.5, 0.5, 0.08, 32), M(DX, 3.3, -4.98, Math.PI / 2, 0, 0), "#3A2618");
+      // lajes de pedra diante da lareira
+      for (let x = -5.8; x < -2.6; x += 0.72) for (let z = -3.4; z < 0.4; z += 0.72) B.add(new T.BoxGeometry(0.68, 0.05, 0.68), M(x + 0.36, 0.035, z + 0.36, 0, (r() - 0.5) * 0.08, 0), r() < 0.5 ? "#7A746E" : "#6A6460");
+      // grade de ferro, gancho e chaleira na lareira
+      for (let k = 0; k < 6; k++) B.add(new T.CylinderGeometry(0.02, 0.02, 0.24, 5), M(-4.75, 0.82, HZ - 0.55 + k * 0.22), "#2A2626");
+      B.add(new T.BoxGeometry(0.04, 0.04, 1.3), M(-4.75, 0.94, HZ), "#2A2626");
+      B.add(new T.CylinderGeometry(0.01, 0.01, 0.6, 4), M(-5.2, 2.0, HZ + 1.15), "#2A2626");
+      B.add(new T.SphereGeometry(0.2, 14, 10), M(-5.2, 1.62, HZ + 1.15, 0, 0, 0, 1, 0.8, 1), "#3A3A3E");
+      // panelas de cobre penduradas
+      for (let k = 0; k < 4; k++) { const z = 0.6 + k * 0.42; B.add(new T.CylinderGeometry(0.008, 0.008, 0.3, 4), M(-5.9, 2.75, z), "#2A2420"); B.add(new T.CylinderGeometry(0.16 - k * 0.02, 0.13 - k * 0.02, 0.1, 16), M(-5.86, 2.5, z, 0, 0, Math.PI / 2), "#B87444"); }
+      // prateleiras cheias: vidros de formatos diferentes, livros e rolos
+      for (const y of [1.5, 2.1, 2.7]) {
+        for (let k = 0; k < 4; k++) { const x = -0.2 + k * 0.22; B.add(new T.BoxGeometry(0.06, 0.26 + r() * 0.08, 0.2), M(x, y + 0.16, -4.84, 0, 0, k === 3 ? 0.3 : 0), ["#5A2E2A", "#2E4A3E", "#3B3A5E", "#7A5A2E"][k]); }
+        B.add(new T.SphereGeometry(0.1, 10, 8), M(-2.3, y + 0.12, -4.8), "#9AD08A", 0.5);
+        B.add(new T.CylinderGeometry(0.04, 0.04, 0.4, 8), M(0.5, y + 0.06, -4.78, Math.PI / 2, 0, 0.3), "#E8DCC2");
+      }
+      // caixotes, sacos, vassoura e balde perto da porta
+      B.add(new T.BoxGeometry(0.7, 0.6, 0.7), M(3.4, 0.3, -4.4, 0, 0.2, 0), "#7A5A3E"); B.add(new T.BoxGeometry(0.5, 0.45, 0.5), M(3.3, 0.83, -4.4, 0, -0.3, 0), "#6A4C36");
+      B.add(new T.SphereGeometry(1, 12, 8), M(-2.4, 0.3, -4.3, 0, 0, 0, 0.32, 0.36, 0.28), "#C9B48E"); B.add(new T.SphereGeometry(1, 12, 8), M(-2.0, 0.28, -4.4, 0, 0.5, 0, 0.28, 0.32, 0.26), "#B8A47E");
+      B.add(new T.CylinderGeometry(0.025, 0.025, 1.6, 6), M(0.4, 0.8, -4.6, 0.15, 0, 0.1), "#7A5A3E"); B.add(new T.ConeGeometry(0.18, 0.4, 8), M(0.32, 0.2, -4.68), "#C9A24A");
+      B.add(new T.CylinderGeometry(0.2, 0.16, 0.34, 14), M(0.9, 0.17, -4.5), "#6E6466");
+      // velas acesas na mesa
+      for (const [x, z] of [[-1.6, 0.6], [-0.4, 1.1]]) { B.add(new T.CylinderGeometry(0.04, 0.045, 0.22, 10), M(x, 1.11, z), "#F2EAD8"); B.add(new T.SphereGeometry(0.035, 8, 6), M(x, 1.26, z, 0, 0, 0, 1, 1.6, 1), "#FFD58A", 1); }
+      // tábuas com veios por cima do assoalho
+      for (let x = -6; x < 6; x += 0.5) for (let k = 0; k < 3; k++) B.add(new T.BoxGeometry(0.012, 0.004, 0.6 + r() * 1.4), M(x + 0.12 + r() * 0.26, 0.033, -4 + r() * 8.4), "#5A3E28");
       scene.add(new T.Mesh(B.build(), mat));
 
       // seletor: quadrantes clicáveis e ponteiro
@@ -1628,6 +1654,11 @@
         g.strokeStyle = "#3A2618"; g.lineWidth = 8; g.beginPath(); g.moveTo(w / 2, 0); g.lineTo(w / 2, h); g.moveTo(0, h / 2); g.lineTo(w, h / 2); g.stroke();
       });
       const wv = new T.Mesh(new T.PlaneGeometry(1.6, 1.3), new T.MeshBasicMaterial({ map: view })); wv.position.set(-3.6, 2.6, -4.94); scene.add(wv);
+      hallBeam = new T.ShaderMaterial({ transparent: true, depthWrite: false, blending: T.AdditiveBlending, side: T.DoubleSide, uniforms: { uT: { value: 0 } },
+        vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+        fragmentShader: `uniform float uT; varying vec2 vUv; void main(){ float e=smoothstep(0.0,0.3,vUv.x)*smoothstep(1.0,0.7,vUv.x); float a=e*smoothstep(0.0,0.6,vUv.y)*0.14*(0.85+0.15*sin(uT*0.6)); gl_FragColor=vec4(vec3(1.0,0.88,0.62)*a,a); }` });
+      const hb = new T.Mesh(new T.PlaneGeometry(1.6, 5.4), hallBeam); hb.position.set(-3.2, 1.4, -2.6); hb.rotation.set(-1.0, 0.2, 0); scene.add(hb);
+      { const dg = new T.BufferGeometry(), dp = []; for (let i = 0; i < 120; i++) dp.push(-3.6 + (r() - 0.5) * 2.2, 0.3 + r() * 2.8, -4.4 + r() * 3.8); dg.setAttribute("position", new T.Float32BufferAttribute(dp, 3)); hallMotes = new T.Points(dg, new T.PointsMaterial({ color: 0xffe2a8, size: 0.03, transparent: true, opacity: 0.7, depthWrite: false })); scene.add(hallMotes); }
       // estrelas do lado de fora
       { const sg = new T.BufferGeometry(), sp = []; for (let k = 0; k < 180; k++) sp.push((r() - 0.5) * 60, 2 + r() * 30, 14 + r() * 30); sg.setAttribute("position", new T.Float32BufferAttribute(sp, 3)); scene.add(new T.Points(sg, new T.PointsMaterial({ color: 0xfff2d6, size: 0.12 }))); }
 
@@ -1688,7 +1719,12 @@
       const h = ray.intersectObjects(hits)[0];
       return h ? h.object.userData.spot : null;
     }
-    const onMove = (e) => { if (e.target !== canvas || entryT >= 0) return; hovered = pick(e); canvas.style.cursor = hovered ? "pointer" : ""; };
+    const onDown = (e) => { if (e.target !== canvas || entryT >= 0) return; look.drag = { x: e.clientX, y: e.clientY, yaw: look.ty, pitch: look.tp }; look.moved = 0; };
+    const onMove = (e) => {
+      if (look.drag) { const dx = e.clientX - look.drag.x, dy = e.clientY - look.drag.y; look.moved = Math.max(look.moved, Math.abs(dx) + Math.abs(dy)); look.ty = Math.max(-1.2, Math.min(1.2, look.drag.yaw - dx * 0.004)); look.tp = Math.max(-0.4, Math.min(0.5, look.drag.pitch - dy * 0.003)); canvas.style.cursor = "grabbing"; return; }
+      if (e.target !== canvas || entryT >= 0) return; hovered = pick(e); canvas.style.cursor = hovered ? "pointer" : "grab";
+    };
+    const onUp = (e) => { const d = look.drag; look.drag = null; if (d && look.moved > 6) return; onClick(e); };
     const onClick = (e) => {
       if (e.target !== canvas) return;
       if (entryT >= 0) { entryT = 99; return; }
@@ -1718,7 +1754,8 @@
         labels.appendChild(tip); labels.appendChild(stairTip);
         $("worldAction").hidden = true; $("worldAction").addEventListener("click", onAction);
         spinBtn.addEventListener("click", onSpin); document.querySelector(".world-actions").prepend(spinBtn); spinBtn.hidden = true;
-        canvas.addEventListener("click", onClick); canvas.addEventListener("pointermove", onMove);
+        canvas.addEventListener("pointerdown", onDown); addEventListener("pointermove", onMove); addEventListener("pointerup", onUp);
+        look.yaw = look.pitch = look.ty = look.tp = 0;
         api.dossierReady = false; dossierBtn.hidden = true;
         clearTimeout(timer);
         if (ret) {
@@ -1737,7 +1774,7 @@
         }
       },
       stop() {
-        clearTimeout(timer); canvas.removeEventListener("click", onClick); canvas.removeEventListener("pointermove", onMove); canvas.style.cursor = "";
+        clearTimeout(timer); canvas.removeEventListener("pointerdown", onDown); removeEventListener("pointermove", onMove); removeEventListener("pointerup", onUp); canvas.style.cursor = "";
         $("worldAction").removeEventListener("click", onAction); $("worldAction").hidden = true;
         spinBtn.removeEventListener("click", onSpin); if (spinBtn.parentNode) spinBtn.parentNode.removeChild(spinBtn);
       },
@@ -1772,12 +1809,16 @@
         env.uPLC.value[0].setRGB(1.0, 0.54 + Math.sin(time * 7) * 0.04, 0.23).multiplyScalar(0.75 + Math.sin(time * 13) * 0.07);
         const V = VIEWS[view];
         const dp = new T.Vector3(...V.pos), dtg = new T.Vector3(...V.tgt);
-        if (view === "idle") { dp.x += pointer.sx * 0.6; dp.y -= pointer.sy * 0.25; }
+        if (view === "idle" && !look.drag) { dp.x += pointer.sx * 0.4; dp.y -= pointer.sy * 0.18; }
+        if (hallBeam) { hallBeam.uniforms.uT.value = time; hallMotes.position.y = Math.sin(time * 0.3) * 0.08; }
         if (opening === 1) dp.lerp(new T.Vector3(1.6, 1.6, -3.6), openK * 0.6);
         camK = Math.min(1, camK + dt / (entryT >= 0 ? 2.1 : 1.8));
         if (camK < 1 && camFrom) { const e = ease(camK); camera.position.copy(camFrom.pos).lerp(dp, e); camera.userData.tgt.copy(camFrom.tgt).lerp(dtg, e); }
         else { camera.position.lerp(dp, Math.min(1, dt * 3)); camera.userData.tgt.lerp(dtg, Math.min(1, dt * 3)); }
-        camera.lookAt(camera.userData.tgt);
+        look.yaw += (look.ty - look.yaw) * Math.min(1, dt * 6); look.pitch += (look.tp - look.pitch) * Math.min(1, dt * 6);
+        { const dir = camera.userData.tgt.clone().sub(camera.position); const dist = dir.length(); dir.normalize();
+          const yaw0 = Math.atan2(dir.x, dir.z) + look.yaw, pitch0 = Math.asin(Math.max(-1, Math.min(1, dir.y))) + look.pitch;
+          camera.lookAt(camera.position.clone().add(new T.Vector3(Math.sin(yaw0) * Math.cos(pitch0), Math.sin(pitch0), Math.cos(yaw0) * Math.cos(pitch0)).multiplyScalar(dist))); }
         const place = (elx, p) => { const v = p.clone().project(camera); elx.style.transform = `translate(-50%, -100%) translate(${(v.x * 0.5 + 0.5) * W}px, ${(-v.y * 0.5 + 0.5) * H}px)`; return v.z < 1; };
         if (hovered && entryT < 0) {
           const L = labelFor(hovered);

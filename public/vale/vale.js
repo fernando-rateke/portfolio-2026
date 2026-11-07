@@ -599,6 +599,18 @@
     B.add(curvedBeam(7.9, 0.4, 0.36, 0.2, 0.05), M(0, 5.86, 0), SHU);                                    // shimaki
     B.add(curvedBeam(9.4, 0.62, 0.42, 0.62, 0.32), M(0, 6.24, 0), KURO);                                // kasagi
     B.add(curvedBeam(9.1, 0.54, 0.05, 0.6, 0.3), M(0, 6.2, 0), SHU_D);                                  // filete sob o kasagi
+    const GOLD = "#D8B04A";
+    for (const sx of [-1, 1]) {
+      B.add(new T.BoxGeometry(0.16, 0.5, 0.66), M(sx * 4.72, 6.42, 0, 0, 0, sx * 0.32), GOLD);           // tampas douradas nas pontas do kasagi
+      B.add(new T.BoxGeometry(0.12, 0.4, 0.34), M(sx * 3.95, 4.55, 0), GOLD);                          // tampas do nuki
+      for (const y of [1.25, 4.05]) B.add(new T.CylinderGeometry(0.335, 0.335, 0.08, 28), M(sx * halfSpan, y, 0), GOLD); // anéis nos pilares
+    }
+    B.add(new T.BoxGeometry(1.12, 1.48, 0.06), M(0, 5.3, 0.13), GOLD);                                  // borda dourada da placa
+    // shimenawa: corda trançada pendurada entre os pilares, com os papéis shide
+    { const pts = []; for (let i = 0; i <= 24; i++) { const u = i / 24; pts.push(new T.Vector3(-halfSpan + 0.3 + u * (halfSpan * 2 - 0.6), 3.95 - Math.sin(u * Math.PI) * 0.55, 0.32)); }
+      const curve = new T.CatmullRomCurve3(pts);
+      B.add(new T.TubeGeometry(curve, 60, 0.13, 8, false), M(), (x, y, z) => (Math.sin(x * 9 + y * 3) > 0 ? "#E2CE96" : "#C9B278"));
+      for (let k = 0; k < 5; k++) { const p = curve.getPoint(0.15 + k * 0.175); for (let j = 0; j < 3; j++) B.add(new T.BoxGeometry(0.2, 0.2, 0.02), M(p.x + (j % 2 ? 0.07 : -0.07), p.y - 0.16 - j * 0.17, p.z + 0.02, 0, 0, j % 2 ? 0.35 : -0.35), "#FBF8EE"); } }
 
     // Lanternas de pedra (ishidōrō) dos dois lados
     const lantProfile = [[0.62, 0], [0.62, 0.16], [0.46, 0.22], [0.3, 0.34], [0.22, 0.42], [0.2, 1.25], [0.28, 1.32], [0.4, 1.38], [0.44, 1.48], [0.0, 1.5]].map(([r, y]) => new T.Vector2(r, y));
@@ -638,6 +650,39 @@
       U.uLanterns.value[i].copy(w);
     });
 
+    // tamagaki: cerca de madeira vermelha com postes de topo preto, saindo dos dois lados do portão
+    {
+      const FB = Builder(), seg = 1.6;
+      const fencePt = (u, sx) => {                       // u de 0 a 1 ao longo de cada braço
+        const lx = sx * (halfSpan + 0.7 + u * 26), lz = 0.4 + Math.pow(u, 1.6) * 18;
+        const w = new T.Vector3(lx, 0, lz).applyAxisAngle(new T.Vector3(0, 1, 0), TORII.rot).add(new T.Vector3(TORII.x, 0, TORII.z));
+        w.y = heightAt(w.x, w.z); return w;
+      };
+      for (const sx of [-1, 1]) {
+        const n = Math.round(40 / seg);
+        let prev = null;
+        for (let i = 0; i <= n; i++) {
+          const p = fencePt(i / n, sx);
+          if (p.y < 0.2) { prev = null; continue; }        // não entra na água
+          FB.add(new T.BoxGeometry(0.2, 1.5, 0.2), M(p.x, p.y + 0.75, p.z), SHU);
+          FB.add(new T.BoxGeometry(0.26, 0.12, 0.26), M(p.x, p.y + 1.56, p.z), KURO);
+          FB.add(new T.ConeGeometry(0.18, 0.18, 4), M(p.x, p.y + 1.7, p.z, 0, Math.PI / 4, 0), KURO);
+          if (prev) {
+            const mid = prev.clone().add(p).multiplyScalar(0.5), len = prev.distanceTo(p), ang = Math.atan2(p.x - prev.x, p.z - prev.z), dy = p.y - prev.y;
+            for (const h of [0.45, 1.25]) FB.add(new T.BoxGeometry(0.1, 0.12, len), M(mid.x, mid.y + h, mid.z, -Math.atan2(dy, len), ang, 0), SHU_D);
+            for (let k = 1; k < 4; k++) { const q = prev.clone().lerp(p, k / 4); FB.add(new T.BoxGeometry(0.08, 0.8, 0.06), M(q.x, q.y + 0.85, q.z, 0, ang, 0), SHU); }
+          }
+          prev = p;
+        }
+      }
+      scene.add(new T.Mesh(FB.build(), objMat));
+    }
+    // fileira de lanternas de pedra ao longo do caminho
+    { const LB = Builder();
+      for (let i = 2; i < 15; i += 3) { const [px, pz] = pathPts[i]; for (const sx of [-1, 1]) { const x = px + sx * 2.2, z = pz, y = heightAt(x, z);
+        LB.add(new T.CylinderGeometry(0.12, 0.16, 0.9, 6), M(x, y + 0.45, z), "#8F8D84"); LB.add(new T.BoxGeometry(0.42, 0.36, 0.42), M(x, y + 1.08, z), "#F3D9A0", 1); LB.add(new T.ConeGeometry(0.42, 0.3, 4), M(x, y + 1.4, z, 0, Math.PI / 4, 0), "#77756D");
+        if (i === 8) nightLights.push(new T.Vector3(x, y + 1.08, z)); } }
+      scene.add(new T.Mesh(LB.build(), objMat)); }
     const SB = Builder();
     pathPts.forEach(([px, pz], i) => {
       const s = 0.55 + rr() * 0.35;
@@ -2224,7 +2269,13 @@
     smoke.g.attributes.position.needsUpdate = true; smoke.g.attributes.aAge.needsUpdate = true;
     actors.forEach((a) => a(t));
     // trem: corre sobre os trilhos e volta pelo outro lado, fora de vista
-    const tx = -145 + ((t * 7 + 140) % 290);
+    let tx = -145 + ((t * 7 + 140) % 290);
+    if (arrival.on) {
+      // o último trem chega freando até parar na plataforma
+      const now = performance.now() / 1000; if (arrival.t0 === null) arrival.t0 = now;
+      const k = Math.min(1, (now - arrival.t0) / arrival.dur), e = 1 - Math.pow(1 - k, 3);
+      tx = arrival.from + (arrival.to - arrival.from) * e;
+    }
     train.position.set(tx, Math.max(heightAt(tx, TRACK_Z), 0) + 0.12 + Math.sin(t * 9) * 0.015, TRACK_Z);
     {
       // esteira: anéis que nascem nas rodas sobre a água e se abrem
@@ -2339,7 +2390,9 @@
     const H = hillTop, TX = TORII.x, TZ = TORII.z;
     // eixo do portão: a câmera chega de frente e atravessa pelo meio
     const ax = (d, y) => V3([TX + Math.sin(TORII.rot) * d, heightAt(TX + Math.sin(TORII.rot) * d, TZ + Math.cos(TORII.rot) * d) + y, TZ + Math.cos(TORII.rot) * d]);
-    const path1 = [ax(10, 2.4), ax(-40, 2.6)];
+    const gyT = heightAt(TX, TZ) - 0.05;
+    const axA = (d, y) => { const p = ax(d, 0); p.y = gyT + y; return p; };
+    const path1 = [axA(12, 1.9), axA(-40, 2.3)];
     return [
       { d: 3.8, from: [BASE.pos.clone(), BASE.target.clone()], to: path1 },
       { d: 3.2, from: path1, to: [ax(-110, 30), ax(-420, 60)], haze: [0, 1], hazeCurve: 2.4 },
@@ -2484,6 +2537,47 @@
     if (explore.dolly) { explore.dolly = null; explore.from = camState(); explore.k = 0; }
     if (explore.place) showCard(explore.place);
   });
+  // A ida para o último trem: o trem chega à estação, o sino toca, a câmera vai até a janela e a tela escurece
+  const arrival = { on: false, t0: null, from: 0, to: 0, dur: 6.5 };
+  function bellSound(delay = 0) {
+    try {
+      const A = window.AudioContext || window.webkitAudioContext; const ctx = bellSound.ctx || (bellSound.ctx = new A()); if (ctx.state === "suspended") ctx.resume();
+      const now = ctx.currentTime + delay;
+      [[880, 0], [660, 0.5]].forEach(([f, dt]) => [1, 2.76, 5.4].forEach((h, j) => {
+        const o = ctx.createOscillator(), g = ctx.createGain(); o.type = "sine"; o.frequency.value = f * h;
+        g.gain.setValueAtTime(0, now + dt); g.gain.linearRampToValueAtTime(0.09 / (j + 1), now + dt + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, now + dt + 1.8);
+        o.connect(g); g.connect(ctx.destination); o.start(now + dt); o.stop(now + dt + 2);
+      }));
+    } catch (e) { /* sem áudio */ }
+  }
+  function brakeSound() {
+    try {
+      const A = window.AudioContext || window.webkitAudioContext; const ctx = bellSound.ctx || (bellSound.ctx = new A()); if (ctx.state === "suspended") ctx.resume();
+      const now = ctx.currentTime, len = 2.6, b = ctx.createBuffer(1, ctx.sampleRate * len, ctx.sampleRate), d = b.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      const src = ctx.createBufferSource(); src.buffer = b; const f = ctx.createBiquadFilter(); f.type = "bandpass"; f.Q.value = 18;
+      f.frequency.setValueAtTime(2400, now); f.frequency.linearRampToValueAtTime(1500, now + len);
+      const g = ctx.createGain(); g.gain.setValueAtTime(0, now); g.gain.linearRampToValueAtTime(0.05, now + 0.6); g.gain.linearRampToValueAtTime(0, now + len);
+      src.connect(f); f.connect(g); g.connect(ctx.destination); src.start(now);
+    } catch (e) { /* sem áudio */ }
+  }
+  function lastTrain() {
+    if (arrival.on) return;
+    showCard(null);
+    const sy = STATION.y;
+    arrival.on = true; arrival.t0 = null; arrival.from = STATION.x - 80; arrival.to = STATION.x + 2.5;
+    // na plataforma, olhando o trilho por onde ele chega
+    explore.dolly = { pos: new T.Vector3(STATION.x - 4, sy + 2.3, STATION.z + 7.5), tgt: new T.Vector3(STATION.x - 14, sy + 1.4, TRACK_Z) }; explore.from = camState(); explore.k = 0;
+    setTimeout(brakeSound, 2600);
+    setTimeout(() => {
+      bellSound();
+      // vira para o trem parado e se aproxima da janela iluminada
+      explore.dolly = { pos: new T.Vector3(STATION.x - 2.2, sy + 2.0, TRACK_Z + 2.6), tgt: new T.Vector3(STATION.x - 2.6, sy + 1.9, TRACK_Z) }; explore.from = camState(); explore.k = 0;
+    }, 7000);
+    setTimeout(() => enterFade.classList.add("on"), 8900);
+    setTimeout(() => { openWorld("ultimo"); setTimeout(() => enterFade.classList.remove("on"), 700); }, 9700);
+  }
+  window.addEventListener("mundo", (e) => { if (e.detail === "close" && arrival.on) arrival.on = false; });
   function teleport() {
     if (tp.t >= 0) return;
     tp.g.position.set(TOWER.x, TOWER.y + 0.75, TOWER.z); tp.g.visible = true; tp.t = 0;
@@ -2559,7 +2653,7 @@
       anchor: () => new T.Vector3(STATION.x, STATION.y + 6.4, STATION.z),
       view: () => { const wide = innerWidth > 900; return wide ? { pos: new T.Vector3(STATION.x - 7.5, STATION.y + 4.4, STATION.z + 14), tgt: new T.Vector3(STATION.x - 6.2, STATION.y + 1.6, STATION.z - 1) } : { pos: new T.Vector3(STATION.x - 1, STATION.y + 6.5, STATION.z + 17), tgt: new T.Vector3(STATION.x - 1, STATION.y - 2.5, STATION.z - 1) }; },
       footer: true,
-      actions: [{ label: "Pegar o último trem", primary: true, run: () => openWorld("ultimo") }, { label: "Voltar à capa", run: () => exitExplore(true) }, { label: "Ver o filme de novo", run: () => playIntro(true) }],
+      actions: [{ label: "Pegar o último trem", primary: true, run: () => lastTrain() }, { label: "Voltar à capa", run: () => exitExplore(true) }, { label: "Ver o filme de novo", run: () => playIntro(true) }],
     },
   };
   const explore = { active: false, place: null, from: null, k: 1, markers: {}, coverFrom: null, coverK: 1 };
@@ -2864,6 +2958,7 @@
     explore.k = Math.min(1, explore.k + tdt / 2.3);
     const e = ease(explore.k);
     const pos = explore.from ? explore.from.pos.clone().lerp(v.pos, e) : v.pos;
+    if (explore.from && !explore.dolly && explore.k < 1) pos.y += Math.sin(Math.PI * e) * Math.min(26, explore.from.pos.distanceTo(v.pos) * 0.22);
     const tgt = explore.from ? explore.from.tgt.clone().lerp(v.tgt, e) : v.tgt;
     pos.x += pointer.sx * (P ? 1.2 : 3) * e; pos.y += -pointer.sy * (P ? 0.5 : 2) * e;
     place(pos, tgt);

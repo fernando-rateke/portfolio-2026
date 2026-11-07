@@ -1131,7 +1131,8 @@
     const FRASE = ["O momento mais jovem da sua vida é agora.", "Aproveite, porque passa."];
     function buildFim() {
       fimEl = document.createElement("div"); fimEl.className = "fim"; fimEl.setAttribute("role", "dialog"); fimEl.setAttribute("aria-label", "O último trem");
-      const letters = (t, d0) => [...t].map((ch, i) => `<span style="animation-delay:${(d0 + i * 0.055).toFixed(2)}s">${ch === " " ? "&nbsp;" : esc(ch)}</span>`).join("");
+      // letra por letra, mas cada palavra inteira numa linha só (a quebra acontece entre palavras)
+      const letters = (t, d0) => { let i = 0; return t.split(" ").map((w) => `<span class="fim-w">${[...w].map((ch) => `<span style="animation-delay:${(d0 + (i++) * 0.055).toFixed(2)}s">${esc(ch)}</span>`).join("")}</span>`).join(" "); };
       fimEl.innerHTML = `<p class="fim-frase"><span class="fim-l1">${letters(FRASE[0], 2.2)}</span><span class="fim-l2">${letters(FRASE[1], 2.2 + FRASE[0].length * 0.055 + 0.9)}</span></p>
         <p class="fim-assina">A jornada é o que dá forma ao mundo.<small>Fernando Rateke · Portfólio 2026</small></p>
         <p class="fim-dica">Para voltar à capa, é só tocar em qualquer lugar da tela.</p>`;
@@ -1145,7 +1146,7 @@
         final = true; if (!fimEl) buildFim();
         el.classList.add("fim-on"); el.appendChild(fimEl); fimEl.classList.remove("show"); void fimEl.offsetWidth; fimEl.classList.add("show");
         photos.forEach((p) => { p.m.visible = false; });
-        target = 2.2; speed = 2.2; UD.value = 0;
+        target = 2.2; speed = 0; UD.value = 0;
         const dr = scene.userData.dragon; dr.t = -1; dr.next = 20;
         setTimeout(() => { if (final) { el.addEventListener("click", leaveFim); addEventListener("keydown", onFimKey); } }, 1200);
       }, at: (i) => { travel = (i * (L / MEMS.length) + 8 - L / 2 + L * 10) % L; },

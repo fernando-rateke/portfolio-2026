@@ -963,6 +963,67 @@
     };
   })();
 
+  /* Easter eggs da grande árvore: fuligens que fogem do cursor e kodamas que aparecem à noite */
+  const forestSpirits = (() => {
+    const mk = (w, h, draw) => { const c = document.createElement("canvas"); c.width = w; c.height = h; draw(c.getContext("2d"), w, h); return new T.CanvasTexture(c); };
+    const sootTex = mk(128, 128, (g) => {
+      for (let i = 0; i < 70; i++) { const a = i / 70 * Math.PI * 2, r = 40 + Math.random() * 16; g.strokeStyle = "#141014"; g.lineWidth = 2.2; g.beginPath(); g.moveTo(64, 64); g.lineTo(64 + Math.cos(a) * r, 64 + Math.sin(a) * r); g.stroke(); }
+      g.fillStyle = "#141014"; g.beginPath(); g.arc(64, 64, 40, 0, Math.PI * 2); g.fill();
+      for (const x of [50, 78]) { g.fillStyle = "#FFFFFF"; g.beginPath(); g.arc(x, 60, 11, 0, Math.PI * 2); g.fill(); g.fillStyle = "#141014"; g.beginPath(); g.arc(x + 1, 61, 4.5, 0, Math.PI * 2); g.fill(); }
+    });
+    const kodaTex = mk(96, 128, (g) => {
+      g.fillStyle = "rgba(240,248,240,0.95)";
+      g.beginPath(); g.ellipse(48, 40, 30, 28, 0, 0, Math.PI * 2); g.fill();
+      g.beginPath(); g.moveTo(34, 62); g.quadraticCurveTo(48, 58, 62, 62); g.lineTo(60, 118); g.lineTo(36, 118); g.closePath(); g.fill();
+      g.fillRect(28, 78, 10, 4); g.fillRect(58, 78, 10, 4);
+      g.fillStyle = "#1E2420"; for (const [x, y, rx, ry] of [[38, 36, 5, 6], [58, 34, 5, 6], [47, 50, 4, 5]]) { g.beginPath(); g.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); g.fill(); }
+    });
+    const ground = (x, z) => heightAt(x, z);
+    const rs = mulberry(42);
+    const soot = [];
+    for (let i = 0; i < 16; i++) {
+      const a = (rs() - 0.5) * 2.4 + Math.PI / 2, r = 8 + rs() * 7;
+      const home = new T.Vector3(GT.x + Math.cos(a) * r, 0, GT.z + Math.sin(a) * r);
+      const sp = new T.Sprite(new T.SpriteMaterial({ map: sootTex, transparent: true, depthWrite: false }));
+      sp.scale.setScalar(0.9 + rs() * 0.4); scene.add(sp);
+      soot.push({ sp, home, pos: home.clone(), vel: new T.Vector3(), ph: rs() * 6, s: sp.scale.x });
+    }
+    const koda = [];
+    for (let i = 0; i < 12; i++) {
+      const a = rs() * Math.PI * 2, r = 6 + rs() * 14;
+      const x = GT.x + Math.cos(a) * r, z = GT.z + Math.sin(a) * r;
+      const sp = new T.Sprite(new T.SpriteMaterial({ map: kodaTex, transparent: true, depthWrite: false, opacity: 0 }));
+      const h = 0.9 + rs() * 0.7; sp.scale.set(h * 0.75, h, 1); sp.position.set(x, ground(x, z) + h / 2, z); scene.add(sp);
+      koda.push({ sp, ph: rs() * 20, base: sp.position.y });
+    }
+    const ray = new T.Raycaster(), plane = new T.Plane(new T.Vector3(0, 1, 0), 0), hit = new T.Vector3(), ndc = new T.Vector2();
+    let lastT = null;
+    return (t) => {
+      const dt = lastT === null ? 0 : Math.max(0, Math.min(0.1, t - lastT)); lastT = t;
+      // onde o cursor toca o chão perto da árvore
+      ndc.set(pointer.x, -pointer.y); ray.setFromCamera(ndc, camera); plane.constant = -(GT.y || 0);
+      const has = ray.ray.intersectPlane(plane, hit) && hit.distanceTo(GT) < 40;
+      soot.forEach((o) => {
+        const away = new T.Vector3();
+        if (has) { const d = o.pos.clone().sub(hit); d.y = 0; const L = d.length(); if (L < 6) away.copy(d.normalize().multiplyScalar((6 - L) * 9)); }
+        const homeward = o.home.clone().sub(o.pos).multiplyScalar(0.8); homeward.y = 0;
+        o.vel.lerp(away.lengthSq() > 0 ? away : homeward, Math.min(1, dt * 4));
+        o.pos.addScaledVector(o.vel, dt);
+        const hop = Math.abs(Math.sin(t * (away.lengthSq() > 0 ? 14 : 3) + o.ph)) * (away.lengthSq() > 0 ? 0.6 : 0.12);
+        o.sp.position.set(o.pos.x, ground(o.pos.x, o.pos.z) + o.s * 0.45 + hop, o.pos.z);
+        const sq = 1 + Math.sin(t * 6 + o.ph) * 0.05; o.sp.scale.set(o.s * sq, o.s / sq, 1);
+      });
+      const n = U.uNight.value, dk = U.uDusk.value * (1 - n);
+      koda.forEach((k, i) => {
+        k.sp.material.opacity = Math.min(1, n * 0.95 + dk * 0.15) * (0.75 + 0.25 * Math.sin(t * 0.8 + k.ph));
+        // a cabeça chacoalha de vez em quando, como no filme
+        const rattle = Math.sin(t * 0.7 + k.ph) > 0.9 ? Math.sin(t * 40 + i) * 0.35 : 0;
+        k.sp.material.rotation = rattle; k.sp.position.y = k.base + Math.sin(t * 1.3 + k.ph) * 0.03;
+        k.sp.visible = k.sp.material.opacity > 0.01;
+      });
+    };
+  })();
+
   /* Bandos de pássaros cruzando o céu */
   const birds = (() => {
     const flocks = [];
@@ -2333,7 +2394,7 @@
     });
     cloudMesh.position.x = Math.sin(t * 0.006) * 40;
     cloudMesh.userData.mist.opacity = 0.55 * (1 - U.uNight.value * 0.75);
-    caveMist(t); nightGlow(t);
+    caveMist(t); nightGlow(t); forestSpirits(t);
     { const H = cloudMesh.userData.hillMist; const n = U.uNight.value, dk = U.uDusk.value * (1 - n);
       H.mat.opacity = n * 0.34 + dk * 0.16; H.mat.color.setRGB(0.62 + dk * 0.36, 0.70 + dk * 0.06, 0.82 - dk * 0.1);
       const hi = Math.min(1, Math.max(0, (camera.position.y - 12) / 25)); H.low.opacity = H.mat.opacity * 0.6 * (1 - hi); H.low.color.copy(H.mat.color);

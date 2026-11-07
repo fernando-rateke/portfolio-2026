@@ -366,11 +366,11 @@
   /* =================================================================== */
   const nos = (() => {
     const scene = new T.Scene();
-    scene.background = new T.Color("#040305");
+    scene.background = new T.Color("#0A0706");
     const camera = new T.PerspectiveCamera(56, 1, 0.05, 120);
-    const env = envUniforms({ sun: [0.2, 0.9, 0.3], sunCol: "#262A40", amb: "#1C161E", fog: "#040305", fogDen: 0.07, glowCol: "#E0A458" });
+    const env = envUniforms({ sun: [0.2, 0.9, 0.3], sunCol: "#3A3028", amb: "#2A2018", fog: "#0A0706", fogDen: 0.06, glowCol: "#FFC27A" });
     const LINES = ["A casa conhece você.", "Até o que você esconde.", "E sabe onde procurar.", "Volta… por favor."];
-    const START = 3.5, END = -50, KNOT = new T.Vector3(0, 1.55, -55.5);
+    const START = 3.5, END = -50, KNOT = new T.Vector3(Math.sin(-55.5 * 0.08) * 0.6, 1.55, -55.5);
     let time = 0, walk = START, holding = false, wheel = 0, said = 0, arrived = false, found = 0, flash = 0, knot, knotMat, halo, thread, audio = null, drone = null, stepAcc = 0, timer = null, titleEl = null;
     const rt = new T.WebGLRenderTarget(320, 180, { minFilter: T.NearestFilter, magFilter: T.NearestFilter });
     const post = new T.Scene(), postCam = new T.OrthographicCamera(-1, 1, 1, -1, 0, 1);
@@ -397,34 +397,64 @@
     function build() {
       const mat = toon(env);
       const B = Builder(); const r = mulberry(31);
-      const W2 = 1.6, HH = 3.2;
-      // piso, paredes e teto do corredor
-      for (let z = 6; z > -60; z -= 0.5) B.add(new T.BoxGeometry(W2 * 2, 0.04, 0.48), M(0, 0, z), ((z * 2) | 0) & 1 ? "#24150F" : "#1C100B");
-      for (const sx of [-1, 1]) {
-        B.add(new T.BoxGeometry(0.1, HH, 66), M(sx * W2, HH / 2, -27), (x, y, z) => (((z * 1.3) | 0) & 1 ? "#2A2028" : "#241B22"));
-        B.add(new T.BoxGeometry(0.06, 0.9, 66), M(sx * (W2 - 0.04), 0.45, -27), "#1E140F");
+      const W2 = 1.6, HH = 3.2; void W2; void HH;
+      // a caverna: um tubo de rocha irregular, chão de terra e musgo, estalactites
+      const RAD = 2.7, LEN = 70, Z0 = -27;
+      const tube = new T.CylinderGeometry(RAD, RAD, LEN, 40, 140, true);
+      tube.rotateX(Math.PI / 2);
+      {
+        const p = tube.attributes.position;
+        for (let i = 0; i < p.count; i++) {
+          let x = p.getX(i), y = p.getY(i); const z = p.getZ(i) + Z0;
+          const a = Math.atan2(y, x);
+          const n = Math.sin(a * 3 + z * 0.31) * 0.28 + Math.sin(a * 7 - z * 0.53) * 0.14 + Math.sin(z * 0.17) * 0.35 + Math.sin(a * 13 + z * 1.1) * 0.06;
+          const sw = 1 + 0.18 * Math.sin(z * 0.11 + 1.3);
+          x *= (1 + n * 0.16) * sw * 1.12; y *= (1 + n * 0.16) * sw;
+          y += 1.55; if (y < 0) y = 0 + Math.abs(Math.sin(x * 3 + z)) * 0.04;
+          p.setXYZ(i, x + Math.sin(z * 0.08) * 0.6, y, z);
+        }
+        // faces para dentro
+        tube.computeVertexNormals();
+        const g = tube.toNonIndexed(), pp = g.attributes.position.array, nn = g.attributes.normal.array;
+        for (let i = 0; i < pp.length; i += 9) for (let k = 0; k < 3; k++) { let t0 = pp[i + 3 + k]; pp[i + 3 + k] = pp[i + 6 + k]; pp[i + 6 + k] = t0; t0 = nn[i + 3 + k]; nn[i + 3 + k] = nn[i + 6 + k]; nn[i + 6 + k] = t0; }
+        for (let i = 0; i < nn.length; i++) nn[i] = -nn[i];
+        B.add(g, M(), (x, y, z) => {
+          const mossZone = Math.exp(-((z + 34) * (z + 34)) / 120);
+          const band = Math.sin(y * 4.2 + Math.sin(z * 0.7) * 1.4);
+          if (y < 0.25) return mossZone > 0.35 && Math.sin(x * 4 + z * 1.7) > -0.3 ? "#5E8A3A" : Math.sin(x * 9 + z * 3) > 0.5 ? "#7A5E44" : "#6A5038";
+          if (y < 0.9 && mossZone > 0.45 && Math.sin(z * 2.1 + x * 3) > 0.1) return "#4E7A34";
+          return band > 0.55 ? "#8A6A4A" : band < -0.5 ? "#5E4632" : "#74583E";
+        });
       }
-      B.add(new T.BoxGeometry(W2 * 2, 0.1, 66), M(0, HH, -27), "#120C10");
-      // batentes que se repetem, cada vez mais tortos
-      for (let k = 0; k < 9; k++) {
-        const z = -2 - k * 6.2, tilt = (k % 2 ? 1 : -1) * k * 0.012;
-        const Mb = M(0, 0, z, 0, 0, tilt);
-        for (const sx of [-1, 1]) B.add(new T.BoxGeometry(0.22, HH, 0.26), Mb.clone().multiply(M(sx * (W2 - 0.1), HH / 2, 0)), "#3A2618");
-        B.add(new T.BoxGeometry(W2 * 2, 0.26, 0.26), Mb.clone().multiply(M(0, HH - 0.13, 0)), "#3A2618");
+      const pathX = (z) => Math.sin(z * 0.08) * 0.6;
+      // estalactites e estalagmites
+      for (let k = 0; k < 70; k++) {
+        const z = 4 - r() * 62, side = r() < 0.5 ? -1 : 1, x0 = pathX(z);
+        const len = 0.5 + r() * 1.3, rad = 0.12 + r() * 0.22;
+        if (r() < 0.62) B.add(new T.ConeGeometry(rad, len, 6), M(x0 + (r() - 0.5) * 3.2, 3.9 - len / 2 + r() * 0.3, z, Math.PI, r() * 3, (r() - 0.5) * 0.2), r() < 0.5 ? "#6E543C" : "#5E4632");
+        else B.add(new T.ConeGeometry(rad * 1.2, len * 0.8, 6), M(x0 + side * (1.5 + r() * 0.9), len * 0.35, z, 0, r() * 3, side * 0.15), "#6A5038");
       }
-      // entulho: casacos pendurados, molduras, caixas, uma cadeira
-      for (let k = 0; k < 28; k++) {
-        const sx = r() < 0.5 ? -1 : 1, z = 1 - r() * 50, kind = r();
-        if (kind < 0.3) { B.add(new T.BoxGeometry(0.12, 0.9 + r() * 0.3, 0.5), M(sx * (W2 - 0.12), 1.7, z, 0, 0, sx * 0.05), ["#2E2430", "#3A2A24", "#26302E"][k % 3]); B.add(new T.BoxGeometry(0.08, 0.06, 0.3), M(sx * (W2 - 0.1), 2.2, z), "#5A4632"); }
-        else if (kind < 0.6) { const w = 0.4 + r() * 0.5, h = 0.3 + r() * 0.5; B.add(new T.BoxGeometry(0.05, h + 0.08, w + 0.08), M(sx * (W2 - 0.05), 1.6 + r() * 0.8, z, (r() - 0.5) * 0.2, 0, 0), "#5A4632"); B.add(new T.BoxGeometry(0.06, h, w), M(sx * (W2 - 0.06), 1.6 + r() * 0.8, z), "#141018"); }
-        else if (kind < 0.85) { const s = 0.3 + r() * 0.4; B.add(new T.BoxGeometry(s, s, s), M(sx * (W2 - s / 2 - 0.08), s / 2, z, 0, r(), 0), ["#3A2A1E", "#2E241C"][k % 2]); if (r() < 0.5) B.add(new T.BoxGeometry(s * 0.8, s * 0.8, s * 0.8), M(sx * (W2 - s / 2 - 0.1), s + s * 0.4, z, 0, r(), 0), "#33261C"); }
-        else { B.add(new T.BoxGeometry(0.5, 0.06, 0.5), M(sx * (W2 - 0.4), 0.5, z, 0, 0.4, 0.1), "#3A2618"); B.add(new T.BoxGeometry(0.5, 0.6, 0.06), M(sx * (W2 - 0.2), 0.8, z, 0, 0.4, 0.15), "#3A2618"); }
+      // pedras soltas e cogumelos que brilham de leve
+      for (let k = 0; k < 40; k++) { const z = 4 - r() * 60, s = 0.15 + r() * 0.35; B.add(new T.IcosahedronGeometry(s, 0), M(pathX(z) + (r() < 0.5 ? -1 : 1) * (1.2 + r() * 1.2), s * 0.5, z, r(), r(), r()), "#5E4A3A"); }
+      for (let k = 0; k < 26; k++) {
+        const z = -18 - r() * 32, x = pathX(z) + (r() < 0.5 ? -1 : 1) * (1.4 + r() * 1.0), h = 0.12 + r() * 0.16;
+        B.add(new T.CylinderGeometry(0.025, 0.035, h, 6), M(x, h / 2, z), "#E8E2C8", 0.6);
+        B.add(new T.SphereGeometry(0.08 + r() * 0.05, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), M(x, h, z), r() < 0.5 ? "#9FE0B0" : "#B8F0A0", 1);
       }
-      // parede do fundo, onde o nó espera
-      B.add(new T.BoxGeometry(W2 * 2, HH, 0.1), M(0, HH / 2, -58), "#1A1418");
+      // lamparinas de pedra pelo caminho: o mínimo de luz para seguir
+      for (const z of [-4, -16, -28, -40, -50]) {
+        const x = pathX(z) + (z % 8 ? 1.6 : -1.6);
+        B.add(new T.BoxGeometry(0.22, 0.4, 0.22), M(x, 0.2, z), "#7A746E");
+        B.add(new T.BoxGeometry(0.3, 0.06, 0.3), M(x, 0.42, z), "#6A6460");
+        B.add(new T.SphereGeometry(0.06, 8, 6), M(x, 0.5, z, 0, 0, 0, 1, 1.5, 1), "#FFC86A", 1);
+      }
+      // a boca da caverna, atrás de quem entra, com a luz do dia
+      B.add(new T.CircleGeometry(2.8, 24), M(0, 1.7, 8.5, 0, Math.PI, 0, 1.15, 0.9, 1), "#C9D6DA", 1);
+      // fundo onde o nó espera
+      B.add(new T.SphereGeometry(2.6, 20, 14), M(pathX(-58), 1.6, -60.5, 0, 0, 0, 1.2, 1, 0.6), "#3E2E22");
       scene.add(new T.Mesh(B.build(), mat));
       // o fio dourado no chão
-      const pts = []; for (let k = 0; k <= 60; k++) { const z = START + 1 - k * (START + 1 - KNOT.z) / 60; pts.push(new T.Vector3(Math.sin(k * 0.5) * 0.35, 0.04 + (k > 54 ? (k - 54) * 0.25 : 0), z)); }
+      const pts = []; for (let k = 0; k <= 60; k++) { const z = START + 1 - k * (START + 1 - KNOT.z) / 60; pts.push(new T.Vector3(Math.sin(z * 0.08) * 0.6 + Math.sin(k * 0.5) * 0.25, 0.06 + (k > 54 ? (k - 54) * 0.25 : 0), z)); }
       pts[pts.length - 1].copy(KNOT);
       const curve = new T.CatmullRomCurve3(pts);
       const glowMat = new T.ShaderMaterial({ transparent: true, depthWrite: false, blending: T.AdditiveBlending, uniforms: { uTime: { value: 0 }, uOn: { value: 0.5 } },
@@ -446,8 +476,8 @@
       dg.setAttribute("position", new T.Float32BufferAttribute(dp, 3));
       scene.add(new T.Points(dg, new T.PointsMaterial({ color: 0xc9a46a, size: 0.012, transparent: true, opacity: 0.45 })));
       env.uPL.value[0].copy(KNOT); env.uPLC.value[0].set("#E0A458"); env.uPLR.value[0] = 3;
-      env.uPL.value[1].set(0, 2.4, 6); env.uPLC.value[1].set("#40507A"); env.uPLR.value[1] = 4;
-      env.uPL.value[2].set(0, 1.6, 0); env.uPLC.value[2].set("#6A5440"); env.uPLR.value[2] = 1.2;
+      env.uPL.value[1].set(0, 2.0, 6.5); env.uPLC.value[1].set("#B0C0CC"); env.uPLR.value[1] = 7;
+      env.uPL.value[2].set(Math.sin(-34 * 0.08) * 0.6, 0.6, -34); env.uPLC.value[2].set("#8FD08A"); env.uPLR.value[2] = 4.0;
       titleEl = document.createElement("div"); titleEl.className = "nos-reveal"; titleEl.setAttribute("aria-hidden", "true"); titleEl.innerHTML = "<span>NÓS</span><small>entre fios e sombras</small>";
     }
 
@@ -508,7 +538,7 @@
 
     const api = {
       template: "dossierNos", dossierLabel: "Ver a história do Nós", entered: false, kamiColor: "ink",
-      titleHTML: `<span class="w-kicker">Porta preta</span><span class="w-name nos">&nbsp;</span>`,
+      titleHTML: `<span class="w-kicker">A montanha da névoa</span><span class="w-name nos">&nbsp;</span>`,
       hintText: "Segure para andar. Siga o fio.",
       walkTo: (z) => { walk = z; }, reveal: () => reveal(),
       build,
@@ -547,8 +577,8 @@
         const nextLine = Math.floor(prog * (LINES.length + 1));
         if (nextLine > said && said < LINES.length && nextLine <= LINES.length) { said = nextLine; say(LINES[said - 1]); }
         const bob = moving ? Math.sin(time * 9) * 0.03 : 0;
-        camera.position.set(Math.sin(time * 0.7) * 0.05 + pointer.sx * 0.15, 1.55 + bob, walk);
-        camera.lookAt(pointer.sx * 0.6, 1.5 - pointer.sy * 0.3, walk - 6);
+        camera.position.set(Math.sin(walk * 0.08) * 0.6 + Math.sin(time * 0.7) * 0.05 + pointer.sx * 0.15, 1.55 + bob, walk);
+        camera.lookAt(Math.sin((walk - 6) * 0.08) * 0.6 + pointer.sx * 0.6, 1.5 - pointer.sy * 0.3, walk - 6);
         // o nó brilha mais conforme se aproxima
         const near = Math.max(0, 1 - (walk - KNOT.z) / 50);
         knot.rotation.y += dt * (0.5 + found * 3); knot.rotation.x = Math.sin(time * 0.8) * 0.3;
@@ -2031,7 +2061,7 @@
 
     const api = {
       template: "dossierArvore", dossierLabel: "Ver a história do AcousticBuild", kamiColor: "totoro", approach: () => approach(),
-      titleHTML: `<span class="w-kicker">Porta vermelha · AcousticBuild</span><span class="w-name">A árvore</span>`,
+      titleHTML: `<span class="w-kicker">AcousticBuild</span><span class="w-name">A grande árvore</span>`,
       hintText: "Toque para se aproximar.",
       build,
       start() {

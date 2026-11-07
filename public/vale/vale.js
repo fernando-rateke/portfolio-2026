@@ -276,6 +276,10 @@
   scene.add(water);
 
   /* ------------------------------------------------------------------ */
+  // lugares novos do vale: a grande árvore (AcousticBuild) e a caverna na montanha (Nós)
+  const GT = new T.Vector3(-85, 0, -72);
+  const CAVE = new T.Vector3(-60, 0, -270);
+  const nightLights = [];
   /* Montanhas nevadas                                                   */
   /* ------------------------------------------------------------------ */
   const mountFS = `${COMMON}${NOISE}
@@ -720,21 +724,182 @@
       for (let k = 0; k < 6; k++) addBlob(new T.IcosahedronGeometry((1.15 - k * 0.15) * s, 2), M(x + (rT() - 0.5) * 0.3 * s, y + (1.8 + k * 1.05) * s, z, 0, 0, 0, 1, 1.35, 1), "#3A6440", 0.7, ctr);
     };
     const bush = (x, y, z, s) => { const ctr = new T.Vector3(x, y + 0.6 * s, z); for (let k = 0; k < 4; k++) { const a = rT() * Math.PI * 2; addBlob(new T.IcosahedronGeometry((0.55 + rT() * 0.35) * s, 2), M(x + Math.cos(a) * 0.6 * s, y + 0.5 * s, z + Math.sin(a) * 0.5 * s), "#4E8044", 0.4, ctr); } };
-    const spots = [[-38, -58], [-44, -62], [-33, -66], [-92, -84], [-86, -90], [52, -62], [60, -58], [57, -70], [118, -104], [-150, -170], [-160, -164], [26, -150], [-20, -200], [160, -220],
-      [-70, -40], [-76, -48], [-110, -60], [-120, -20], [-130, 4], [96, -40], [104, -30], [130, -60], [140, -10], [-58, 30], [-68, 22], [44, 30], [60, 22], [80, -120], [-40, -120], [-100, -140], [120, -150], [-10, -130], [20, -112]];
+    const spots = [[-38, -58], [-44, -62], [-33, -66], [52, -62], [60, -58], [57, -70], [118, -104], [-150, -170], [-160, -164], [26, -150], [-20, -200], [160, -220],
+      [-70, -40], [-120, -20], [-130, 4], [96, -40], [104, -30], [130, -60], [140, -10], [-58, 30], [-68, 22], [44, 30], [60, 22], [80, -120], [-40, -120], [-100, -140], [120, -150], [-10, -130], [20, -112]];
     spots.forEach(([x, z], i) => {
       const y = heightAt(x, z); if (y < 0.35) return;
       const s = 0.85 + rT() * 0.8;
       if (i % 5 === 3) cypress(x, y, z, s); else broadleaf(x, y, z, s);
       if (rT() < 0.6) bush(x + 2.5 + rT() * 2, heightAt(x + 3, z + 1), z + 1 + rT() * 2, 0.8 + rT() * 0.6);
     });
-    for (let i = 0; i < 40; i++) { const x = (rT() - 0.5) * 260, z = -20 - rT() * 180, y = heightAt(x, z); if (y < 0.5) continue; bush(x, y, z, 0.6 + rT() * 0.7); }
+    for (let i = 0; i < 40; i++) { const x = (rT() - 0.5) * 260, z = -20 - rT() * 180, y = heightAt(x, z); if (y < 0.5 || Math.hypot(x - GT.x, z - GT.z) < 22) continue; bush(x, y, z, 0.6 + rT() * 0.7); }
+    // a grande árvore (a cânfora do Totoro): um morro de folhas, escuro no alto e claro embaixo
+    {
+      const y0 = heightAt(GT.x, GT.z); GT.y = y0;
+      const BARK = "#4A3A2E";
+      TB.add(new T.CylinderGeometry(3.2, 5.2, 16, 18), M(GT.x, y0 + 7, GT.z), BARK);
+      TB.add(new T.CylinderGeometry(2.2, 3.2, 26, 14), M(GT.x, y0 + 26, GT.z), BARK);
+      for (let k = 0; k < 9; k++) { const a = k / 9 * Math.PI * 2 + 0.3; TB.add(new T.CylinderGeometry(0.6, 1.4, 7, 8), M(GT.x + Math.cos(a) * 5.4, y0 + 0.9, GT.z + Math.sin(a) * 5.4, Math.sin(a) * 1.2, 0, -Math.cos(a) * 1.2), BARK); }
+      // corda sagrada com papéis
+      { const pts = []; for (let i = 0; i <= 40; i++) { const a = i / 40 * Math.PI * 2; pts.push(new T.Vector3(GT.x + Math.cos(a) * 4.25, y0 + 5.2 - Math.max(0, Math.sin(a)) * 0.9, GT.z + Math.sin(a) * 4.25)); }
+        TB.add(new T.TubeGeometry(new T.CatmullRomCurve3(pts, true), 80, 0.16, 6, true), M(), "#D8C48E");
+        for (let k = 0; k < 5; k++) { const a = 0.9 + k * 0.32; TB.add(new T.BoxGeometry(0.4, 0.7, 0.04), M(GT.x + Math.cos(a) * 4.5, y0 + 4.2 - Math.sin(a) * 0.9, GT.z + Math.sin(a) * 4.5, 0, -a + Math.PI / 2, 0), "#F7F4EC"); } }
+      // galhos grossos saindo do tronco
+      for (let k = 0; k < 7; k++) { const a = k / 7 * Math.PI * 2; TB.add(new T.CylinderGeometry(0.5, 1.1, 9, 8), M(GT.x + Math.cos(a) * 4, y0 + 17, GT.z + Math.sin(a) * 4, Math.sin(a) * 0.9, 0, -Math.cos(a) * 0.9), BARK); }
+      const ctr = new T.Vector3(GT.x, y0 + 34, GT.z);
+      const TONES = ["#1E3A26", "#24442C", "#2C5032", "#335C38", "#3E6E42", "#4E8048", "#5E9050", "#6EA058"];
+      for (let i = 0; i < 360; i++) {
+        const h = rT();                                                // altura relativa
+        const R0 = 21 * Math.pow(Math.max(0.02, 1 - h), 0.55) * (h < 0.06 ? 0.7 : 1);
+        const a = rT() * Math.PI * 2, rr = R0 * (0.7 + rT() * 0.3);
+        const py = y0 + 11 + h * 52, pr = 2.6 + rT() * 2.8 + (1 - h) * 1.5;
+        const tone = TONES[Math.max(0, Math.min(TONES.length - 1, Math.round((1 - h) * 5 + rT() * 2.5)))];
+        addBlob(new T.IcosahedronGeometry(pr, 1), M(GT.x + Math.cos(a) * rr, py, GT.z + Math.sin(a) * rr * 0.9), tone, 0.35, ctr);
+      }
+      // a mata baixa em volta
+      for (let i = 0; i < 26; i++) { const a = rT() * Math.PI * 2, rr = 16 + rT() * 12; const x = GT.x + Math.cos(a) * rr, z = GT.z + Math.sin(a) * rr; bush(x, heightAt(x, z), z, 1.4 + rT() * 1.4); }
+      // lanternas de pedra e um pequeno santuário diante da árvore
+      for (const sx of [-1, 1]) {
+        const x = GT.x + sx * 4.5, z = GT.z + 14, y = heightAt(x, z);
+        TB.add(new T.CylinderGeometry(0.35, 0.45, 0.5, 6), M(x, y + 0.25, z), "#8A8680");
+        TB.add(new T.CylinderGeometry(0.16, 0.2, 1.2, 6), M(x, y + 1.1, z), "#8A8680");
+        TB.add(new T.BoxGeometry(0.75, 0.6, 0.75), M(x, y + 1.95, z), "#FFC27A", 1);
+        TB.add(new T.ConeGeometry(0.75, 0.55, 4), M(x, y + 2.5, z, 0, Math.PI / 4, 0), "#6E6A66");
+        nightLights.push(new T.Vector3(x, y + 1.95, z));
+      }
+      { const x = GT.x, z = GT.z + 7.4, y = heightAt(x, z); TB.add(new T.BoxGeometry(1.2, 1.0, 0.9), M(x, y + 0.5, z), "#6A4A34"); TB.add(new T.BoxGeometry(1.6, 0.16, 1.3), M(x, y + 1.08, z, 0.15, 0, 0), "#3E3430"); TB.add(new T.BoxGeometry(0.5, 0.5, 0.05), M(x, y + 0.5, z + 0.46), "#FFC27A", 1); }
+    }
     const g = new T.BufferGeometry();
     g.setAttribute("position", new T.Float32BufferAttribute(canopy.P, 3)); g.setAttribute("normal", new T.Float32BufferAttribute(canopy.N, 3));
     g.setAttribute("color", new T.Float32BufferAttribute(canopy.C, 3)); g.setAttribute("aSway", new T.Float32BufferAttribute(canopy.S, 1)); g.setAttribute("aCenter", new T.Float32BufferAttribute(canopy.Ce, 3));
     scene.add(new T.Mesh(g, leafMat));
     scene.add(new T.Mesh(TB.build(), objMat));
   }
+
+  /* A montanha da névoa: um morro perto do fundo do vale, com a caverna do Nós */
+  const foothill = (x, z) => {
+    const g = (cx, cz, w, h) => { const dx = (x - cx) / w, dz = (z - cz) / (w * 0.8); return h * Math.exp(-(dx * dx + dz * dz) * 1.6); };
+    let h = g(-60, -335, 70, 88) + g(-135, -320, 52, 52) + g(10, -345, 48, 44) + g(-90, -300, 30, 18);
+    h *= 0.9 + 0.14 * (1 - Math.abs(noise2(x * 0.03 + 5, z * 0.03))) + fbm(x * 0.07, z * 0.07, 3) * 0.06;
+    return h;
+  };
+  {
+    const W0 = -210, W1 = 90, Z0 = -232, Z1 = -440, NX = small ? 90 : 150, NZ = small ? 70 : 110;
+    const g = new T.PlaneGeometry(W1 - W0, Z0 - Z1, NX, NZ); g.rotateX(-Math.PI / 2);
+    const p = g.attributes.position;
+    for (let i = 0; i < p.count; i++) { const x = p.getX(i) + (W0 + W1) / 2, z = p.getZ(i) + (Z0 + Z1) / 2; p.setY(i, foothill(x, z) + heightAt(x, z) - 0.6); }
+    g.computeVertexNormals();
+    const m = mat(VS_WORLD, mountFS, { uRock: { value: col("#5E6E66") }, uRockD: { value: col("#3E4C48") }, uSnow: { value: col("#F4F7F8") }, uSnowS: { value: col("#A9C0D3") }, uLow: { value: col("#4E7A4A") }, uSnowLine: { value: 72 } });
+    const mesh = new T.Mesh(g, m); mesh.position.set((W0 + W1) / 2, 0, (Z0 + Z1) / 2); scene.add(mesh);
+    // boca da caverna: onde a encosta chega a ~9 de altura
+    let cz = -250; for (let z = -236; z > -330; z -= 0.5) { if (foothill(CAVE.x, z) > 5) { cz = z; break; } }
+    CAVE.z = cz; CAVE.y = heightAt(CAVE.x, cz + 4);
+    const yB = CAVE.y;
+    const B = Builder(), rc = mulberry(9);
+    const Mm = M(CAVE.x, yB, cz + 3.6);
+    // parede de rocha que sai da encosta e abraça a entrada
+    B.add(new T.IcosahedronGeometry(1, 3), Mm.clone().multiply(M(0, -1.5, -3.2, 0, 0, 0, 11, 9.5, 7.5)), (x, y, z) => (Math.sin(y * 1.3 + x * 0.6) > 0.35 ? "#56645E" : "#4A5652"));
+    for (let k = 0; k < 7; k++) { const a = -0.4 + k * 0.62; B.add(new T.IcosahedronGeometry(2.2 + rc() * 1.6, 0), Mm.clone().multiply(M(Math.cos(a + Math.PI / 2) * 9.5, 1.2 + rc() * 3, -1 + Math.sin(a) * 2, rc(), rc(), rc())), "#4E5A54"); }
+    // o vão escuro, em arco, com a luz lá dentro
+    const arch = new T.Shape(); arch.moveTo(-4.2, 0); arch.lineTo(-4.2, 3.4); arch.absarc(0, 3.4, 4.2, Math.PI, 0, true); arch.lineTo(4.2, 0); arch.lineTo(-4.2, 0);
+    B.add(new T.ShapeGeometry(arch, 20), Mm.clone().multiply(M(0, 0.05, 4.62)), "#0E0908");
+    const inner = new T.Shape(); inner.moveTo(-1.8, 0); inner.lineTo(-1.8, 2.2); inner.absarc(0, 2.2, 1.8, Math.PI, 0, true); inner.lineTo(1.8, 0); inner.lineTo(-1.8, 0);
+    B.add(new T.ShapeGeometry(inner, 16), Mm.clone().multiply(M(0, 0.06, 4.64)), "#1E140E", 1);
+    for (let k = 0; k < 15; k++) { const a = Math.PI * (k / 14); const rr = 4.6 + rc() * 0.4; B.add(new T.IcosahedronGeometry(0.9 + rc() * 0.6, 0), Mm.clone().multiply(M(Math.cos(a) * rr, 3.4 + Math.sin(a) * rr, 4.4 + rc() * 0.5, rc(), rc(), rc())), rc() < 0.5 ? "#6A645E" : "#5A5650"); }
+    for (const sx of [-1, 1]) for (let k = 0; k < 3; k++) B.add(new T.IcosahedronGeometry(1.0 + rc() * 0.5, 0), Mm.clone().multiply(M(sx * (4.7 + rc() * 0.3), 0.8 + k * 1.1, 4.4, rc(), rc(), rc())), "#5E5852");
+    for (let k = 0; k < 8; k++) B.add(new T.IcosahedronGeometry(0.5 + rc() * 0.8, 0), Mm.clone().multiply(M((rc() - 0.5) * 18, 0.2, 6 + rc() * 7, rc(), rc(), rc())), "#6A645E");
+    // corda sagrada atravessando a entrada
+    { const pts = []; for (let i = 0; i <= 20; i++) { const u = i / 20; pts.push(new T.Vector3(-4.8 + u * 9.6, 7.0 - Math.sin(u * Math.PI) * 1.2, 5.2).applyMatrix4(Mm)); }
+      B.add(new T.TubeGeometry(new T.CatmullRomCurve3(pts), 40, 0.2, 6, false), M(), "#D8C48E");
+      for (let k = 0; k < 4; k++) { const u = 0.2 + k * 0.2; B.add(new T.BoxGeometry(0.42, 0.8, 0.04), Mm.clone().multiply(M(-4.8 + u * 9.6, 5.9 - Math.sin(u * Math.PI) * 1.2, 5.25)), "#F7F4EC"); } }
+    // lanternas de pedra que acendem à noite
+    for (const sx of [-1, 1]) {
+      const x = CAVE.x + sx * 6.5, z = cz + 12, y = heightAt(x, z);
+      B.add(new T.CylinderGeometry(0.4, 0.5, 0.6, 6), M(x, y + 0.3, z), "#8A8680"); B.add(new T.CylinderGeometry(0.18, 0.22, 1.4, 6), M(x, y + 1.3, z), "#8A8680");
+      B.add(new T.BoxGeometry(0.85, 0.7, 0.85), M(x, y + 2.3, z), "#FFC27A", 1); B.add(new T.ConeGeometry(0.85, 0.6, 4), M(x, y + 2.95, z, 0, Math.PI / 4, 0), "#6E6A66");
+      nightLights.push(new T.Vector3(x, y + 2.3, z));
+    }
+    nightLights.push(new T.Vector3(CAVE.x, yB + 1.6, cz + 8.4));
+    scene.add(new T.Mesh(B.build(), objMat));
+    // o fio dourado sai da caverna e desce para o vale
+    { const pts = []; for (let i = 0; i <= 40; i++) { const u = i / 40, z = cz + 7.5 + u * 46, x = CAVE.x + Math.sin(u * 7) * 2.4 + u * 6; pts.push(new T.Vector3(x, heightAt(x, z) + 0.12, z)); }
+      const th = new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(pts), 160, 0.07, 5, false), new T.MeshBasicMaterial({ color: 0xffc860 })); scene.add(th); }
+  }
+  // neblina que nunca vai embora, em volta da montanha
+  const caveMist = (() => {
+    const c = document.createElement("canvas"); c.width = c.height = 128; const g = c.getContext("2d");
+    const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64); gr.addColorStop(0, "rgba(255,255,255,0.9)"); gr.addColorStop(0.5, "rgba(255,255,255,0.35)"); gr.addColorStop(1, "rgba(255,255,255,0)");
+    g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
+    const mtl = new T.SpriteMaterial({ map: new T.CanvasTexture(c), transparent: true, depthWrite: false, opacity: 0.6, fog: false });
+    const list = [], rm = mulberry(33);
+    for (let i = 0; i < 34; i++) {
+      const a = rm() * Math.PI * 2, rr = 30 + rm() * 70, x = -60 + Math.cos(a) * rr * 1.3, z = -330 + Math.sin(a) * rr * 0.7;
+      const sp = new T.Sprite(mtl); sp.position.set(x, 16 + rm() * 34, z - 10); sp.scale.set(70 + rm() * 70, 16 + rm() * 14, 1);
+      sp.userData = { x, ph: rm() * 6 }; scene.add(sp); list.push(sp);
+    }
+    for (let i = 0; i < 8; i++) { const sp = new T.Sprite(mtl); const x = CAVE.x + (rm() < 0.5 ? -1 : 1) * (14 + rm() * 26); sp.position.set(x, CAVE.y + 1 + rm() * 3, CAVE.z + 4 + rm() * 10); sp.scale.set(30 + rm() * 24, 5 + rm() * 3, 1); sp.userData = { x, ph: rm() * 6 }; scene.add(sp); list.push(sp); }
+    const day = new T.Color(), tmp = new T.Color();
+    return (t) => {
+      const n = U.uNight.value, dk = U.uDusk.value * (1 - n);
+      day.set(0xe6eef2); tmp.set(0xf2c8c0); day.lerp(tmp, dk); tmp.set(0x5a6a88); day.lerp(tmp, n);
+      mtl.color.copy(day); mtl.opacity = 0.62 - n * 0.12;
+      list.forEach((sp) => { sp.position.x = sp.userData.x + Math.sin(t * 0.05 + sp.userData.ph) * 12; });
+    };
+  })();
+
+  /* Camadas da serra ao fundo: silhuetas que clareiam com a distância */
+  {
+    const ridgeFS = `${COMMON}${NOISE}
+      uniform vec3 uBase, uSnowC; uniform float uHaze0, uTop; varying vec3 vW; varying float vH;
+      void main(){
+        float h=vH/uTop;
+        vec3 c=uBase*(0.86+0.14*snoise(vW.xy*0.012));
+        float snow=smoothstep(0.62,0.74,h+snoise(vW.xy*0.02)*0.08);
+        c=mix(c,uSnowC,snow*0.85);
+        c=mix(c,duskGrade(c),uDusk*(1.0-uNight));
+        c=mix(c,nightTint(c)*1.2,uNight);
+        float haze=uHaze0+(1.0-h)*0.18;
+        c=mix(c,fogColor(),clamp(haze,0.0,0.92));
+        c=mix(c, hazeColor(), uHaze);
+        gl_FragColor=vec4(c,1.0);
+      }`;
+    const ridgeVS = `varying vec3 vW; varying float vH; void main(){ vH=position.y; vec4 w=modelMatrix*vec4(position,1.0); vW=w.xyz; gl_Position=projectionMatrix*viewMatrix*w; }`;
+    [[-1080, 150, "#5E7894", 0.42, 3], [-1300, 210, "#7790AA", 0.6, 11], [-1520, 260, "#93A8BE", 0.74, 23]].forEach(([z, H, base, hz, seed]) => {
+      const N = small ? 220 : 420, Wd = 4200, pos = [], idx = [];
+      for (let i = 0; i <= N; i++) {
+        const x = -Wd / 2 + i * Wd / N;
+        const ridge = 1 - Math.abs(noise2(x * 0.0022 + seed, seed));
+        const h = H * (0.32 + 0.5 * ridge * ridge + 0.18 * fbm(x * 0.008 + seed, seed * 2, 4));
+        pos.push(x, -40, 0, x, Math.max(10, h), 0);
+        if (i < N) { const a = i * 2; idx.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); }
+      }
+      const g = new T.BufferGeometry(); g.setAttribute("position", new T.Float32BufferAttribute(pos, 3)); g.setIndex(idx);
+      const m = mat(ridgeVS, ridgeFS, { uBase: { value: col(base) }, uSnowC: { value: col("#EEF2F6") }, uHaze0: { value: hz }, uTop: { value: H } }, { side: T.DoubleSide });
+      const mesh = new T.Mesh(g, m); mesh.position.set(0, 0, z); mesh.frustumCulled = false; mesh.renderOrder = -5; scene.add(mesh);
+    });
+  }
+
+  /* Luzes da noite: halos sobre as lanternas da árvore e da caverna, vaga-lumes */
+  const nightGlow = (() => {
+    const c = document.createElement("canvas"); c.width = c.height = 64; const g = c.getContext("2d");
+    const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, "rgba(255,220,160,1)"); gr.addColorStop(0.35, "rgba(255,170,90,0.45)"); gr.addColorStop(1, "rgba(255,140,60,0)");
+    g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
+    const tex = new T.CanvasTexture(c);
+    const mtl = new T.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, blending: T.AdditiveBlending, opacity: 0, fog: false });
+    const sprites = nightLights.map((p) => { const sp = new T.Sprite(mtl); sp.position.copy(p); sp.scale.setScalar(7); scene.add(sp); return sp; });
+    const fg = new T.BufferGeometry(), fp = [], rf = mulberry(61);
+    for (let i = 0; i < 140; i++) { const a = rf() * Math.PI * 2, r = 8 + rf() * 22; fp.push(GT.x + Math.cos(a) * r, heightAt(GT.x, GT.z) + 1 + rf() * 9, GT.z + Math.sin(a) * r); }
+    for (let i = 0; i < 60; i++) { fp.push(CAVE.x + (rf() - 0.5) * 20, CAVE.y + rf() * 6, CAVE.z + 4 + rf() * 16); }
+    fg.setAttribute("position", new T.Float32BufferAttribute(fp, 3));
+    const fm = new T.PointsMaterial({ color: 0xd8f070, size: 0.5, transparent: true, opacity: 0, depthWrite: false, blending: T.AdditiveBlending });
+    const flies2 = new T.Points(fg, fm); scene.add(flies2);
+    return (t) => {
+      const n = U.uNight.value, dk = U.uDusk.value * (1 - n);
+      mtl.opacity = Math.min(1, n * 0.95 + dk * 0.45) * (0.85 + 0.15 * Math.sin(t * 7));
+      sprites.forEach((sp, i) => sp.scale.setScalar(6.5 + Math.sin(t * 5 + i) * 0.4));
+      fm.opacity = n * (0.6 + 0.3 * Math.sin(t * 2.3)); flies2.position.y = Math.sin(t * 0.6) * 0.5;
+    };
+  })();
 
   /* Bandos de pássaros cruzando o céu */
   const birds = (() => {
@@ -886,6 +1051,20 @@
     const bodyGeo = B.build();
     castleBody.add(new T.Mesh(bodyGeo, objMat));
     castleBody.add(new T.Mesh(bodyGeo, castleLine));
+    // em obras: andaimes de madeira, guindaste e a placa 工事中
+    {
+      const S = Builder(), WD = "#8A6A44", WD2 = "#6E5034";
+      for (const x of [-6.5, -2, 2.5, 7]) for (const z of [-5.6, 5.6]) S.add(new T.CylinderGeometry(0.12, 0.12, 13, 6), M(x, 12.5, z), WD);
+      for (const y of [8.5, 12, 15.5]) for (const z of [-5.6, 5.6]) { S.add(new T.BoxGeometry(14, 0.18, 0.9), M(0.25, y, z + Math.sign(z) * 0.4), WD2); S.add(new T.BoxGeometry(14, 0.08, 0.08), M(0.25, y + 0.9, z + Math.sign(z) * 0.85), WD); }
+      for (const z of [-5.6, 5.6]) for (let k = 0; k < 3; k++) S.add(new T.CylinderGeometry(0.06, 0.06, 5.2, 5), M(-4.25 + k * 4.5, 12, z + Math.sign(z) * 0.05, 0, 0, 0.7 * (k % 2 ? 1 : -1)), WD);
+      S.add(new T.CylinderGeometry(0.16, 0.2, 14, 6), M(-2.6, 23, 2.6), "#C98A2A"); S.add(new T.BoxGeometry(9, 0.3, 0.3), M(0.6, 29.8, 2.6), "#C98A2A");
+      S.add(new T.CylinderGeometry(0.02, 0.02, 6, 4), M(4.4, 26.8, 2.6), "#2A2420"); S.add(new T.BoxGeometry(0.9, 0.7, 0.9), M(4.4, 23.6, 2.6), WD2);
+      castle.add(new T.Mesh(S.build(), objMat));
+      const c = document.createElement("canvas"); c.width = 256; c.height = 128; const g2 = c.getContext("2d");
+      g2.fillStyle = "#E8C23A"; g2.fillRect(0, 0, 256, 128); g2.fillStyle = "#1C1A16"; for (let i = -2; i < 12; i++) { g2.beginPath(); g2.moveTo(i * 28, 0); g2.lineTo(i * 28 + 14, 0); g2.lineTo(i * 28 - 18, 22); g2.lineTo(i * 28 - 32, 22); g2.fill(); g2.beginPath(); g2.moveTo(i * 28, 106); g2.lineTo(i * 28 + 14, 106); g2.lineTo(i * 28 - 18, 128); g2.lineTo(i * 28 - 32, 128); g2.fill(); }
+      g2.font = "800 56px 'Shippori Mincho', serif"; g2.textAlign = "center"; g2.textBaseline = "middle"; g2.fillText("工事中", 128, 66);
+      const sign = new T.Mesh(new T.PlaneGeometry(4.4, 2.2), new T.MeshBasicMaterial({ map: new T.CanvasTexture(c), side: T.DoubleSide })); sign.position.set(0.25, 10.2, 6.6); castle.add(sign);
+    }
 
     // Pernas de ave com joelho invertido e pés de três dedos
     const LEG = "#34383E";
@@ -1969,6 +2148,7 @@
     });
     cloudMesh.position.x = Math.sin(t * 0.006) * 40;
     cloudMesh.userData.mist.opacity = 0.55 * (1 - U.uNight.value * 0.75);
+    caveMist(t); nightGlow(t);
     { const H = cloudMesh.userData.hillMist; const n = U.uNight.value, dk = U.uDusk.value * (1 - n);
       H.mat.opacity = n * 0.34 + dk * 0.16; H.mat.color.setRGB(0.62 + dk * 0.36, 0.70 + dk * 0.06, 0.82 - dk * 0.1);
       const hi = Math.min(1, Math.max(0, (camera.position.y - 12) / 25)); H.low.opacity = H.mat.opacity * 0.6 * (1 - hi); H.low.color.copy(H.mat.color);
@@ -2149,7 +2329,7 @@
   /* Exploração: lugares do vale, marcadores, minimapa e cartões         */
   /* ------------------------------------------------------------------ */
   const exploreEl = $("explore");
-  const OVERVIEW = { pos: new T.Vector3(-6, 44, 60), tgt: new T.Vector3(12, 0, -74) };
+  const OVERVIEW = { pos: new T.Vector3(-34, 60, 78), tgt: new T.Vector3(-22, 0, -96) };
   const openWorld = (n) => { if (window.mundos) window.mundos.open(n); };
   // Teletransporte para dentro da Torre: círculo de runas, pilar de luz e clarão
   const tp = (() => {
@@ -2188,6 +2368,15 @@
     const flash = document.createElement("div"); flash.className = "tp-flash"; document.body.appendChild(flash);
     return { g, circle, pillar, sparks, flash, t: -1 };
   })();
+  const enterFade = document.createElement("div"); enterFade.className = "enter-fade"; document.body.appendChild(enterFade);
+  function enterVia(world) {
+    const P = PLACES[explore.place]; if (!P || !P.entry || explore.dolly) return;
+    showCard(null);
+    explore.dolly = P.entry(); explore.from = camState(); explore.k = 0;
+    setTimeout(() => enterFade.classList.add("on"), 1500);
+    setTimeout(() => { openWorld(world); setTimeout(() => enterFade.classList.remove("on"), 150); }, 2300);
+  }
+  window.addEventListener("mundo", (e) => { if (e.detail === "close" && explore.dolly) { explore.dolly = null; explore.from = camState(); explore.k = 0; if (explore.place) showCard(explore.place); } });
   function teleport() {
     if (tp.t >= 0) return;
     tp.g.position.set(TOWER.x, TOWER.y + 0.75, TOWER.z); tp.g.visible = true; tp.t = 0;
@@ -2220,14 +2409,28 @@
       view: () => ({ pos: new T.Vector3(TORII.x + 2.2, 4.4, TORII.z + 13.5), tgt: new T.Vector3(TORII.x, 3.6, TORII.z - 6) }),
       actions: [{ label: "Voltar à capa", primary: true, run: () => exitExplore(true) }, { label: "Ver o filme de novo", run: () => playIntro(true) }],
     },
+    arvore: {
+      k: "樹", name: "A grande árvore", kicker: "AcousticBuild",
+      text: "Uma cânfora tão antiga que já viu o vale inteiro nascer. Entre as raízes, alguém dorme.",
+      anchor: () => new T.Vector3(GT.x + 10, GT.y + 44, GT.z + 14),
+      view: () => ({ pos: new T.Vector3(GT.x + 26, GT.y + 4, GT.z + 92), tgt: new T.Vector3(GT.x, GT.y + 30, GT.z) }),
+      entry: () => ({ pos: new T.Vector3(GT.x + 1, GT.y + 2.4, GT.z + 11), tgt: new T.Vector3(GT.x, GT.y + 0.5, GT.z + 3) }),
+      actions: [{ label: "Chegar perto", primary: true, run: () => enterVia("arvore") }],
+    },
+    montanha: {
+      k: "山", name: "A montanha da névoa", kicker: "Nós",
+      text: "A névoa nunca sai daqui. Um fio dourado desce da caverna, como se alguém tivesse ido e não voltado.",
+      anchor: () => new T.Vector3(CAVE.x, CAVE.y + 22, CAVE.z),
+      view: () => ({ pos: new T.Vector3(CAVE.x + 12, CAVE.y + 8, CAVE.z + 58), tgt: new T.Vector3(CAVE.x, CAVE.y + 8, CAVE.z) }),
+      entry: () => ({ pos: new T.Vector3(CAVE.x, CAVE.y + 2.6, CAVE.z + 13), tgt: new T.Vector3(CAVE.x, CAVE.y + 2.2, CAVE.z - 4) }),
+      actions: [{ label: "Entrar na caverna", primary: true, run: () => enterVia("nos") }],
+    },
     castelo: {
-      k: "城", name: "Castelo do Howl", kicker: "Os projetos",
-      text: "Entra-se pela porta dos fundos, como no filme. Lá dentro, o Calcifer guia: primeiro o quarto, depois as portas.",
+      k: "城", name: "Castelo do Howl", kicker: "Em construção",
+      text: "O castelo está em obras. Por enquanto ele só passeia pelo vale; um dia, as portas vão abrir para algo novo.",
       anchor: () => castle.position.clone().add(new T.Vector3(0, 15, 0)),
       view: () => { const cp = castle.position; return { pos: new T.Vector3(cp.x - 30, cp.y + 5, cp.z + 36), tgt: new T.Vector3(cp.x, cp.y + 7, cp.z) }; },
-      actions: [
-        { label: "Entrar no castelo", primary: true, run: () => openWorld("castelo") },
-      ],
+      actions: [{ label: "Continuar explorando", run: () => go(null) }],
     },
     torre: {
       k: "塔", name: "Torre dos Grimórios", kicker: "As matérias",
@@ -2361,6 +2564,23 @@
            <rect x="40" y="-2" width="7" height="3" fill="#8C8A90"/><rect x="41.5" y="1" width="4" height="5" fill="#FFB65A"/><rect x="40.5" y="6" width="6" height="7" fill="#8C8A90"/></g>
         <g class="vm-label" transform="translate(0 34)"><text class="vm-n" text-anchor="middle">TORII · ENTRADA</text><text class="vm-s" y="15" text-anchor="middle">門 · VOLTAR À CAPA</text></g>
       </g>
+      <g class="vm-place" data-place="arvore" tabindex="0" role="button" aria-label="A grande árvore: AcousticBuild" transform="translate(${f(X(GT.x))} ${f(Y(GT.z))})">
+        <circle class="vm-halo" r="54" cy="-30"/>
+        <rect x="-5" y="-14" width="10" height="16" fill="#3A2C22"/>
+        <g fill="#1E3A26"><circle cx="0" cy="-58" r="20"/><circle cx="-16" cy="-46" r="16"/><circle cx="16" cy="-46" r="16"/></g>
+        <g fill="#2E5634"><circle cx="-20" cy="-30" r="15"/><circle cx="20" cy="-30" r="15"/><circle cx="0" cy="-36" r="18"/></g>
+        <g fill="#4E8048"><circle cx="-12" cy="-18" r="11"/><circle cx="12" cy="-18" r="11"/><circle cx="0" cy="-14" r="9"/></g>
+        <g fill="#FFB65A"><rect x="-10" y="4" width="3" height="4"/><rect x="7" y="4" width="3" height="4"/></g>
+        <g class="vm-label" transform="translate(0 26)"><text class="vm-n" text-anchor="middle">A GRANDE ÁRVORE</text><text class="vm-s" y="15" text-anchor="middle">樹 · ACOUSTICBUILD</text></g>
+      </g>
+      <g class="vm-place" data-place="montanha" tabindex="0" role="button" aria-label="A montanha da névoa: Nós" transform="translate(${f(X(CAVE.x))} ${f(Math.max(96, Y(CAVE.z)))})">
+        <circle class="vm-halo" r="50" cy="-14"/>
+        <path d="M-40 10 L-6 -36 L0 -30 L8 -40 L42 10Z" fill="#3E4C48"/><path d="M-6 -36 L0 -30 L8 -40 L14 -32 L4 -26 L-2 -30 L-12 -28Z" fill="#E6ECF0"/>
+        <path d="M-8 10 Q0 -10 8 10Z" fill="#120C0A"/><path d="M-4 10 Q0 -2 4 10Z" fill="#FFB65A" opacity="0.6"/>
+        <g fill="#DCE4EA" opacity="0.55"><ellipse cx="-24" cy="0" rx="22" ry="5"/><ellipse cx="22" cy="-6" rx="24" ry="5"/><ellipse cx="0" cy="-18" rx="30" ry="4"/></g>
+        <path d="M2 10 Q8 22 0 34" fill="none" stroke="#FFC860" stroke-width="1.6"/>
+        <g class="vm-label" transform="translate(0 -52)"><text class="vm-n" text-anchor="middle">A MONTANHA DA NÉVOA</text><text class="vm-s" y="15" text-anchor="middle">山 · NÓS</text></g>
+      </g>
       <g class="vm-place" data-place="estacao" tabindex="0" role="button" aria-label="Estação do fim da linha: contato e créditos" transform="translate(${f(X(STATION.x))} ${f(Y(STATION.z))})">
         <circle class="vm-halo" r="40" cy="-8"/>
         <rect x="-30" y="0" width="60" height="6" rx="1" fill="#7A5A3E"/><rect x="-30" y="6" width="60" height="2" fill="#4A3424"/>
@@ -2396,7 +2616,7 @@
         <g fill="#D8D4D0" opacity="0.75"><circle cx="26" cy="-44" r="3.2"/><circle cx="29" cy="-51" r="4.2"/><circle cx="25" cy="-59" r="5"/><circle cx="-32" cy="-36" r="2.6"/><circle cx="-35" cy="-42" r="3.4"/></g>
         <path d="M-44 -4 L-54 -6 L-54 0 L-44 1Z" fill="#3A3236" stroke="#2A1E1A" stroke-width="1"/>
         <ellipse cx="-30" cy="2" rx="6" ry="3.4" fill="#1A1416"/><circle cx="-14" cy="-4" r="3.6" fill="#FFB65A" stroke="#2A1E1A" stroke-width="1"/>
-        <g class="vm-label" transform="translate(0 -74)"><text class="vm-n" text-anchor="middle">CASTELO DO HOWL · PROJETOS</text><text class="vm-s" y="15" text-anchor="middle">城 · ENTRA-SE PELOS FUNDOS</text></g>
+        <g class="vm-label" transform="translate(0 -74)"><text class="vm-n" text-anchor="middle">CASTELO DO HOWL</text><text class="vm-s" y="15" text-anchor="middle">城 · EM CONSTRUÇÃO</text></g>
       </g>
 
       <g transform="translate(64 540)" class="vm-compass"><circle r="22" fill="none" stroke="#EFE6D2" stroke-width="1.4" opacity="0.8"/><path d="M0 -30 L6 0 L0 30 L-6 0Z" fill="#EFE6D2" opacity="0.9"/><path d="M0 -30 L6 0 L-6 0Z" fill="#C22026"/><text y="-38" text-anchor="middle" class="vm-k">北</text></g>
@@ -2467,7 +2687,7 @@
     const mailEl = document.getElementById("perfilMail");
     const mail = mailEl ? mailEl.textContent.trim() : "";
     const links = [...document.querySelectorAll(".perfil .links a")];
-    const places = [["castelo", "城", "Castelo"], ["torre", "塔", "Torre"], ["trem", "汽", "Trem"], ["torii", "門", "Torii"]];
+    const places = [["arvore", "樹", "Árvore"], ["montanha", "山", "Montanha"], ["torre", "塔", "Torre"], ["trem", "汽", "Trem"], ["torii", "門", "Torii"]];
     foot.innerHTML = `
       <div class="pf-col"><h3>連絡 · Contato</h3>${mail ? `<p class="pf-mail">${mail}</p><button type="button" class="pc-btn" data-copy>Copiar e-mail</button>` : ""}</div>
       <div class="pf-col"><h3>網 · Redes</h3><ul class="pf-links"></ul></div>
@@ -2510,7 +2730,7 @@
     tpStep(tdt);
     if (vmap) vmap.update();
     const P = explore.place ? PLACES[explore.place] : null;
-    const v = P ? P.view() : { pos: OVERVIEW.pos.clone().add(new T.Vector3(Math.sin(clock * 0.05) * 6, 0, 0)), tgt: OVERVIEW.tgt.clone() };
+    const v = explore.dolly || (P ? P.view() : { pos: OVERVIEW.pos.clone().add(new T.Vector3(Math.sin(clock * 0.05) * 6, 0, 0)), tgt: OVERVIEW.tgt.clone() });
     explore.k = Math.min(1, explore.k + tdt / 2.3);
     const e = ease(explore.k);
     const pos = explore.from ? explore.from.pos.clone().lerp(v.pos, e) : v.pos;
@@ -2525,7 +2745,7 @@
       el.style.transform = `translate(-50%, -100%) translate(${((p.x * 0.5 + 0.5) * W2).toFixed(1)}px, ${((-p.y * 0.5 + 0.5) * H2).toFixed(1)}px)`;
       el.style.opacity = vis ? "1" : "0"; el.tabIndex = vis ? 0 : -1;
     });
-    const cpos = { torii: [TORII.x, TORII.z], castelo: [castle.position.x, castle.position.z], torre: [TOWER.x, TOWER.z], trem: [Math.max(-128, Math.min(128, train.position.x)), TRACK_Z], estacao: [STATION.x, STATION.z] };
+    const cpos = { torii: [TORII.x, TORII.z], castelo: [castle.position.x, castle.position.z], torre: [TOWER.x, TOWER.z], arvore: [GT.x, GT.z], montanha: [CAVE.x, Math.max(-219, CAVE.z)], trem: [Math.max(-128, Math.min(128, train.position.x)), TRACK_Z], estacao: [STATION.x, STATION.z] };
     Object.entries(cpos).forEach(([id, [x, z]]) => {
       const d = explore.markers[id + "-mm"]; d.style.left = `${(explore.mm.mx(x) / 200 * 100).toFixed(2)}%`; d.style.top = `${(explore.mm.mz(z) / 130 * 100).toFixed(2)}%`;
     });

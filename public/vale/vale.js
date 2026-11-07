@@ -2069,6 +2069,67 @@
   const exploreEl = $("explore");
   const OVERVIEW = { pos: new T.Vector3(-6, 44, 60), tgt: new T.Vector3(12, 0, -74) };
   const openWorld = (n) => { if (window.mundos) window.mundos.open(n); };
+  // Teletransporte para dentro da Torre: círculo de runas, pilar de luz e clarão
+  const tp = (() => {
+    const g = new T.Group(); g.visible = false; scene.add(g);
+    const circle = new T.Mesh(new T.PlaneGeometry(16, 16), new T.ShaderMaterial({
+      transparent: true, depthWrite: false, blending: T.AdditiveBlending, uniforms: { uT: { value: 0 }, uK: { value: 0 } },
+      vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+      fragmentShader: `uniform float uT, uK; varying vec2 vUv;
+        void main(){
+          vec2 p=vUv*2.0-1.0; float r=length(p); float a=atan(p.y,p.x);
+          float grow=smoothstep(0.0,0.45,uK);
+          float rings=smoothstep(0.016,0.0,abs(r-0.92*grow))+smoothstep(0.012,0.0,abs(r-0.78*grow))+smoothstep(0.01,0.0,abs(r-0.42*grow));
+          float runes=step(0.8*grow,r)*step(r,0.9*grow)*step(0.55,fract(a*5.09+uT*1.5))*step(fract(a*20.37+uT*1.5),0.6);
+          float star=0.0;
+          for(int k=0;k<5;k++){ float ang=float(k)*1.2566+uT*0.8; vec2 d=vec2(cos(ang),sin(ang)); star+=smoothstep(0.012,0.0,abs(dot(p,d)-0.36*grow)); }
+          star*=step(r,0.78*grow);
+          float glow=(rings+runes*0.8+star*0.7)*(0.6+0.4*sin(uT*8.0));
+          float fade=1.0-smoothstep(0.85,1.0,uK);
+          vec3 col=mix(vec3(0.45,0.7,1.0),vec3(1.0,0.85,0.5),smoothstep(0.3,0.9,uK));
+          gl_FragColor=vec4(col*glow*fade*1.4,glow*fade);
+        }`,
+    }));
+    circle.rotation.x = -Math.PI / 2; g.add(circle);
+    const pillar = new T.Mesh(new T.CylinderGeometry(3.4, 4.2, 60, 32, 1, true), new T.ShaderMaterial({
+      transparent: true, depthWrite: false, blending: T.AdditiveBlending, side: T.DoubleSide, uniforms: { uT: { value: 0 }, uK: { value: 0 } },
+      vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+      fragmentShader: `uniform float uT, uK; varying vec2 vUv;
+        void main(){ float rise=smoothstep(0.45,0.85,uK); float h=step(vUv.y,rise); float streak=0.6+0.4*sin(vUv.x*60.0+uT*6.0)*sin(vUv.y*20.0-uT*12.0);
+          float a=h*(1.0-vUv.y)*streak*0.55*(1.0-smoothstep(0.9,1.0,uK)); gl_FragColor=vec4(vec3(0.7,0.85,1.0)*a,a); }`,
+    }));
+    pillar.position.y = 30; g.add(pillar);
+    const sp = new T.BufferGeometry(), spp = [], rs = mulberry(5);
+    for (let i = 0; i < 160; i++) { const a = rs() * Math.PI * 2, r = 1 + rs() * 6; spp.push(Math.cos(a) * r, rs() * 4, Math.sin(a) * r); }
+    sp.setAttribute("position", new T.Float32BufferAttribute(spp, 3));
+    const sparks = new T.Points(sp, new T.PointsMaterial({ color: 0xcfe4ff, size: 0.35, transparent: true, opacity: 0, depthWrite: false, blending: T.AdditiveBlending })); g.add(sparks);
+    const flash = document.createElement("div"); flash.className = "tp-flash"; document.body.appendChild(flash);
+    return { g, circle, pillar, sparks, flash, t: -1 };
+  })();
+  function teleport() {
+    if (tp.t >= 0) return;
+    tp.g.position.set(TOWER.x, TOWER.y + 0.75, TOWER.z); tp.g.visible = true; tp.t = 0;
+    showCard(null);
+    try { const A = window.AudioContext || window.webkitAudioContext; const ctx = teleport.ctx || (teleport.ctx = new A()); const now = ctx.currentTime, o = ctx.createOscillator(), g2 = ctx.createGain(); o.type = "sine"; o.frequency.setValueAtTime(220, now); o.frequency.exponentialRampToValueAtTime(1320, now + 1.8); g2.gain.setValueAtTime(0, now); g2.gain.linearRampToValueAtTime(0.12, now + 0.4); g2.gain.linearRampToValueAtTime(0, now + 2.0); o.connect(g2); g2.connect(ctx.destination); o.start(now); o.stop(now + 2.1); } catch (e) { /* sem áudio */ }
+  }
+  function tpStep(dt) {
+    if (tp.t < 0) return;
+    tp.t += dt;
+    const k = Math.min(1, tp.t / 2.4);
+    tp.circle.material.uniforms.uK.value = k; tp.circle.material.uniforms.uT.value = tp.t;
+    tp.pillar.material.uniforms.uK.value = k; tp.pillar.material.uniforms.uT.value = tp.t;
+    tp.circle.rotation.z = tp.t * (0.4 + k * 3);
+    tp.sparks.material.opacity = Math.min(1, k * 2) * (1 - smooth(0.85, 1, k));
+    tp.sparks.position.y = k * 18; tp.sparks.rotation.y = tp.t * 1.5;
+    if (k > 0.72 && !tp.flashed) { tp.flashed = true; tp.flash.classList.add("on"); }
+    if (k >= 1 && !tp.opened) {
+      tp.opened = true;
+      if (window.mundos && window.mundos.worlds.torre) window.mundos.worlds.torre.tpIn = true;
+      openWorld("torre");
+      setTimeout(() => tp.flash.classList.remove("on"), 120);
+      setTimeout(() => { tp.t = -1; tp.g.visible = false; tp.flashed = false; tp.opened = false; }, 400);
+    }
+  }
   const PLACES = {
     torii: {
       k: "門", name: "Torii", kicker: "A entrada",
@@ -2091,7 +2152,7 @@
       text: "Nove grimórios, um para cada matéria. Cada atividade é um feitiço aprendido.",
       anchor: () => new T.Vector3(TOWER.x, TOWER.y + 26.5, TOWER.z),
       view: () => ({ pos: new T.Vector3(TOWER.x - 21, TOWER.y + 10, TOWER.z + 30), tgt: new T.Vector3(TOWER.x, TOWER.y + 11, TOWER.z) }),
-      actions: [{ label: "Entrar na Torre", primary: true, run: () => openWorld("torre") }],
+      actions: [{ label: "Entrar na Torre", primary: true, run: () => teleport() }],
     },
     trem: {
       k: "汽", name: "Trem sobre a água", kicker: "A galeria",
@@ -2364,6 +2425,7 @@
     window.dispatchEvent(new CustomEvent("vale:explore", { detail: "end" }));
   }
   function exploreStep(dt, tdt = dt) {
+    tpStep(tdt);
     if (vmap) vmap.update();
     const P = explore.place ? PLACES[explore.place] : null;
     const v = P ? P.view() : { pos: OVERVIEW.pos.clone().add(new T.Vector3(Math.sin(clock * 0.05) * 6, 0, 0)), tgt: OVERVIEW.tgt.clone() };

@@ -505,6 +505,8 @@ a.q { text-decoration: none; }
 .kami-card.kc-photo .kc-facts { grid-column: 2; }
 .kami-card .kc-facts { list-style: none; padding: 0; margin: 6px 0 0; display: grid; gap: 6px; }
 .kami-card .kc-facts b { display: inline-block; min-width: 72px; font: 600 0.66rem/1 var(--f-label); letter-spacing: 0.12em; text-transform: uppercase; color: var(--kc-accent); }
+.tp-flash { position: fixed; inset: 0; z-index: 90; pointer-events: none; opacity: 0; background: radial-gradient(circle at 50% 55%, #FFFFFF, #CFE4FF 40%, #7FA8E8 80%); transition: opacity .35s ease; }
+.tp-flash.on { opacity: 1; transition: opacity .25s ease; }
 .w-label-call { background: rgba(194, 32, 38, 0.88) !important; animation: callpulse 1.8s ease-in-out infinite; }
 @keyframes callpulse { 50% { box-shadow: 0 0 0 6px rgba(194, 32, 38, 0.25); } }
 .mundo[data-world="castelo"] .world-line { font-family: var(--f-display); font-style: normal; color: #FFE2B8; max-width: 26ch; font-size: clamp(1.2rem, 0.9rem + 1.6vw, 2.1rem); }

@@ -724,7 +724,7 @@
     }
 
     function bookPose(b, t) {
-      const a = b.a0 + t * 0.05;
+      const a = b.a0 + t * 0.05 + (api.arrive || 0) * (api.arrive || 0) * 6.0;
       return { pos: new T.Vector3(Math.cos(a) * 3.9, 2.5 + Math.sin(t * 0.8 + b.a0 * 3) * 0.18, Math.sin(a) * 3.9), rotY: -a + Math.PI / 2 };
     }
     const PAL = { CN: "matcha", CH: "sunset", LG: "sakura", MT: "sky", MS: "matcha", DS: "lavender", PA: "lavender", IO: "gold", BD: "gold" };
@@ -777,6 +777,7 @@
       start() {
         time = 0; selected = null; hovered = null; camK = 1; camTo = null;
         camera.position.set(0, 4.3, 6.9); camera.userData.tgt = new T.Vector3(0, 3.0, 0);
+        api.arrive = api.tpIn ? 1 : 0; api.tpIn = false;
         books.forEach((b) => { b.open = 0; });
         labels.appendChild(tip);
         canvas.addEventListener("click", onClick); canvas.addEventListener("pointermove", onMove);
@@ -805,6 +806,15 @@
         // câmera
         const orbit = time * 0.04 + pointer.sx * 0.25;
         const idle = { pos: new T.Vector3(Math.sin(orbit) * 6.9, 4.3 - pointer.sy * 0.8, Math.cos(orbit) * 6.9), tgt: new T.Vector3(0, 3.0, 0) };
+        // chegada do teletransporte: do alto da torre, descendo em espiral até o círculo
+        if (api.arrive > 0) {
+          api.arrive = Math.max(0, api.arrive - dt / 3.2);
+          const k = ease(1 - api.arrive), a = orbit + (1 - k) * 5.5;
+          const rr = lerp(1.2, 6.9, k), yy = lerp(19, 4.3, k);
+          idle.pos.set(Math.sin(a) * rr, yy, Math.cos(a) * rr); idle.tgt.set(0, lerp(0, 3.0, k), 0);
+          circleMat.uniforms.uPulse.value = Math.max(circleMat.uniforms.uPulse.value, api.arrive);
+          camera.position.copy(idle.pos); camera.userData.tgt.copy(idle.tgt); camK = 1; camFrom = null;
+        }
         camK = Math.min(1, camK + dt / 2.0);
         const dest = camTo || idle;
         if (camK < 1 && camFrom) { const e = ease(camK); camera.position.copy(camFrom.pos).lerp(dest.pos, e); camera.userData.tgt.copy(camFrom.tgt).lerp(dest.tgt, e); }

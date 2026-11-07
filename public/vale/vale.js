@@ -1131,10 +1131,11 @@
             edge+=0.18*smoothstep(0.5,0.0,abs(vUv.y-0.5));
             float pulse=0.6+0.4*sin(uTime*2.0+vUv.x*12.566);
             float a=clamp((glyph*0.9+edge*0.75)*pulse,0.0,1.0);
-            vec3 day=uCol*0.55+vec3(0.0,0.02,0.08); vec3 night=min(uCol*1.5,vec3(1.0));
-            gl_FragColor=vec4(mix(day,night,uNight),a*(0.85+uNight*0.15));
+            float core=smoothstep(0.05,0.0,abs(vUv.y-0.1))+smoothstep(0.05,0.0,abs(vUv.y-0.9));
+            vec3 day=mix(uCol,vec3(1.0),core*0.6+glyph*0.15); vec3 night=min(uCol*1.6+0.15,vec3(1.0));
+            gl_FragColor=vec4(mix(day,night,uNight),clamp(a*1.2,0.0,1.0));
           }` });
-      const rings = [[6.4, 8, 1.5, "#8FC8FF", 1.2, 0.35, 0.0], [5.2, 14.5, 1.2, "#FFD58A", -1.6, -0.5, 0.6], [4.4, 20.5, 1.0, "#B8A0FF", 2.0, 0.25, -0.4]].map(([r, y, h, c, sp, tx, tz]) => {
+      const rings = [[6.4, 8, 1.7, "#1EA0FF", 1.2, 0.35, 0.0], [5.2, 14.5, 1.4, "#FFB000", -1.6, -0.5, 0.6], [4.4, 20.5, 1.2, "#C044FF", 2.0, 0.25, -0.4]].map(([r, y, h, c, sp, tx, tz]) => {
         const m = new T.Mesh(new T.CylinderGeometry(r, r, h, 64, 1, true), ringMat(c, sp));
         const holder = new T.Group(); holder.position.y = y; holder.rotation.set(tx, 0, tz); holder.add(m); spell.add(holder);
         return { m, holder, sp, tx, tz };
@@ -1148,12 +1149,12 @@
           void main(){ float k=fract(aPh+uTime*0.045); float a=aPh*61.0+k*18.0; float r=3.6+sin(aPh*40.0)*1.4+k*1.2;
             vec3 p=vec3(cos(a)*r, k*30.0, sin(a)*r); vA=sin(k*3.14159); vH=fract(aPh*13.0);
             vec4 mv=modelViewMatrix*vec4(p,1.0); gl_PointSize=(1.8+vH*2.6)*120.0/-mv.z; gl_Position=projectionMatrix*mv; }`,
-        fragmentShader: `uniform float uNight; varying float vA; varying float vH; void main(){ vec2 q=gl_PointCoord-0.5; float d=length(q); float a=smoothstep(0.5,0.1,d)*vA; vec3 c=mix(vec3(0.6,0.85,1.0),vec3(1.0,0.85,0.5),vH); c=mix(c*vec3(0.55,0.6,0.85),c,uNight); gl_FragColor=vec4(c,a*0.9); }` });
+        fragmentShader: `uniform float uNight; varying float vA; varying float vH; void main(){ vec2 q=gl_PointCoord-0.5; float d=length(q); float a=smoothstep(0.5,0.15,d)*vA; vec3 c=mix(vec3(0.1,0.65,1.0),vec3(1.0,0.72,0.0),vH); c=mix(c,mix(c,vec3(1.0),0.4),uNight); c=mix(c,vec3(1.0),smoothstep(0.25,0.0,d)*0.5); gl_FragColor=vec4(c,a); }` });
       const sparks = new T.Points(sg, sparkMat); sparks.frustumCulled = false; spell.add(sparks);
       // farol de luz no topo, apontando para o céu
-      const beam = new T.Mesh(new T.CylinderGeometry(0.6, 2.4, 70, 24, 1, true), new T.ShaderMaterial({ transparent: true, depthWrite: false, blending: T.AdditiveBlending, side: T.DoubleSide, uniforms: { uTime: U.uTime, uNight: U.uNight },
+      const beam = new T.Mesh(new T.CylinderGeometry(0.6, 2.4, 70, 24, 1, true), new T.ShaderMaterial({ transparent: true, depthWrite: false, side: T.DoubleSide, uniforms: { uTime: U.uTime, uNight: U.uNight },
         vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
-        fragmentShader: `uniform float uTime, uNight; varying vec2 vUv; void main(){ float a=pow(1.0-vUv.y,1.6)*0.32*(0.75+0.25*sin(uTime*1.7+vUv.y*20.0))*(0.25+uNight*0.75); a*=0.7+0.3*sin(vUv.x*25.13+uTime*3.0); gl_FragColor=vec4(vec3(0.65,0.8,1.0)*a,a); }` }));
+        fragmentShader: `uniform float uTime, uNight; varying vec2 vUv; void main(){ float a=pow(1.0-vUv.y,1.6)*0.45*(0.75+0.25*sin(uTime*1.7+vUv.y*20.0)); a*=0.7+0.3*sin(vUv.x*25.13+uTime*3.0); vec3 c=mix(vec3(1.0,0.82,0.3),vec3(0.7,0.85,1.0),uNight); gl_FragColor=vec4(c,a); }` }));
       beam.position.y = 26 + 35; spell.add(beam);
       const floor = new T.Mesh(new T.PlaneGeometry(15, 15), new T.ShaderMaterial({ transparent: true, depthWrite: false, uniforms: { uTime: U.uTime, uNight: U.uNight },
         vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
@@ -1162,7 +1163,7 @@
             float g=smoothstep(0.02,0.0,abs(r-0.96))+smoothstep(0.015,0.0,abs(r-0.86))+step(0.86,r)*step(r,0.96)*step(0.55,fract(a*7.64+uTime*0.3))*step(fract(a*30.56+uTime*0.3),0.6);
             for(int k=0;k<6;k++){ float an=float(k)*1.0472-uTime*0.15; vec2 d=vec2(cos(an),sin(an)); g+=smoothstep(0.012,0.0,abs(dot(p,d)-0.62))*step(r,0.86); }
             g*=step(0.42,r);
-            vec3 c=mix(vec3(0.2,0.45,0.85),vec3(0.65,0.85,1.0),uNight); float al=clamp(g,0.0,1.0)*(0.7+0.3*sin(uTime*1.5));
+            vec3 c=mix(vec3(0.05,0.6,1.0),vec3(0.65,0.88,1.0),uNight); float al=clamp(g*1.3,0.0,1.0)*(0.8+0.2*sin(uTime*1.5));
             gl_FragColor=vec4(c,al); }` }));
       floor.rotation.x = -Math.PI / 2; floor.position.y = 0.92; spell.add(floor);
       towerSpell.rings = rings; towerSpell.group = spell;
@@ -1185,6 +1186,7 @@
     scene.add(new T.Mesh(B.build(), objMat));
   }
   const train = new T.Group();
+  const trainFx = {};
   {
     const CREAM = "#E8DCC2", MAROON = "#7A2A26", DARK = "#2E2A2C";
     for (let c = 0; c < 3; c++) {
@@ -1194,10 +1196,42 @@
       B.add(new T.CylinderGeometry(0.95, 0.95, 5.1, 18, 1, false, 0, Math.PI), M(x0, 2.18, 0, 0, 0, Math.PI / 2, 0.42, 1, 1), DARK);
       for (const side of [1, -1]) for (let k = 0; k < 4; k++) B.add(new T.PlaneGeometry(0.72, 0.52), M(x0 - 1.8 + k * 1.2, 1.8, side * 0.86, 0, side > 0 ? 0 : Math.PI, 0), "#FFD58A", 1);
       for (const wx of [-1.7, 1.7]) for (const side of [1, -1]) B.add(new T.CylinderGeometry(0.28, 0.28, 0.12, 12), M(x0 + wx, 0.3, side * 0.78, Math.PI / 2, 0, 0), DARK);
-      if (c === 0) { B.add(new T.SphereGeometry(0.18, 10, 8), M(2.55, 1.0, 0), "#FFE9B0", 1); B.add(new T.BoxGeometry(0.1, 1.2, 1.5), M(2.52, 1.75, 0), "#3A3A44"); }
+      if (c === 0) {
+        B.add(new T.SphereGeometry(0.18, 10, 8), M(2.55, 1.0, 0), "#FFE9B0", 1); B.add(new T.BoxGeometry(0.1, 1.2, 1.5), M(2.52, 1.75, 0), "#3A3A44");
+        // pantógrafo no teto, como o trem do filme
+        B.add(new T.BoxGeometry(1.0, 0.1, 0.9), M(0.4, 2.62, 0), DARK);
+        B.add(new T.BoxGeometry(0.05, 1.3, 0.05), M(0.05, 3.15, 0, 0, 0, -0.55), DARK); B.add(new T.BoxGeometry(0.05, 1.3, 0.05), M(0.75, 3.15, 0, 0, 0, 0.55), DARK);
+        B.add(new T.BoxGeometry(0.08, 0.06, 1.3), M(0.4, 3.72, 0), "#4A4448");
+        // placa de destino sobre o para-brisa
+        B.add(new T.BoxGeometry(0.06, 0.26, 0.9), M(2.56, 2.28, 0), "#F2EAD8", 0.6);
+      }
+      // passageiros-sombra nas janelas
+      for (let k = 0; k < 4; k++) if ((k + c) % 3 !== 1) for (const side of [1, -1]) { B.add(new T.SphereGeometry(0.11, 8, 6), M(x0 - 1.8 + k * 1.2, 1.92, side * 0.82), "#2A2232"); B.add(new T.BoxGeometry(0.28, 0.22, 0.02), M(x0 - 1.8 + k * 1.2, 1.7, side * 0.84), "#2A2232"); }
+      // engate entre os vagões
+      if (c > 0) B.add(new T.BoxGeometry(0.6, 0.18, 0.3), M(x0 + 2.75, 0.55, 0), DARK);
       const m = new T.Mesh(B.build(), objMat); train.add(m); train.add(new T.Mesh(m.geometry, castleLine));
     }
     scene.add(train);
+    // farol: um cone de luz à frente, que aparece no fim de tarde e à noite
+    const headMat = new T.ShaderMaterial({ transparent: true, depthWrite: false, blending: T.AdditiveBlending, side: T.DoubleSide, uniforms: { uNight: U.uNight, uDusk: U.uDusk },
+      vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+      fragmentShader: `uniform float uNight, uDusk; varying vec2 vUv; void main(){ float a=pow(vUv.y,1.5)*0.35*max(uNight,uDusk*0.6); gl_FragColor=vec4(vec3(1.0,0.9,0.6)*a,a); }` });
+    const head = new T.Mesh(new T.ConeGeometry(2.2, 14, 20, 1, true), headMat); head.rotation.z = Math.PI / 2; head.position.set(9.6, 1.0, 0); train.add(head);
+    // centelhas do pantógrafo e a esteira na água
+    trainFx.sparks = new T.Points(new T.BufferGeometry().setAttribute("position", new T.Float32BufferAttribute(new Float32Array(30 * 3), 3)), new T.PointsMaterial({ color: 0xbfe6ff, size: 0.18, transparent: true, opacity: 0, depthWrite: false, blending: T.AdditiveBlending }));
+    trainFx.sparks.frustumCulled = false; scene.add(trainFx.sparks);
+    const W = 120, wg = new T.BufferGeometry(); wg.setAttribute("position", new T.Float32BufferAttribute(new Float32Array(W * 3), 3)); wg.setAttribute("aAge", new T.Float32BufferAttribute(new Float32Array(W), 1));
+    trainFx.wake = new T.Points(wg, new T.ShaderMaterial({ transparent: true, depthWrite: false, uniforms: { uNight: U.uNight },
+      vertexShader: `attribute float aAge; varying float vA; void main(){ vA=aAge; vec4 mv=modelViewMatrix*vec4(position,1.0); gl_PointSize=(4.0+aAge*16.0)*60.0/-mv.z; gl_Position=projectionMatrix*mv; }`,
+      fragmentShader: `uniform float uNight; varying float vA; void main(){ vec2 q=gl_PointCoord-0.5; float d=length(q); if(d>0.5) discard; float ring=smoothstep(0.5,0.38,d)*smoothstep(0.22,0.38,d); float a=ring*(1.0-vA)*0.75; gl_FragColor=vec4(mix(vec3(0.96,0.98,1.0),vec3(0.55,0.62,0.78),uNight),a); }` }));
+    trainFx.wake.frustumCulled = false; scene.add(trainFx.wake);
+    trainFx.wd = Array.from({ length: W }, (_, i) => ({ x: 0, z: 0, age: (i / W), side: i % 2 ? 1 : -1, live: false }));
+    // postes da rede aérea ao longo do trilho, com o fio
+    { const PB = Builder();
+      for (let x = -132; x <= 132; x += 9) { const y = Math.max(heightAt(x, TRACK_Z - 1.6), 0); PB.add(new T.CylinderGeometry(0.09, 0.12, 4.6, 6), M(x, y + 2.3, TRACK_Z - 1.6), "#3A3236"); PB.add(new T.BoxGeometry(0.1, 0.1, 2.0), M(x, y + 4.3, TRACK_Z - 0.7), "#3A3236"); }
+      scene.add(new T.Mesh(PB.build(), objMat));
+      const wp = []; for (let x = -132; x <= 132; x += 1.5) { const k = ((x + 132) % 9) / 9; wp.push(new T.Vector3(x, Math.max(heightAt(x, TRACK_Z), 0) + 4.2 - Math.sin(k * Math.PI) * 0.25, TRACK_Z)); }
+      const wl = new T.Line(new T.BufferGeometry().setFromPoints(wp), new T.LineBasicMaterial({ color: 0x2a2426 })); scene.add(wl); }
   }
 
 
@@ -2192,6 +2226,21 @@
     // trem: corre sobre os trilhos e volta pelo outro lado, fora de vista
     const tx = -145 + ((t * 7 + 140) % 290);
     train.position.set(tx, Math.max(heightAt(tx, TRACK_Z), 0) + 0.12 + Math.sin(t * 9) * 0.015, TRACK_Z);
+    {
+      // esteira: anéis que nascem nas rodas sobre a água e se abrem
+      const dtT = trainFx.lastT === undefined ? 0 : Math.max(0, Math.min(0.1, t - trainFx.lastT)); trainFx.lastT = t;
+      const pa = trainFx.wake.geometry.attributes.position.array, aa = trainFx.wake.geometry.attributes.aAge.array;
+      trainFx.wd.forEach((w, i) => {
+        w.age += dtT / 2.6;
+        if (w.age >= 1) { const wx = tx - Math.random() * 15; w.age = 0; w.live = heightAt(wx, TRACK_Z) < 0.05; w.x = wx; w.z = TRACK_Z + w.side * (0.9 + Math.random() * 0.4); }
+        pa[i * 3] = w.x; pa[i * 3 + 1] = w.live ? 0.05 : -50; pa[i * 3 + 2] = w.z + w.side * w.age * 1.4; aa[i] = w.age;
+      });
+      trainFx.wake.geometry.attributes.position.needsUpdate = true; trainFx.wake.geometry.attributes.aAge.needsUpdate = true;
+      // centelhas no pantógrafo, de vez em quando
+      const sp = trainFx.sparks, sa = sp.geometry.attributes.position.array, on = Math.sin(t * 3.1) > 0.85 || Math.sin(t * 7.7 + 1) > 0.95;
+      for (let i = 0; i < 30; i++) { sa[i * 3] = tx + 0.4 + (Math.random() - 0.5) * 0.8; sa[i * 3 + 1] = train.position.y + 3.8 + Math.random() * 0.5; sa[i * 3 + 2] = TRACK_Z + (Math.random() - 0.5) * 0.6; }
+      sp.geometry.attributes.position.needsUpdate = true; sp.material.opacity = on ? 0.4 + U.uNight.value * 0.6 : 0;
+    }
     // grimórios orbitando o topo da torre
     towerSpell.rings.forEach((r, i) => { r.m.rotation.y = t * 0.25 * r.sp; r.holder.rotation.x = r.tx + Math.sin(t * 0.4 + i) * 0.12; r.holder.rotation.z = r.tz + Math.cos(t * 0.33 + i) * 0.12; });
     towerBooks.forEach((m, i) => {
@@ -2376,7 +2425,7 @@
   if ($("introSkip")) $("introSkip").addEventListener("click", skipFilm);
   // seek: posiciona a entrada num corte e num ponto do corte (usado para revisar quadros)
   let peekCam = null;
-  window.vale = { toCover: () => { if (explore.active) exitExplore(true); }, info: () => ({ mem: Object.assign({}, renderer.info.memory), prog: renderer.info.programs ? renderer.info.programs.length : 0, calls: renderer.info.render.calls, tris: renderer.info.render.triangles, nodes: scene.children.length }), peek: (p, t) => { peekCam = p ? { p: new T.Vector3(p[0], p[1] + hillTop, p[2]), t: new T.Vector3(t[0], t[1] + hillTop, t[2]) } : null; }, star: (k) => meteors.launch(k || "vale"), playIntro, go: (id) => { if (!explore.active) startExplore(); go(id); }, seek(i, frac = 0.5) { if (!intro.active) playIntro(); startShot(i); intro.t = intro.shots[i].d * frac; } };
+  window.vale = { dbg: () => ({ tp: tp.t, opened: tp.opened, running, active: explore.active, place: explore.place, k: explore.k }), toCover: () => { if (explore.active) exitExplore(true); }, info: () => ({ mem: Object.assign({}, renderer.info.memory), prog: renderer.info.programs ? renderer.info.programs.length : 0, calls: renderer.info.render.calls, tris: renderer.info.render.triangles, nodes: scene.children.length }), peek: (p, t) => { peekCam = p ? { p: new T.Vector3(p[0], p[1] + hillTop, p[2]), t: new T.Vector3(t[0], t[1] + hillTop, t[2]) } : null; }, star: (k) => meteors.launch(k || "vale"), playIntro, go: (id) => { if (!explore.active) startExplore(); go(id); }, seek(i, frac = 0.5) { if (!intro.active) playIntro(); startShot(i); intro.t = intro.shots[i].d * frac; } };
 
 
   /* ------------------------------------------------------------------ */
@@ -2430,7 +2479,11 @@
     setTimeout(() => enterFade.classList.add("on"), 1500);
     setTimeout(() => { openWorld(world); setTimeout(() => enterFade.classList.remove("on"), 150); }, 2300);
   }
-  window.addEventListener("mundo", (e) => { if (e.detail === "close" && explore.dolly) { explore.dolly = null; explore.from = camState(); explore.k = 0; if (explore.place) showCard(explore.place); } });
+  window.addEventListener("mundo", (e) => {
+    if (e.detail !== "close" || !explore.active) return;
+    if (explore.dolly) { explore.dolly = null; explore.from = camState(); explore.k = 0; }
+    if (explore.place) showCard(explore.place);
+  });
   function teleport() {
     if (tp.t >= 0) return;
     tp.g.position.set(TOWER.x, TOWER.y + 0.75, TOWER.z); tp.g.visible = true; tp.t = 0;

@@ -257,6 +257,12 @@ html, body { height: 100%; overflow: hidden; background: #0c0c0c; }
 .pc-footer a:hover, .pc-footer li button:hover { color: #C22026; }
 .pc-footer li button b { color: #C22026; font-weight: 800; }
 .pc-footer .pf-mail { font: 500 0.78rem/1.5 var(--f-label); word-break: break-all; margin: 0 0 10px; color: #2A2420; }
+.pc-footer .pf-season { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.pc-footer .pf-season h3 { width: 100%; margin: 0 0 2px; }
+.pc-footer .pf-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 8px 14px; border-radius: 999px; border: 1px solid rgba(42,36,32,0.25); background: transparent; color: #2A2420; font: 500 0.82rem/1 var(--f-display); cursor: pointer; }
+.pc-footer .pf-chip b { color: #C22026; font-weight: 800; }
+.pc-footer .pf-chip[aria-pressed="true"] { background: #C22026; color: #fff; border-color: #C22026; }
+.pc-footer .pf-chip[aria-pressed="true"] b { color: #fff; }
 .pc-footer .pf-credits { grid-column: 1 / -1; margin: 0; font-size: 0.78rem; line-height: 1.5; color: #6C6156; }
 @media (max-width: 720px) { .pc-footer { grid-template-columns: 1fr 1fr; } .pc-footer .pf-col:first-child { grid-column: 1 / -1; } }
 .vmap { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; padding: 76px 16px 16px; background: rgba(8, 12, 20, 0.55); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); opacity: 0; transition: opacity .38s ease; }

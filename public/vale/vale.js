@@ -106,6 +106,16 @@
     uniform float uTime; uniform float uNight; uniform float uDusk; uniform float uReflect; uniform float uHaze;
     uniform vec3 uSun; uniform vec3 uFogDay; uniform vec3 uFogDusk; uniform vec3 uFogNight; uniform float uFogDensity;
     uniform vec3 uLanterns[2];
+    uniform vec4 uSeason;   // primavera, verão, outono, inverno (pesos que somam 1)
+    // chão e grama: outono dourado, inverno coberto de neve no que olha para cima
+    vec3 seasonGround(vec3 c, float up){
+      vec3 au=c*vec3(1.25,0.95,0.55)+vec3(0.08,0.03,0.0);
+      vec3 wi=mix(c*vec3(0.85,0.9,1.0),vec3(0.93,0.95,0.98),smoothstep(0.35,0.85,up));
+      vec3 sp=c*vec3(1.02,1.0,0.96);
+      return c*uSeason.y+sp*uSeason.x+au*uSeason.z+wi*uSeason.w;
+    }
+    // neve sobre telhados, pedras e madeira no inverno
+    vec3 seasonSnow(vec3 c, float up){ return mix(c,vec3(0.94,0.96,0.99),uSeason.w*smoothstep(0.62,0.9,up)); }
     vec3 fogColor(){ return mix(mix(uFogDay,uFogDusk,uDusk),uFogNight,uNight); }
     vec3 hazeColor(){ return mix(mix(vec3(0.93,0.95,0.97),vec3(0.98,0.80,0.74),uDusk),vec3(0.20,0.25,0.36),uNight); }
     // fim de tarde: tudo esquenta, sombras puxam para o lilás
@@ -129,7 +139,7 @@
   const col = (h) => new T.Color(h);
 
   const U = {
-    uTime: { value: 0 }, uNight: { value: 0 }, uDusk: { value: 0 }, uReflect: { value: 0 }, uHaze: { value: 0 }, uGustAmp: { value: 1 },
+    uTime: { value: 0 }, uSeason: { value: new T.Vector4(0, 1, 0, 0) }, uNight: { value: 0 }, uDusk: { value: 0 }, uReflect: { value: 0 }, uHaze: { value: 0 }, uGustAmp: { value: 1 },
     uSun: { value: new T.Vector3(-0.35, 0.78, 0.52).normalize() },
     uFogDay: { value: col("#C4DDE8") }, uFogDusk: { value: col("#E2A3A0") }, uFogNight: { value: col("#1A2943") },
     uFogDensity: { value: 0.0021 },
@@ -241,6 +251,7 @@
         float nearW=1.0-smoothstep(0.25,1.1,vW.y);
         c=mix(c,uBank,clamp(steep*1.6,0.0,1.0)*nearW);
         c=mix(c,uBank*0.75,1.0-smoothstep(-0.06,0.1,vW.y));
+        c=mix(c,seasonGround(c,n.y),step(0.05,vW.y));
         c=mix(c,nightTint(c),uNight);
         c+=lanternGlow(vW)*uNight;
         gl_FragColor=vec4(applyFog(c,vW),1.0);
@@ -291,7 +302,7 @@
       vec3 rock=mix(uRockD,uRock,smoothstep(0.12+strata*0.12,0.34,ndl));
       rock*=0.86+0.14*strata; rock=mix(rock,uRockD*0.8,gully*0.45);
       vec3 sn=mix(uSnowS,uSnow,smoothstep(0.18,0.36,ndl));
-      float line=uSnowLine+snoise(vW.xz*0.035)*9.0+snoise(vW.xz*0.12)*3.0;
+      float line=uSnowLine-uSeason.w*uSnowLine*0.55+uSeason.y*6.0+snoise(vW.xz*0.035)*9.0+snoise(vW.xz*0.12)*3.0;
       float snow=smoothstep(line-3.0,line+3.0,vW.y)*smoothstep(0.3,0.55,n.y+snoise(vW.xz*0.08)*0.12);
       snow=max(snow, smoothstep(line+10.0,line+16.0,vW.y)*(0.8-gully*0.3));
       vec3 c=mix(rock,sn,snow);
@@ -474,6 +485,7 @@
       float ndl=dot(n,uSun);
       float band=mix(0.6,0.84,smoothstep(-0.05,0.08,ndl)); band=mix(band,1.0,smoothstep(0.45,0.58,ndl));
       vec3 c=vC*band;
+      c=seasonSnow(c,n.y*(1.0-vGlow));
       c+=vC*0.08*smoothstep(0.55,0.95,1.0-abs(dot(n,normalize(cameraPosition-vW))));
       c*=0.94+0.06*snoise(vW.xy*3.0+vW.z);
       vec3 nc=nightTint(c);
@@ -733,9 +745,14 @@
         float l=dot(n,uSun)+leaf*0.32;
         float up=smoothstep(-0.2,0.9,n.y);
         vec3 dark=vC*vec3(0.42,0.55,0.62), mid=vC, lit=mix(vC,vec3(0.86,0.9,0.5),0.42), hi=vec3(0.92,0.95,0.62);
+        float pick=fract(sin(dot(floor(vL*0.6+vC*40.0),vec3(12.9,78.2,37.7)))*43758.5);
+        vec3 sak=mix(vec3(0.97,0.72,0.82),vec3(1.0,0.86,0.9),pick), aut=mix(vec3(0.86,0.36,0.14),vec3(0.95,0.66,0.2),pick);
+        vec3 base=vC*uSeason.y+mix(vC,sak,0.78)*uSeason.x+mix(vC,aut,0.85)*uSeason.z+mix(vC*vec3(0.55,0.62,0.6),vC,0.3)*uSeason.w;
+        dark=base*vec3(0.42,0.55,0.62); mid=base; lit=mix(base,vec3(0.95,0.92,0.7),0.32);
         vec3 c=mix(dark,mid,smoothstep(-0.15,0.05,l));
         c=mix(c,lit,smoothstep(0.32,0.46,l)*mix(0.6,1.0,up));
-        c=mix(c,hi,smoothstep(0.62,0.72,l)*up*0.5);
+        c=mix(c,hi,smoothstep(0.62,0.72,l)*up*0.5*(1.0-uSeason.x-uSeason.z));
+        c=seasonSnow(c,up);
         vec3 V=normalize(cameraPosition-vW);
         c+=vec3(0.9,0.95,0.6)*smoothstep(0.6,0.95,1.0-abs(dot(n,V)))*0.12*(1.0-uNight);
         c=mix(c,nightTint(c),uNight); c+=lanternGlow(vW)*uNight*0.5;
@@ -1951,6 +1968,7 @@
           c=mix(c,uDry,step(0.86,vTone)*0.6*vT);
           c=mix(c,uSheen,vG*vT*0.55);
           c*=0.78+0.22*vT;
+          c=seasonGround(c,0.4+vT*0.6);
           c=mix(c,nightTint(c),uNight);
           c+=lanternGlow(vW)*uNight*0.8;
           gl_FragColor=vec4(applyFog(c,vW),1.0);
@@ -2010,6 +2028,7 @@
           if(r>petal) discard;
           vec3 c=vCol*mix(0.82,1.0,smoothstep(petal,0.0,r));
           c=mix(c,vec3(0.98,0.85,0.35),smoothstep(0.08,0.03,r)*0.8);
+          c=mix(c,vec3(0.95,0.96,0.99),uSeason.w*0.85); c=mix(c,c*vec3(1.1,0.85,0.6),uSeason.z*0.5);
           c=mix(c,nightTint(c)*1.3,uNight);
           gl_FragColor=vec4(applyFog(c,vW),1.0);
         }`,
@@ -2030,22 +2049,28 @@
     g.setAttribute("aSeed", new T.Float32BufferAttribute(seeds, 3));
     petals = new T.Points(g, new T.ShaderMaterial({
       uniforms: Object.assign({}, U), transparent: true, depthWrite: false,
-      vertexShader: `uniform float uTime; uniform vec2 uWind; attribute vec3 aSeed; varying float vSpin; varying float vSeed;
+      vertexShader: `uniform float uTime; uniform vec2 uWind; uniform vec4 uSeason; attribute vec3 aSeed; varying float vSpin; varying float vSeed; varying float vShow;
         void main(){
           float L=70.0; float t=uTime*(3.0+aSeed.z*3.0)+aSeed.x*L;
           float along=mod(t,L)-L*0.5;
           vec3 w=vec3(-26.0+aSeed.y*60.0, 0.6+aSeed.z*6.0+sin(t*0.4+aSeed.x*9.0)*1.2, 18.0-aSeed.x*60.0);
-          w.xz+=uWind*along; w.y+=sin(t*0.9)*0.6;
+          w.xz+=uWind*along*(1.0-uSeason.w*0.8); w.y+=sin(t*0.9)*0.6;
+          // inverno: neve caindo devagar, de cima para baixo
+          float fall=mod(uTime*(1.2+aSeed.z)+aSeed.x*14.0,14.0);
+          w.y=mix(w.y,14.0-fall,uSeason.w); w.x+=sin(uTime*0.7+aSeed.y*20.0)*0.6*uSeason.w;
           vSpin=uTime*(2.0+aSeed.y*4.0)+aSeed.z*6.28; vSeed=aSeed.y;
-          vec4 mv=viewMatrix*vec4(w,1.0); gl_PointSize=(70.0+aSeed.z*60.0)/-mv.z; gl_Position=projectionMatrix*mv;
+          vShow=step(aSeed.z,uSeason.x+uSeason.z+uSeason.w+uSeason.y*0.25);
+          vec4 mv=viewMatrix*vec4(w,1.0); gl_PointSize=(70.0+aSeed.z*60.0)*(1.0-uSeason.w*0.45)/-mv.z; gl_Position=projectionMatrix*mv;
         }`,
-      fragmentShader: `uniform float uNight; varying float vSpin; varying float vSeed;
+      fragmentShader: `uniform float uNight; uniform vec4 uSeason; varying float vSpin; varying float vSeed; varying float vShow;
         void main(){
+          if(vShow<0.5) discard;
           vec2 p=gl_PointCoord-0.5; float c=cos(vSpin), s=sin(vSpin); p=vec2(c*p.x-s*p.y, s*p.x+c*p.y);
-          p.y*=1.0+abs(sin(vSpin*0.7))*1.4;
+          p.y*=1.0+abs(sin(vSpin*0.7))*1.4*(1.0-uSeason.w);
           if(length(p)>0.32) discard;
-          vec3 col=mix(vec3(0.97,0.72,0.8),vec3(1.0,0.95,0.97),vSeed);
-          gl_FragColor=vec4(col,(1.0-uNight)*0.95);
+          vec3 pet=mix(vec3(0.97,0.72,0.8),vec3(1.0,0.95,0.97),vSeed), leaf=mix(vec3(0.85,0.35,0.12),vec3(0.95,0.68,0.2),vSeed), snow=vec3(0.97,0.98,1.0);
+          vec3 col=(pet*(uSeason.x+uSeason.y)+leaf*uSeason.z+snow*uSeason.w);
+          gl_FragColor=vec4(col,(1.0-uNight*(1.0-uSeason.w*0.7))*0.95);
         }`,
     }));
     petals.frustumCulled = false; scene.add(petals);
@@ -2234,6 +2259,13 @@
     return step;
   })();
 
+  // Estações do ano pelo calendário de Florianópolis (hemisfério sul), ou escolhidas na estação do fim da linha
+  const SEASON_VEC = { primavera: [1, 0, 0, 0], verao: [0, 1, 0, 0], outono: [0, 0, 1, 0], inverno: [0, 0, 0, 1] };
+  const seasonByMonth = () => { const m = new Date().getMonth(); return m >= 8 && m <= 10 ? "primavera" : m === 11 || m <= 1 ? "verao" : m <= 4 ? "outono" : "inverno"; };
+  let seasonPick = null; try { seasonPick = sessionStorage.getItem("vale-estacao"); } catch (e) { /* sem storage */ }
+  const seasonNow = () => (seasonPick && SEASON_VEC[seasonPick] ? seasonPick : seasonByMonth());
+  { const v0 = SEASON_VEC[seasonNow()]; U.uSeason.value.set(v0[0], v0[1], v0[2], v0[3]); }
+  function setSeason(name) { seasonPick = name === "auto" ? null : name; try { if (seasonPick) sessionStorage.setItem("vale-estacao", seasonPick); else sessionStorage.removeItem("vale-estacao"); } catch (e) { /* sem storage */ } document.querySelectorAll("[data-season]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.season === (seasonPick || "auto")))); }
   let lastBirdT = null;
   function updateWorld(t) {
     U.uTime.value = t;
@@ -2307,6 +2339,7 @@
       const hi = Math.min(1, Math.max(0, (camera.position.y - 12) / 25)); H.low.opacity = H.mat.opacity * 0.6 * (1 - hi); H.low.color.copy(H.mat.color);
       H.group.children.forEach((sp) => { sp.position.x = sp.userData.x + Math.sin(t * 0.03 * sp.userData.sp + sp.userData.x) * 18; }); }
     U.uGustAmp.value = 1 + U.uNight.value * 0.6 + U.uDusk.value * 0.15;
+    { const tg = SEASON_VEC[seasonNow()], v = U.uSeason.value, k = 0.02; v.x += (tg[0] - v.x) * k; v.y += (tg[1] - v.y) * k; v.z += (tg[2] - v.z) * k; v.w += (tg[3] - v.w) * k; }
     U.uSun.value.copy(DAY_SUN).lerp(DUSK_SUN_LIGHT, U.uDusk.value * (1 - U.uNight.value)).normalize();
   }
 
@@ -2478,7 +2511,7 @@
   if ($("introSkip")) $("introSkip").addEventListener("click", skipFilm);
   // seek: posiciona a entrada num corte e num ponto do corte (usado para revisar quadros)
   let peekCam = null;
-  window.vale = { dbg: () => ({ tp: tp.t, opened: tp.opened, running, active: explore.active, place: explore.place, k: explore.k }), toCover: () => { if (explore.active) exitExplore(true); }, info: () => ({ mem: Object.assign({}, renderer.info.memory), prog: renderer.info.programs ? renderer.info.programs.length : 0, calls: renderer.info.render.calls, tris: renderer.info.render.triangles, nodes: scene.children.length }), peek: (p, t) => { peekCam = p ? { p: new T.Vector3(p[0], p[1] + hillTop, p[2]), t: new T.Vector3(t[0], t[1] + hillTop, t[2]) } : null; }, star: (k) => meteors.launch(k || "vale"), playIntro, go: (id) => { if (!explore.active) startExplore(); go(id); }, seek(i, frac = 0.5) { if (!intro.active) playIntro(); startShot(i); intro.t = intro.shots[i].d * frac; } };
+  window.vale = { season: (n) => setSeason(n), dbg: () => ({ tp: tp.t, opened: tp.opened, running, active: explore.active, place: explore.place, k: explore.k }), toCover: () => { if (explore.active) exitExplore(true); }, info: () => ({ mem: Object.assign({}, renderer.info.memory), prog: renderer.info.programs ? renderer.info.programs.length : 0, calls: renderer.info.render.calls, tris: renderer.info.render.triangles, nodes: scene.children.length }), peek: (p, t) => { peekCam = p ? { p: new T.Vector3(p[0], p[1] + hillTop, p[2]), t: new T.Vector3(t[0], t[1] + hillTop, t[2]) } : null; }, star: (k) => meteors.launch(k || "vale"), playIntro, go: (id) => { if (!explore.active) startExplore(); go(id); }, seek(i, frac = 0.5) { if (!intro.active) playIntro(); startShot(i); intro.t = intro.shots[i].d * frac; } };
 
 
   /* ------------------------------------------------------------------ */
@@ -2893,7 +2926,11 @@
       <div class="pf-col"><h3>連絡 · Contato</h3>${mail ? `<p class="pf-mail">${mail}</p><button type="button" class="pc-btn" data-copy>Copiar e-mail</button>` : ""}</div>
       <div class="pf-col"><h3>網 · Redes</h3><ul class="pf-links"></ul></div>
       <div class="pf-col"><h3>地図 · Lugares</h3><ul class="pf-places"></ul></div>
+      <div class="pf-season" role="group" aria-label="Estação do ano no vale"><h3>季節 · Estação do ano</h3>
+        ${[["auto", "暦", "Pelo calendário"], ["primavera", "春", "Primavera"], ["verao", "夏", "Verão"], ["outono", "秋", "Outono"], ["inverno", "冬", "Inverno"]].map(([id, k, n]) => `<button type="button" class="pf-chip" data-season="${id}" aria-pressed="${(seasonPick || "auto") === id}"><b aria-hidden="true">${k}</b>${n}</button>`).join("")}
+      </div>
       <p class="pf-credits">© 2026 Fernando Rateke. Vale feito à mão com Three.js. Homenagem ao Studio Ghibli: personagens e castelo pertencem aos seus autores. Músicas: Joe Hisaishi, Evan Call e Claude Debussy.</p>`;
+    foot.querySelectorAll("[data-season]").forEach((b) => b.addEventListener("click", () => setSeason(b.dataset.season)));
     const ul = foot.querySelector(".pf-links");
     links.forEach((a) => { const li = document.createElement("li"); const c = a.cloneNode(true); c.className = ""; li.appendChild(c); ul.appendChild(li); });
     const pl = foot.querySelector(".pf-places");

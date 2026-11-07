@@ -2329,7 +2329,7 @@
   /* Exploração: lugares do vale, marcadores, minimapa e cartões         */
   /* ------------------------------------------------------------------ */
   const exploreEl = $("explore");
-  const OVERVIEW = { pos: new T.Vector3(-34, 60, 78), tgt: new T.Vector3(-22, 0, -96) };
+  const OVERVIEW = { pos: new T.Vector3(2, 76, 106), tgt: new T.Vector3(6, 2, -84) };
   const openWorld = (n) => { if (window.mundos) window.mundos.open(n); };
   // Teletransporte para dentro da Torre: círculo de runas, pilar de luz e clarão
   const tp = (() => {

@@ -641,6 +641,45 @@ a.q { text-decoration: none; }
 .ld-bar i { display: block; height: 100%; width: 8%; background: #E8463B; transition: width .5s ease; }
 .ld-msg { margin: 0; font: 500 0.66rem/1.4 var(--f-label); letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.65; }
 @media (prefers-reduced-motion: reduce) { .ld-out, .ld-in, .ld-k text, .ld-fill, .ld-name { animation-duration: .01s; animation-delay: 0s !important; } }
+/* ---------- Mural de ema ---------- */
+.ema { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; padding: 16px; background: rgba(10, 8, 12, 0.6); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+.ema[hidden] { display: none; }
+.ema-panel { position: relative; width: min(980px, 100%); max-height: calc(100svh - 32px); overflow-y: auto; padding: clamp(18px, 3vw, 32px); border-radius: 12px; color: #2A2018;
+  background: linear-gradient(180deg, #F4EBDD, #EADBC4); box-shadow: 0 30px 80px rgba(0,0,0,0.45); font-family: "Zen Maru Gothic", sans-serif; }
+.ema-close { position: absolute; top: 12px; right: 12px; width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(42,32,24,0.3); background: transparent; color: #2A2018; font-size: 1.4rem; cursor: pointer; }
+.ema-head { display: flex; gap: 16px; align-items: flex-start; margin: 0 48px 16px 0; }
+.ema-k { font: 800 2.2rem/1 var(--f-display); color: #C22026; writing-mode: vertical-rl; }
+.ema-head h2 { margin: 0 0 6px; font: 600 clamp(1.5rem, 1.1rem + 1.6vw, 2.2rem)/1.1 var(--f-display); }
+.ema-head p { margin: 0; font-size: 0.95rem; line-height: 1.6; max-width: 62ch; opacity: 0.85; }
+.ema-form { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 22px; align-items: start; padding: 16px; border-radius: 10px; background: rgba(255,255,255,0.45); margin-bottom: 18px; }
+.ema-fields { display: grid; gap: 10px; }
+.ema-fields label { display: grid; gap: 4px; font: 600 0.66rem/1.2 var(--f-label); letter-spacing: 0.14em; text-transform: uppercase; color: #8A2A20; }
+.ema-fields input, .ema-fields textarea { font: 400 1rem/1.4 "Zen Maru Gothic", sans-serif; color: #2A2018; background: #FFFDF8; border: 1px solid rgba(42,32,24,0.25); border-radius: 8px; padding: 10px 12px; resize: vertical; text-transform: none; letter-spacing: 0; }
+.ema-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.ema-cores { display: flex; flex-wrap: wrap; gap: 6px; }
+.ema-cores button { min-height: 38px; padding: 8px 12px; border-radius: 999px; border: 1px solid rgba(42,32,24,0.25); background: transparent; color: #2A2018; font: 500 0.82rem/1 var(--f-display); cursor: pointer; }
+.ema-cores button[aria-pressed="true"] { background: #2A2018; color: #F4EBDD; }
+.ema-send { display: flex; align-items: center; gap: 12px; }
+.ema-send small { font: 500 0.7rem/1 var(--f-label); opacity: 0.6; }
+.ema-status { margin: 0; min-height: 1.2em; font-size: 0.9rem; color: #8A2A20; }
+.ema-wall { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 18px 14px; padding-top: 18px; border-top: 2px solid rgba(90, 58, 38, 0.3); background-image: linear-gradient(180deg, rgba(90,58,38,0.35) 2px, transparent 2px); background-size: 100% 124px; }
+.ema-plate { --wood: #D8B48A; --ink: #2A1A10; position: relative; display: grid; gap: 6px; align-content: start; min-height: 110px; padding: 30px 14px 14px; color: var(--ink); background: linear-gradient(180deg, var(--wood), color-mix(in srgb, var(--wood) 82%, #000));
+  clip-path: polygon(0 22%, 50% 0, 100% 22%, 100% 100%, 0 100%); box-shadow: inset 0 0 0 2px rgba(0,0,0,0.08); transform: rotate(var(--rot, 0deg)); transform-origin: 50% 0; animation: emasway 6s ease-in-out infinite; animation-delay: var(--d, 0s); }
+.ema-plate::before { content: ""; position: absolute; top: 8px; left: 50%; width: 8px; height: 8px; margin-left: -4px; border-radius: 50%; background: #C22026; box-shadow: 0 -8px 0 -2px #C22026; }
+.ema-plate b { font: 600 0.95rem/1.2 var(--f-display); }
+.ema-plate span { font-size: 0.92rem; line-height: 1.45; word-break: break-word; }
+.ema-plate small { font: 500 0.6rem/1 var(--f-label); letter-spacing: 0.1em; opacity: 0.6; margin-top: 4px; }
+.ema-plate[data-cor="vermelho"] { --wood: #D4584A; --ink: #FFF6EE; }
+.ema-plate[data-cor="azul"] { --wood: #6A92C2; --ink: #0E1A2A; }
+.ema-plate[data-cor="verde"] { --wood: #8AB078; --ink: #142010; }
+.ema-plate-new { animation: none; }
+.ema-empty { grid-column: 1 / -1; margin: 6px 0; font-size: 0.95rem; opacity: 0.75; }
+@keyframes emasway { 50% { transform: rotate(calc(var(--rot, 0deg) * -1)); } }
+@media (max-width: 680px) { .ema-form { grid-template-columns: 1fr; } .ema-k { display: none; } }
+@media (prefers-reduced-motion: reduce) { .ema-plate { animation: none; } }
+.pc-footer .pf-ema { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
+.pc-footer .pf-ema h3 { width: 100%; margin: 0; }
+.pc-footer .pf-ema p { margin: 0; flex: 1 1 240px; font-size: 0.9rem; }
 /* ---------- Kamishibai: o teatro de papel que substitui o dossiê ---------- */
 .kami { position: absolute; inset: 0; z-index: 4; display: grid; place-items: center; padding: 70px 16px 20px; background: rgba(10, 8, 12, 0.55); opacity: 0; transition: opacity .35s ease; }
 .kami.open { opacity: 1; }
@@ -1065,6 +1104,26 @@ a.q { text-decoration: none; }
     <div id="dossierBody"></div>
   </aside>
 </div>
+<div class="ema" id="ema" hidden role="dialog" aria-modal="true" aria-labelledby="emaTitle">
+  <div class="ema-panel">
+    <button class="ema-close" id="emaClose" type="button" aria-label="Fechar o mural">&times;</button>
+    <header class="ema-head"><span class="ema-k" aria-hidden="true">絵馬</span><div><h2 id="emaTitle">Mural de recados</h2><p>Nos santuários, as pessoas escrevem desejos em plaquinhas de madeira, os ema, e penduram para todo mundo ver. Este é o da estação.</p></div></header>
+    <form class="ema-form" id="emaForm" autocomplete="off">
+      <div class="ema-plate ema-plate-new" id="emaPreview" data-cor="madeira"><b id="emaPrevNome">Seu nome</b><span id="emaPrevTxt">Seu recado aparece aqui.</span></div>
+      <div class="ema-fields">
+        <label>Nome <input name="nome" id="emaNome" maxlength="30" placeholder="Como quer assinar"></label>
+        <label>Recado <textarea name="recado" id="emaTxt" maxlength="140" rows="3" required placeholder="Um desejo, um elogio, um oi"></textarea></label>
+        <input class="ema-hp" name="site" tabindex="-1" aria-hidden="true">
+        <div class="ema-cores" role="radiogroup" aria-label="Cor da plaquinha">
+          <button type="button" data-cor="madeira" aria-pressed="true">Madeira</button><button type="button" data-cor="vermelho" aria-pressed="false">Vermelho</button><button type="button" data-cor="azul" aria-pressed="false">Azul</button><button type="button" data-cor="verde" aria-pressed="false">Verde</button>
+        </div>
+        <div class="ema-send"><button class="pc-btn primary" type="submit">Pendurar no mural</button><small id="emaCount">0 / 140</small></div>
+        <p class="ema-status" id="emaStatus" aria-live="polite"></p>
+      </div>
+    </form>
+    <div class="ema-wall" id="emaWall" aria-live="polite"></div>
+  </div>
+</div>
 <div class="world-gate" id="worldGate" hidden role="dialog" aria-modal="true" aria-labelledby="gateTitle">
   <div class="gate-card">
     <span class="w-kicker">Porta preta</span>
@@ -1252,6 +1311,70 @@ a.q { text-decoration: none; }
       if (k >= 1) { clearInterval(fadeTimer); if (done) done(); }
     }, 40);
   };
+
+  /* ---------- Mural de ema (livro de visitas) ---------- */
+  (() => {
+    const box = document.getElementById("ema"); if (!box) return;
+    const wall = document.getElementById("emaWall"), form = document.getElementById("emaForm"), status = document.getElementById("emaStatus");
+    const nome = document.getElementById("emaNome"), txt = document.getElementById("emaTxt"), count = document.getElementById("emaCount");
+    const prev = document.getElementById("emaPreview"), prevN = document.getElementById("emaPrevNome"), prevT = document.getElementById("emaPrevTxt");
+    let cor = "madeira", online = null, lastFocus = null;
+    const LOCAL = "vale-ema";
+    const local = () => { try { return JSON.parse(localStorage.getItem(LOCAL) || "[]"); } catch (e) { return []; } };
+    const plate = (e, i) => {
+      const d = document.createElement("article"); d.className = "ema-plate"; d.dataset.cor = e.cor || "madeira";
+      d.style.setProperty("--rot", `${((i * 37) % 7) - 3}deg`); d.style.setProperty("--d", `${-(i % 6)}s`);
+      const b = document.createElement("b"); b.textContent = e.nome || "Visitante";
+      const sp = document.createElement("span"); sp.textContent = e.recado;
+      const sm = document.createElement("small"); const dt = e.criado_em ? new Date(e.criado_em) : null; sm.textContent = dt ? dt.toLocaleDateString("pt-BR") : "";
+      d.append(b, sp, sm); return d;
+    };
+    const render = (list, note) => {
+      wall.innerHTML = "";
+      if (note) { const p = document.createElement("p"); p.className = "ema-empty"; p.textContent = note; wall.appendChild(p); }
+      if (!list.length) { const p = document.createElement("p"); p.className = "ema-empty"; p.textContent = "Ainda não há recados. Que tal ser o primeiro?"; wall.appendChild(p); }
+      list.forEach((e, i) => wall.appendChild(plate(e, i)));
+    };
+    async function load() {
+      try {
+        const r = await fetch("/api/ema", { cache: "no-store" });
+        if (!r.ok) throw new Error(String(r.status));
+        const j = await r.json(); online = true; render(j.emas || []);
+      } catch (e) {
+        online = false;
+        render(local(), "O mural público ainda está sendo instalado. Por enquanto, seus recados ficam guardados só neste navegador.");
+      }
+    }
+    const sync = () => { prevN.textContent = nome.value.trim() || "Seu nome"; prevT.textContent = txt.value.trim() || "Seu recado aparece aqui."; count.textContent = `${txt.value.length} / 140`; prev.dataset.cor = cor; };
+    nome.addEventListener("input", sync); txt.addEventListener("input", sync);
+    box.querySelectorAll("[data-cor]").forEach((b) => { if (b.tagName !== "BUTTON") return; b.addEventListener("click", () => { cor = b.dataset.cor; box.querySelectorAll(".ema-cores button").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); sync(); }); });
+    form.addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const data = { nome: nome.value.trim(), recado: txt.value.trim(), cor, site: form.site.value };
+      if (data.recado.length < 2) { status.textContent = "Escreva um recado um pouco maior."; return; }
+      status.textContent = "Pendurando...";
+      if (online) {
+        try {
+          const r = await fetch("/api/ema", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+          const j = await r.json().catch(() => ({}));
+          if (!r.ok) { status.textContent = j.motivo === "filtro" ? "Esse recado tem palavras ou links que o mural não aceita." : j.motivo === "espere" ? "Calma: espere alguns segundos para pendurar outro." : "Não deu para pendurar agora. Tente de novo."; return; }
+          status.textContent = j.moderado ? "Pendurado! Ele aparece no mural depois de aprovado." : "Pendurado no mural!";
+        } catch (e) { status.textContent = "Sem conexão. Tente de novo."; return; }
+      } else {
+        const list = local(); list.unshift({ nome: data.nome || "Visitante", recado: data.recado.slice(0, 140), cor, criado_em: new Date().toISOString() });
+        try { localStorage.setItem(LOCAL, JSON.stringify(list.slice(0, 30))); } catch (e) { /* sem storage */ }
+        status.textContent = "Pendurado (só neste navegador, por enquanto).";
+      }
+      txt.value = ""; sync(); load();
+    });
+    const open = () => { lastFocus = document.activeElement; box.hidden = false; status.textContent = ""; sync(); load(); setTimeout(() => txt.focus(), 50); };
+    const close = () => { box.hidden = true; if (lastFocus && lastFocus.focus) lastFocus.focus(); };
+    document.getElementById("emaClose").addEventListener("click", close);
+    box.addEventListener("click", (e) => { if (e.target === box) close(); });
+    addEventListener("keydown", (e) => { if (e.key === "Escape" && !box.hidden) { e.stopPropagation(); close(); } }, true);
+    window.emaMural = { open, close };
+  })();
+
   /* ---------- Entrada ---------- */
   const enterBtn = document.getElementById("enterBtn");
   const filmBtn = document.getElementById("filmBtn");

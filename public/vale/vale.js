@@ -1393,6 +1393,16 @@
     for (const x of [-6.4, -3.9]) B.add(new T.CylinderGeometry(0.07, 0.08, 2.9, 6), M(x, 1.95, 1.1), WOOD_D);
     // quadro de avisos (moldura)
     B.add(new T.BoxGeometry(3.0, 1.75, 0.08), M(-1.6, 1.8, -1.12), WOOD_D);
+    // porta-ema: estrutura de madeira com as plaquinhas de recados penduradas
+    {
+      const ex = -10.5, ez = 1.2, rE = mulberry(88);
+      B.add(new T.CylinderGeometry(0.09, 0.11, 2.6, 6), M(ex - 1.6, 1.3, ez), WOOD_D); B.add(new T.CylinderGeometry(0.09, 0.11, 2.6, 6), M(ex + 1.6, 1.3, ez), WOOD_D);
+      B.add(new T.BoxGeometry(3.8, 0.14, 0.2), M(ex, 2.55, ez), WOOD); B.add(new T.BoxGeometry(4.2, 0.12, 0.5), M(ex, 2.72, ez), ROOF);
+      for (const y of [2.15, 1.45]) B.add(new T.BoxGeometry(3.3, 0.05, 0.05), M(ex, y, ez), WOOD_D);
+      const plaque = new T.Shape(); plaque.moveTo(-0.17, -0.12); plaque.lineTo(0.17, -0.12); plaque.lineTo(0.17, 0.08); plaque.lineTo(0, 0.17); plaque.lineTo(-0.17, 0.08); plaque.closePath();
+      const pg = new T.ExtrudeGeometry(plaque, { depth: 0.03, bevelEnabled: false });
+      for (const y of [1.98, 1.28]) for (let k = 0; k < 8; k++) { const x = ex - 1.4 + k * 0.4 + (rE() - 0.5) * 0.06; B.add(pg, M(x, y, ez + 0.03 + (k % 2) * 0.02, 0, 0, (rE() - 0.5) * 0.25), ["#C9A070", "#B88A5A", "#D8B48A"][k % 3]); B.add(new T.BoxGeometry(0.012, 0.16, 0.012), M(x, y + 0.24, ez + 0.04), "#C22026"); }
+    }
     const sm = new T.Mesh(B.build(), objMat); sm.position.set(STATION.x, gy, STATION.z); scene.add(sm);
     const sl = new T.Mesh(sm.geometry, castleLine); sl.position.copy(sm.position); scene.add(sl);
 
@@ -2987,11 +2997,13 @@
       <div class="pf-col"><h3>連絡 · Contato</h3>${mail ? `<p class="pf-mail">${mail}</p><button type="button" class="pc-btn" data-copy>Copiar e-mail</button>` : ""}</div>
       <div class="pf-col"><h3>網 · Redes</h3><ul class="pf-links"></ul></div>
       <div class="pf-col"><h3>地図 · Lugares</h3><ul class="pf-places"></ul></div>
+      <div class="pf-ema"><h3>絵馬 · Mural de recados</h3><p>Deixe um recado pendurado no mural da estação, como nos santuários.</p><button type="button" class="pc-btn primary" data-ema>Abrir o mural</button></div>
       <div class="pf-season" role="group" aria-label="Estação do ano no vale"><h3>季節 · Estação do ano</h3>
         ${[["auto", "暦", "Pelo calendário"], ["primavera", "春", "Primavera"], ["verao", "夏", "Verão"], ["outono", "秋", "Outono"], ["inverno", "冬", "Inverno"]].map(([id, k, n]) => `<button type="button" class="pf-chip" data-season="${id}" aria-pressed="${(seasonPick || "auto") === id}"><b aria-hidden="true">${k}</b>${n}</button>`).join("")}
       </div>
       <p class="pf-credits">© 2026 Fernando Rateke. Vale feito à mão com Three.js. Homenagem ao Studio Ghibli: personagens e castelo pertencem aos seus autores. Músicas: Joe Hisaishi, Evan Call e Claude Debussy.</p>`;
     foot.querySelectorAll("[data-season]").forEach((b) => b.addEventListener("click", () => setSeason(b.dataset.season)));
+    const emaB = foot.querySelector("[data-ema]"); if (emaB) emaB.addEventListener("click", () => { if (window.emaMural) window.emaMural.open(); });
     const ul = foot.querySelector(".pf-links");
     links.forEach((a) => { const li = document.createElement("li"); const c = a.cloneNode(true); c.className = ""; li.appendChild(c); ul.appendChild(li); });
     const pl = foot.querySelector(".pf-places");

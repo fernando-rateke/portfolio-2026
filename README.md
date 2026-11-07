@@ -54,3 +54,20 @@ O conteúdo das atividades fica em `app/materias/page.tsx` (array `allSubjects`)
 Feito na [Vercel](https://vercel.com): importe o repositório e mantenha as configurações
 padrão de Next.js. A URL usada nos metadados (imagem de compartilhamento) é detectada
 automaticamente; para um domínio próprio, defina `NEXT_PUBLIC_SITE_URL` (veja `.env.example`).
+
+## Mural de ema (livro de visitas)
+
+Os recados da estação do fim da linha ficam numa tabela do Supabase, acessada só pela rota `app/api/ema/route.ts` (no servidor). Sem configuração, o mural funciona em modo local: cada visitante vê só os próprios recados, guardados no navegador.
+
+Para ligar o mural público:
+
+1. Crie um projeto no [Supabase](https://supabase.com) (o plano gratuito basta).
+2. Em **SQL Editor**, rode o conteúdo de `docs/supabase-ema.sql`.
+3. Em **Project Settings → API**, copie a **Project URL** e a chave **service_role**.
+4. Na Vercel, em **Settings → Environment Variables**, crie:
+   - `SUPABASE_URL` com a Project URL
+   - `SUPABASE_SERVICE_ROLE_KEY` com a chave service_role (ela fica só no servidor)
+   - opcional: `EMA_MODERAR` = `1` para os recados só aparecerem depois que você marcar `aprovado = true` na tabela
+5. Faça um novo deploy.
+
+Para apagar um recado, use o Table Editor do Supabase. A rota já recusa links, alguns palavrões, recados com mais de 140 caracteres e mais de um envio a cada 30 segundos por IP.

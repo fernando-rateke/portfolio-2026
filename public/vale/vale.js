@@ -282,17 +282,22 @@
     uniform vec3 uRock, uRockD, uSnow, uSnowS, uLow; uniform float uSnowLine; varying vec3 vW; varying vec3 vN;
     void main(){
       vec3 n=normalize(vN); float ndl=dot(n,uSun);
-      vec3 rock=mix(uRockD,uRock,smoothstep(0.18,0.34,ndl));
-      vec3 sn=mix(uSnowS,uSnow,smoothstep(0.22,0.36,ndl));
-      float line=uSnowLine+snoise(vW.xz*0.035)*9.0;
-      float snow=smoothstep(line-3.0,line+3.0,vW.y)*smoothstep(0.32,0.55,n.y);
-      snow=max(snow, smoothstep(line+10.0,line+16.0,vW.y)*0.85);
+      float strata=snoise(vec2(vW.x*0.09+vW.z*0.03,vW.y*0.035))*0.5+0.5;
+      float gully=smoothstep(0.55,0.95,abs(snoise(vec2(vW.x*0.05,vW.y*0.012+vW.z*0.02))));
+      vec3 rock=mix(uRockD,uRock,smoothstep(0.12+strata*0.12,0.34,ndl));
+      rock*=0.86+0.14*strata; rock=mix(rock,uRockD*0.8,gully*0.45);
+      vec3 sn=mix(uSnowS,uSnow,smoothstep(0.18,0.36,ndl));
+      float line=uSnowLine+snoise(vW.xz*0.035)*9.0+snoise(vW.xz*0.12)*3.0;
+      float snow=smoothstep(line-3.0,line+3.0,vW.y)*smoothstep(0.3,0.55,n.y+snoise(vW.xz*0.08)*0.12);
+      snow=max(snow, smoothstep(line+10.0,line+16.0,vW.y)*(0.8-gully*0.3));
       vec3 c=mix(rock,sn,snow);
+      c+=vec3(1.0,0.95,0.85)*smoothstep(0.62,0.9,ndl)*0.08*(1.0-uNight);
       c=mix(uLow*mix(0.82,1.0,smoothstep(0.2,0.4,ndl)),c,smoothstep(3.0,18.0,vW.y));
+      c=mix(c,duskGrade(c),uDusk*(1.0-uNight));
       c=mix(c,nightTint(c)*1.15,uNight);
       float d=length(vW-cameraPosition);
       c=mix(c,fogColor(),clamp(0.14+(d-200.0)/900.0,0.0,0.62));
-      c=mix(c, mix(vec3(0.93,0.95,0.97),vec3(0.2,0.25,0.36),uNight), uHaze);
+      c=mix(c, hazeColor(), uHaze);
       gl_FragColor=vec4(c,1.0);
     }`;
   function mountainRange(cx, cz, w, dpt, peaks, snowLine, seed) {
@@ -660,26 +665,99 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /* Árvores em estilo Ghibli (copas de bolhas)                          */
+  /* Árvores em estilo Ghibli: copas com folhagem recortada e luz no topo */
   /* ------------------------------------------------------------------ */
   {
-    const B = Builder(); const r = mulberry(31);
-    const spots = [[-38, -58], [-44, -62], [-33, -66], [-92, -84], [-86, -90], [52, -62], [60, -58], [57, -70], [118, -104], [-150, -170], [-160, -164], [26, -150], [-20, -200], [160, -220]];
-    const greens = ["#3F6E44", "#4C7C4A", "#5A8C50"];
-    for (const [x, z] of spots) {
-      const y = heightAt(x, z); if (y < 0.3) continue;
-      const s = 0.9 + r() * 0.8;
-      B.add(new T.CylinderGeometry(0.18 * s, 0.3 * s, 3.2 * s, 7), M(x, y + 1.5 * s, z), "#5B4636");
-      const n = 6 + Math.floor(r() * 5);
-      for (let i = 0; i < n; i++) {
-        const a = r() * Math.PI * 2, rad = (0.6 + r() * 1.1) * s;
-        const py = y + (3.0 + r() * 2.4) * s;
-        const pr = (1.0 + r() * 0.9) * s;
-        B.add(new T.IcosahedronGeometry(pr, 2), M(x + Math.cos(a) * rad, py, z + Math.sin(a) * rad * 0.8), greens[i % 3], 0, 1);
+    const leafMat = mat(`${NOISE}
+      uniform float uTime; uniform vec2 uWind; attribute vec3 color; attribute float aSway; attribute vec3 aCenter;
+      varying vec3 vW; varying vec3 vN; varying vec3 vC; varying vec3 vL;
+      void main(){
+        vec3 p=position; vec4 w=modelMatrix*vec4(p,1.0);
+        float sw=aSway*(sin(uTime*1.3+w.x*0.2+w.z*0.15)*0.12+snoise(w.xz*0.05+uTime*0.3)*0.1);
+        w.xz+=uWind*sw; vW=w.xyz; vN=normalize(mat3(modelMatrix)*normal); vC=color; vL=position-aCenter;
+        gl_Position=projectionMatrix*viewMatrix*w;
+      }`, `${COMMON}${NOISE}
+      varying vec3 vW; varying vec3 vN; varying vec3 vC; varying vec3 vL;
+      void main(){
+        vec3 n=normalize(vN);
+        float leaf=snoise(vW.xy*1.6+vW.z*0.9)*0.5+snoise(vW.zy*2.7-vW.x*0.6)*0.35;
+        float l=dot(n,uSun)+leaf*0.32;
+        float up=smoothstep(-0.2,0.9,n.y);
+        vec3 dark=vC*vec3(0.42,0.55,0.62), mid=vC, lit=mix(vC,vec3(0.86,0.9,0.5),0.42), hi=vec3(0.92,0.95,0.62);
+        vec3 c=mix(dark,mid,smoothstep(-0.15,0.05,l));
+        c=mix(c,lit,smoothstep(0.32,0.46,l)*mix(0.6,1.0,up));
+        c=mix(c,hi,smoothstep(0.62,0.72,l)*up*0.5);
+        vec3 V=normalize(cameraPosition-vW);
+        c+=vec3(0.9,0.95,0.6)*smoothstep(0.6,0.95,1.0-abs(dot(n,V)))*0.12*(1.0-uNight);
+        c=mix(c,nightTint(c),uNight); c+=lanternGlow(vW)*uNight*0.5;
+        gl_FragColor=vec4(applyFog(c,vW),1.0);
+      }`);
+    const CB = [], TB = Builder(), rT = mulberry(31);
+    const canopy = { P: [], N: [], C: [], S: [], Ce: [] };
+    const addBlob = (geo, m, color, sway, center) => {
+      const g = geo.index ? geo.toNonIndexed() : geo; g.computeVertexNormals();
+      const p = g.attributes.position, nn = g.attributes.normal, nm = new T.Matrix3().getNormalMatrix(m), v = new T.Vector3(), cc = new T.Color(color);
+      for (let i = 0; i < p.count; i++) {
+        v.fromBufferAttribute(p, i).applyMatrix4(m); canopy.P.push(v.x, v.y, v.z);
+        v.fromBufferAttribute(nn, i).applyMatrix3(nm).normalize(); canopy.N.push(v.x, v.y, v.z);
+        canopy.C.push(cc.r, cc.g, cc.b); canopy.S.push(sway); canopy.Ce.push(center.x, center.y, center.z);
       }
-    }
-    scene.add(new T.Mesh(B.build(), objMat));
+    };
+    const GREENS = ["#4C7C46", "#5A8A4C", "#3E6E42", "#6A9450", "#527E3E"];
+    const broadleaf = (x, y, z, s) => {
+      TB.add(new T.CylinderGeometry(0.16 * s, 0.32 * s, 3.4 * s, 8), M(x, y + 1.6 * s, z, 0, 0, (rT() - 0.5) * 0.1), "#5B4636");
+      for (let k = 0; k < 3; k++) { const a = rT() * Math.PI * 2; TB.add(new T.CylinderGeometry(0.06 * s, 0.12 * s, 1.6 * s, 6), M(x + Math.cos(a) * 0.5 * s, y + 3.0 * s, z + Math.sin(a) * 0.5 * s, Math.sin(a) * 0.6, 0, -Math.cos(a) * 0.6), "#5B4636"); }
+      const base = GREENS[Math.floor(rT() * GREENS.length)], ctr = new T.Vector3(x, y + 4.2 * s, z);
+      const n = 9 + Math.floor(rT() * 6);
+      for (let i = 0; i < n; i++) {
+        const a = rT() * Math.PI * 2, rad = (0.5 + rT() * 1.3) * s, py = y + (3.4 + rT() * 2.4) * s, pr = (1.0 + rT() * 0.9) * s;
+        addBlob(new T.IcosahedronGeometry(pr, 3), M(x + Math.cos(a) * rad, py, z + Math.sin(a) * rad * 0.85), base, 1, ctr);
+      }
+    };
+    const cypress = (x, y, z, s) => {
+      TB.add(new T.CylinderGeometry(0.12 * s, 0.2 * s, 1.6 * s, 6), M(x, y + 0.8 * s, z), "#4E3C30");
+      const ctr = new T.Vector3(x, y + 4 * s, z);
+      for (let k = 0; k < 6; k++) addBlob(new T.IcosahedronGeometry((1.15 - k * 0.15) * s, 2), M(x + (rT() - 0.5) * 0.3 * s, y + (1.8 + k * 1.05) * s, z, 0, 0, 0, 1, 1.35, 1), "#3A6440", 0.7, ctr);
+    };
+    const bush = (x, y, z, s) => { const ctr = new T.Vector3(x, y + 0.6 * s, z); for (let k = 0; k < 4; k++) { const a = rT() * Math.PI * 2; addBlob(new T.IcosahedronGeometry((0.55 + rT() * 0.35) * s, 2), M(x + Math.cos(a) * 0.6 * s, y + 0.5 * s, z + Math.sin(a) * 0.5 * s), "#4E8044", 0.4, ctr); } };
+    const spots = [[-38, -58], [-44, -62], [-33, -66], [-92, -84], [-86, -90], [52, -62], [60, -58], [57, -70], [118, -104], [-150, -170], [-160, -164], [26, -150], [-20, -200], [160, -220],
+      [-70, -40], [-76, -48], [-110, -60], [-120, -20], [-130, 4], [96, -40], [104, -30], [130, -60], [140, -10], [-58, 30], [-68, 22], [44, 30], [60, 22], [80, -120], [-40, -120], [-100, -140], [120, -150], [-10, -130], [20, -112]];
+    spots.forEach(([x, z], i) => {
+      const y = heightAt(x, z); if (y < 0.35) return;
+      const s = 0.85 + rT() * 0.8;
+      if (i % 5 === 3) cypress(x, y, z, s); else broadleaf(x, y, z, s);
+      if (rT() < 0.6) bush(x + 2.5 + rT() * 2, heightAt(x + 3, z + 1), z + 1 + rT() * 2, 0.8 + rT() * 0.6);
+    });
+    for (let i = 0; i < 40; i++) { const x = (rT() - 0.5) * 260, z = -20 - rT() * 180, y = heightAt(x, z); if (y < 0.5) continue; bush(x, y, z, 0.6 + rT() * 0.7); }
+    const g = new T.BufferGeometry();
+    g.setAttribute("position", new T.Float32BufferAttribute(canopy.P, 3)); g.setAttribute("normal", new T.Float32BufferAttribute(canopy.N, 3));
+    g.setAttribute("color", new T.Float32BufferAttribute(canopy.C, 3)); g.setAttribute("aSway", new T.Float32BufferAttribute(canopy.S, 1)); g.setAttribute("aCenter", new T.Float32BufferAttribute(canopy.Ce, 3));
+    scene.add(new T.Mesh(g, leafMat));
+    scene.add(new T.Mesh(TB.build(), objMat));
   }
+
+  /* Bandos de pássaros cruzando o céu */
+  const birds = (() => {
+    const flocks = [];
+    const wingG = new T.BufferGeometry(); wingG.setAttribute("position", new T.Float32BufferAttribute([0, 0, 0, -1, 0.1, -0.3, -0.2, 0, 0.3, 0, 0, 0, 1, 0.1, -0.3, 0.2, 0, 0.3], 3)); wingG.computeVertexNormals();
+    const bm = new T.MeshBasicMaterial({ color: 0x2a2a34, side: T.DoubleSide, fog: false });
+    const rb = mulberry(808);
+    for (let f = 0; f < 3; f++) {
+      const g = new T.Group(); const list = [];
+      for (let i = 0; i < 7 + f * 2; i++) { const b = new T.Mesh(wingG.clone(), bm); const row = Math.ceil(i / 2), side = i % 2 ? 1 : -1; b.userData = { off: new T.Vector3(-row * 1.8, (rb() - 0.5) * 0.6, side * row * 1.4), ph: rb() * 6 }; b.scale.setScalar(0.9); g.add(b); list.push(b); }
+      scene.add(g); flocks.push({ g, list, t: rb() * 80, speed: 9 + f * 2, y: 40 + f * 12, z: -160 - f * 60, dir: f % 2 ? -1 : 1 });
+    }
+    return (t, dt) => {
+      flocks.forEach((F) => {
+        F.t += dt;
+        const span = 520, x = ((F.t * F.speed) % span) - span / 2;
+        F.g.position.set(F.dir * x, F.y + Math.sin(F.t * 0.4) * 4, F.z + Math.sin(F.t * 0.15) * 20);
+        F.g.rotation.y = F.dir > 0 ? 0 : Math.PI;
+        F.list.forEach((b) => { b.position.copy(b.userData.off); b.position.y += Math.sin(F.t * 1.3 + b.userData.ph) * 0.4; const fl = Math.sin(F.t * 9 + b.userData.ph); const pa = b.geometry.attributes.position; pa.setY(1, fl * 0.7); pa.setY(4, fl * 0.7); pa.needsUpdate = true; });
+        const n = U.uNight.value; F.g.visible = n < 0.6;
+      });
+    };
+  })();
 
   /* ------------------------------------------------------------------ */
   /* O castelo andante                                                   */
@@ -1846,9 +1924,11 @@
     return step;
   })();
 
+  let lastBirdT = null;
   function updateWorld(t) {
     U.uTime.value = t;
     meteors(t);
+    birds(t, lastBirdT === null ? 0 : Math.max(0, Math.min(0.1, t - lastBirdT))); lastBirdT = t;
     // castelo: percurso elíptico, passos alternados, corpo balançando
     const c = castleAt(t);
     const gy = Math.max(heightAt(c.x, c.z), 0);
@@ -1975,10 +2055,12 @@
   const intro = { active: false, i: 0, t: 0, shots: [], inFilm: false, filmStart: 0 };
   function buildShots() {
     const H = hillTop, TX = TORII.x, TZ = TORII.z;
-    const path1 = [V3([TX - 0.4, 2.9, TZ + 9]), V3([TX, 3.6, TZ - 40])];
+    // eixo do portão: a câmera chega de frente e atravessa pelo meio
+    const ax = (d, y) => V3([TX + Math.sin(TORII.rot) * d, heightAt(TX + Math.sin(TORII.rot) * d, TZ + Math.cos(TORII.rot) * d) + y, TZ + Math.cos(TORII.rot) * d]);
+    const path1 = [ax(10, 2.4), ax(-40, 2.6)];
     return [
-      { d: 3.6, from: [BASE.pos.clone(), BASE.target.clone()], to: path1 },
-      { d: 3.0, from: path1, to: [V3([TX + 2, 34, TZ - 110]), V3([TX + 6, 60, -420])], haze: [0, 1], hazeCurve: 2.2 },
+      { d: 3.8, from: [BASE.pos.clone(), BASE.target.clone()], to: path1 },
+      { d: 3.2, from: path1, to: [ax(-110, 30), ax(-420, 60)], haze: [0, 1], hazeCurve: 2.4 },
       { film: true, d: 4.6, from: [V3([TX + 5.5, 1.4, TZ + 6]), V3([TX, 5.4, TZ])], to: [V3([TX - 4.8, 1.7, TZ + 6.5]), V3([TX, 5.7, TZ])], night: 0, line: "Tudo começa com um traço." },
       { d: 5.0, from: [V3([-70, 26, -10]), V3([0, 0, -130])], to: [V3([-22, 20, -34]), V3([22, 0, -150])], night: 0, line: "Um lugar para atravessar." },
       { d: 4.2, follow: [[-34, 5, 38], [-20, 7, 27]], night: 0 },

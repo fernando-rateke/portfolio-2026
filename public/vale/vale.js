@@ -1095,6 +1095,7 @@
   /* ------------------------------------------------------------------ */
   const TOWER = new T.Vector3(62, 0, -100);
   const towerBooks = [];
+  const towerSpell = { rings: [] };
   {
     const gy = Math.max(heightAt(TOWER.x, TOWER.z), 0.25);
     TOWER.y = gy;
@@ -1115,6 +1116,57 @@
     B.add(new T.CylinderGeometry(0.06, 0.06, 2.6, 6), M(0, 25.2, 0), "#2A2A30");
     B.add(new T.PlaneGeometry(1.2, 2.0), M(0, 1.6, 2.95), "#2A1C16");
     const tm = new T.Mesh(B.build(), objMat); tm.position.set(TOWER.x, gy - 0.15, TOWER.z); scene.add(tm);
+    {
+      const spell = new T.Group(); spell.position.set(TOWER.x, gy, TOWER.z); scene.add(spell);
+      const ringMat = (hue, speed) => new T.ShaderMaterial({
+        transparent: true, depthWrite: false, side: T.DoubleSide,
+        uniforms: { uTime: U.uTime, uNight: U.uNight, uCol: { value: col(hue) }, uSpeed: { value: speed } },
+        vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+        fragmentShader: `uniform float uTime, uNight, uSpeed; uniform vec3 uCol; varying vec2 vUv;
+          void main(){
+            float u=vUv.x*48.0+uTime*uSpeed; float cell=floor(u); float f=fract(u);
+            float h=fract(sin(cell*91.7)*4375.85);
+            float glyph=step(0.15,f)*step(f,0.85)*step(0.28,vUv.y)*step(vUv.y,0.72)*step(0.3,fract(h*7.0+floor(vUv.y*3.0+f*2.0)*0.37));
+            float edge=smoothstep(0.1,0.0,abs(vUv.y-0.1))+smoothstep(0.1,0.0,abs(vUv.y-0.9));
+            edge+=0.18*smoothstep(0.5,0.0,abs(vUv.y-0.5));
+            float pulse=0.6+0.4*sin(uTime*2.0+vUv.x*12.566);
+            float a=clamp((glyph*0.9+edge*0.75)*pulse,0.0,1.0);
+            vec3 day=uCol*0.55+vec3(0.0,0.02,0.08); vec3 night=min(uCol*1.5,vec3(1.0));
+            gl_FragColor=vec4(mix(day,night,uNight),a*(0.85+uNight*0.15));
+          }` });
+      const rings = [[6.4, 8, 1.5, "#8FC8FF", 1.2, 0.35, 0.0], [5.2, 14.5, 1.2, "#FFD58A", -1.6, -0.5, 0.6], [4.4, 20.5, 1.0, "#B8A0FF", 2.0, 0.25, -0.4]].map(([r, y, h, c, sp, tx, tz]) => {
+        const m = new T.Mesh(new T.CylinderGeometry(r, r, h, 64, 1, true), ringMat(c, sp));
+        const holder = new T.Group(); holder.position.y = y; holder.rotation.set(tx, 0, tz); holder.add(m); spell.add(holder);
+        return { m, holder, sp, tx, tz };
+      });
+      // faíscas que sobem em espiral
+      const N = 260, sp2 = new Float32Array(N * 3), ph = new Float32Array(N);
+      for (let i = 0; i < N; i++) ph[i] = i / N;
+      const sg = new T.BufferGeometry(); sg.setAttribute("position", new T.BufferAttribute(sp2, 3)); sg.setAttribute("aPh", new T.BufferAttribute(ph, 1));
+      const sparkMat = new T.ShaderMaterial({ transparent: true, depthWrite: false, uniforms: { uTime: U.uTime, uNight: U.uNight },
+        vertexShader: `uniform float uTime; attribute float aPh; varying float vA; varying float vH;
+          void main(){ float k=fract(aPh+uTime*0.045); float a=aPh*61.0+k*18.0; float r=3.6+sin(aPh*40.0)*1.4+k*1.2;
+            vec3 p=vec3(cos(a)*r, k*30.0, sin(a)*r); vA=sin(k*3.14159); vH=fract(aPh*13.0);
+            vec4 mv=modelViewMatrix*vec4(p,1.0); gl_PointSize=(1.8+vH*2.6)*120.0/-mv.z; gl_Position=projectionMatrix*mv; }`,
+        fragmentShader: `uniform float uNight; varying float vA; varying float vH; void main(){ vec2 q=gl_PointCoord-0.5; float d=length(q); float a=smoothstep(0.5,0.1,d)*vA; vec3 c=mix(vec3(0.6,0.85,1.0),vec3(1.0,0.85,0.5),vH); c=mix(c*vec3(0.55,0.6,0.85),c,uNight); gl_FragColor=vec4(c,a*0.9); }` });
+      const sparks = new T.Points(sg, sparkMat); sparks.frustumCulled = false; spell.add(sparks);
+      // farol de luz no topo, apontando para o céu
+      const beam = new T.Mesh(new T.CylinderGeometry(0.6, 2.4, 70, 24, 1, true), new T.ShaderMaterial({ transparent: true, depthWrite: false, blending: T.AdditiveBlending, side: T.DoubleSide, uniforms: { uTime: U.uTime, uNight: U.uNight },
+        vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+        fragmentShader: `uniform float uTime, uNight; varying vec2 vUv; void main(){ float a=pow(1.0-vUv.y,1.6)*0.32*(0.75+0.25*sin(uTime*1.7+vUv.y*20.0))*(0.25+uNight*0.75); a*=0.7+0.3*sin(vUv.x*25.13+uTime*3.0); gl_FragColor=vec4(vec3(0.65,0.8,1.0)*a,a); }` }));
+      beam.position.y = 26 + 35; spell.add(beam);
+      const floor = new T.Mesh(new T.PlaneGeometry(15, 15), new T.ShaderMaterial({ transparent: true, depthWrite: false, uniforms: { uTime: U.uTime, uNight: U.uNight },
+        vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+        fragmentShader: `uniform float uTime, uNight; varying vec2 vUv;
+          void main(){ vec2 p=vUv*2.0-1.0; float r=length(p), a=atan(p.y,p.x);
+            float g=smoothstep(0.02,0.0,abs(r-0.96))+smoothstep(0.015,0.0,abs(r-0.86))+step(0.86,r)*step(r,0.96)*step(0.55,fract(a*7.64+uTime*0.3))*step(fract(a*30.56+uTime*0.3),0.6);
+            for(int k=0;k<6;k++){ float an=float(k)*1.0472-uTime*0.15; vec2 d=vec2(cos(an),sin(an)); g+=smoothstep(0.012,0.0,abs(dot(p,d)-0.62))*step(r,0.86); }
+            g*=step(0.42,r);
+            vec3 c=mix(vec3(0.2,0.45,0.85),vec3(0.65,0.85,1.0),uNight); float al=clamp(g,0.0,1.0)*(0.7+0.3*sin(uTime*1.5));
+            gl_FragColor=vec4(c,al); }` }));
+      floor.rotation.x = -Math.PI / 2; floor.position.y = 0.92; spell.add(floor);
+      towerSpell.rings = rings; towerSpell.group = spell;
+    }
     const tl = new T.Mesh(tm.geometry, castleLine); tl.position.copy(tm.position); scene.add(tl);
     const covers = ["#4E7A4C", "#A4743A", "#9C3434", "#3E4C86", "#2E6E72", "#2C4A7A", "#5A3E7A", "#7A5A2E", "#4A5560"];
     covers.forEach((c) => {
@@ -2141,6 +2193,7 @@
     const tx = -145 + ((t * 7 + 140) % 290);
     train.position.set(tx, Math.max(heightAt(tx, TRACK_Z), 0) + 0.12 + Math.sin(t * 9) * 0.015, TRACK_Z);
     // grimórios orbitando o topo da torre
+    towerSpell.rings.forEach((r, i) => { r.m.rotation.y = t * 0.25 * r.sp; r.holder.rotation.x = r.tx + Math.sin(t * 0.4 + i) * 0.12; r.holder.rotation.z = r.tz + Math.cos(t * 0.33 + i) * 0.12; });
     towerBooks.forEach((m, i) => {
       const a = t * 0.35 + i / towerBooks.length * Math.PI * 2;
       m.position.set(TOWER.x + Math.cos(a) * 4.6, TOWER.y + 19.4 + Math.sin(t * 0.9 + i) * 0.45, TOWER.z + Math.sin(a) * 4.6);
@@ -2295,6 +2348,7 @@
     if (k >= 1) startShot(intro.i + 1);
   }
   function playIntro(full = true) {
+    if (typeof clearShift === "function") clearShift();
     if (intro.active || !introEl) return;
     if (explore.active) exitExplore(false);
     intro.shots = buildShots(); intro.active = true; intro.inFilm = false; intro.noFilm = !full;
@@ -2719,7 +2773,30 @@
     setRunning(true);
     if (withMap && vmap) vmap.open();
   }
+  // O cartão do lugar ocupa parte da tela: a imagem desliza para o maior espaço livre (acima ou ao lado dele)
+  const viewShift = { x: 0, y: 0, z: 1 }, BASE_FOV = camera.fov;
+  function frameAroundCard(dt) {
+    const card = $("placeCard"), W2 = canvas.clientWidth, H2 = canvas.clientHeight;
+    let tx = 0, ty = 0, tz = 1;
+    if (card && !card.hidden && !explore.dolly) {
+      const r = card.getBoundingClientRect(), c = canvas.getBoundingClientRect();
+      const top = r.top - c.top, left = r.left - c.left, right = c.right - r.right;
+      const above = W2 * top, onLeft = left * H2, onRight = right * H2;
+      // a imagem inteira passa a caber na área livre: afasta um pouco (fov) e desliza até o centro dela
+      if (above >= onLeft && above >= onRight) { tz = Math.max(0.62, top / H2); ty = (H2 / 2 - top / 2) / tz; }
+      else if (onRight >= onLeft) { tz = Math.max(0.72, Math.sqrt(right / W2)); tx = -(left + r.width + right / 2 - W2 / 2) / tz; }
+      else { tz = Math.max(0.72, Math.sqrt(left / W2)); tx = (W2 / 2 - left / 2) / tz; }
+    }
+    const k = Math.min(1, dt * 3);
+    viewShift.x += (tx - viewShift.x) * k; viewShift.y += (ty - viewShift.y) * k; viewShift.z += (tz - viewShift.z) * k;
+    const fov = 2 * Math.atan(Math.tan(BASE_FOV * Math.PI / 360) / viewShift.z) * 180 / Math.PI;
+    if (Math.abs(camera.fov - fov) > 0.01) { camera.fov = fov; camera.updateProjectionMatrix(); }
+    if (Math.abs(viewShift.x) < 0.5 && Math.abs(viewShift.y) < 0.5) { if (camera.view && camera.view.enabled) camera.clearViewOffset(); }
+    else camera.setViewOffset(W2, H2, viewShift.x * viewShift.z, viewShift.y * viewShift.z, W2, H2);
+  }
+  function clearShift() { viewShift.x = viewShift.y = 0; viewShift.z = 1; if (camera.view && camera.view.enabled) camera.clearViewOffset(); if (camera.fov !== BASE_FOV) { camera.fov = BASE_FOV; camera.updateProjectionMatrix(); } }
   function exitExplore(toCover) {
+    clearShift();
     if (vmap) vmap.close();
     explore.active = false; exploreEl.hidden = true; hero.classList.remove("exploring");
     showCard(null);
@@ -2737,6 +2814,7 @@
     const tgt = explore.from ? explore.from.tgt.clone().lerp(v.tgt, e) : v.tgt;
     pos.x += pointer.sx * (P ? 1.2 : 3) * e; pos.y += -pointer.sy * (P ? 0.5 : 2) * e;
     place(pos, tgt);
+    frameAroundCard(tdt);
     // marcadores e pontos do minimapa acompanham a cena
     const W2 = canvas.clientWidth, H2 = canvas.clientHeight;
     Object.entries(PLACES).forEach(([id, Pl]) => {

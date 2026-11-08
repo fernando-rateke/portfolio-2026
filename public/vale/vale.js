@@ -1363,6 +1363,8 @@
   /* ------------------------------------------------------------------ */
   const STATION = new T.Vector3(72, 0, TRACK_Z + 3.4);
   const signRedraws = [];
+  const L = (s) => (window.i18n ? window.i18n.t(s) : s);
+  if (window.i18n) window.i18n.on(() => signRedraws.forEach((f) => f()));
   {
     const gy = Math.max(heightAt(STATION.x, STATION.z), 0.2);
     STATION.y = gy;
@@ -1426,10 +1428,10 @@
         g.fillStyle = "#C22026"; g.fillRect(0, 142, 640, 8);
         g.fillStyle = "#1C1718"; g.textAlign = "center"; g.textBaseline = "middle";
         g.font = `800 82px ${SERIF}`; g.fillText("終点", 320, 62);
-        g.font = `600 22px ${MONO}`; g.fillText("FIM DA LINHA · ラテケ", 320, 120);
+        g.font = `600 22px ${MONO}`; g.fillText(L("FIM DA LINHA · ラテケ"), 320, 120);
         g.fillStyle = "#F4EFE4"; g.font = `600 20px ${MONO}`;
-        g.textAlign = "left"; g.fillText("← 塔 TORRE", 18, 176);
-        g.textAlign = "right"; g.fillText("門 TORII →", 622, 176);
+        g.textAlign = "left"; g.fillText(L("← 塔 TORRE"), 18, 176);
+        g.textAlign = "right"; g.fillText(L("門 TORII →"), 622, 176);
       };
       draw();
       const { tex, mat } = signMat(c);
@@ -1447,16 +1449,16 @@
         const mail = (document.getElementById("perfilMail") || {}).textContent || "fernando_rateke-n@estudante.sesisenai.org.br";
         pin(22, 20, 330, 150, -0.03, "#F4EFE4");
         g.fillStyle = "#C22026"; g.font = `600 15px ${MONO}`; g.textAlign = "left"; g.textBaseline = "alphabetic";
-        g.fillText("連絡 · CONTATO", 42, 60);
+        g.fillText(L("連絡 · CONTATO"), 42, 60);
         g.fillStyle = "#1C1718"; g.font = `600 28px ${SERIF}`; g.fillText("Fernando Rateke", 42, 98);
         g.font = `500 12.5px ${MONO}`; g.fillText(mail, 42, 130);
         g.fillText("github.com/fernando-rateke", 42, 152);
         pin(372, 26, 200, 140, 0.04, "#EADFC6");
-        g.fillStyle = "#C22026"; g.font = `600 15px ${MONO}`; g.fillText("履歴 · CURRÍCULO", 390, 66);
+        g.fillStyle = "#C22026"; g.font = `600 15px ${MONO}`; g.fillText(L("履歴 · CURRÍCULO"), 390, 66);
         g.fillStyle = "#1C1718"; g.font = `600 20px ${SERIF}`; g.fillText("LinkedIn", 390, 102); g.fillText("Instagram", 390, 130);
         pin(40, 196, 520, 120, 0.015, "#F4EFE4");
-        g.fillStyle = "#1C1718"; g.font = `600 22px ${SERIF}`; g.fillText("A jornada é o que dá forma ao mundo.", 62, 248);
-        g.font = `500 13px ${MONO}`; g.fillStyle = "#5A4E44"; g.fillText("© 2026 FERNANDO RATEKE · FEITO À MÃO COM THREE.JS", 62, 284);
+        g.fillStyle = "#1C1718"; g.font = `600 22px ${SERIF}`; g.fillText(L("A jornada é o que dá forma ao mundo."), 62, 248);
+        g.font = `500 13px ${MONO}`; g.fillStyle = "#5A4E44"; g.fillText(L("© 2026 FERNANDO RATEKE · FEITO À MÃO COM THREE.JS"), 62, 284);
       };
       draw();
       const { tex, mat } = signMat(c);
@@ -3001,6 +3003,7 @@
       <div class="pf-season" role="group" aria-label="Estação do ano no vale"><h3>季節 · Estação do ano</h3>
         ${[["auto", "暦", "Pelo calendário"], ["primavera", "春", "Primavera"], ["verao", "夏", "Verão"], ["outono", "秋", "Outono"], ["inverno", "冬", "Inverno"]].map(([id, k, n]) => `<button type="button" class="pf-chip" data-season="${id}" aria-pressed="${(seasonPick || "auto") === id}"><b aria-hidden="true">${k}</b>${n}</button>`).join("")}
       </div>
+      <div class="pf-lang" role="group" aria-label="Idioma · Language" data-noi18n><h3>言語 · Idioma · Language</h3>${[["pt", "Português"], ["en", "English"]].map(([id, n]) => `<button type="button" class="pf-chip" data-lang="${id}" aria-pressed="${((window.i18n && window.i18n.lang) || "pt") === id}">${n}</button>`).join("")}</div>
       <p class="pf-credits">© 2026 Fernando Rateke. Vale feito à mão com Three.js. Homenagem ao Studio Ghibli: personagens e castelo pertencem aos seus autores. Músicas: Joe Hisaishi, Evan Call e Claude Debussy.</p>`;
     foot.querySelectorAll("[data-season]").forEach((b) => b.addEventListener("click", () => setSeason(b.dataset.season)));
     const emaB = foot.querySelector("[data-ema]"); if (emaB) emaB.addEventListener("click", () => { if (window.emaMural) window.emaMural.open(); });

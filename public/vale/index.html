@@ -262,6 +262,16 @@ html, body { height: 100%; overflow: hidden; background: #0c0c0c; }
 .pc-footer .pf-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 8px 14px; border-radius: 999px; border: 1px solid rgba(42,36,32,0.25); background: transparent; color: #2A2420; font: 500 0.82rem/1 var(--f-display); cursor: pointer; }
 .pc-footer .pf-chip b { color: #C22026; font-weight: 800; }
 .pc-footer .pf-chip[aria-pressed="true"] { background: #C22026; color: #fff; border-color: #C22026; }
+.pc-footer .pf-lang { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.pc-footer .pf-lang h3 { width: 100%; margin: 0 0 2px; }
+.lang-toggle { pointer-events: auto; min-width: 44px; min-height: 40px; display: inline-flex; align-items: center; justify-content: center; font-family: var(--f-label); font-size: 0.72rem; letter-spacing: 0.14em; color: #fff; background: rgba(10, 20, 35, 0.32); border: 1px solid rgba(255,255,255,0.35); border-radius: 999px; padding: 8px 14px; cursor: pointer; backdrop-filter: blur(6px); }
+.lang-toggle:hover, .lang-toggle:focus-visible { background: rgba(10, 20, 35, 0.5); }
+.ld-lang { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 18px; opacity: 0; animation: ldfill .8s ease .6s forwards; }
+.ld-lang small { font: 500 0.6rem/1 var(--f-label); letter-spacing: 0.22em; text-transform: uppercase; opacity: 0.55; }
+.ld-lang div { display: flex; gap: 10px; }
+.ld-lang button { min-height: 44px; min-width: 120px; padding: 10px 18px; border-radius: 999px; border: 1px solid rgba(244,235,221,0.35); background: transparent; color: #F4EBDD; font: 600 0.95rem/1 var(--f-display); cursor: pointer; transition: background .2s, border-color .2s; }
+.ld-lang button:hover, .ld-lang button:focus-visible { border-color: #F4EBDD; background: rgba(244,235,221,0.08); }
+.ld-lang button[aria-pressed="true"] { background: #C22026; border-color: #C22026; color: #fff; }
 .pc-footer .pf-chip[aria-pressed="true"] b { color: #fff; }
 .pc-footer .pf-credits { grid-column: 1 / -1; margin: 0; font-size: 0.78rem; line-height: 1.5; color: #6C6156; }
 @media (max-width: 720px) { .pc-footer { grid-template-columns: 1fr 1fr; } .pc-footer .pf-col:first-child { grid-column: 1 / -1; } }
@@ -811,6 +821,7 @@ a.q { text-decoration: none; }
 </head>
 <body>
 
+<script src="/vale/i18n.js"></script>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
@@ -848,6 +859,10 @@ a.q { text-decoration: none; }
   <p class="ld-name">Rateke</p>
   <div class="ld-bar"><i id="loaderBar"></i></div>
   <p class="ld-msg" id="loaderMsg">Preparando o vale</p>
+  <div class="ld-lang" role="group" aria-label="Idioma · Language" data-noi18n>
+    <small>Idioma · Language</small>
+    <div><button type="button" data-lang="pt" aria-pressed="true" lang="pt-BR">Português</button><button type="button" data-lang="en" aria-pressed="false" lang="en">English</button></div>
+  </div>
 </div>
 <a class="skip-text" href="#textual">Ir para a versão em texto</a>
 <header class="hero" id="top">
@@ -890,6 +905,7 @@ a.q { text-decoration: none; }
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.6L12.5 5v14l-4.9-4.5H4z"/><path class="wave" d="M15.8 9a4.2 4.2 0 0 1 0 6"/><path class="wave" d="M18.4 6.5a7.6 7.6 0 0 1 0 11"/></svg>
         <span id="soundLabel">Ouvir o tema</span>
       </button>
+      <button class="lang-toggle" type="button" data-lang-toggle data-noi18n aria-label="View in English">EN</button>
       <button class="theme-toggle" id="themeToggle" type="button" aria-label="Trocar entre dia, fim de tarde e noite">
         <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.3 5.3l1.7 1.7M17 17l1.7 1.7M5.3 18.7 7 17M17 7l1.7-1.7"/></svg>
         <svg class="sunset" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M6.5 16a5.5 5.5 0 0 1 11 0"/><path d="M2.5 16h19M5 19.5h14M12 4.5v3M4.6 8.6l1.8 1.8M19.4 8.6l-1.8 1.8"/></svg>

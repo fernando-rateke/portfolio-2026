@@ -12,6 +12,16 @@ const nextConfig: NextConfig = {
       fallback: [],
     };
   },
+  // Músicas, fotos e a biblioteca 3D quase nunca mudam: o navegador guarda por um dia
+  // e, depois disso, usa a cópia guardada enquanto confere em segundo plano se há versão nova.
+  // HTML e os scripts do vale ficam de fora, para cada publicação aparecer na hora.
+  async headers() {
+    const cache = [{ key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" }];
+    return [
+      { source: "/vale/three.min.js", headers: cache },
+      { source: "/vale/:dir(audio|nos|perfil|grim|trem)/:file*", headers: cache },
+    ];
+  },
   // Rotas antigas que eram apenas apelidos de outras páginas
   async redirects() {
     return [

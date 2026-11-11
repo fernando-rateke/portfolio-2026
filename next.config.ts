@@ -7,6 +7,8 @@ const nextConfig: NextConfig = {
       beforeFiles: [
         { source: "/", destination: "/vale/index.html" },
         { source: "/vale", destination: "/vale/index.html" },
+        // portfólio novo (Tokyo Ghoul), em construção até assumir a página inicial
+        { source: "/tg", destination: "/tg/index.html" },
       ],
       afterFiles: [],
       fallback: [],
@@ -20,6 +22,8 @@ const nextConfig: NextConfig = {
     return [
       { source: "/vale/three.min.js", headers: cache },
       { source: "/vale/:dir(audio|nos|perfil|grim|trem)/:file*", headers: cache },
+      { source: "/tg/three.min.js", headers: cache },
+      { source: "/tg/audio/:file*", headers: cache },
     ];
   },
   // Rotas antigas que eram apenas apelidos de outras páginas

@@ -1,0 +1,535 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rateke · Portfólio 2026</title>
+<meta name="description" content="Portfólio de Fernando Rateke, desenvolvedor de sistemas em formação: o 20º distrito à noite, em 3D.">
+<meta property="og:title" content="Rateke · Portfólio 2026">
+<meta property="og:description" content="Fernando Rateke, desenvolvedor de sistemas em formação. Florianópolis.">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="pt_BR">
+<meta name="theme-color" content="#05060b">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@500;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --ink: #f2ece6; --ink-2: rgba(242,236,230,0.66); --ink-3: rgba(242,236,230,0.38);
+  --blood: #c4141c; --blood-2: #ff2a2f; --night: #05060b; --night-2: #0d0f18;
+  --f-display: "Shippori Mincho B1", "Hiragino Mincho ProN", "Yu Mincho", Georgia, serif;
+  --f-ui: "Zen Kaku Gothic New", "Hiragino Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--night); color: var(--ink); font-family: var(--f-ui); -webkit-font-smoothing: antialiased; }
+body { overflow: hidden; }
+[hidden] { display: none !important; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--blood-2); outline-offset: 3px; }
+
+/* ---------- Cena ---------- */
+#city { position: fixed; inset: 0; width: 100%; height: 100%; display: block; opacity: 0; transition: opacity 1.6s ease; }
+#city.ready { opacity: 1; }
+.grain { position: fixed; inset: -50%; pointer-events: none; z-index: 2; opacity: 0.07; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); animation: grain 0.6s steps(3) infinite; }
+@keyframes grain { 0% { transform: translate(0,0); } 33% { transform: translate(-3%,2%); } 66% { transform: translate(2%,-3%); } }
+.vignette { position: fixed; inset: 0; pointer-events: none; z-index: 2; background: radial-gradient(ellipse at 50% 45%, transparent 45%, rgba(0,0,0,0.62) 100%); }
+html.kak .vignette { background: radial-gradient(ellipse at 50% 45%, transparent 35%, rgba(60,0,4,0.7) 100%); }
+
+/* ---------- Capa ---------- */
+.cover { position: fixed; inset: 0; z-index: 5; pointer-events: none; padding: max(18px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(22px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left)); display: grid; grid-template-rows: auto 1fr auto; transition: opacity .8s ease; }
+.cover.away { opacity: 0; }
+.cover.away * { pointer-events: none !important; }
+.top { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+.chip { pointer-events: auto; display: inline-flex; align-items: center; gap: 9px; min-height: 42px; padding: 8px 15px; border-radius: 999px; border: 1px solid rgba(242,236,230,0.28); background: rgba(5,6,11,0.42); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); font: 500 0.7rem/1 var(--f-mono); letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer; transition: border-color .2s, background .2s, color .2s; }
+.chip:hover { border-color: rgba(242,236,230,0.6); background: rgba(5,6,11,0.6); }
+.chip svg { width: 20px; height: 20px; flex: none; }
+.chip[aria-pressed="true"] { border-color: var(--blood); color: #fff; background: rgba(140,8,14,0.45); }
+#soundBtn .wave { opacity: .35; } #soundBtn[aria-pressed="true"] .wave { opacity: 1; }
+#kakBtn .iris { fill: none; transition: fill .3s; } #kakBtn[aria-pressed="true"] .iris { fill: var(--blood-2); } #kakBtn[aria-pressed="true"] .sclera { fill: #000; }
+.title { align-self: end; max-width: min(620px, 92vw); }
+.kicker { display: flex; align-items: center; gap: 12px; font: 500 0.7rem/1 var(--f-mono); letter-spacing: 0.3em; text-transform: uppercase; color: var(--ink-2); margin: 0 0 14px; }
+.kicker b { font: 800 1rem/1 var(--f-display); letter-spacing: 0.12em; color: var(--blood-2); text-shadow: 0 0 18px rgba(255,30,40,0.55); }
+.kicker i { width: 38px; height: 1px; background: var(--blood); }
+.name { margin: 0; font: 800 clamp(2.6rem, 7vw, 5.4rem)/0.95 var(--f-display); letter-spacing: -0.01em; text-shadow: 0 4px 40px rgba(0,0,0,0.7); }
+.name span { display: block; }
+.role { margin: 16px 0 0; font: 500 0.78rem/1.5 var(--f-mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-2); }
+.bottom { display: flex; align-items: end; justify-content: space-between; gap: 18px; flex-wrap: wrap; }
+.enter { pointer-events: auto; display: inline-flex; align-items: center; gap: 12px; min-height: 52px; padding: 12px 22px 12px 16px; border-radius: 999px; border: 1px solid rgba(255,42,47,0.7); background: rgba(120,6,12,0.38); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); font: 500 0.78rem/1 var(--f-mono); letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; box-shadow: 0 0 0 0 rgba(255,30,40,0.5); animation: pulse 2.8s ease-in-out infinite; }
+.enter:hover { background: rgba(160,8,16,0.6); }
+.enter svg { width: 22px; height: 22px; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 10px rgba(255,30,40,0); border-color: rgba(255,42,47,1); } }
+@media (max-width: 640px) { .bottom { flex-direction: column; align-items: stretch; } .enter { justify-content: center; } .chip span { display: none; } .chip { padding: 8px 11px; } }
+
+/* ---------- Rastro de kagune e transições ---------- */
+#trail { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 40; }
+#tear { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 60; }
+.blackout { position: fixed; inset: 0; z-index: 59; background: #000; opacity: 0; pointer-events: none; transition: opacity .7s ease; }
+.blackout.on { opacity: 1; pointer-events: auto; }
+
+/* ---------- Em construção (próximas fases) ---------- */
+.soon { position: fixed; inset: 0; z-index: 70; display: grid; place-content: center; justify-items: center; gap: 18px; text-align: center; padding: 24px; opacity: 0; pointer-events: none; transition: opacity .8s ease; }
+.soon.on { opacity: 1; pointer-events: auto; }
+.soon b { font: 800 clamp(2.2rem, 6vw, 3.8rem)/1 var(--f-display); color: var(--blood-2); text-shadow: 0 0 30px rgba(255,20,30,0.5); }
+.soon p { margin: 0; max-width: 32ch; color: var(--ink-2); line-height: 1.6; }
+.soon button { min-height: 46px; padding: 10px 20px; border-radius: 999px; border: 1px solid rgba(242,236,230,0.4); background: transparent; font: 500 0.74rem/1 var(--f-mono); letter-spacing: 0.18em; text-transform: uppercase; cursor: pointer; }
+
+/* ---------- Carregamento ---------- */
+.loader { position: fixed; inset: 0; z-index: 200; background: radial-gradient(ellipse at 50% 42%, #14060a, #030305 72%); overflow: hidden; }
+.loader.gone { pointer-events: none; }
+.ld-art { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 10px; padding: 24px; }
+.ld-mask { width: min(190px, 44vw); height: auto; overflow: visible; filter: drop-shadow(0 10px 40px rgba(180,0,10,0.25)); }
+.ld-mask .stitch { fill: none; stroke: var(--blood-2); stroke-width: 1.1; stroke-linecap: round; stroke-dasharray: 2.2 2.6; }
+.ld-mask .sew { fill: none; stroke: #000; stroke-width: 3; }
+.ld-mask .kana { font: 800 7px/1 var(--f-display); fill: var(--blood-2); letter-spacing: 0.6px; transition: opacity .8s; }
+.ld-mask .stitch { transition: opacity .45s; }
+.ld-mask .eye { transition: opacity .6s; }
+.ld-count { position: relative; height: 1.1em; margin-top: 14px; font: 500 clamp(2.4rem, 9vw, 3.6rem)/1 var(--f-mono); letter-spacing: 0.04em; color: var(--blood-2); text-shadow: 0 0 22px rgba(255,20,30,0.45); font-variant-numeric: tabular-nums; }
+.ld-count .drop { position: absolute; left: 50%; top: 0; transform: translateX(-50%); animation: drop 1.1s cubic-bezier(.4,.05,.6,1) forwards; color: rgba(255,42,47,0.55); }
+@keyframes drop { to { transform: translate(-50%, 2.2em); opacity: 0; } }
+.ld-count .now { display: block; }
+.ld-log { min-height: 1.4em; margin: 6px 0 0; font: 500 0.66rem/1.4 var(--f-mono); letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-3); }
+.ld-log::before { content: "■ "; color: var(--blood); }
+.ld-rank { margin: 2px 0 0; font: 500 0.6rem/1.4 var(--f-mono); letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-3); }
+.ld-crack { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.ld-crack path { fill: none; stroke: rgba(255,255,255,0.55); stroke-width: 0.9; stroke-linecap: round; stroke-dasharray: var(--len); stroke-dashoffset: var(--len); }
+.loader.cracked .ld-crack path { animation: crack .5s cubic-bezier(.2,.8,.2,1) forwards; animation-delay: var(--d); }
+.ld-crack path.glint { stroke: rgba(255,60,60,0.3); stroke-width: 2.4; filter: blur(1.5px); }
+@keyframes crack { to { stroke-dashoffset: 0; } }
+.ld-lang { position: absolute; left: 0; right: 0; bottom: max(9vh, 70px); display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 0 16px; }
+.ld-lang small { font: 500 0.64rem/1.4 var(--f-mono); letter-spacing: 0.22em; text-transform: uppercase; color: var(--ink-2); text-align: center; }
+.ld-lang div { display: flex; gap: 10px; }
+.ld-lang button { min-height: 48px; min-width: 130px; padding: 12px 20px; border-radius: 999px; border: 1px solid rgba(242,236,230,0.4); background: rgba(0,0,0,0.35); font: 700 0.95rem/1 var(--f-ui); cursor: pointer; transition: background .2s, border-color .2s; }
+.ld-lang button:hover, .ld-lang button:focus-visible { border-color: var(--ink); background: rgba(242,236,230,0.08); }
+.loader.ready:not(.chosen) .ld-lang button { animation: ldpulse 1.6s ease-in-out infinite; }
+.loader.chosen .ld-lang button[aria-pressed="true"] { background: var(--blood); border-color: var(--blood); color: #fff; }
+@keyframes ldpulse { 50% { border-color: var(--blood-2); box-shadow: 0 0 0 4px rgba(255,42,47,0.14); } }
+.shard { position: absolute; inset: 0; will-change: transform, opacity; background: radial-gradient(ellipse at 50% 42%, #14060a, #030305 72%); }
+.shard .ld-art { pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .grain { animation: none; } .enter { animation: none; } .ld-count .drop { animation-duration: .01s; } }
+
+/* ---------- Versão em texto (robôs e navegadores sem 3D) ---------- */
+.textual { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+html.no-webgl body { overflow: auto; }
+html.no-webgl .textual { position: static; width: auto; height: auto; overflow: visible; clip-path: none; }
+html.no-webgl .cover, html.no-webgl #city { display: none; }
+.tx-wrap { max-width: 760px; margin: 0 auto; padding: 48px 20px 80px; line-height: 1.7; }
+.tx-wrap h1 { font: 800 2rem/1.1 var(--f-display); } .tx-wrap h2 { font: 800 1.4rem/1.2 var(--f-display); margin-top: 2.2em; color: var(--blood-2); } .tx-wrap h3 { font: 700 1.05rem/1.3 var(--f-ui); margin-top: 1.6em; }
+.tx-wrap a { color: #ff8d8f; } .tx-note { color: var(--ink-2); font-size: .9rem; }
+.skip-text { position: fixed; left: 12px; top: -60px; z-index: 300; padding: 10px 14px; background: #000; border: 1px solid var(--blood); border-radius: 8px; color: var(--ink); }
+.skip-text:focus { top: 12px; }
+</style>
+<script src="/tg/i18n.js"></script>
+</head>
+<body>
+
+<div class="loader" id="loader" role="dialog" aria-modal="true" aria-label="Idioma · Language">
+  <div class="ld-art" id="ldArt">
+    <svg class="ld-mask" id="ldMask" viewBox="0 0 120 150" aria-hidden="true">
+      <defs>
+        <radialGradient id="mk" cx="50%" cy="38%" r="70%"><stop offset="0" stop-color="#26262b"/><stop offset="1" stop-color="#050506"/></radialGradient>
+        <radialGradient id="kg" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#ff3a3a"/><stop offset=".55" stop-color="#b0000a"/><stop offset="1" stop-color="#000"/></radialGradient>
+        <path id="seamL" d="M24 22 C14 50 13 86 26 118"/>
+        <path id="seamR" d="M96 118 C107 86 106 50 96 22"/>
+      </defs>
+      <!-- máscara do Kaneki: couro, tapa-olho no olho direito, boca de zíper com os dentes -->
+      <path d="M60 6 C88 6 104 28 104 62 C104 98 88 136 60 144 C32 136 16 98 16 62 C16 28 32 6 60 6 Z" fill="url(#mk)" stroke="#000" stroke-width="2"/>
+      <!-- costura do meio -->
+      <path class="sew" d="M60 7 L60 52"/>
+      <path class="stitch" pathLength="100" data-sew d="M60 9 L60 50"/>
+      <!-- tapa-olho (olho direito do Kaneki, à esquerda de quem olha) -->
+      <path d="M22 44 C30 34 48 34 54 46 C52 60 32 64 22 56 Z" fill="#0c0c0e" stroke="#000" stroke-width="1.5"/>
+      <path class="stitch" pathLength="100" data-sew d="M24 45 C32 37 47 37 52 46 C50 58 33 61 24 55 Z"/>
+      <!-- olho esquerdo aberto, em kakugan -->
+      <g class="eye" id="ldEye">
+        <path d="M66 49 C72 42 88 42 96 50 C89 57 72 57 66 49 Z" fill="#000"/>
+        <circle cx="81" cy="49.5" r="5.2" fill="url(#kg)"/>
+        <circle cx="81" cy="49.5" r="1.6" fill="#000"/>
+      </g>
+      <!-- boca: dentes expostos e o zíper -->
+      <path d="M30 92 C42 100 78 100 90 92 C88 112 76 122 60 122 C44 122 32 112 30 92 Z" fill="#e9e2d6" stroke="#000" stroke-width="1.6"/>
+      <g stroke="#1a1416" stroke-width="1.1">
+        <path d="M34 100 L86 100"/><path d="M36 108 L84 108"/>
+        <path d="M40 95 L40 116"/><path d="M47 97 L47 119"/><path d="M54 98 L54 121"/><path d="M60 98 L60 122"/><path d="M66 98 L66 121"/><path d="M73 97 L73 119"/><path d="M80 95 L80 116"/>
+      </g>
+      <path class="stitch" pathLength="100" data-sew d="M28 90 C42 99 78 99 92 90"/>
+      <path class="stitch" pathLength="100" data-sew d="M31 96 C35 114 46 125 60 125 C74 125 85 114 89 96"/>
+      <!-- costuras laterais com ラテケ em linha vermelha -->
+      <path class="sew" d="M24 22 C14 50 13 86 26 118"/><path class="sew" d="M96 118 C107 86 106 50 96 22"/>
+      <text class="kana"><textPath href="#seamL" startOffset="18%" id="kanaL">ラ ・ テ ・ ケ</textPath></text>
+      <text class="kana"><textPath href="#seamR" startOffset="18%" id="kanaR">ラ ・ テ ・ ケ</textPath></text>
+      <!-- correias -->
+      <path d="M17 58 L4 54 M17 70 L3 72 M103 58 L116 54 M103 70 L117 72" stroke="#0b0b0d" stroke-width="4" stroke-linecap="round"/>
+    </svg>
+    <div class="ld-count" id="ldCount" aria-hidden="true"><span class="now" id="ldNow">1000</span></div>
+    <p class="ld-log" id="ldLog" role="status" aria-live="polite">Localizando o 20º distrito</p>
+    <p class="ld-rank" id="ldRank" hidden></p>
+  </div>
+  <svg class="ld-crack" id="ldCrack" aria-hidden="true"></svg>
+  <div class="ld-lang" role="group" aria-label="Idioma · Language" data-noi18n>
+    <small>Escolha o idioma · Choose your language</small>
+    <div><button type="button" data-lang="pt" aria-pressed="false" lang="pt-BR">Português</button><button type="button" data-lang="en" aria-pressed="false" lang="en">English</button></div>
+  </div>
+</div>
+
+<a class="skip-text" href="#textual">Ir para a versão em texto</a>
+<canvas id="city" role="img" aria-label="O 20º distrito à noite visto do alto de um prédio, com chuva fina, letreiros em néon e a lua. A Rize está de pé na beirada, de costas, olhando a cidade."></canvas>
+<div class="grain" aria-hidden="true"></div>
+<div class="vignette" aria-hidden="true"></div>
+
+<main class="cover" id="cover">
+  <div class="top">
+    <button class="chip" id="soundBtn" type="button" aria-pressed="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.6L12.5 5v14l-4.9-4.5H4z"/><path class="wave" d="M15.8 9a4.2 4.2 0 0 1 0 6"/><path class="wave" d="M18.4 6.5a7.6 7.6 0 0 1 0 11"/></svg>
+      <span id="soundLabel">Ouvir o tema</span>
+    </button>
+    <button class="chip" type="button" data-lang-toggle data-noi18n aria-label="View in English">EN</button>
+    <button class="chip" id="kakBtn" type="button" aria-pressed="false" aria-label="Modo kakugan: ver a cidade com o olho de um ghoul">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path class="sclera" d="M2.5 12c2.6-4.2 5.8-6.3 9.5-6.3s6.9 2.1 9.5 6.3c-2.6 4.2-5.8 6.3-9.5 6.3S5.1 16.2 2.5 12Z"/><circle class="iris" cx="12" cy="12" r="3.4"/><circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none"/></svg>
+      <span>Kakugan</span>
+    </button>
+  </div>
+  <div></div>
+  <div class="bottom">
+    <div class="title">
+      <p class="kicker"><b lang="ja">東京喰種</b><i></i>20区 · 20º distrito</p>
+      <h1 class="name"><span>Fernando</span><span>Rateke</span></h1>
+      <p class="role">Desenvolvedor de sistemas · Portfólio 2026</p>
+    </div>
+    <button class="enter" id="enterBtn" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M2.5 12c2.6-4.2 5.8-6.3 9.5-6.3s6.9 2.1 9.5 6.3c-2.6 4.2-5.8 6.3-9.5 6.3S5.1 16.2 2.5 12Z"/><circle cx="12" cy="12" r="3.2"/></svg>
+      <span>Toque para entrar</span>
+    </button>
+  </div>
+</main>
+
+<canvas id="trail" aria-hidden="true"></canvas>
+<div class="blackout" id="blackout" aria-hidden="true"></div>
+<canvas id="tear" aria-hidden="true"></canvas>
+<section class="soon" id="soon" aria-live="polite" hidden>
+  <b lang="ja">二十区</b>
+  <p>O 20º distrito ainda está sendo construído. Volte daqui a pouco.</p>
+  <button type="button" id="backBtn">Voltar ao prédio</button>
+</section>
+
+<audio id="music" src="/tg/audio/glassy-sky.mp3" preload="none" loop></audio>
+
+<section class="textual" id="textual" aria-label="Versão em texto do portfólio" tabindex="-1">
+
+  <div class="tx-wrap">
+    <p class="tx-note">Esta é a versão em texto do portfólio. A versão completa é o 20º distrito em 3D, que precisa de um navegador com WebGL.</p>
+    <h1>Fernando Rateke Neto · Portfólio 2026</h1>
+    <h2>Quem sou</h2>
+    <p>Desenvolvedor de sistemas em formação, em Florianópolis (SC). Ensino Médio integrado ao Técnico em Análise e Desenvolvimento de Sistemas no SESI SENAI, turma 3B, 2026.</p>
+    <p>Desde cedo tive afinidade com as exatas, principalmente matemática, biologia e programação. Gosto de desafios de lógica, de interfaces que se explicam sozinhas e de soluções que funcionam bem. Além do código, levo comigo a pesquisa científica pela Iniciação Científica.</p>
+    <p>Gostos: Studio Ghibli (O Castelo Animado, A Viagem de Chihiro, Meu Amigo Totoro), animes (Frieren, Attack on Titan, Tokyo Ghoul), cultura japonesa e caligrafia, jogar e criar mundos.</p>
+    <h2>Projetos</h2>
+    <h3>AcousticBuild</h3>
+    <p>Plataforma que prevê os níveis de ruído de uma edificação ainda na fase de projeto, seguindo as normas europeias EN 12354-1 (ruído aéreo) e EN 12354-2 (ruído de impacto). Minha parte: pesquisa das normas, algoritmos de cálculo, arquitetura do software, protótipo e interface interativa. React, Python, FastAPI, SQLite, SQLAlchemy, JWT e Bcrypt.</p>
+    <ul>
+      <li>Infomatrix 2025: credencial para a MILSET Expo 2026, em Fortaleza.</li>
+      <li>DUAL International Fair 2025 e 2026: participação.</li>
+      <li>FEBRACE 2026: participação.</li>
+      <li>XI FEBIC 2026, Joinville: 2º lugar em Ciências Exatas e da Terra (Ensino Médio) e credencial para a FoCiTeCu 2027, na Argentina.</li>
+      <li>Próximas: FENIC 2026, FEBRACE 2027, FoCiTeCu 2027 e GENIUS Olympiad 2027.</li>
+    </ul>
+    <p><a href="https://drive.google.com/file/d/1kC-pFY_rgKTiVAEkhKXlEsYN6WP5YFrU/view">Vídeo do projeto</a> · <a href="https://www.canva.com/design/DAHOEXsnSiU/twMjG-Quo00LmeoNuiPzQg/view">Apresentação</a> · <a href="https://www.figma.com/design/itGMzpxwezLRZ5aq1XkDc3/AcousticBuild?node-id=0-1">Protótipo no Figma</a> · <a href="https://github.com/jjoaohartmann/SA-acousticBuild">Código no GitHub</a></p>
+    <h3>Nós</h3>
+    <p>Jogo narrativo de exploração psicológica, em desenvolvimento, em TypeScript e Canvas, criado com Luana Lupi Vergara. Liam desperta numa casa construída pelo próprio coma; escondido sob o assoalho, o Tear desloca para ele o que impediria a família de continuar unida. Roteiro completo de seis capítulos e quatro finais; trailer de 74 segundos renderizado por código.</p>
+    <p><a href="https://nos-brown-psi.vercel.app/">Jogar a demonstração</a> · <a href="https://github.com/Rateke/NOS">Ler o roteiro</a></p>
+    <h3>Hollow Depths</h3>
+    <p>RPG de turno guiado por probabilidade, cartas e leitura de variáveis. <a href="https://game-nauy.onrender.com/">Jogar</a></p>
+    <h3>Este portfólio</h3>
+    <p>Um vale em 3D feito à mão com Three.js: a grande árvore guarda o AcousticBuild, a caverna na montanha guarda o Nós, a Torre dos Grimórios guarda as matérias, o trem sobre a água é a galeria e a estação do fim da linha tem o contato.</p>
+    <h2>Matérias e atividades</h2>
+    <h3>Ciências da Natureza · Ensino Médio</h3><p>Trabalhos envolvendo Biologia, Química e Física, explorando fenômenos naturais e sistemas em transformação.</p><ul><li><b>Meme: Evolucionismo</b> (Biologia · 1º Trimestre). Construção de um meme para a disciplina de Biologia a fim de explorar e contrastar os conceitos evolutivos. A atividade exigia a representação visual de teorias através do humor digital. Ao criar a ironia em cima do processo de seleção natural e adaptação das espécies, foi possível internalizar melhor os mecanismos seletivos que ocorrem ao longo das gerações. <a href="/imagens/evolucionismo_meme.png">Ver Imagem Original</a></li><li><b>Combustíveis Fósseis &amp; Poder Calorífico</b> (Física / Química · 1º Trimestre). Apresentação desenvolvida a partir da pergunta norteadora: Se já sabemos que combustíveis fósseis poluem, por que ainda usamos? Investigamos os fatores químicos e socioeconômicos, comparando gasolina, etanol e diesel através do poder calorífico e do rendimento real dos motores. Concluímos que barreiras de infraestrutura e dependência energética são obstáculos tão grandes quanto a própria questão técnica. <a href="https://canva.link/DAHE8hNJVcQ/xuWPmiQMAqVdrltf6kQhvQ/view">Ver Apresentação no Canva</a></li><li><b>Relatório: Eletricidade por Atrito</b> (Física Experimental · 1º Trimestre). Relatório da atividade prática sobre Eletricidade por Atrito. Investigamos a indução e polarização eletrostática através de diferentes materiais da série triboelétrica, analisando por que metais são condutores eficientes e como a conservação de cargas atua na transferência mecânica de elétrons.</li><li><b>Mural Interativo: Saúde em Foco</b> (Biologia &amp; Saúde Pública · 2º Trimestre). Construção de um painel científico interativo sobre a relação entre meio ambiente e saúde. Minha atuação esteve concentrada na seção de Epidemiologia, com foco na diferenciação conceitual e prática entre endemia, epidemia e pandemia a partir de dados da Dengue e da Covid-19. Participei ativamente da pesquisa, organização de tabelas/gráficos e validação do rigor científico das fontes sanitárias. (Nota: No momento não dispomos de foto do trabalho individual isolado; o projeto corresponde ao site e ao único QR Code grande visível na foto geral com todos os trabalhos da turma, e futuramente uma fotografia individual exclusiva será incluída). <a href="https://drive.google.com/file/d/1ISe63WHaR66tTHsTT_puYA-wSvAitAm_/view">Ver Relatório em PDF</a> · <a href="https://drive.google.com/file/d/1s-Zz2nm7l1aDNKVaQwXZYh0itdDmly9d/view?usp=drive_link">Material Visual do Mural</a></li><li><b>Seminário sobre Estequiometria na Indústria: Hidrogênio Verde</b> (Química Industrial · 2º Trimestre). Seminário dedicado à análise da produção de hidrogênio verde por meio da eletrólise da água com uso de energia renovável. Demonstramos através de cálculos estequiométricos que a produção teórica de 100 toneladas de hidrogênio exige cerca de 900 toneladas de água. O trabalho investigou a viabilidade técnica, custos de produção, eficiência dos eletrolisadores, descarbonização industrial e o potencial estratégico do Brasil como exportador de matriz energética limpa. <a href="https://canva.link/6xtaiixq3h9renk">Ver Seminário no Canva</a></li><li><b>Cartilha “Eletricidade e o Corpo Humano”: Relatório Saúde em Foco</b> (Ciências da Natureza &amp; Biofísica · 2º Trimestre). Elaboração do relatório técnico-científico Saúde em Foco, documentando todo o processo de investigação multidisciplinar entre meio ambiente, fenômenos biofísicos e saúde pública. Aprofundei o levantamento de indicadores epidemiológicos de Dengue e Covid-19, enfrentando os desafios de filtrar bases de dados sanitárias confiáveis e sintetizar conceitos científicos em tabelas e textos claros. <a href="https://docs.google.com/document/d/1GBHMSXrC73zdzVipsbGKZUlj2xSZMs2m5162MnrJXJ4/edit?usp=sharing">Ver Relatório no Google Docs</a></li><li><b>Portfólio Digital de Eletroquímica</b> (Química Experimental · 2º Trimestre). ⚠️ Projeto em desenvolvimento — o vídeo está sendo editado e será adicionado em breve. Desenvolvimento e registro de um experimento laboratorial focado em reações de oxirredução e princípios de Eletroquímica. O trabalho detalha materiais, procedimentos práticos e transformações moleculares observadas, correlacionando a teoria dos potenciais de redução com as transferências de elétrons e a conversão mútua entre energia elétrica e energia química. <a href="https://fernandorateke.github.io/Natureza/">Ver Portfólio Digital</a></li></ul>
+<h3>Ciências Humanas · Ensino Médio</h3><p>Pesquisas sociológicas, linha do tempo histórica, geopolítica e discussões filosóficas.</p><ul><li><b>Imperialismo — China</b> (História · 1º Trimestre). Investiguei a colonização chinesa e as tensões geopolíticas pós-Revolução Industrial analisando fontes primárias. O desafio foi rastrear como as potências ocidentais justificavam o imperialismo sob uma perspectiva civilizatória enquanto extraíam recursos. Aprendi a distinguir narrativas de vencedores e vencidos em documentos históricos. <a href="https://docs.google.com/document/d/1Q7P5cZxNsy_MuxwBBc5WnIbka_TOHeN1ok1CZg7kF3c/edit?usp=sharing">Ver Artigo Completo</a></li><li><b>A Grande Guerra</b> (História / Comunicação · 1º Trimestre). Realizei um roleplay jornalístico situado em 1916, escrevendo como repórter de guerra. O exercício de me colocar no contexto da época — sem saber o desfecho — foi revelador sobre como a propaganda moldava a percepção pública. Aprendi como a linguagem e a seleção de fatos constroem narrativas históricas que persistem por séculos. <a href="https://canva.link/DAHFb_bP_rI/VE3XPBFp5q2uxLqnJMAD_w/view">Ver Jornal no Canva</a></li><li><b>Geopolítica — Bolívia</b> (Geografia / Território · 1º Trimestre). Pesquisa e cartografia digital sobre como acontecimentos territoriais atravessam a identidade e a política de um país. Mapeamos os recursos estratégicos como gás e lítio e como a perda do litoral impactou o desenvolvimento boliviano. <a href="https://canva.link/DAHBNPTyecc/HpLEDmwZHYRBV6idI8-yqg/view">Ver Apresentação no Canva</a></li><li><b>Cinema e Totalitarismo: “O Pianista”</b> (História &amp; Sociedade · 2º Trimestre). Análise das dinâmicas do totalitarismo na Segunda Guerra Mundial através da obra cinematográfica &#x27;O Pianista&#x27;, acompanhando a trajetória de sobrevivência de Władysław Szpilman na Polônia ocupada. O estudo aprofundou as táticas de antissemitismo, propaganda estatal de massa, coerção violenta e o aparelhamento da indústria militar para enfraquecer liberdades civis, interferindo diretamente na cultura, na economia e no trabalho. <a href="https://canva.link/sr87kot7n67clkq">Ver Apresentação no Canva</a></li><li><b>Tratado de Versalhes e o Ressentimento Alemão</b> (História Contemporânea · 2º Trimestre). Elaboração de um dossiê histórico-analítico investigando o Tratado de Versalhes e o sentimento de revanchismo que culminou na 2ª Guerra Mundial. Mapeamos as duras indenizações financeiras, perdas territoriais, desmilitarização e o impacto psicológico do Artigo 231 (Cláusula de Culpa de Guerra) na desestabilização da República de Weimar e na ascensão de partidos extremistas. <a href="https://canva.link/zx0trbgncx1jfu8">Ver Apresentação no Canva</a> · <a href="https://docs.google.com/document/d/1WgATy9HOj_1GVUNEbzHNNutjo6nQrOVKk3RgD1JPkoQ/edit?usp=sharing">Ver Dossiê no Google Docs</a></li><li><b>Tropicália — Sociedade e Política</b> (História &amp; Sociedade · 2º Trimestre). Apresentação oral individual sobre a Tropicália como movimento cultural, social e político no Brasil dos anos 1960–70. O trabalho examinou como artistas como Caetano Veloso, Gilberto Gil e Os Mutantes desafiaram a censura da ditadura militar através da música, da performance e da mistura de referências populares e eruditas. A apresentação relacionou a Tropicália às lutas sociais por liberdade de expressão, às transformações nas políticas públicas culturais e ao papel das instituições artísticas como agentes de resistência e transformação social. <a href="https://www.canva.com/design/DAHSQ9Eo1-U/JfVR-UMWZ71Tow7Rr62k-g/view?utm_content=DAHSQ9Eo1-U&amp;utm_campaign=designshare&amp;utm_medium=embeds&amp;utm_source=link">Apresentação — Tropicália</a></li></ul>
+<h3>Área de Linguagens · Ensino Médio</h3><p>Produções textuais, estudos da língua, artes, literatura e línguas estrangeiras.</p><ul><li><b>A Paixão Segundo G.H.</b> (Literatura · 1º Trimestre). Ensaio audiovisual sobre a obra de Clarice Lispector, traduzindo metáforas e conflitos do sujeito para uma linguagem visual e narrativa. <a href="https://www.youtube.com/watch?v=66sZjfvacSE">Assistir Ensaio Audiovisual</a></li><li><b>Naturalismo — Jogo Educativo</b> (Literatura Brasileira · 1º Trimestre). Conceitos do Naturalismo transformados em desafios interativos para relacionar literatura, história e denúncia social. <a href="https://canva.link/DAHCP-I0tb4/QMuWlVxaAfVN6jZV8QnEeg/view">Acessar Jogo no Canva</a></li><li><b>Surrealismo</b> (Produção Artística · 1º Trimestre). Registro visual de uma atividade autoral sobre linguagem surrealista, sonhos e composição de imagens.</li><li><b>Videomanifesto — Produção Individual</b> (Produção Audiovisual &amp; Linguagens · 2º Trimestre). Produção individual de um videomanifesto autoral com temática urgente sobre os graves impactos sociais e a violência enfrentada pela população na Ilha do Marajó e no Ceará, abordando a atuação de facções criminosas como o Comando Vermelho que expulsam famílias e cidades inteiras de suas casas. Como referência e suporte conceitual para a construção crítica do manifesto, utilizo a obra cinematográfica &#x27;Manas&#x27; para aprofundar o debate sobre vulnerabilidade, direitos humanos e negligência estatal. <a href="https://drive.google.com/file/d/1rzA0Gnr50FvaVOE63p17_7tYq47S5y7t/view?usp=drive_link">Abrir no Google Drive</a></li><li><b>Inglês — “What kind of art do you consume?”</b> (Língua Inglesa &amp; Arte Digital · 2º Trimestre). Produção textual em inglês explorando os jogos eletrônicos sob a perspectiva de obras de arte e veículos de crítica social e impacto afetivo. Analisei os mundos, personagens e narrativas de Bloodborne e The Last of Us (Part I &amp; II), além de apresentar o projeto autoral de jogo &#x27;NÓS&#x27; (em desenvolvimento conjunto com Luana), que discute memória, traumas intergeracionais, família e construção de identidade. <a href="https://docs.google.com/document/d/1dhVqPMC24qmtpvBhl9AwGbQ-bqFMtX-6XAkmuOpbnjQ/edit?usp=sharing">Ver Atividade no Google Docs</a></li><li><b>Desempenho no Red1000 — 2º trimestre</b> (Redação &amp; Língua Portuguesa · 2º Trimestre). Produção de redação dissertativo-argumentativa no modelo oficial do Enem avaliada na plataforma Red1000, alcançando a pontuação de 960/1000. O resultado por competência consolidou 200 pontos em quatro eixos fundamentais: Língua Portuguesa (200), Tema e tipo textual (200), Coesão e articulação (200) e Proposta de intervenção (200), com 160 pontos em Argumentação e coerência.</li></ul>
+<h3>Área de Matemática · Ensino Médio</h3><p>Resoluções algébricas, geometria, estatística aplicada, probabilidade e raciocínio lógico.</p><ul><li><b>Quebrando a Banca</b> (Estatística e Probabilidade · 1º Trimestre). Análise de probabilidade condicional e expectativa matemática a partir das estratégias apresentadas no filme.</li><li><b>Hollow Depths</b> (Game Design &amp; Matemática · 1º Trimestre). Um RPG de turno em que exploração e combate são orientados por probabilidade, cartas e leitura de variáveis numéricas. <a href="https://game-nauy.onrender.com/">Jogar / Acessar</a></li><li><b>Existe uma crise silenciosa na nossa escola? — Saúde Mental</b> (Estatística &amp; Análise de Dados · 2º Trimestre). Pesquisa estatística aplicada sobre a saúde mental dos estudantes do Ensino Médio (amostra de 32 alunos via questionário anônimo). Mapeamos a frequência de estresse e privação de sono gerados por rotina escolar e vestibulares. A análise calculou média de ansiedade (3,97), variância (1,03), desvio padrão (1,02) e média de sono de 5,2 horas/noite, demonstrando na prática como a Estatística traduz experiências humanas complexas em diagnósticos confiáveis. <a href="https://canva.link/o6mrqow1ovg23bl">Ver Apresentação no Canva</a></li></ul>
+<h3>Modelagem de Sistemas · Curso Técnico</h3><p>Diagramas UML, requisitos de software e estruturação da arquitetura orientada.</p><ul><li><b>Hackathon: Cibersegurança</b> (UML, fluxo de dados e segurança · 1º Trimestre). Modelagem de uma proposta integrada de segurança, banco de dados e dispositivos conectados sob pressão de tempo. <a href="https://www.canva.com/design/DAHG7DnrZ6c/VvuKwrdyThZjsrDJEObxZA/view">Ver Documentação no Canva</a></li></ul>
+<h3>Desenvolvimento de Sistemas · Curso Técnico</h3><p>Implementação de algoritmos estruturados, APIs REST e programação orientada a objetos.</p><ul><li><b>AcousticBuild — Plataforma de Previsões Acústicas</b> (Desenvolvimento Web Full-Stack · 2º Trimestre). O AcousticBuild é um projeto full-stack desenvolvido no curso técnico integrado à Iniciação Científica de Matemática, voltado à análise e previsão do desempenho acústico de edificações. Construímos uma interface moderna e responsiva com React no frontend, API RESTful com Python e FastAPI no backend, banco SQLite via SQLAlchemy, autenticação JWT e criptografia de senhas com Bcrypt, tornando cálculos de engenharia acústica acessíveis para arquitetos e projetistas. <a href="https://www.canva.com/design/DAHOEXsnSiU/twMjG-Quo00LmeoNuiPzQg/view?utm_content=DAHOEXsnSiU&amp;utm_campaign=designshare&amp;utm_medium=embeds&amp;utm_source=link">Apresentação — AcousticBuild</a> · <a href="https://www.figma.com/design/itGMzpxwezLRZ5aq1XkDc3/AcousticBuild?node-id=0-1&amp;t=Dxhsf2FjqqYf4AYB-1">Protótipo no Figma</a> · <a href="https://github.com/jjoaohartmann/SA-acousticBuild">Repositório no GitHub</a> · <a href="https://github.com/jjoaohartmann/SA-acousticBuild/blob/main/README.md">README do Projeto</a> · <a href="https://drive.google.com/file/d/1kC-pFY_rgKTiVAEkhKXlEsYN6WP5YFrU/view">Vídeo do Projeto</a> · <a href="https://drive.google.com/file/d/1kC-pFY_rgKTiVAEkhKXlEsYN6WP5YFrU/view">Vídeo</a></li></ul>
+<h3>Programação de Aplicativos · Curso Técnico</h3><p>Desenvolvimento de aplicações móveis e interfaces modernas com foco em experiência do usuário e integração de serviços.</p><ul><li><b>AcousticBuild — Plataforma de Previsões Acústicas</b> (Desenvolvimento Web &amp; Aplicativos · 2º Trimestre). O AcousticBuild é um projeto full-stack desenvolvido no curso técnico integrado à Iniciação Científica de Matemática, voltado à análise e previsão do desempenho acústico de edificações. Construímos uma interface moderna e responsiva com React no frontend, API RESTful com Python e FastAPI no backend, banco SQLite via SQLAlchemy, autenticação JWT e criptografia de senhas com Bcrypt, tornando cálculos de engenharia acústica acessíveis para arquitetos e projetistas. <a href="https://www.canva.com/design/DAHOEXsnSiU/twMjG-Quo00LmeoNuiPzQg/view?utm_content=DAHOEXsnSiU&amp;utm_campaign=designshare&amp;utm_medium=embeds&amp;utm_source=link">Apresentação — AcousticBuild</a> · <a href="https://www.figma.com/design/itGMzpxwezLRZ5aq1XkDc3/AcousticBuild?node-id=0-1&amp;t=Dxhsf2FjqqYf4AYB-1">Protótipo no Figma</a> · <a href="https://github.com/jjoaohartmann/SA-acousticBuild">Repositório no GitHub</a> · <a href="https://github.com/jjoaohartmann/SA-acousticBuild/blob/main/README.md">README do Projeto</a> · <a href="https://drive.google.com/file/d/1kC-pFY_rgKTiVAEkhKXlEsYN6WP5YFrU/view">Vídeo do Projeto</a> · <a href="https://drive.google.com/file/d/1kC-pFY_rgKTiVAEkhKXlEsYN6WP5YFrU/view">Vídeo</a></li></ul>
+<h3>IoT - Internet das Coisas · Curso Técnico</h3><p>Projetos eletrônicos, sensores para coleta contínua de metadados e segurança de hardware.</p><ul><li><b>Hackathon: Cibersegurança &amp; IoT</b> (IoT e Proteção de Dispositivos · 1º Trimestre). Proposta de camadas de proteção e criptografia para dispositivos integrados na ponta da rede. <a href="https://www.canva.com/design/DAHG7DnrZ6c/VvuKwrdyThZjsrDJEObxZA/view">Ver Arquitetura IoT</a></li><li><b>Atividade 1 — Acender LED</b> (Eletrônica Básica &amp; IoT · 2º Trimestre). Montagem e programação de um circuito eletrônico inicial para controle de LED. O código enviou sinais digitais pelo pino do microcontrolador para acionar o componente físico, consolidando o entendimento sobre fluxo de corrente, polaridade de diodos emissores de luz e manipulação de saídas digitais em sistemas embarcados. <a href="https://canva.link/xt8l4950oajtohy">Ver Apresentação de IoT no Canva</a></li><li><b>Atividade 2 — Semáforo</b> (Automação &amp; Lógica de Controle · 2º Trimestre). Montagem e programação de um sistema de sinalização de semáforo com três LEDs (vermelho, amarelo e verde). O código estruturou a temporização precisa das fases (vermelho 5s, amarelo 4s e verde 3s), aplicando conceitos fundamentais de múltiplas saídas digitais, temporização não bloqueante e automação de processos urbanos. <a href="https://canva.link/xt8l4950oajtohy">Ver Apresentação de IoT no Canva</a></li><li><b>Atividade 3 — Controle de LED com botão: lógica Toggle</b> (Entradas Digitais &amp; Estado · 2º Trimestre). Desenvolvimento de circuito de acionamento por botão utilizando lógica Toggle (inversão e retenção de estado lógico a cada clique). O botão atuou como entrada digital sensível a pulsos elétricos e o LED como saída de resposta, praticando debounce, leitura de variáveis de estado e interação física com microcontroladores. <a href="https://canva.link/xt8l4950oajtohy">Ver Apresentação de IoT no Canva</a></li></ul>
+<h3>Banco de Dados · Curso Técnico</h3><p>Modelagem E-R, tabelas e scripts avançados em SQL para manipulação e integridade dos dados.</p><ul><li><b>Hackathon: Modelagem SQL &amp; Proteção</b> (Dados, Validação e Proteção · 1º Trimestre). Estruturação de esquemas relacionais e proteção contra ataques e injeções SQL dentro de uma solução multidisciplinar. <a href="https://www.canva.com/design/DAHG7DnrZ6c/VvuKwrdyThZjsrDJEObxZA/view">Ver Esquemas SQL</a></li></ul>
+    <h2>Contato</h2>
+    <ul>
+      <li>E-mail: fernando_rateke-n@estudante.sesisenai.org.br</li>
+      <li><a href="https://www.canva.com/design/DAGxm9Bd6lU/f8w8zNxuOLH2PDnrVvsAmQ/view">Currículo</a></li>
+      <li><a href="https://github.com/fernando-rateke">GitHub</a></li>
+      <li><a href="https://www.linkedin.com/in/fernando-rateke/">LinkedIn</a></li>
+      <li><a href="https://www.instagram.com/rateke.fer/">Instagram</a></li>
+    </ul>
+    <p class="tx-note">© 2026 Fernando Rateke. Homenagem ao Studio Ghibli: personagens e castelo pertencem aos seus autores. Músicas: Joe Hisaishi (O Castelo Animado e A Viagem de Chihiro), Evan Call (Frieren) e Claude Debussy (Clair de Lune).</p>
+  </div>
+
+</section>
+
+<script>
+/* ---------- Carregamento: contagem 1000 menos 7 ---------- */
+(() => {
+  const ld = document.getElementById("loader"); if (!ld) return;
+  const now = document.getElementById("ldNow"), box = document.getElementById("ldCount"), log = document.getElementById("ldLog");
+  const sews = [...ld.querySelectorAll("[data-sew]")], kana = [document.getElementById("kanaL"), document.getElementById("kanaR")];
+  const t0 = performance.now();
+  const LOG = ["Localizando o 20º distrito", "Rastreando cheiro", "Abrindo os arquivos da CCG", "Sinal Rc detectado"];
+  let n = 1000, li = 0, ready = false, chosen = false, closing = false, progress = 0;
+  window.contagem = () => n;
+  // a máscara vai sendo costurada enquanto carrega
+  const sew = (k) => { sews.forEach((p, i) => { p.style.opacity = k * (sews.length + 1) > i + 0.5 ? "1" : "0"; }); kana.forEach((t) => { t.parentNode.style.opacity = k > 0.62 ? "1" : "0"; }); };
+  sew(0);
+  const tick = setInterval(() => {
+    if (ready) return;
+    const d = document.createElement("span"); d.className = "drop"; d.textContent = String(n); box.appendChild(d); setTimeout(() => d.remove(), 1200);
+    n -= 7; if (n < 7) n = 1000;
+    now.textContent = String(n);
+    progress = Math.min(0.92, progress + (0.95 - progress) * 0.05);
+    sew(progress);
+  }, 130);
+  const logT = setInterval(() => { li = Math.min(li + 1, LOG.length - 1); log.textContent = LOG[li]; if (li === LOG.length - 1) clearInterval(logT); }, 1300);
+  // rachaduras saindo do número
+  const crack = document.getElementById("ldCrack");
+  function drawCrack() {
+    const W = innerWidth, H = innerHeight, r = box.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    crack.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    let html = "", seed = 7;
+    const rr = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    const rays = [];
+    for (let i = 0; i < 13; i++) {
+      const a = (i / 13) * Math.PI * 2 + rr() * 0.4;
+      let x = cx, y = cy, d = `M${x.toFixed(1)} ${y.toFixed(1)}`, len = 0;
+      const pts = [[x, y]];
+      const reach = Math.hypot(W, H);
+      let s = 18 + rr() * 30;
+      while (len < reach) { const aa = a + (rr() - 0.5) * 0.5; x += Math.cos(aa) * s; y += Math.sin(aa) * s; len += s; s *= 1.18; d += ` L${x.toFixed(1)} ${y.toFixed(1)}`; pts.push([x, y]); }
+      rays.push(pts);
+      html += `<path style="--len:${Math.ceil(len)};--d:${(i * 0.025).toFixed(3)}s" d="${d}"/>`;
+      if (i % 3 === 0) html += `<path class="glint" style="--len:${Math.ceil(len)};--d:${(i * 0.025).toFixed(3)}s" d="${d}"/>`;
+    }
+    // anéis ligando os raios
+    for (const ring of [40, 95, 180]) {
+      let d = "";
+      rays.forEach((pts, i) => { const p = pts[Math.min(pts.length - 1, Math.round(Math.log(ring / 18) / Math.log(1.18)) + 1)] || pts[pts.length - 1]; d += (i ? " L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1); });
+      html += `<path style="--len:4000;--d:.25s" d="${d} Z" opacity="0.55"/>`;
+    }
+    crack.innerHTML = html;
+    ld.dataset.rays = JSON.stringify(rays.map((p) => p[p.length - 1]));
+    ld.dataset.c = JSON.stringify([cx, cy]);
+  }
+  const finish = () => {
+    if (!ready || !chosen || closing) return; closing = true;
+    setTimeout(shatter, Math.max(150, 2600 - (performance.now() - t0)));
+  };
+  function shatter() {
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.dispatchEvent(new CustomEvent("tg:vidro"));
+    if (reduce) { ld.style.transition = "opacity .4s"; ld.style.opacity = "0"; setTimeout(() => ld.remove(), 450); return; }
+    const art = document.getElementById("ldArt"), rays = JSON.parse(ld.dataset.rays || "[]"), [cx, cy] = JSON.parse(ld.dataset.c || "[0,0]");
+    const W = innerWidth, H = innerHeight;
+    const frag = document.createDocumentFragment(), shards = [];
+    const ends = rays.map(([x, y]) => [Math.max(-40, Math.min(W + 40, x)), Math.max(-40, Math.min(H + 40, y))]);
+    for (let i = 0; i < ends.length; i++) {
+      const a = ends[i], b = ends[(i + 1) % ends.length];
+      const sh = document.createElement("div"); sh.className = "shard";
+      sh.style.clipPath = `polygon(${cx}px ${cy}px, ${a[0]}px ${a[1]}px, ${b[0]}px ${b[1]}px)`;
+      sh.appendChild(art.cloneNode(true));
+      sh.querySelectorAll("[id]").forEach((e) => e.removeAttribute("id"));
+      const mx = (a[0] + b[0]) / 2 - cx, my = (a[1] + b[1]) / 2 - cy, L = Math.hypot(mx, my) || 1;
+      shards.push({ sh, vx: (mx / L) * (120 + Math.random() * 160), vy: (my / L) * (90 + Math.random() * 120) - 60, r: (Math.random() - 0.5) * 50, ox: (a[0] + b[0] + cx) / 3, oy: (a[1] + b[1] + cy) / 3 });
+      frag.appendChild(sh);
+    }
+    art.style.visibility = "hidden"; crack.style.opacity = "0";
+    ld.querySelector(".ld-lang").style.opacity = "0";
+    ld.style.background = "transparent";
+    ld.appendChild(frag); ld.classList.add("gone");
+    const tS = performance.now();
+    const step = (tt) => {
+      const k = (tt - tS) / 1000;
+      shards.forEach((s) => { s.sh.style.transformOrigin = `${s.ox}px ${s.oy}px`; s.sh.style.transform = `translate(${s.vx * k}px, ${s.vy * k + 900 * k * k}px) rotate(${s.r * k}deg) scale(${1 - k * 0.12})`; s.sh.style.opacity = String(Math.max(0, 1 - k * 0.9)); });
+      if (k < 1.3) requestAnimationFrame(step); else ld.remove();
+    };
+    requestAnimationFrame(step);
+  }
+  const done = () => {
+    if (ready) return; ready = true; clearInterval(tick); clearInterval(logT);
+    log.textContent = "Sinal Rc detectado"; sew(1);
+    drawCrack(); ld.classList.add("ready", "cracked");
+    finish();
+  };
+  const langBtns = [...ld.querySelectorAll("[data-lang]")];
+  langBtns.forEach((b) => b.addEventListener("click", () => { chosen = true; ld.classList.add("chosen"); langBtns.forEach((x) => x.setAttribute("aria-pressed", String(x === b))); finish(); }));
+  let saved = null; try { saved = localStorage.getItem("vale-lang"); } catch (e) { /* */ }
+  const pre = langBtns.find((b) => b.dataset.lang === (saved === "en" ? "en" : "pt"));
+  if (pre) try { pre.focus({ preventScroll: true }); } catch (e) { /* */ }
+  const cv = document.getElementById("city");
+  const watch = () => { if (cv.classList.contains("ready") || cv.classList.contains("no-webgl")) { setTimeout(done, Math.max(0, 2400 - (performance.now() - t0))); return true; } };
+  if (!watch()) { const mo = new MutationObserver(() => { if (watch()) mo.disconnect(); }); mo.observe(cv, { attributes: true, attributeFilter: ["class"] }); }
+  setTimeout(done, 25000);
+})();
+
+/* ---------- Capa, som, modo kakugan, entrada ---------- */
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const music = $("music"), soundBtn = $("soundBtn"), soundLabel = $("soundLabel");
+  const MAXV = 0.34;
+  let soundOn = false, fadeRaf = 0, actx = null, rainNode = null;
+  function fadeTo(v, ms) {
+    cancelAnimationFrame(fadeRaf);
+    const from = music.volume, t0 = performance.now();
+    const step = (t) => { const k = Math.min(1, (t - t0) / ms); music.volume = from + (v - from) * k; if (k < 1) fadeRaf = requestAnimationFrame(step); else if (v === 0) music.pause(); };
+    fadeRaf = requestAnimationFrame(step);
+  }
+  function audio() { if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { /* */ } } if (actx && actx.state === "suspended") actx.resume(); return actx; }
+  // chuva de fundo: ruído filtrado, bem baixo
+  function rainOn(on) {
+    const a = audio(); if (!a) return;
+    if (on && !rainNode) {
+      const len = a.sampleRate * 2, buf = a.createBuffer(1, len, a.sampleRate), d = buf.getChannelData(0);
+      let last = 0; for (let i = 0; i < len; i++) { const w = Math.random() * 2 - 1; last = (last + 0.02 * w) / 1.02; d[i] = last * 3.5 + w * 0.06; }
+      const src = a.createBufferSource(); src.buffer = buf; src.loop = true;
+      const f = a.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 1800;
+      const g = a.createGain(); g.gain.value = 0; src.connect(f).connect(g).connect(a.destination); src.start();
+      g.gain.linearRampToValueAtTime(0.05, a.currentTime + 3);
+      rainNode = { src, g };
+    } else if (!on && rainNode) { const n = rainNode; rainNode = null; n.g.gain.linearRampToValueAtTime(0, a.currentTime + 0.8); setTimeout(() => n.src.stop(), 900); }
+  }
+  function thunder() {
+    const a = actx; if (!a || !soundOn) return;
+    const len = a.sampleRate * 3, buf = a.createBuffer(1, len, a.sampleRate), d = buf.getChannelData(0);
+    let last = 0; for (let i = 0; i < len; i++) { last = (last + 0.03 * (Math.random() * 2 - 1)) / 1.03; d[i] = last * 6 * Math.pow(1 - i / len, 2); }
+    const s = a.createBufferSource(); s.buffer = buf; const f = a.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 260;
+    const g = a.createGain(); g.gain.value = 0.0001; g.gain.exponentialRampToValueAtTime(0.16, a.currentTime + 0.6); g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + 2.9);
+    s.connect(f).connect(g).connect(a.destination); s.start(a.currentTime + 0.4);
+  }
+  window.addEventListener("cidade:relampago", thunder);
+  function glass() {
+    const a = audio(); if (!a) return;
+    const len = Math.floor(a.sampleRate * 0.9), buf = a.createBuffer(1, len, a.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) { const e = Math.pow(1 - i / len, 3); d[i] = (Math.random() * 2 - 1) * e * (i < 600 ? 1 : 0.5); }
+    const s = a.createBufferSource(); s.buffer = buf; const f = a.createBiquadFilter(); f.type = "highpass"; f.frequency.value = 2400;
+    const g = a.createGain(); g.gain.value = 0.12; s.connect(f).connect(g).connect(a.destination); s.start();
+    for (let k = 0; k < 6; k++) { const o = a.createOscillator(), og = a.createGain(); o.type = "sine"; o.frequency.value = 2600 + Math.random() * 3000; const t = a.currentTime + 0.05 + Math.random() * 0.5; og.gain.setValueAtTime(0.0001, t); og.gain.exponentialRampToValueAtTime(0.03, t + 0.01); og.gain.exponentialRampToValueAtTime(0.0001, t + 0.4); o.connect(og).connect(a.destination); o.start(t); o.stop(t + 0.45); }
+  }
+  const T = (s) => (window.i18n ? window.i18n.t(s) : s);
+  function setSound(on) {
+    soundOn = on;
+    soundBtn.setAttribute("aria-pressed", String(on));
+    soundLabel.textContent = on ? "Pausar o tema" : "Ouvir o tema";
+    if (on) { music.volume = Math.min(music.volume, 0.02); const p = music.play(); if (p && p.catch) p.catch(() => {}); fadeTo(MAXV, 4000); rainOn(true); }
+    else { fadeTo(0, 900); rainOn(false); }
+    try { sessionStorage.setItem("tg-som", on ? "1" : "0"); } catch (e) { /* */ }
+  }
+  soundBtn.addEventListener("click", () => setSound(!soundOn));
+  // a escolha do idioma é o primeiro toque: o vidro quebra com som e o tema começa baixinho
+  window.addEventListener("tg:vidro", () => {
+    glass();
+    let pref = null; try { pref = sessionStorage.getItem("tg-som"); } catch (e) { /* */ }
+    if (pref !== "0") setTimeout(() => setSound(true), 700);
+  });
+
+  // modo kakugan
+  const kakBtn = $("kakBtn");
+  const setKak = (on) => { kakBtn.setAttribute("aria-pressed", String(on)); document.documentElement.classList.toggle("kak", on); if (window.cidade) window.cidade.kakugan(on); try { sessionStorage.setItem("tg-kak", on ? "1" : "0"); } catch (e) { /* */ } };
+  kakBtn.addEventListener("click", () => setKak(kakBtn.getAttribute("aria-pressed") !== "true"));
+  try { if (sessionStorage.getItem("tg-kak") === "1") setTimeout(() => setKak(true), 0); } catch (e) { /* */ }
+
+  /* rastro de kagune no cursor; no toque, um respingo */
+  const tr = $("trail"), g = tr.getContext("2d");
+  let TW = 0, TH = 0, tdpr = 1;
+  const sizeTrail = () => { tdpr = Math.min(2, devicePixelRatio || 1); TW = innerWidth; TH = innerHeight; tr.width = TW * tdpr; tr.height = TH * tdpr; g.setTransform(tdpr, 0, 0, tdpr, 0, 0); };
+  sizeTrail(); addEventListener("resize", sizeTrail);
+  const TENT = [0, 1, 2].map((i) => ({ pts: Array.from({ length: 22 }, () => ({ x: -100, y: -100 })), ph: i * 2.1 }));
+  const drops = [];
+  let px = -100, py = -100, lastMove = 0, trailRaf = 0, active = false;
+  const kak = () => document.documentElement.classList.contains("kak");
+  function drawTrail(t) {
+    g.clearRect(0, 0, TW, TH);
+    const thick = kak() ? 1.9 : 1;
+    // parado, o kagune se recolhe e some
+    const fade = 1 - Math.min(1, Math.max(0, (t - lastMove - 250) / 500));
+    let alive = false;
+    TENT.forEach((te, ti) => {
+      const p = te.pts;
+      p[0].x += (px - p[0].x) * 0.5; p[0].y += (py - p[0].y) * 0.5;
+      for (let i = 1; i < p.length; i++) {
+        const w = Math.sin(t * 0.004 + i * 0.5 + te.ph) * (2.2 + i * 0.25);
+        const nx = p[i - 1].x + w * 0.6, ny = p[i - 1].y + w * 0.4;
+        p[i].x += (nx - p[i].x) * (0.34 - i * 0.008); p[i].y += (ny - p[i].y) * (0.34 - i * 0.008);
+      }
+      const span = Math.hypot(p[0].x - p[p.length - 1].x, p[0].y - p[p.length - 1].y);
+      if (span > 2 && fade > 0) alive = true;
+      for (let i = p.length - 1; i > 0; i--) {
+        const k = 1 - i / p.length;
+        g.beginPath(); g.moveTo(p[i].x, p[i].y); g.lineTo(p[i - 1].x, p[i - 1].y);
+        g.lineWidth = (1 + k * 4.5) * thick * (ti === 0 ? 1 : 0.7);
+        g.strokeStyle = i % 3 === 0 ? `rgba(255,70,70,${0.75 * k * fade})` : `rgba(170,6,16,${0.85 * k * fade})`;
+        g.lineCap = "round"; g.stroke();
+      }
+    });
+    for (let i = drops.length - 1; i >= 0; i--) {
+      const d = drops[i]; d.vy += 0.35; d.x += d.vx; d.y += d.vy; d.life -= 0.022;
+      if (d.life <= 0) { drops.splice(i, 1); continue; }
+      alive = true;
+      g.beginPath(); g.arc(d.x, d.y, d.r * d.life * thick, 0, Math.PI * 2); g.fillStyle = `rgba(190,8,18,${d.life})`; g.fill();
+    }
+    if (alive || t - lastMove < 800) trailRaf = requestAnimationFrame(drawTrail); else { active = false; g.clearRect(0, 0, TW, TH); }
+  }
+  const wake = () => { if (!active && !reduce) { active = true; trailRaf = requestAnimationFrame(drawTrail); } };
+  addEventListener("pointermove", (e) => { if (e.pointerType !== "mouse" || reduce) return; if (px < -50 || Math.hypot(e.clientX - px, e.clientY - py) > 220) TENT.forEach((te) => te.pts.forEach((q) => { q.x = e.clientX; q.y = e.clientY; })); px = e.clientX; py = e.clientY; lastMove = performance.now(); wake(); });
+  addEventListener("pointerdown", (e) => {
+    if (reduce || e.pointerType === "mouse") return;
+    const n = kak() ? 26 : 16;
+    for (let i = 0; i < n; i++) { const a = Math.random() * Math.PI * 2, v = 2 + Math.random() * 6; drops.push({ x: e.clientX, y: e.clientY, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 2, r: 2 + Math.random() * 5, life: 1 }); }
+    lastMove = performance.now(); wake();
+  });
+
+  /* entrar: o kagune dela explode e rasga a tela */
+  const tear = $("tear"), tg = tear.getContext("2d");
+  const blackout = $("blackout"), cover = $("cover"), soon = $("soon");
+  function rip(done) {
+    const W = innerWidth, H = innerHeight, d = Math.min(2, devicePixelRatio || 1);
+    tear.width = W * d; tear.height = H * d; tg.setTransform(d, 0, 0, d, 0, 0);
+    const N = 7, slashes = Array.from({ length: N }, (_, i) => {
+      const fromLeft = i % 2 === 0, y0 = H * (0.1 + Math.random() * 0.8), y1 = H * (0.1 + Math.random() * 0.8);
+      return { x0: fromLeft ? -80 : W + 80, y0, x1: fromLeft ? W + 80 : -80, y1, cx: W * (0.3 + Math.random() * 0.4), cy: H * (Math.random()), w: 26 + Math.random() * 60, delay: i * 0.07 };
+    });
+    const t0 = performance.now();
+    const step = (t) => {
+      const k = (t - t0) / 1000;
+      tg.clearRect(0, 0, W, H);
+      slashes.forEach((s) => {
+        const p = Math.min(1, Math.max(0, (k - s.delay) / 0.38));
+        if (p <= 0) return;
+        const e = 1 - Math.pow(1 - p, 3), S = 40;
+        tg.beginPath();
+        for (let i = 0; i <= S * e; i++) {
+          const u = i / S, x = (1 - u) * (1 - u) * s.x0 + 2 * (1 - u) * u * s.cx + u * u * s.x1, y = (1 - u) * (1 - u) * s.y0 + 2 * (1 - u) * u * s.cy + u * u * s.y1;
+          i ? tg.lineTo(x, y) : tg.moveTo(x, y);
+        }
+        tg.lineCap = "round"; tg.lineJoin = "round";
+        tg.strokeStyle = "#000"; tg.lineWidth = s.w * (0.6 + k * 2.2); tg.stroke();
+        tg.strokeStyle = "rgba(196,10,20,0.95)"; tg.lineWidth = s.w * 0.55; tg.stroke();
+        tg.strokeStyle = "rgba(255,90,80,0.8)"; tg.lineWidth = s.w * 0.12; tg.stroke();
+      });
+      if (k < 1.25) requestAnimationFrame(step); else { done(); setTimeout(() => tg.clearRect(0, 0, W, H), 60); }
+    };
+    requestAnimationFrame(step);
+  }
+  $("enterBtn").addEventListener("click", () => {
+    cover.classList.add("away");
+    if (window.cidade) window.cidade.burst();
+    const go = () => { blackout.classList.add("on"); setTimeout(() => { soon.hidden = false; requestAnimationFrame(() => soon.classList.add("on")); $("backBtn").focus({ preventScroll: true }); }, 500); };
+    if (reduce) go(); else setTimeout(() => rip(go), 1100);
+  });
+  $("backBtn").addEventListener("click", () => {
+    soon.classList.remove("on");
+    setTimeout(() => { soon.hidden = true; if (window.cidade) window.cidade.cover(); blackout.classList.remove("on"); cover.classList.remove("away"); $("enterBtn").focus({ preventScroll: true }); }, 500);
+  });
+})();
+</script>
+<script src="/tg/three.min.js"></script>
+<script src="/tg/cidade.js"></script>
+</body>
+</html>

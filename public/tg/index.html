@@ -943,7 +943,7 @@ html.no-webgl .cover, html.no-webgl #city { display: none; }
   const $ = (id) => document.getElementById(id);
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const music = $("music"), soundBtn = $("soundBtn"), soundLabel = $("soundLabel");
-  const MAXV = 0.34;
+  const MAXV = 1;
   let soundOn = false, fadeRaf = 0, actx = null, rainNode = null;
   function fadeTo(v, ms) {
     cancelAnimationFrame(fadeRaf);
@@ -995,7 +995,7 @@ html.no-webgl .cover, html.no-webgl #city { display: none; }
         if (!soundOn) return;
         fadeTo(0, 1200); rainOn(false);
         u.volume = 0; u.currentTime = 0; const p = u.play(); if (p && p.catch) p.catch(() => {});
-        const t0 = performance.now(); const up = (t) => { const k = Math.min(1, (t - t0) / 9000); u.volume = 0.34 * k; if (k < 1 && !u.paused) requestAnimationFrame(up); }; requestAnimationFrame(up);
+        const t0 = performance.now(); const up = (t) => { const k = Math.min(1, (t - t0) / 2500); u.volume = k; if (k < 1 && !u.paused) requestAnimationFrame(up); }; requestAnimationFrame(up);
         u.onended = () => { if (onEnd) onEnd(); };
       } else {
         const v0 = u.volume, t0 = performance.now(); const dn = (t) => { const k = Math.min(1, (t - t0) / 900); u.volume = v0 * (1 - k); if (k < 1) requestAnimationFrame(dn); else u.pause(); }; requestAnimationFrame(dn);
@@ -1008,7 +1008,7 @@ html.no-webgl .cover, html.no-webgl #city { display: none; }
     soundOn = on;
     soundBtn.setAttribute("aria-pressed", String(on));
     soundLabel.textContent = on ? "Pausar o tema" : "Ouvir o tema";
-    if (on) { music.volume = Math.min(music.volume, 0.02); const p = music.play(); if (p && p.catch) p.catch(() => {}); fadeTo(MAXV, 4000); rainOn(true); }
+    if (on) { music.volume = Math.min(music.volume, 0.02); const p = music.play(); if (p && p.catch) p.catch(() => {}); fadeTo(MAXV, 2500); rainOn(true); }
     else { fadeTo(0, 900); rainOn(false); const u = $("musicU"); if (!u.paused) u.pause(); }
     try { sessionStorage.setItem("tg-som", on ? "1" : "0"); } catch (e) { /* */ }
   }

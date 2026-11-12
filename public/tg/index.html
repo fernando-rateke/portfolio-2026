@@ -546,6 +546,58 @@ html.no-webgl .cover, html.no-webgl #city { display: none; }
 .ex-bar button { border: 0; box-shadow: inset 0 -2px 0 rgba(255,42,47,0.55); background: linear-gradient(180deg, rgba(14,6,8,0.85), rgba(6,6,10,0.8)); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); color: #f4efe6; transition: background .2s, box-shadow .2s, transform .15s; }
 .ex-bar button:hover, .ex-bar button:focus-visible { background: linear-gradient(180deg, rgba(80,6,12,0.9), rgba(14,6,8,0.85)); box-shadow: inset 0 -2px 0 #ff2a2f, 0 0 24px rgba(255,30,40,0.3); }
 .ex-bar button:active { transform: translateY(1px); }
+/* comanda da Anteiku (o café) */
+.slip-in { position: relative; width: min(380px, 100%); max-height: calc(100vh - 40px); overflow: auto; padding: 30px 28px 26px; color: #2a1c12; background: #f3ead8; background-image: radial-gradient(rgba(120,80,40,0.08) 1px, transparent 1.4px), linear-gradient(180deg, #f7efdf, #ecdfc6); background-size: 6px 6px, 100% 100%; box-shadow: 0 30px 80px rgba(0,0,0,0.6); transform: translateY(24px) rotate(-2deg); transition: transform .5s cubic-bezier(.2,.8,.2,1); clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), 95% 100%, 90% calc(100% - 10px), 85% 100%, 80% calc(100% - 10px), 75% 100%, 70% calc(100% - 10px), 65% 100%, 60% calc(100% - 10px), 55% 100%, 50% calc(100% - 10px), 45% 100%, 40% calc(100% - 10px), 35% 100%, 30% calc(100% - 10px), 25% 100%, 20% calc(100% - 10px), 15% 100%, 10% calc(100% - 10px), 5% 100%, 0 calc(100% - 10px)); }
+.layer.on .slip-in { transform: rotate(-1deg); }
+.slip-x { position: absolute; right: 10px; top: 8px; width: 40px; height: 40px; border: 0; background: none; color: #6a4a30; font-size: 1.5rem; cursor: pointer; }
+.slip-jp { margin: 0; font: 800 1.05rem/1 var(--f-display); color: #8a5a30; letter-spacing: 0.12em; }
+.slip-in h2 { margin: 8px 0 2px; font: 800 2rem/1 var(--f-display); }
+.slip-sub { margin: 0 0 16px; font: 500 0.66rem/1.4 var(--f-mono); letter-spacing: 0.14em; text-transform: uppercase; color: #8a6a50; padding-bottom: 12px; border-bottom: 1.5px dashed #b8a080; }
+.slip-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.slip-list li { display: grid; grid-template-columns: auto 1fr auto; align-items: baseline; gap: 8px; padding: 8px 0; }
+.slip-list li::after { content: none; }
+.slip-list .it { font: 700 0.95rem/1.2 var(--f-display); }
+.slip-list .dots { border-bottom: 1.5px dotted #b8a080; transform: translateY(-4px); }
+.slip-list a, .slip-list button { font: 600 0.72rem/1 var(--f-mono); letter-spacing: 0.08em; color: #8a2a14; background: none; border: 0; padding: 6px 0; cursor: pointer; text-decoration: none; text-transform: uppercase; }
+.slip-list a:hover, .slip-list button:hover, .slip-list a:focus-visible, .slip-list button:focus-visible { color: #c4141c; text-decoration: underline; }
+.slip-list small { grid-column: 1 / -1; margin-top: -4px; font: 500 0.7rem/1.4 var(--f-mono); color: #6a5040; word-break: break-all; }
+.slip-tot { display: flex; justify-content: space-between; margin-top: 14px; padding-top: 12px; border-top: 2px solid #2a1c12; font: 800 1rem/1 var(--f-display); }
+.slip-foot { margin: 16px 0 6px; font: italic 500 0.86rem/1.5 var(--f-display); color: #6a4a30; text-align: center; }
+.slip-ring { position: absolute; right: 26px; top: 64px; width: 90px; height: 90px; border-radius: 50%; border: 6px solid rgba(110,60,20,0.16); box-shadow: inset 0 0 0 2px rgba(110,60,20,0.08); transform: rotate(20deg) scaleX(1.08); pointer-events: none; }
+/* o livro do Takatsuki (créditos) */
+.book-in { position: relative; width: min(900px, 100%); max-height: calc(100vh - 40px); padding: 18px; background: linear-gradient(135deg, #1a1012, #0a0608); border-radius: 6px; box-shadow: 0 40px 120px rgba(0,0,0,0.8), inset 0 0 0 2px #3a2224, inset 0 0 60px rgba(0,0,0,0.6); transform: perspective(1400px) rotateX(18deg) translateY(30px) scale(0.94); opacity: 0.6; transition: transform .7s cubic-bezier(.2,.8,.2,1), opacity .5s; }
+.layer.on .book-in { transform: none; opacity: 1; }
+.book-x { position: absolute; right: -6px; top: -14px; z-index: 2; width: 42px; height: 42px; border-radius: 50%; border: 1px solid #5a3a3c; background: #120a0c; color: #ece7df; font-size: 1.3rem; cursor: pointer; }
+.book-pages { display: grid; grid-template-columns: 1fr 1fr; max-height: calc(100vh - 80px); overflow: auto; background: #efe5cf; color: #2a1e16; border-radius: 3px; box-shadow: inset 0 0 40px rgba(120,80,40,0.25); position: relative; }
+.book-pages::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 46px; margin-left: -23px; background: linear-gradient(90deg, rgba(0,0,0,0), rgba(60,40,20,0.28) 45%, rgba(60,40,20,0.28) 55%, rgba(0,0,0,0)); pointer-events: none; }
+.pg { padding: 38px clamp(20px, 4vw, 46px) 34px; }
+.pg-l { border-right: 1px solid rgba(80,50,20,0.15); }
+.pg-r { transform-origin: left center; animation: pgTurn .9s cubic-bezier(.3,.7,.2,1) both .25s; }
+@keyframes pgTurn { from { transform: perspective(1200px) rotateY(-80deg); opacity: 0; } }
+.pg-kick { margin: 0; font: 800 0.95rem/1 var(--f-display); letter-spacing: 0.2em; color: #8a1a1a; }
+.pg h2 { margin: 14px 0 4px; font: 800 clamp(1.6rem, 3vw, 2.2rem)/1.05 var(--f-display); }
+.pg-auth { margin: 0 0 22px; font: 500 0.7rem/1 var(--f-mono); letter-spacing: 0.2em; text-transform: uppercase; color: #7a6050; }
+.pg blockquote { margin: 0 0 22px; padding-left: 14px; border-left: 3px solid #8a1a1a; font: italic 600 1.05rem/1.55 var(--f-display); }
+.pg-note { margin: 0; font-size: .9rem; line-height: 1.6; color: #5a4636; }
+.pg-cred { margin: 18px 0 0; display: grid; gap: 4px 0; }
+.pg-cred dt { margin-top: 10px; font: 700 0.62rem/1 var(--f-mono); letter-spacing: 0.2em; text-transform: uppercase; color: #8a1a1a; }
+.pg-cred dd { margin: 4px 0 0; font-size: .92rem; line-height: 1.5; }
+.pg-num { margin: 26px 0 0; text-align: center; font: 500 0.7rem/1 var(--f-mono); letter-spacing: 0.3em; color: #9a8070; }
+@media (max-width: 700px) { .book-pages { grid-template-columns: 1fr; } .book-pages::before { display: none; } .pg-l { border-right: 0; border-bottom: 1px solid rgba(80,50,20,0.15); } }
+/* Hollow Depths, no esconderijo da Aogiri */
+.game-in { position: relative; width: min(860px, 100%); max-height: calc(100vh - 40px); overflow: auto; display: grid; grid-template-columns: 1.1fr 1fr; background: #0c0607; color: #ece7df; border: 1px solid rgba(255,60,60,0.25); box-shadow: 0 40px 120px rgba(0,0,0,0.8), 0 0 60px rgba(196,20,28,0.2); transform: translateY(20px) scale(0.97); transition: transform .5s cubic-bezier(.2,.8,.2,1); }
+.layer.on .game-in { transform: none; }
+.game-art { position: relative; background: #000; min-height: 260px; }
+.game-art img { width: 100%; height: 100%; object-fit: cover; display: block; filter: contrast(1.05) saturate(1.1); }
+.game-art::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, rgba(0,0,0,0.22) 0 1px, transparent 1px 3px), radial-gradient(120% 90% at 50% 50%, transparent 55%, rgba(0,0,0,0.7)); pointer-events: none; }
+.game-txt { padding: 30px 28px 28px; display: grid; gap: 12px; align-content: center; background: radial-gradient(90% 80% at 100% 0%, rgba(196,20,28,0.18), transparent 60%); }
+.game-kick { margin: 0; font: 600 0.6rem/1.4 var(--f-mono); letter-spacing: 0.22em; text-transform: uppercase; color: #ff6a6e; }
+.game-txt h2 { margin: 0; font: 800 clamp(1.8rem, 3.4vw, 2.6rem)/1 var(--f-display); }
+.game-txt p { margin: 0; line-height: 1.65; color: rgba(236,231,223,0.8); }
+.game-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 0; padding: 0; list-style: none; } .game-tags li { padding: 5px 10px; border: 1px solid rgba(236,231,223,0.25); font: 500 0.62rem/1 var(--f-mono); letter-spacing: 0.12em; text-transform: uppercase; }
+.game-play { justify-self: start; margin-top: 8px; display: inline-flex; align-items: center; min-height: 48px; padding: 12px 22px; color: #fff; text-decoration: none; background: #c4141c; border: 1px solid #ff2a2f; box-shadow: 0 0 28px rgba(255,30,40,0.35); font: 700 0.74rem/1 var(--f-mono); letter-spacing: 0.2em; text-transform: uppercase; transition: background .2s; }
+.game-play:hover, .game-play:focus-visible { background: #e01a22; }
+@media (max-width: 700px) { .game-in { grid-template-columns: 1fr; } .game-art { min-height: 200px; } }
 </style>
 <script src="/tg/i18n.js"></script>
 </head>
@@ -644,6 +696,56 @@ html.no-webgl .cover, html.no-webgl #city { display: none; }
 </div>
 <div class="mil" id="mil" hidden aria-hidden="true"><b id="milN">1000</b><small id="milS">1000 − 7</small></div>
 <div class="centi" id="centi" hidden aria-hidden="true"><svg viewBox="0 0 400 60" width="100%" height="100%"><g id="centiG"></g></svg></div>
+<div class="layer" id="gameL" hidden role="dialog" aria-modal="true" aria-labelledby="gameT">
+  <div class="game-in">
+    <button type="button" class="book-x" id="gameClose" aria-label="Fechar">&times;</button>
+    <div class="game-art"><img src="/vale/grim/hollow-depths.jpg" alt="Tela do Hollow Depths" loading="lazy"></div>
+    <div class="game-txt">
+      <p class="game-kick">RPG de turno · Game Design &amp; Matemática</p>
+      <h2 id="gameT">Hollow Depths</h2>
+      <p>Um RPG de turno em que exploração e combate são orientados por probabilidade, cartas e leitura de variáveis numéricas. Cada escolha é uma conta: a chance de acertar, de escapar, de achar algo no escuro.</p>
+      <ul class="game-tags"><li>Probabilidade</li><li>Cartas</li><li>Turnos</li><li>Variáveis</li></ul>
+      <a class="game-play" href="https://game-nauy.onrender.com/" target="_blank" rel="noreferrer">Jogar o Hollow Depths</a>
+    </div>
+  </div>
+</div>
+<div class="layer" id="slip" hidden role="dialog" aria-modal="true" aria-labelledby="slipT">
+  <div class="slip-in">
+    <button type="button" class="slip-x" id="slipClose" aria-label="Fechar">&times;</button>
+    <p class="slip-jp" aria-hidden="true">あんていく · ご注文</p>
+    <h2 id="slipT">Comanda</h2>
+    <p class="slip-sub">Mesa 4 · um café por conta da casa</p>
+    <ol class="slip-list" id="slipList"></ol>
+    <div class="slip-tot"><span>Total</span><span>¥0</span></div>
+    <p class="slip-foot">Volte sempre. A porta da Anteiku fica aberta para quem chega em paz.</p>
+    <i class="slip-ring" aria-hidden="true"></i>
+  </div>
+</div>
+<div class="layer" id="bookL" hidden role="dialog" aria-modal="true" aria-labelledby="bookT">
+  <div class="book-in">
+    <button type="button" class="book-x" id="bookClose" aria-label="Fechar">&times;</button>
+    <div class="book-pages">
+      <section class="pg pg-l">
+        <p class="pg-kick">高槻泉</p>
+        <h2 id="bookT">O Ovo do Bode Negro</h2>
+        <p class="pg-auth">Takatsuki Sen</p>
+        <blockquote>"Se você quer ser você mesmo, precisa estar disposto a ser odiado por alguém."</blockquote>
+        <p class="pg-note">O livro que o Kaneki vivia lendo. Na última página, quem fez este distrito.</p>
+      </section>
+      <section class="pg pg-r">
+        <p class="pg-kick">Créditos</p>
+        <dl class="pg-cred">
+          <dt>Feito por</dt><dd>Fernando Rateke, à mão, com Three.js</dd>
+          <dt>Tokyo Ghoul</dt><dd>De Sui Ishida. Personagens e lugares pertencem aos seus autores; isto é uma homenagem.</dd>
+          <dt>Músicas</dt><dd>Glassy Sky, de Yutaka Yamada. Unravel, de TK from Ling tosite sigure.</dd>
+          <dt>Rize Kamishiro</dt><dd>Modelo 3D de Professor E12^2, no Sketchfab (CC BY 4.0)</dd>
+          <dt>Kaneki Ken</dt><dd>Modelo 3D da RigModels</dd>
+        </dl>
+        <p class="pg-num">— 1000 —</p>
+      </section>
+    </div>
+  </div>
+</div>
 <p class="toast" id="toast" role="status" hidden></p>
 <div class="room-ui" id="roomUI" hidden>
   <div class="room-head"><b id="roomK" aria-hidden="true"></b><div><h2 id="roomT"></h2><p id="roomH"></p></div></div>
@@ -1187,6 +1289,29 @@ html.no-webgl .cover, html.no-webgl #city { display: none; }
     for (let k = 0; k < 6; k++) { const o = a.createOscillator(), og = a.createGain(); o.type = "sine"; o.frequency.value = 2600 + Math.random() * 3000; const t = a.currentTime + 0.05 + Math.random() * 0.5; og.gain.setValueAtTime(0.0001, t); og.gain.exponentialRampToValueAtTime(0.03, t + 0.01); og.gain.exponentialRampToValueAtTime(0.0001, t + 0.4); o.connect(og).connect(a.destination); o.start(t); o.stop(t + 0.45); }
   }
   const T = (s) => (window.i18n ? window.i18n.t(s) : s); void T;
+  // som ambiente de cada sala, bem baixo, feito na hora (sem arquivo)
+  let amb = null, ambName = null, noiseBuf = null;
+  const noise = (a) => { if (!noiseBuf) { const len = a.sampleRate * 2; noiseBuf = a.createBuffer(1, len, a.sampleRate); const d = noiseBuf.getChannelData(0); let last = 0; for (let i = 0; i < len; i++) { const w = Math.random() * 2 - 1; last = (last + 0.02 * w) / 1.02; d[i] = last * 3 + w * 0.08; } } const s = a.createBufferSource(); s.buffer = noiseBuf; s.loop = true; return s; };
+  function ambStop() { if (!amb) return; const a = actx, n = amb; amb = null; n.timers.forEach(clearInterval); try { n.out.gain.linearRampToValueAtTime(0, a.currentTime + 0.8); } catch (e) { /* */ } setTimeout(() => n.nodes.forEach((x) => { try { x.stop(); } catch (e) { /* */ } }), 1000); }
+  function ambStart(name) {
+    ambStop(); const a = audio(); if (!a || !soundOn || !name) return;
+    const out = a.createGain(); out.gain.value = 0; out.connect(a.destination); out.gain.linearRampToValueAtTime(1, a.currentTime + 1.5);
+    const n = { out, nodes: [], timers: [] };
+    const bed = (type, f, gain, q) => { const s = noise(a), fl = a.createBiquadFilter(); fl.type = type; fl.frequency.value = f; if (q) fl.Q.value = q; const g = a.createGain(); g.gain.value = gain; s.connect(fl).connect(g).connect(out); s.start(); n.nodes.push(s); return g; };
+    const tone = (type, f, gain) => { const o = a.createOscillator(), g = a.createGain(); o.type = type; o.frequency.value = f; g.gain.value = gain; o.connect(g).connect(out); o.start(); n.nodes.push(o); return { o, g }; };
+    const ping = (f, d, gain, type) => { const o = a.createOscillator(), g = a.createGain(), t = a.currentTime; o.type = type || "sine"; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + d); o.connect(g).connect(echo || out); o.start(t); o.stop(t + d + 0.05); };
+    const thump = (gain, f) => { const s = noise(a), fl = a.createBiquadFilter(), g = a.createGain(), t = a.currentTime; fl.type = "lowpass"; fl.frequency.value = f || 160; g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18); s.connect(fl).connect(g).connect(out); s.start(t); s.stop(t + 0.25); };
+    let echo = null;
+    const every = (ms, fn, jitter) => { const tick = () => { fn(); }; n.timers.push(setInterval(() => { if (!jitter || Math.random() < jitter) tick(); }, ms)); };
+    if (name === "anteiku") { bed("lowpass", 1600, 0.035); tone("sine", 110, 0.004); tone("sine", 164.8, 0.003); every(2600, () => ping(2400 + Math.random() * 900, 0.5, 0.012), 0.3); }
+    else if (name === "metro") { const r = bed("lowpass", 170, 0.12); const l = a.createOscillator(), lg = a.createGain(); l.frequency.value = 0.4; lg.gain.value = 0.03; l.connect(lg).connect(r.gain); l.start(); n.nodes.push(l); bed("bandpass", 900, 0.01, 0.7); let k = 0; every(470, () => { k++; if (k % 4 < 2) thump(0.14, 140); }); }
+    else if (name === "nos") { echo = a.createDelay(1.2); echo.delayTime.value = 0.42; const fb = a.createGain(); fb.gain.value = 0.45; const eg = a.createGain(); eg.gain.value = 1; echo.connect(fb).connect(echo); echo.connect(eg).connect(out); tone("sine", 55, 0.02); tone("sine", 82.4, 0.008); bed("lowpass", 300, 0.03); every(700, () => ping(900 + Math.random() * 900, 0.25, 0.03), 0.35); }
+    else if (name === "ccg") { tone("sawtooth", 120, 0.0035); tone("sine", 60, 0.006); bed("highpass", 5000, 0.006); every(1400, () => thump(0.03, 400), 0.4); }
+    else if (name === "uta") { tone("sine", 73.4, 0.012); bed("lowpass", 500, 0.015); const sc = [523.3, 587.3, 659.3, 784, 880, 1046.5]; every(1700, () => ping(sc[Math.floor(Math.random() * sc.length)], 1.6, 0.018, "triangle"), 0.55); }
+    else if (name === "kamii") { bed("lowpass", 1400, 0.03); let tk = 0; every(1000, () => { tk++; ping(tk % 2 ? 1900 : 1500, 0.05, 0.01, "square"); }); }
+    amb = n;
+  }
+  window.addEventListener("tg:sala", (e) => { ambName = e.detail; const outdoor = !ambName || ambName === "anteiku" || ambName === "kamii"; if (soundOn) { rainOn(outdoor); ambStart(ambName); } });
   window.tgSom = {
     on: () => soundOn,
     beep() { const a = actx; if (!a || !soundOn) return; const o = a.createOscillator(), g = a.createGain(); o.type = "sine"; o.frequency.value = 980; g.gain.setValueAtTime(0.0001, a.currentTime); g.gain.exponentialRampToValueAtTime(0.06, a.currentTime + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + 0.18); o.connect(g).connect(a.destination); o.start(); o.stop(a.currentTime + 0.2); },
@@ -1213,8 +1338,8 @@ html.no-webgl .cover, html.no-webgl #city { display: none; }
     soundOn = on;
     soundBtn.setAttribute("aria-pressed", String(on));
     soundLabel.textContent = on ? "Pausar o tema" : "Ouvir o tema";
-    if (on) { music.volume = Math.min(music.volume, 0.02); const p = music.play(); if (p && p.catch) p.catch(() => {}); fadeTo(MAXV, 2500); rainOn(true); }
-    else { fadeTo(0, 900); rainOn(false); const u = $("musicU"); if (!u.paused) u.pause(); }
+    if (on) { music.volume = Math.min(music.volume, 0.02); const p = music.play(); if (p && p.catch) p.catch(() => {}); fadeTo(MAXV, 2500); rainOn(!ambName || ambName === "anteiku" || ambName === "kamii"); if (ambName) ambStart(ambName); }
+    else { fadeTo(0, 900); rainOn(false); ambStop(); const u = $("musicU"); if (!u.paused) u.pause(); }
     try { sessionStorage.setItem("tg-som", on ? "1" : "0"); } catch (e) { /* */ }
   }
   soundBtn.addEventListener("click", () => setSound(!soundOn));

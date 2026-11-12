@@ -325,6 +325,25 @@ html.filming .cover, html.filming .explore { opacity: 0; pointer-events: none; }
 .f-title .shards path { fill: none; stroke: rgba(255,255,255,0.6); stroke-width: 1.2; vector-effect: non-scaling-stroke; stroke-dasharray: 600; stroke-dashoffset: 600; }
 .film2d.st-title .shards path { animation: crack .7s ease forwards .2s; }
 
+/* ---------- O fundo do prédio ---------- */
+.elevator { position: fixed; inset: 0; z-index: 75; display: grid; place-items: center; background: #000; opacity: 0; transition: opacity .8s; }
+.elevator.on { opacity: 1; }
+.elevator div { display: grid; justify-items: center; gap: 10px; }
+.elevator small { font: 500 0.64rem/1 var(--f-mono); letter-spacing: 0.24em; text-transform: uppercase; color: var(--ink-3); }
+.elevator b { font: 500 3.4rem/1 var(--f-mono); color: #ff3a2f; text-shadow: 0 0 20px rgba(255,40,30,0.6); font-variant-numeric: tabular-nums; }
+.elevator i { width: 2px; height: 90px; background: linear-gradient(#ff3a2f, transparent); animation: shaft 0.42s linear infinite; }
+@keyframes shaft { from { transform: translateY(-20px); opacity: .2; } to { transform: translateY(20px); opacity: 1; } }
+html.in-final .cover, html.in-final .explore, html.in-final .grain, html.in-final .vignette { opacity: 0; pointer-events: none; }
+html.in-final #trail { display: none; }
+.final { position: fixed; left: 0; right: 0; bottom: max(26px, env(safe-area-inset-bottom)); z-index: 30; display: grid; justify-items: center; gap: 18px; padding: 0 16px; opacity: 0; transition: opacity 3s ease; pointer-events: none; }
+.final.on { opacity: 0.38; pointer-events: auto; } .final.lit { opacity: 1; }
+.fin-links { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 22px; }
+.fin-links a, .fin-back { color: #fff; text-decoration: none; font: 500 0.74rem/1.6 var(--f-mono); letter-spacing: 0.16em; text-shadow: 0 1px 12px rgba(30,60,110,0.7); -webkit-box-reflect: below 2px linear-gradient(transparent 30%, rgba(255,255,255,0.28)); }
+.fin-links a:hover, .fin-links a:focus-visible { color: #ffdede; }
+.fin-back { min-height: 44px; padding: 10px 6px; border: 0; background: none; text-transform: uppercase; letter-spacing: 0.28em; cursor: pointer; }
+.fin-back:focus { outline: none; } .fin-back:focus-visible { outline: 1px solid rgba(255,255,255,0.7); outline-offset: 4px; }
+.fin-back::after { content: ""; display: block; height: 1px; margin-top: 4px; background: currentColor; opacity: .5; }
+
 /* ---------- Versão em texto (robôs e navegadores sem 3D) ---------- */
 .textual { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 html.no-webgl body { overflow: auto; }
@@ -755,6 +774,17 @@ html.no-webgl .cover, html.no-webgl #city { display: none; }
 <button type="button" class="skip-film" id="skipFilm" hidden>Pular o filme</button>
 
 <audio id="music" src="/tg/audio/glassy-sky.mp3" preload="none" loop></audio>
+<audio id="musicU" src="/tg/audio/unravel.mp3" preload="none"></audio>
+<div class="elevator" id="elevator" hidden aria-hidden="true"><div><small>Elevador da obra</small><b id="elevFloor">20F</b><i></i></div></div>
+<section class="final" id="final" hidden aria-label="O fundo do prédio">
+  <ul class="fin-links">
+    <li><a href="mailto:fernando_rateke-n@estudante.sesisenai.org.br">fernando_rateke-n@estudante.sesisenai.org.br</a></li>
+    <li><a href="https://github.com/fernando-rateke" target="_blank" rel="noreferrer">GitHub</a></li>
+    <li><a href="https://www.linkedin.com/in/fernando-rateke/" target="_blank" rel="noreferrer">LinkedIn</a></li>
+    <li><a href="https://www.instagram.com/rateke.fer/" target="_blank" rel="noreferrer">Instagram</a></li>
+  </ul>
+  <button type="button" class="fin-back" id="finBack">Voltar ao 20º distrito</button>
+</section>
 
 <section class="textual" id="textual" aria-label="Versão em texto do portfólio" tabindex="-1">
 
@@ -958,6 +988,20 @@ html.no-webgl .cover, html.no-webgl #city { display: none; }
     beep() { const a = actx; if (!a || !soundOn) return; const o = a.createOscillator(), g = a.createGain(); o.type = "sine"; o.frequency.value = 980; g.gain.setValueAtTime(0.0001, a.currentTime); g.gain.exponentialRampToValueAtTime(0.06, a.currentTime + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + 0.18); o.connect(g).connect(a.destination); o.start(); o.stop(a.currentTime + 0.2); },
     clang() { const a = actx; if (!a || !soundOn) return; for (const f of [180, 413, 977, 1630]) { const o = a.createOscillator(), g = a.createGain(); o.type = "triangle"; o.frequency.value = f; g.gain.setValueAtTime(0.0001, a.currentTime); g.gain.exponentialRampToValueAtTime(0.05, a.currentTime + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + 1.6); o.connect(g).connect(a.destination); o.start(); o.stop(a.currentTime + 1.7); } },
     glass() { if (soundOn) glass(); },
+    hum(d) { const a = actx; if (!a || !soundOn) return; const o = a.createOscillator(), o2 = a.createOscillator(), g = a.createGain(); o.type = "sawtooth"; o.frequency.value = 55; o2.type = "sine"; o2.frequency.value = 110; const f = a.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 260; g.gain.setValueAtTime(0.0001, a.currentTime); g.gain.exponentialRampToValueAtTime(0.05, a.currentTime + 0.4); g.gain.setValueAtTime(0.05, a.currentTime + d - 0.5); g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + d); o.connect(f); o2.connect(f); f.connect(g).connect(a.destination); o.start(); o2.start(); o.stop(a.currentTime + d); o2.stop(a.currentTime + d); },
+    unravel(on, onEnd) {
+      const u = $("musicU");
+      if (on) {
+        if (!soundOn) return;
+        fadeTo(0, 1200); rainOn(false);
+        u.volume = 0; u.currentTime = 0; const p = u.play(); if (p && p.catch) p.catch(() => {});
+        const t0 = performance.now(); const up = (t) => { const k = Math.min(1, (t - t0) / 9000); u.volume = 0.34 * k; if (k < 1 && !u.paused) requestAnimationFrame(up); }; requestAnimationFrame(up);
+        u.onended = () => { if (onEnd) onEnd(); };
+      } else {
+        const v0 = u.volume, t0 = performance.now(); const dn = (t) => { const k = Math.min(1, (t - t0) / 900); u.volume = v0 * (1 - k); if (k < 1) requestAnimationFrame(dn); else u.pause(); }; requestAnimationFrame(dn);
+        if (soundOn) { const p = music.play(); if (p && p.catch) p.catch(() => {}); fadeTo(MAXV, 2500); rainOn(true); }
+      }
+    },
     whoosh(d) { const a = actx; if (!a || !soundOn) return; const len = Math.floor(a.sampleRate * d), buf = a.createBuffer(1, len, a.sampleRate), x = buf.getChannelData(0); for (let i = 0; i < len; i++) { const k = i / len; x[i] = (Math.random() * 2 - 1) * Math.sin(Math.PI * k) * 0.6 * (0.6 + 0.4 * Math.abs(Math.sin(k * 40))); } const s = a.createBufferSource(); s.buffer = buf; const f = a.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 700; f.Q.value = 0.6; const g = a.createGain(); g.gain.value = 0.07; s.connect(f).connect(g).connect(a.destination); s.start(); },
   };
   function setSound(on) {
@@ -965,7 +1009,7 @@ html.no-webgl .cover, html.no-webgl #city { display: none; }
     soundBtn.setAttribute("aria-pressed", String(on));
     soundLabel.textContent = on ? "Pausar o tema" : "Ouvir o tema";
     if (on) { music.volume = Math.min(music.volume, 0.02); const p = music.play(); if (p && p.catch) p.catch(() => {}); fadeTo(MAXV, 4000); rainOn(true); }
-    else { fadeTo(0, 900); rainOn(false); }
+    else { fadeTo(0, 900); rainOn(false); const u = $("musicU"); if (!u.paused) u.pause(); }
     try { sessionStorage.setItem("tg-som", on ? "1" : "0"); } catch (e) { /* */ }
   }
   soundBtn.addEventListener("click", () => setSound(!soundOn));

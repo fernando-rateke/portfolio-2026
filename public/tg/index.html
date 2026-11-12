@@ -80,7 +80,10 @@ html.kak .vignette { background: radial-gradient(ellipse at 50% 45%, transparent
 .loader { position: fixed; inset: 0; z-index: 200; background: radial-gradient(ellipse at 50% 42%, #14060a, #030305 72%); overflow: hidden; }
 .loader.gone { pointer-events: none; }
 .ld-art { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 10px; padding: 24px; }
-.ld-mask { width: min(190px, 44vw); height: auto; overflow: visible; filter: drop-shadow(0 10px 40px rgba(180,0,10,0.25)); }
+.ld-mask { position: relative; width: min(200px, 46vw); aspect-ratio: 344 / 440; filter: drop-shadow(0 14px 40px rgba(180,0,10,0.3)); }
+.ld-mask img { width: 100%; height: 100%; display: block; clip-path: inset(0 0 calc(100% - var(--k, 0%)) 0); transition: clip-path .3s linear; }
+.ld-mask .ld-sew { position: absolute; left: 4%; right: 4%; top: var(--k, 0%); height: 2px; background: repeating-linear-gradient(90deg, #ff2a2f 0 7px, transparent 7px 12px); box-shadow: 0 0 10px #ff2a2f; transition: top .3s linear, opacity .6s; }
+.loader.ready .ld-mask .ld-sew { opacity: 0; }
 .ld-mask .stitch { fill: none; stroke: var(--blood-2); stroke-width: 1.1; stroke-linecap: round; stroke-dasharray: 2.2 2.6; }
 .ld-mask .sew { fill: none; stroke: #000; stroke-width: 3; }
 .ld-mask .kana { font: 800 7px/1 var(--f-display); fill: var(--blood-2); letter-spacing: 0.6px; transition: opacity .8s; }
@@ -376,42 +379,7 @@ html.no-webgl .cover, html.no-webgl #city { display: none; }
 
 <div class="loader" id="loader" role="dialog" aria-modal="true" aria-label="Idioma · Language">
   <div class="ld-art" id="ldArt">
-    <svg class="ld-mask" id="ldMask" viewBox="0 0 120 150" aria-hidden="true">
-      <defs>
-        <radialGradient id="mk" cx="50%" cy="38%" r="70%"><stop offset="0" stop-color="#26262b"/><stop offset="1" stop-color="#050506"/></radialGradient>
-        <radialGradient id="kg" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#ff3a3a"/><stop offset=".55" stop-color="#b0000a"/><stop offset="1" stop-color="#000"/></radialGradient>
-        <path id="seamL" d="M24 22 C14 50 13 86 26 118"/>
-        <path id="seamR" d="M96 118 C107 86 106 50 96 22"/>
-      </defs>
-      <!-- máscara do Kaneki: couro, tapa-olho no olho direito, boca de zíper com os dentes -->
-      <path d="M60 6 C88 6 104 28 104 62 C104 98 88 136 60 144 C32 136 16 98 16 62 C16 28 32 6 60 6 Z" fill="url(#mk)" stroke="#000" stroke-width="2"/>
-      <!-- costura do meio -->
-      <path class="sew" d="M60 7 L60 52"/>
-      <path class="stitch" pathLength="100" data-sew d="M60 9 L60 50"/>
-      <!-- tapa-olho (olho direito do Kaneki, à esquerda de quem olha) -->
-      <path d="M22 44 C30 34 48 34 54 46 C52 60 32 64 22 56 Z" fill="#0c0c0e" stroke="#000" stroke-width="1.5"/>
-      <path class="stitch" pathLength="100" data-sew d="M24 45 C32 37 47 37 52 46 C50 58 33 61 24 55 Z"/>
-      <!-- olho esquerdo aberto, em kakugan -->
-      <g class="eye" id="ldEye">
-        <path d="M66 49 C72 42 88 42 96 50 C89 57 72 57 66 49 Z" fill="#000"/>
-        <circle cx="81" cy="49.5" r="5.2" fill="url(#kg)"/>
-        <circle cx="81" cy="49.5" r="1.6" fill="#000"/>
-      </g>
-      <!-- boca: dentes expostos e o zíper -->
-      <path d="M30 92 C42 100 78 100 90 92 C88 112 76 122 60 122 C44 122 32 112 30 92 Z" fill="#e9e2d6" stroke="#000" stroke-width="1.6"/>
-      <g stroke="#1a1416" stroke-width="1.1">
-        <path d="M34 100 L86 100"/><path d="M36 108 L84 108"/>
-        <path d="M40 95 L40 116"/><path d="M47 97 L47 119"/><path d="M54 98 L54 121"/><path d="M60 98 L60 122"/><path d="M66 98 L66 121"/><path d="M73 97 L73 119"/><path d="M80 95 L80 116"/>
-      </g>
-      <path class="stitch" pathLength="100" data-sew d="M28 90 C42 99 78 99 92 90"/>
-      <path class="stitch" pathLength="100" data-sew d="M31 96 C35 114 46 125 60 125 C74 125 85 114 89 96"/>
-      <!-- costuras laterais com ラテケ em linha vermelha -->
-      <path class="sew" d="M24 22 C14 50 13 86 26 118"/><path class="sew" d="M96 118 C107 86 106 50 96 22"/>
-      <text class="kana"><textPath href="#seamL" startOffset="18%" id="kanaL">ラ ・ テ ・ ケ</textPath></text>
-      <text class="kana"><textPath href="#seamR" startOffset="18%" id="kanaR">ラ ・ テ ・ ケ</textPath></text>
-      <!-- correias -->
-      <path d="M17 58 L4 54 M17 70 L3 72 M103 58 L116 54 M103 70 L117 72" stroke="#0b0b0d" stroke-width="4" stroke-linecap="round"/>
-    </svg>
+    <div class="ld-mask" id="ldMask" aria-hidden="true"><img src="/tg/mascara.png" alt="" width="344" height="440"><i class="ld-sew"></i></div>
     <div class="ld-count" id="ldCount" aria-hidden="true"><span class="now" id="ldNow">1000</span></div>
     <p class="ld-log" id="ldLog" role="status" aria-live="polite">Localizando o 20º distrito</p>
     <p class="ld-rank" id="ldRank" hidden></p>
@@ -861,13 +829,14 @@ html.no-webgl .cover, html.no-webgl #city { display: none; }
 (() => {
   const ld = document.getElementById("loader"); if (!ld) return;
   const now = document.getElementById("ldNow"), box = document.getElementById("ldCount"), log = document.getElementById("ldLog");
-  const sews = [...ld.querySelectorAll("[data-sew]")], kana = [document.getElementById("kanaL"), document.getElementById("kanaR")];
+  const maskEl = document.getElementById("ldMask");
   const t0 = performance.now();
   const LOG = ["Localizando o 20º distrito", "Rastreando cheiro", "Abrindo os arquivos da CCG", "Sinal Rc detectado"];
   let n = 1000, li = 0, ready = false, chosen = false, closing = false, progress = 0;
   window.contagem = () => n;
   // a máscara vai sendo costurada enquanto carrega
-  const sew = (k) => { sews.forEach((p, i) => { p.style.opacity = k * (sews.length + 1) > i + 0.5 ? "1" : "0"; }); kana.forEach((t) => { t.parentNode.style.opacity = k > 0.62 ? "1" : "0"; }); };
+  // a máscara vai sendo costurada de cima para baixo enquanto carrega
+  const sew = (k) => { maskEl.style.setProperty("--k", (k * 100).toFixed(1) + "%"); };
   sew(0);
   const tick = setInterval(() => {
     if (ready) return;
@@ -1145,6 +1114,7 @@ html.no-webgl .cover, html.no-webgl #city { display: none; }
 })();
 </script>
 <script src="/tg/three.min.js"></script>
+<script src="/tg/gltf.js"></script>
 <script src="/tg/cidade.js"></script>
 <script src="/tg/vinte.js"></script>
 </body>

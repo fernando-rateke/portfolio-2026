@@ -584,20 +584,29 @@ html.no-webgl .cover, html.no-webgl #city { display: none; }
 .pg-cred dd { margin: 4px 0 0; font-size: .92rem; line-height: 1.5; }
 .pg-num { margin: 26px 0 0; text-align: center; font: 500 0.7rem/1 var(--f-mono); letter-spacing: 0.3em; color: #9a8070; }
 @media (max-width: 700px) { .book-pages { grid-template-columns: 1fr; } .book-pages::before { display: none; } .pg-l { border-right: 0; border-bottom: 1px solid rgba(80,50,20,0.15); } }
-/* Hollow Depths, no esconderijo da Aogiri */
-.game-in { position: relative; width: min(860px, 100%); max-height: calc(100vh - 40px); overflow: auto; display: grid; grid-template-columns: 1.1fr 1fr; background: #0c0607; color: #ece7df; border: 1px solid rgba(255,60,60,0.25); box-shadow: 0 40px 120px rgba(0,0,0,0.8), 0 0 60px rgba(196,20,28,0.2); transform: translateY(20px) scale(0.97); transition: transform .5s cubic-bezier(.2,.8,.2,1); }
-.layer.on .game-in { transform: none; }
-.game-art { position: relative; background: #000; min-height: 260px; }
-.game-art img { width: 100%; height: 100%; object-fit: cover; display: block; filter: contrast(1.05) saturate(1.1); }
-.game-art::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, rgba(0,0,0,0.22) 0 1px, transparent 1px 3px), radial-gradient(120% 90% at 50% 50%, transparent 55%, rgba(0,0,0,0.7)); pointer-events: none; }
-.game-txt { padding: 30px 28px 28px; display: grid; gap: 12px; align-content: center; background: radial-gradient(90% 80% at 100% 0%, rgba(196,20,28,0.18), transparent 60%); }
-.game-kick { margin: 0; font: 600 0.6rem/1.4 var(--f-mono); letter-spacing: 0.22em; text-transform: uppercase; color: #ff6a6e; }
-.game-txt h2 { margin: 0; font: 800 clamp(1.8rem, 3.4vw, 2.6rem)/1 var(--f-display); }
-.game-txt p { margin: 0; line-height: 1.65; color: rgba(236,231,223,0.8); }
-.game-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 0; padding: 0; list-style: none; } .game-tags li { padding: 5px 10px; border: 1px solid rgba(236,231,223,0.25); font: 500 0.62rem/1 var(--f-mono); letter-spacing: 0.12em; text-transform: uppercase; }
-.game-play { justify-self: start; margin-top: 8px; display: inline-flex; align-items: center; min-height: 48px; padding: 12px 22px; color: #fff; text-decoration: none; background: #c4141c; border: 1px solid #ff2a2f; box-shadow: 0 0 28px rgba(255,30,40,0.35); font: 700 0.74rem/1 var(--f-mono); letter-spacing: 0.2em; text-transform: uppercase; transition: background .2s; }
-.game-play:hover, .game-play:focus-visible { background: #e01a22; }
-@media (max-width: 700px) { .game-in { grid-template-columns: 1fr; } .game-art { min-height: 200px; } }
+/* transição: kagune varrendo a tela no lugar do preto */
+.blackout { background: transparent !important; }
+.wipe { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 60; pointer-events: none; }
+/* cartela de chegada, como título de anime */
+.slam { position: fixed; left: clamp(18px, 6vw, 90px); top: 50%; z-index: 30; transform: translateY(-50%); display: flex; align-items: center; gap: 18px; pointer-events: none; }
+.slam canvas { position: absolute; left: -120px; top: 50%; width: 560px; height: 320px; transform: translateY(-50%); }
+.slam b { position: relative; font: 800 clamp(5rem, 14vw, 10rem)/0.9 var(--f-display); color: #fff; text-shadow: 0 0 40px rgba(255,30,40,0.7), 5px 0 0 rgba(255,0,40,0.7), -4px 0 0 rgba(0,200,255,0.25); }
+.slam-t { position: relative; display: grid; gap: 6px; }
+.slam-t small { font: 700 0.7rem/1 var(--f-mono); letter-spacing: 0.4em; text-transform: uppercase; color: #ff5a5e; }
+.slam-t span { font: 800 clamp(1.6rem, 3.6vw, 2.8rem)/1 var(--f-display); color: #fff; text-shadow: 0 4px 30px rgba(0,0,0,0.8); }
+.slam.on b { animation: slamK 1.9s cubic-bezier(.2,.8,.2,1) both; }
+.slam.on .slam-t { animation: slamT 1.9s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes slamK { 0% { opacity: 0; transform: scale(2.2) rotate(-6deg); filter: blur(10px); } 14% { opacity: 1; transform: scale(0.94) rotate(0); filter: none; } 20% { transform: scale(1.02); } 78% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.05) translateX(-20px); filter: blur(4px); } }
+@keyframes slamT { 0%, 12% { opacity: 0; transform: translateX(-30px); clip-path: inset(0 100% 0 0); } 30% { opacity: 1; transform: none; clip-path: inset(0 0 0 0); } 78% { opacity: 1; } 100% { opacity: 0; transform: translateX(20px); } }
+@media (max-width: 700px) { .slam { left: 50%; top: 26%; transform: translate(-50%, -50%); } .slam canvas { left: 50%; transform: translate(-50%, -50%); width: 420px; height: 240px; } }
+/* kakugan: veias subindo pelas bordas da tela */
+.veins { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 8; pointer-events: none; opacity: 0; transition: opacity .8s; }
+.veins path { fill: none; stroke: #ff1a22; stroke-linecap: round; transition: stroke-dashoffset 2.2s cubic-bezier(.3,.6,.2,1); }
+html.kak .veins { opacity: 1; animation: vPulse 2.4s ease-in-out infinite; }
+html.kak .veins path { stroke-dashoffset: 0 !important; }
+@keyframes vPulse { 50% { opacity: 0.6; } }
+html.kak body::after { content: ""; position: fixed; inset: 0; z-index: 7; pointer-events: none; background: radial-gradient(120% 90% at 50% 50%, transparent 55%, rgba(120,0,8,0.55)); animation: vPulse 2.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .slam.on b, .slam.on .slam-t { animation-duration: .01s; } }
 </style>
 <script src="/tg/i18n.js"></script>
 </head>
@@ -649,6 +658,10 @@ html.no-webgl .cover, html.no-webgl #city { display: none; }
 
 <canvas id="trail" aria-hidden="true"></canvas>
 <div class="blackout" id="blackout" aria-hidden="true"></div>
+<canvas class="wipe" id="wipe" aria-hidden="true"></canvas>
+<div class="slam" id="slam" hidden aria-hidden="true"><canvas id="slamInk"></canvas><b id="slamK"></b><div class="slam-t"><small id="slamKick"></small><span id="slamName"></span></div></div>
+<svg class="veins" id="veins" aria-hidden="true" viewBox="0 0 1000 1000" preserveAspectRatio="none"><defs><filter id="vGlow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><g id="veinG" filter="url(#vGlow)"></g></svg>
+
 <canvas id="tear" aria-hidden="true"></canvas>
 <div class="speed" aria-hidden="true"></div>
 <div class="explore" id="explore" hidden>
@@ -696,19 +709,6 @@ html.no-webgl .cover, html.no-webgl #city { display: none; }
 </div>
 <div class="mil" id="mil" hidden aria-hidden="true"><b id="milN">1000</b><small id="milS">1000 − 7</small></div>
 <div class="centi" id="centi" hidden aria-hidden="true"><svg viewBox="0 0 400 60" width="100%" height="100%"><g id="centiG"></g></svg></div>
-<div class="layer" id="gameL" hidden role="dialog" aria-modal="true" aria-labelledby="gameT">
-  <div class="game-in">
-    <button type="button" class="book-x" id="gameClose" aria-label="Fechar">&times;</button>
-    <div class="game-art"><img src="/vale/grim/hollow-depths.jpg" alt="Tela do Hollow Depths" loading="lazy"></div>
-    <div class="game-txt">
-      <p class="game-kick">RPG de turno · Game Design &amp; Matemática</p>
-      <h2 id="gameT">Hollow Depths</h2>
-      <p>Um RPG de turno em que exploração e combate são orientados por probabilidade, cartas e leitura de variáveis numéricas. Cada escolha é uma conta: a chance de acertar, de escapar, de achar algo no escuro.</p>
-      <ul class="game-tags"><li>Probabilidade</li><li>Cartas</li><li>Turnos</li><li>Variáveis</li></ul>
-      <a class="game-play" href="https://game-nauy.onrender.com/" target="_blank" rel="noreferrer">Jogar o Hollow Depths</a>
-    </div>
-  </div>
-</div>
 <div class="layer" id="slip" hidden role="dialog" aria-modal="true" aria-labelledby="slipT">
   <div class="slip-in">
     <button type="button" class="slip-x" id="slipClose" aria-label="Fechar">&times;</button>
@@ -1356,6 +1356,63 @@ html.no-webgl .cover, html.no-webgl #city { display: none; }
   kakBtn.addEventListener("click", () => setKak(kakBtn.getAttribute("aria-pressed") !== "true"));
   try { if (sessionStorage.getItem("tg-kak") === "1") setTimeout(() => setKak(true), 0); } catch (e) { /* */ }
 
+  /* ---------- transição de kagune: tentáculos varrem a tela até cobrir tudo ---------- */
+  (function () {
+    const cv = $("wipe"), g = cv.getContext("2d"), bo = $("blackout");
+    let raf = 0, state = 0, k = 0, dir = 1, tents = [];
+    const size = () => { const d = Math.min(2, devicePixelRatio || 1); cv.width = innerWidth * d; cv.height = innerHeight * d; g.setTransform(d, 0, 0, d, 0, 0); };
+    size(); addEventListener("resize", size);
+    const make = () => { const W = innerWidth, H = innerHeight; dir = Math.random() < 0.5 ? 1 : -1; tents = Array.from({ length: 9 }, (_, i) => { const y0 = H * (i + 0.5) / 9 + (Math.random() - 0.5) * 40; return { y0, y1: y0 + (Math.random() - 0.5) * H * 0.5, c1: (Math.random() - 0.5) * H * 0.6, w: H / 9 * (1.6 + Math.random() * 0.8), d: Math.random() * 0.25, ph: Math.random() * 6 }; }); void W; };
+    function draw() {
+      const W = innerWidth, H = innerHeight; g.clearRect(0, 0, W, H);
+      if (k <= 0.001) return;
+      const ease = (x) => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3);
+      // fundo que fecha por trás dos tentáculos
+      g.fillStyle = `rgba(8,1,3,${Math.pow(Math.max(0, (k - 0.55) / 0.45), 1.6)})`; g.fillRect(0, 0, W, H);
+      tents.forEach((T, ti) => {
+        const p = ease((k - T.d) / (1 - T.d)); if (p <= 0) return;
+        const xs = dir > 0 ? -60 : W + 60, xe = xs + dir * (W + 160) * p;
+        const S = 26, L = [], Rr = [];
+        for (let i = 0; i <= S; i++) {
+          const u = i / S, x = xs + (xe - xs) * u, cy = T.y0 + (T.y1 - T.y0) * u + Math.sin(u * Math.PI) * T.c1 + Math.sin(u * 9 + T.ph + k * 6) * 8;
+          const w = T.w * (0.25 + 0.75 * Math.pow(1 - u, 0.6)) * (0.5 + 0.5 * p) * (1 + 0.12 * Math.sin(u * 30 - k * 20));
+          L.push([x, cy - w / 2]); Rr.push([x, cy + w / 2]);
+        }
+        const gr = g.createLinearGradient(0, T.y0 - T.w, 0, T.y0 + T.w);
+        gr.addColorStop(0, "#1a0205"); gr.addColorStop(0.5, ti % 2 ? "#8a0a12" : "#a8101a"); gr.addColorStop(1, "#1a0205");
+        g.beginPath(); g.moveTo(L[0][0], L[0][1]); L.forEach((q) => g.lineTo(q[0], q[1])); for (let i = Rr.length - 1; i >= 0; i--) g.lineTo(Rr[i][0], Rr[i][1]); g.closePath();
+        g.fillStyle = gr; g.fill();
+        g.strokeStyle = "rgba(255,60,60,0.55)"; g.lineWidth = 2; g.stroke();
+        // escamas e a veia acesa no meio
+        g.save(); g.clip(); g.strokeStyle = "rgba(0,0,0,0.35)"; g.lineWidth = 2;
+        for (let i = 1; i < S; i += 1) { const x = L[i][0], y0 = L[i][1], y1 = Rr[i][1]; for (let r = 0; r < 4; r++) { const yy = y0 + (y1 - y0) * (r + 0.5) / 4; g.beginPath(); g.arc(x, yy, (y1 - y0) / 7, -Math.PI / 2 * dir - 1.2, -Math.PI / 2 * dir + 1.2); g.stroke(); } }
+        g.restore();
+        g.globalCompositeOperation = "lighter"; g.strokeStyle = "rgba(255,90,70,0.6)"; g.lineWidth = 3; g.shadowColor = "#ff2a2f"; g.shadowBlur = 16;
+        g.beginPath(); for (let i = 0; i <= S; i++) { const x = L[i][0], y = (L[i][1] + Rr[i][1]) / 2; i ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke();
+        g.shadowBlur = 0; g.globalCompositeOperation = "source-over";
+      });
+    }
+    // por tempo, não por quadro: cobre em ~0,42 s mesmo em máquina lenta (a troca de cena acontece aos 0,55 s)
+    function run(target, ms) { cancelAnimationFrame(raf); const k0 = k, t0 = performance.now(); const step = (t) => { const p = Math.min(1, (t - t0) / ms); k = target ? k0 + (1 - k0) * p : k0 * (1 - p); if (window.__wipeK != null) k = window.__wipeK; draw(); if (p < 1 || window.__wipeK != null) raf = requestAnimationFrame(step); }; raf = requestAnimationFrame(step); }
+    // a camada preta antiga continua avisando quando cobrir e quando abrir
+    new MutationObserver(() => {
+      const on = bo.classList.contains("on");
+      if (on && state !== 1) { state = 1; make(); k = 0; run(true, 420); }
+      else if (!on && state === 1) { state = 0; run(false, 650); }
+    }).observe(bo, { attributes: true, attributeFilter: ["class"] });
+  })();
+
+  /* ---------- kakugan: veias crescendo das bordas ---------- */
+  (function () {
+    const G = $("veinG"); if (!G) return;
+    let seed = 7; const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    let h = "";
+    const vein = (x, y, a, len, w, d) => { if (d <= 0 || len < 8) return; let px = x, py = y, path = `M${x.toFixed(1)} ${y.toFixed(1)}`; const n = 6; for (let i = 0; i < n; i++) { a += (rnd() - 0.5) * 0.7; px += Math.cos(a) * len / n; py += Math.sin(a) * len / n; path += ` L${px.toFixed(1)} ${py.toFixed(1)}`; } const L = Math.ceil(len * 1.2); h += `<path d="${path}" stroke-width="${w.toFixed(2)}" style="stroke-dasharray:${L};stroke-dashoffset:${L};transition-delay:${(rnd() * 0.6 + (3 - d) * 0.35).toFixed(2)}s"/>`; if (rnd() < 0.8) vein(px, py, a - 0.6 - rnd() * 0.4, len * 0.62, w * 0.62, d - 1); if (rnd() < 0.8) vein(px, py, a + 0.5 + rnd() * 0.4, len * 0.6, w * 0.6, d - 1); };
+    for (let i = 0; i < 9; i++) { vein(0, rnd() * 1000, (rnd() - 0.5) * 0.6, 120 + rnd() * 80, 4.5, 4); vein(1000, rnd() * 1000, Math.PI + (rnd() - 0.5) * 0.6, 120 + rnd() * 80, 4.5, 4); }
+    for (let i = 0; i < 6; i++) { vein(rnd() * 1000, 0, Math.PI / 2 + (rnd() - 0.5) * 0.6, 90 + rnd() * 60, 4, 3); vein(rnd() * 1000, 1000, -Math.PI / 2 + (rnd() - 0.5) * 0.6, 90 + rnd() * 60, 4, 3); }
+    G.innerHTML = h;
+  })();
+
   /* rastro de kagune no cursor, desenhado em WebGL: tentáculos com escamas, veia acesa,
      aura e brasas; no toque, um respingo de sangue */
   const tr = $("trail");
@@ -1364,7 +1421,7 @@ html.no-webgl .cover, html.no-webgl #city { display: none; }
   const sizeTrail = () => { tdpr = Math.min(2, devicePixelRatio || 1); TW = innerWidth; TH = innerHeight; tr.width = TW * tdpr; tr.height = TH * tdpr; if (gl) gl.viewport(0, 0, tr.width, tr.height); };
   sizeTrail(); addEventListener("resize", sizeTrail);
   const kak = () => document.documentElement.classList.contains("kak");
-  const NP = 30, TENT = [0, 1, 2].map((i) => ({ pts: Array.from({ length: NP }, () => ({ x: -100, y: -100 })), ph: i * 2.1, w: i === 0 ? 1 : 0.62 - i * 0.06 }));
+  const NP = 20, TENT = [0, 1, 2].map((i) => ({ pts: Array.from({ length: NP }, () => ({ x: -100, y: -100 })), ph: i * 2.1, w: i === 0 ? 1 : 0.55 - i * 0.08 }));
   const parts = [];                       // brasas (k=0) e sangue (k=1)
   let px = -100, py = -100, lastMove = 0, trailRaf = 0, active = false, speed = 0;
   const wake = () => { if (gl && !active && !reduce) { active = true; trailRaf = requestAnimationFrame(drawTrail); } };
@@ -1378,7 +1435,7 @@ html.no-webgl .cover, html.no-webgl #city { display: none; }
       void main(){
         float s=vD.x, u=vD.y, L=vD.z, a=vD.w;
         if(uMode>0.5){ // aura: brilho macio em volta do tentáculo
-          float v=exp(-s*s*4.0)*a*(1.0-u)*(0.32+0.25*uKak)*(0.85+0.15*sin(uT*6.0-L*0.05));
+          float v=exp(-s*s*4.0)*a*(1.0-u)*(0.16+0.16*uKak)*(0.85+0.15*sin(uT*6.0-L*0.05));
           gl_FragColor=vec4(vec3(1.0,0.07,0.06)*v,0.0); return;
         }
         float n=sqrt(max(0.0,1.0-s*s));
@@ -1396,10 +1453,10 @@ html.no-webgl .cover, html.no-webgl #city { display: none; }
         c+=vec3(1.0,0.55,0.5)*pow(max(0.0,1.0-abs(s+0.42)*3.2),3.0)*0.55*(1.0-u);
         // veia acesa com o pulso correndo até a ponta
         float pulse=0.5+0.5*sin(L*0.07-uT*10.0);
-        c+=hot*exp(-s*s*26.0)*(0.25+0.95*pulse)*(1.0-u*0.6)*(1.0+uKak*0.6);
+        c+=hot*exp(-s*s*26.0)*(0.15+0.6*pulse)*(1.0-u*0.6)*(1.0+uKak*0.6);
         // borda em brasa
-        c+=vec3(1.0,0.1,0.06)*pow(1.0-n,2.5)*0.9;
-        float al=a*smoothstep(1.0,0.86,abs(s))*smoothstep(1.0,0.82,u);
+        c+=vec3(1.0,0.1,0.06)*pow(1.0-n,2.5)*0.5;
+        float al=a*0.85*smoothstep(1.0,0.86,abs(s))*smoothstep(1.0,0.7,u);
         gl_FragColor=vec4(c*al,al);
       }`;
     const PT_VS = `attribute vec2 aP; attribute vec3 aQ; uniform vec2 uRes; uniform float uDpr; varying vec3 vQ;
@@ -1424,7 +1481,7 @@ html.no-webgl .cover, html.no-webgl #city { display: none; }
       for (let i = 0; i < NP - 1; i++) for (let j = 0; j < SUB; j++) cr(p, i, j / SUB, sm[k++]);
       sm[k].x = p[NP - 1].x; sm[k].y = p[NP - 1].y;
       let L = 0, o = 0;
-      const base = (kak() ? 14 : 9.5) * te.w;
+      const base = (kak() ? 7 : 4.2) * te.w;
       for (let i = 0; i < NV; i++) {
         const a = sm[Math.max(0, i - 1)], b = sm[Math.min(NV - 1, i + 1)];
         let tx = a.x - b.x, ty = a.y - b.y; const tl = Math.hypot(tx, ty) || 1; tx /= tl; ty /= tl;
@@ -1442,7 +1499,7 @@ html.no-webgl .cover, html.no-webgl #city { display: none; }
     var drawTrail = function (t) {
       const K = kak() ? 1 : 0;
       if (window.__trailHold) lastMove = t;
-      const fade = 1 - Math.min(1, Math.max(0, (t - lastMove - 300) / 600));
+      const fade = 1 - Math.min(1, Math.max(0, (t - lastMove - 200) / 450));
       speed *= 0.9;
       let alive = false;
       TENT.forEach((te, ti) => {
@@ -1457,13 +1514,13 @@ html.no-webgl .cover, html.no-webgl #city { display: none; }
         if (Math.hypot(p[0].x - p[NP - 1].x, p[0].y - p[NP - 1].y) > 3 && fade > 0) alive = true;
       });
       // brasas soltando do tentáculo principal quando ele anda rápido
-      if (fade > 0.2 && speed > 2) for (let n = 0; n < Math.min(3, speed / 6); n++) { const q = TENT[0].pts[4 + ((Math.random() * 18) | 0)]; parts.push({ x: q.x, y: q.y, vx: (Math.random() - 0.5) * 1.2, vy: -0.4 - Math.random() * 1.2, s: 4 + Math.random() * 7, life: 1, d: 0.012 + Math.random() * 0.02, k: 0 }); }
+      if (fade > 0.2 && speed > 6 && Math.random() < 0.35) for (let n = 0; n < 1; n++) { const q = TENT[0].pts[4 + ((Math.random() * 18) | 0)]; parts.push({ x: q.x, y: q.y, vx: (Math.random() - 0.5) * 1.2, vy: -0.4 - Math.random() * 1.2, s: 4 + Math.random() * 7, life: 1, d: 0.012 + Math.random() * 0.02, k: 0 }); }
       gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
       gl.enable(gl.BLEND);
       if (fade > 0) {
         gl.useProgram(pr); gl.uniform2f(loc.uRes, TW, TH); gl.uniform1f(loc.uT, t * 0.001); gl.uniform1f(loc.uKak, K);
         // aura (aditiva) e o corpo por cima
-        gl.blendFunc(gl.ONE, gl.ONE); gl.uniform1f(loc.uMode, 1); TENT.forEach((te) => ribbon(te, t, fade, 3.4));
+        gl.blendFunc(gl.ONE, gl.ONE); gl.uniform1f(loc.uMode, 1); TENT.forEach((te) => ribbon(te, t, fade * 0.6, 2.4));
         gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.uniform1f(loc.uMode, 0); for (let i = TENT.length - 1; i >= 0; i--) ribbon(TENT[i], t, fade, 1);
       }
       // partículas
@@ -1480,7 +1537,7 @@ html.no-webgl .cover, html.no-webgl #city { display: none; }
       const drawPts = (kind, blend) => {
         n = 0;
         parts.forEach((q) => { if (q.k === kind) pushP(q.x, q.y, q.s * (q.k === 1 ? 0.6 + q.life * 0.4 : q.life), q.life, q.k); });
-        if (kind === 2 && fade > 0) pushP(TENT[0].pts[0].x, TENT[0].pts[0].y, (K ? 70 : 46) * (0.85 + 0.15 * Math.sin(t * 0.008)), fade * (0.55 + Math.min(0.45, speed * 0.03)), 2);
+        if (kind === 2 && fade > 0) pushP(TENT[0].pts[0].x, TENT[0].pts[0].y, (K ? 34 : 20) * (0.85 + 0.15 * Math.sin(t * 0.008)), fade * (0.3 + Math.min(0.3, speed * 0.02)), 2);
         if (!n) return;
         gl.blendFunc(blend[0], blend[1]);
         gl.bindBuffer(gl.ARRAY_BUFFER, pbuf); gl.bufferData(gl.ARRAY_BUFFER, pdat.subarray(0, n * 5), gl.DYNAMIC_DRAW);

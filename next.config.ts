@@ -3,11 +3,10 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   async rewrites() {
     return {
-      // A experiência do Vale (página estática em public/vale) é a página inicial
+      // A página inicial é o menu: escolher entre o vale (Studio Ghibli) e o 20º distrito (Tokyo Ghoul)
       beforeFiles: [
-        { source: "/", destination: "/vale/index.html" },
+        { source: "/", destination: "/escolha/index.html" },
         { source: "/vale", destination: "/vale/index.html" },
-        // portfólio novo (Tokyo Ghoul), em construção até assumir a página inicial
         { source: "/tg", destination: "/tg/index.html" },
       ],
       afterFiles: [],

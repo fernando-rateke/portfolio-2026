@@ -1176,54 +1176,157 @@ html.no-webgl .cover, html.no-webgl #city { display: none; }
   kakBtn.addEventListener("click", () => setKak(kakBtn.getAttribute("aria-pressed") !== "true"));
   try { if (sessionStorage.getItem("tg-kak") === "1") setTimeout(() => setKak(true), 0); } catch (e) { /* */ }
 
-  /* rastro de kagune no cursor; no toque, um respingo */
-  const tr = $("trail"), g = tr.getContext("2d");
+  /* rastro de kagune no cursor, desenhado em WebGL: tentáculos com escamas, veia acesa,
+     aura e brasas; no toque, um respingo de sangue */
+  const tr = $("trail");
+  const gl = tr.getContext("webgl", { alpha: true, premultipliedAlpha: true, antialias: true, preserveDrawingBuffer: false });
   let TW = 0, TH = 0, tdpr = 1;
-  const sizeTrail = () => { tdpr = Math.min(2, devicePixelRatio || 1); TW = innerWidth; TH = innerHeight; tr.width = TW * tdpr; tr.height = TH * tdpr; g.setTransform(tdpr, 0, 0, tdpr, 0, 0); };
+  const sizeTrail = () => { tdpr = Math.min(2, devicePixelRatio || 1); TW = innerWidth; TH = innerHeight; tr.width = TW * tdpr; tr.height = TH * tdpr; if (gl) gl.viewport(0, 0, tr.width, tr.height); };
   sizeTrail(); addEventListener("resize", sizeTrail);
-  const TENT = [0, 1, 2].map((i) => ({ pts: Array.from({ length: 22 }, () => ({ x: -100, y: -100 })), ph: i * 2.1 }));
-  const drops = [];
-  let px = -100, py = -100, lastMove = 0, trailRaf = 0, active = false;
   const kak = () => document.documentElement.classList.contains("kak");
-  function drawTrail(t) {
-    g.clearRect(0, 0, TW, TH);
-    const thick = kak() ? 1.9 : 1;
-    // parado, o kagune se recolhe e some
-    const fade = 1 - Math.min(1, Math.max(0, (t - lastMove - 250) / 500));
-    let alive = false;
-    TENT.forEach((te, ti) => {
-      const p = te.pts;
-      p[0].x += (px - p[0].x) * 0.5; p[0].y += (py - p[0].y) * 0.5;
-      for (let i = 1; i < p.length; i++) {
-        const w = Math.sin(t * 0.004 + i * 0.5 + te.ph) * (2.2 + i * 0.25);
-        const nx = p[i - 1].x + w * 0.6, ny = p[i - 1].y + w * 0.4;
-        p[i].x += (nx - p[i].x) * (0.34 - i * 0.008); p[i].y += (ny - p[i].y) * (0.34 - i * 0.008);
+  const NP = 30, TENT = [0, 1, 2].map((i) => ({ pts: Array.from({ length: NP }, () => ({ x: -100, y: -100 })), ph: i * 2.1, w: i === 0 ? 1 : 0.62 - i * 0.06 }));
+  const parts = [];                       // brasas (k=0) e sangue (k=1)
+  let px = -100, py = -100, lastMove = 0, trailRaf = 0, active = false, speed = 0;
+  const wake = () => { if (gl && !active && !reduce) { active = true; trailRaf = requestAnimationFrame(drawTrail); } };
+  if (gl) {
+    const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return s; };
+    const prog = (vs, fs) => { const p = gl.createProgram(); gl.attachShader(p, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(p, sh(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(p); return p; };
+    const RIB_VS = `attribute vec2 aP; attribute vec4 aD; uniform vec2 uRes; varying vec4 vD;
+      void main(){ vD=aD; vec2 c=aP/uRes*2.0-1.0; gl_Position=vec4(c.x,-c.y,0.0,1.0); }`;
+    const RIB_FS = `precision mediump float; varying vec4 vD; uniform float uT; uniform float uMode; uniform float uKak;
+      float h(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
+      void main(){
+        float s=vD.x, u=vD.y, L=vD.z, a=vD.w;
+        if(uMode>0.5){ // aura: brilho macio em volta do tentáculo
+          float v=exp(-s*s*4.0)*a*(1.0-u)*(0.32+0.25*uKak)*(0.85+0.15*sin(uT*6.0-L*0.05));
+          gl_FragColor=vec4(vec3(1.0,0.07,0.06)*v,0.0); return;
+        }
+        float n=sqrt(max(0.0,1.0-s*s));
+        // escamas sobrepostas, apontando para a ponta
+        float gy=(s*0.5+0.5)*4.0; float gx=L/6.5+mod(floor(gy),2.0)*0.5;
+        vec2 id=floor(vec2(gx,gy)), q=fract(vec2(gx,gy))-0.5;
+        float sc=length(q*vec2(1.0,1.25)+vec2(0.3,0.0));
+        vec3 deep=vec3(0.09,0.0,0.012), mid=vec3(0.62,0.02,0.05)*(0.7+0.6*h(id)), hot=vec3(1.0,0.2,0.12);
+        vec3 c=mix(mid,deep,smoothstep(0.3,0.5,sc));
+        c*=0.7+0.5*smoothstep(-0.45,0.4,q.x);
+        // gomos ao longo do corpo
+        c*=0.75+0.25*smoothstep(0.0,0.2,abs(fract(L/22.0)-0.5));
+        // volume: sombra nas bordas, brilho molhado numa faixa
+        c*=0.3+0.85*n;
+        c+=vec3(1.0,0.55,0.5)*pow(max(0.0,1.0-abs(s+0.42)*3.2),3.0)*0.55*(1.0-u);
+        // veia acesa com o pulso correndo até a ponta
+        float pulse=0.5+0.5*sin(L*0.07-uT*10.0);
+        c+=hot*exp(-s*s*26.0)*(0.25+0.95*pulse)*(1.0-u*0.6)*(1.0+uKak*0.6);
+        // borda em brasa
+        c+=vec3(1.0,0.1,0.06)*pow(1.0-n,2.5)*0.9;
+        float al=a*smoothstep(1.0,0.86,abs(s))*smoothstep(1.0,0.82,u);
+        gl_FragColor=vec4(c*al,al);
+      }`;
+    const PT_VS = `attribute vec2 aP; attribute vec3 aQ; uniform vec2 uRes; uniform float uDpr; varying vec3 vQ;
+      void main(){ vQ=aQ; vec2 c=aP/uRes*2.0-1.0; gl_Position=vec4(c.x,-c.y,0.0,1.0); gl_PointSize=aQ.x*uDpr; }`;
+    const PT_FS = `precision mediump float; varying vec3 vQ;
+      void main(){ vec2 d=gl_PointCoord-0.5; float r=length(d);
+        if(vQ.z<0.5){ float a=exp(-r*r*22.0)*vQ.y; vec3 c=mix(vec3(1.0,0.12,0.06),vec3(1.0,0.7,0.4),vQ.y*vQ.y); gl_FragColor=vec4(c*a,0.0); }
+        else if(vQ.z<1.5){ float a=smoothstep(0.5,0.38,r)*vQ.y; vec3 c=vec3(0.5,0.0,0.03)+vec3(0.5,0.1,0.1)*smoothstep(0.3,0.0,length(d+vec2(0.12,0.12))); gl_FragColor=vec4(c*a,a); }
+        else { float a=exp(-r*r*14.0)*vQ.y; gl_FragColor=vec4(vec3(1.0,0.1,0.07)*a,0.0); } }`;
+    const pr = prog(RIB_VS, RIB_FS), pp = prog(PT_VS, PT_FS);
+    const loc = { aP: gl.getAttribLocation(pr, "aP"), aD: gl.getAttribLocation(pr, "aD"), uRes: gl.getUniformLocation(pr, "uRes"), uT: gl.getUniformLocation(pr, "uT"), uMode: gl.getUniformLocation(pr, "uMode"), uKak: gl.getUniformLocation(pr, "uKak") };
+    const lpp = { aP: gl.getAttribLocation(pp, "aP"), aQ: gl.getAttribLocation(pp, "aQ"), uRes: gl.getUniformLocation(pp, "uRes"), uDpr: gl.getUniformLocation(pp, "uDpr") };
+    const rbuf = gl.createBuffer(), pbuf = gl.createBuffer();
+    const SUB = 2, NV = (NP - 1) * SUB + 1;
+    const rib = new Float32Array(NV * 2 * 6);
+    const pdat = new Float32Array(600 * 5);
+    // ponto suavizado (Catmull-Rom) ao longo da corrente
+    const cr = (p, i, t, o) => { const a = p[Math.max(0, i - 1)], b = p[i], c = p[Math.min(p.length - 1, i + 1)], d = p[Math.min(p.length - 1, i + 2)], t2 = t * t, t3 = t2 * t; o.x = 0.5 * (2 * b.x + (-a.x + c.x) * t + (2 * a.x - 5 * b.x + 4 * c.x - d.x) * t2 + (-a.x + 3 * b.x - 3 * c.x + d.x) * t3); o.y = 0.5 * (2 * b.y + (-a.y + c.y) * t + (2 * a.y - 5 * b.y + 4 * c.y - d.y) * t2 + (-a.y + 3 * b.y - 3 * c.y + d.y) * t3); return o; };
+    const sm = Array.from({ length: NV }, () => ({ x: 0, y: 0 }));
+    function ribbon(te, t, fade, scale) {
+      const p = te.pts; let k = 0;
+      for (let i = 0; i < NP - 1; i++) for (let j = 0; j < SUB; j++) cr(p, i, j / SUB, sm[k++]);
+      sm[k].x = p[NP - 1].x; sm[k].y = p[NP - 1].y;
+      let L = 0, o = 0;
+      const base = (kak() ? 14 : 9.5) * te.w;
+      for (let i = 0; i < NV; i++) {
+        const a = sm[Math.max(0, i - 1)], b = sm[Math.min(NV - 1, i + 1)];
+        let tx = a.x - b.x, ty = a.y - b.y; const tl = Math.hypot(tx, ty) || 1; tx /= tl; ty /= tl;
+        if (i > 0) L += Math.hypot(sm[i].x - sm[i - 1].x, sm[i].y - sm[i - 1].y);
+        const u = i / (NV - 1);
+        // grosso perto do cursor, afinando até a ponta, com gomos que respiram
+        const w = base * Math.pow(1 - u, 0.65) * (1 + 0.22 * Math.sin(u * 22 - t * 0.006)) * (u < 0.06 ? 0.55 + u * 7.5 : 1) * scale + 0.4;
+        for (const sd of [-1, 1]) { rib[o++] = sm[i].x - ty * w * sd; rib[o++] = sm[i].y + tx * w * sd; rib[o++] = sd; rib[o++] = u; rib[o++] = L; rib[o++] = fade; }
       }
-      const span = Math.hypot(p[0].x - p[p.length - 1].x, p[0].y - p[p.length - 1].y);
-      if (span > 2 && fade > 0) alive = true;
-      for (let i = p.length - 1; i > 0; i--) {
-        const k = 1 - i / p.length;
-        g.beginPath(); g.moveTo(p[i].x, p[i].y); g.lineTo(p[i - 1].x, p[i - 1].y);
-        g.lineWidth = (1 + k * 4.5) * thick * (ti === 0 ? 1 : 0.7);
-        g.strokeStyle = i % 3 === 0 ? `rgba(255,70,70,${0.75 * k * fade})` : `rgba(170,6,16,${0.85 * k * fade})`;
-        g.lineCap = "round"; g.stroke();
-      }
-    });
-    for (let i = drops.length - 1; i >= 0; i--) {
-      const d = drops[i]; d.vy += 0.35; d.x += d.vx; d.y += d.vy; d.life -= 0.022;
-      if (d.life <= 0) { drops.splice(i, 1); continue; }
-      alive = true;
-      g.beginPath(); g.arc(d.x, d.y, d.r * d.life * thick, 0, Math.PI * 2); g.fillStyle = `rgba(190,8,18,${d.life})`; g.fill();
+      gl.bindBuffer(gl.ARRAY_BUFFER, rbuf); gl.bufferData(gl.ARRAY_BUFFER, rib, gl.DYNAMIC_DRAW);
+      gl.enableVertexAttribArray(loc.aP); gl.vertexAttribPointer(loc.aP, 2, gl.FLOAT, false, 24, 0);
+      gl.enableVertexAttribArray(loc.aD); gl.vertexAttribPointer(loc.aD, 4, gl.FLOAT, false, 24, 8);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, NV * 2);
     }
-    if (alive || t - lastMove < 800) trailRaf = requestAnimationFrame(drawTrail); else { active = false; g.clearRect(0, 0, TW, TH); }
+    var drawTrail = function (t) {
+      const K = kak() ? 1 : 0;
+      if (window.__trailHold) lastMove = t;
+      const fade = 1 - Math.min(1, Math.max(0, (t - lastMove - 300) / 600));
+      speed *= 0.9;
+      let alive = false;
+      TENT.forEach((te, ti) => {
+        const p = te.pts;
+        p[0].x += (px - p[0].x) * 0.55; p[0].y += (py - p[0].y) * 0.55;
+        for (let i = 1; i < NP; i++) {
+          const w = Math.sin(t * 0.0045 + i * 0.42 + te.ph) * (1.6 + i * 0.22) * (ti === 0 ? 1 : 1.5);
+          const nx = p[i - 1].x + w * 0.6 + (ti - 1) * 0.35, ny = p[i - 1].y + w * 0.45 + (ti === 2 ? 0.3 : 0);
+          const k = 0.36 - i * 0.0075 - ti * 0.02;
+          p[i].x += (nx - p[i].x) * k; p[i].y += (ny - p[i].y) * k;
+        }
+        if (Math.hypot(p[0].x - p[NP - 1].x, p[0].y - p[NP - 1].y) > 3 && fade > 0) alive = true;
+      });
+      // brasas soltando do tentáculo principal quando ele anda rápido
+      if (fade > 0.2 && speed > 2) for (let n = 0; n < Math.min(3, speed / 6); n++) { const q = TENT[0].pts[4 + ((Math.random() * 18) | 0)]; parts.push({ x: q.x, y: q.y, vx: (Math.random() - 0.5) * 1.2, vy: -0.4 - Math.random() * 1.2, s: 4 + Math.random() * 7, life: 1, d: 0.012 + Math.random() * 0.02, k: 0 }); }
+      gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.enable(gl.BLEND);
+      if (fade > 0) {
+        gl.useProgram(pr); gl.uniform2f(loc.uRes, TW, TH); gl.uniform1f(loc.uT, t * 0.001); gl.uniform1f(loc.uKak, K);
+        // aura (aditiva) e o corpo por cima
+        gl.blendFunc(gl.ONE, gl.ONE); gl.uniform1f(loc.uMode, 1); TENT.forEach((te) => ribbon(te, t, fade, 3.4));
+        gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.uniform1f(loc.uMode, 0); for (let i = TENT.length - 1; i >= 0; i--) ribbon(TENT[i], t, fade, 1);
+      }
+      // partículas
+      let n = 0;
+      const pushP = (x, y, s, l, k) => { pdat[n * 5] = x; pdat[n * 5 + 1] = y; pdat[n * 5 + 2] = s; pdat[n * 5 + 3] = l; pdat[n * 5 + 4] = k; n++; };
+      for (let i = parts.length - 1; i >= 0; i--) {
+        const q = parts[i];
+        if (q.k === 1) { q.vy += 0.32; q.vx *= 0.99; } else { q.vx *= 0.97; q.vy -= 0.02; q.x += Math.sin(t * 0.004 + i) * 0.3; }
+        q.x += q.vx; q.y += q.vy; q.life -= q.d;
+        if (q.life <= 0 || n >= 590) { parts.splice(i, 1); continue; }
+        alive = true;
+      }
+      gl.useProgram(pp); gl.uniform2f(lpp.uRes, TW, TH); gl.uniform1f(lpp.uDpr, tdpr);
+      const drawPts = (kind, blend) => {
+        n = 0;
+        parts.forEach((q) => { if (q.k === kind) pushP(q.x, q.y, q.s * (q.k === 1 ? 0.6 + q.life * 0.4 : q.life), q.life, q.k); });
+        if (kind === 2 && fade > 0) pushP(TENT[0].pts[0].x, TENT[0].pts[0].y, (K ? 70 : 46) * (0.85 + 0.15 * Math.sin(t * 0.008)), fade * (0.55 + Math.min(0.45, speed * 0.03)), 2);
+        if (!n) return;
+        gl.blendFunc(blend[0], blend[1]);
+        gl.bindBuffer(gl.ARRAY_BUFFER, pbuf); gl.bufferData(gl.ARRAY_BUFFER, pdat.subarray(0, n * 5), gl.DYNAMIC_DRAW);
+        gl.enableVertexAttribArray(lpp.aP); gl.vertexAttribPointer(lpp.aP, 2, gl.FLOAT, false, 20, 0);
+        gl.enableVertexAttribArray(lpp.aQ); gl.vertexAttribPointer(lpp.aQ, 3, gl.FLOAT, false, 20, 8);
+        gl.drawArrays(gl.POINTS, 0, n);
+      };
+      drawPts(2, [gl.ONE, gl.ONE]); drawPts(1, [gl.ONE, gl.ONE_MINUS_SRC_ALPHA]); drawPts(0, [gl.ONE, gl.ONE]);
+      if (alive || t - lastMove < 900) trailRaf = requestAnimationFrame(drawTrail); else { active = false; gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT); }
+    };
+    // sem contexto de WebGL a página segue sem rastro
+    tr.addEventListener("webglcontextlost", (e) => { e.preventDefault(); cancelAnimationFrame(trailRaf); active = false; });
+    window.__trailGL = { rib: gl.getProgramParameter(pr, gl.LINK_STATUS), pts: gl.getProgramParameter(pp, gl.LINK_STATUS), log: gl.getProgramInfoLog(pr) };
   }
-  const wake = () => { if (!active && !reduce) { active = true; trailRaf = requestAnimationFrame(drawTrail); } };
-  addEventListener("pointermove", (e) => { if (e.pointerType !== "mouse" || reduce) return; if (px < -50 || Math.hypot(e.clientX - px, e.clientY - py) > 220) TENT.forEach((te) => te.pts.forEach((q) => { q.x = e.clientX; q.y = e.clientY; })); px = e.clientX; py = e.clientY; lastMove = performance.now(); wake(); });
+  addEventListener("pointermove", (e) => {
+    if (e.pointerType !== "mouse" || reduce || !gl) return;
+    if (px < -50 || Math.hypot(e.clientX - px, e.clientY - py) > 220) TENT.forEach((te) => te.pts.forEach((q) => { q.x = e.clientX; q.y = e.clientY; }));
+    speed = Math.min(40, speed + Math.hypot(e.clientX - px, e.clientY - py) * 0.4);
+    px = e.clientX; py = e.clientY; lastMove = performance.now(); wake();
+  });
   addEventListener("pointerdown", (e) => {
-    if (reduce || e.pointerType === "mouse") return;
-    const n = kak() ? 26 : 16;
-    for (let i = 0; i < n; i++) { const a = Math.random() * Math.PI * 2, v = 2 + Math.random() * 6; drops.push({ x: e.clientX, y: e.clientY, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 2, r: 2 + Math.random() * 5, life: 1 }); }
-    lastMove = performance.now(); wake();
+    if (reduce || !gl) return;
+    const touch = e.pointerType !== "mouse", n = (kak() ? 30 : 18) * (touch ? 1 : 0.5);
+    for (let i = 0; i < n; i++) { const a = Math.random() * Math.PI * 2, v = 2 + Math.random() * 6; parts.push({ x: e.clientX, y: e.clientY, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 2.5, s: 5 + Math.random() * 9, life: 1, d: 0.02 + Math.random() * 0.015, k: 1 }); }
+    for (let i = 0; i < n; i++) { const a = Math.random() * Math.PI * 2, v = 3 + Math.random() * 9; parts.push({ x: e.clientX, y: e.clientY, vx: Math.cos(a) * v, vy: Math.sin(a) * v, s: 5 + Math.random() * 6, life: 1, d: 0.03 + Math.random() * 0.03, k: 0 }); }
+    lastMove = touch ? performance.now() - 2000 : performance.now(); wake();
   });
 
   /* entrar: o kagune dela explode e rasga a tela */

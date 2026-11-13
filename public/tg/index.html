@@ -36,7 +36,6 @@ button { font: inherit; color: inherit; }
 .grain { position: fixed; inset: -50%; pointer-events: none; z-index: 2; opacity: 0.07; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); animation: grain 0.6s steps(3) infinite; }
 @keyframes grain { 0% { transform: translate(0,0); } 33% { transform: translate(-3%,2%); } 66% { transform: translate(2%,-3%); } }
 .vignette { position: fixed; inset: 0; pointer-events: none; z-index: 2; background: radial-gradient(ellipse at 50% 45%, transparent 45%, rgba(0,0,0,0.62) 100%); }
-html.kak .vignette { background: radial-gradient(ellipse at 50% 45%, transparent 35%, rgba(60,0,4,0.7) 100%); }
 
 /* ---------- Capa ---------- */
 .cover { position: fixed; inset: 0; z-index: 5; pointer-events: none; padding: max(18px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(22px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left)); display: grid; grid-template-rows: auto 1fr auto; transition: opacity .8s ease; }
@@ -48,7 +47,6 @@ html.kak .vignette { background: radial-gradient(ellipse at 50% 45%, transparent
 .chip svg { width: 20px; height: 20px; flex: none; }
 .chip[aria-pressed="true"] { border-color: var(--blood); color: #fff; background: rgba(140,8,14,0.45); }
 #soundBtn .wave { opacity: .35; } #soundBtn[aria-pressed="true"] .wave { opacity: 1; }
-#kakBtn .iris { fill: none; transition: fill .3s; } #kakBtn[aria-pressed="true"] .iris { fill: var(--blood-2); } #kakBtn[aria-pressed="true"] .sclera { fill: #000; }
 .title { align-self: end; max-width: min(620px, 92vw); }
 .kicker { display: flex; align-items: center; gap: 12px; font: 500 0.7rem/1 var(--f-mono); letter-spacing: 0.3em; text-transform: uppercase; color: var(--ink-2); margin: 0 0 14px; }
 .kicker b { font: 800 1rem/1 var(--f-display); letter-spacing: 0.12em; color: var(--blood-2); text-shadow: 0 0 18px rgba(255,30,40,0.55); }
@@ -485,10 +483,6 @@ html.no-webgl .cover, html.no-webgl #city { display: none; }
 .mil.out { animation: milOut .6s ease forwards; }
 @keyframes milIn { from { opacity: 0; } } @keyframes milOut { to { opacity: 0; } }
 /* centopeia */
-.centi[hidden] { display: none; }
-.centi { position: fixed; left: 0; bottom: max(6px, env(safe-area-inset-bottom)); z-index: 8; width: 240px; height: 36px; pointer-events: none; animation: centi 9s linear forwards; filter: drop-shadow(0 0 6px rgba(255,30,40,0.6)); }
-@keyframes centi { from { transform: translateX(-340px); } to { transform: translateX(calc(100vw + 20px)); } }
-@media (prefers-reduced-motion: reduce) { .centi { display: none; } }
 /* ===== Nível Rc: anel de células com a classe no meio ===== */
 .rc { position: absolute; left: max(16px, env(safe-area-inset-left)); top: max(16px, env(safe-area-inset-top)); pointer-events: none; display: grid; grid-template-columns: 66px auto; align-items: center; gap: 14px; padding: 10px 18px 10px 10px; min-width: 0; border: 0; background: linear-gradient(100deg, rgba(14,4,6,0.82), rgba(6,6,10,0.55)); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); clip-path: polygon(0 0, 100% 0, calc(100% - 14px) 100%, 0 100%); font: 500 0.6rem/1.2 var(--f-mono); letter-spacing: 0.18em; text-transform: uppercase; box-shadow: inset 3px 0 0 #ff2a2f; }
 .rc-eye { position: relative; width: 66px; height: 66px; }
@@ -599,13 +593,6 @@ html.no-webgl .cover, html.no-webgl #city { display: none; }
 @keyframes slamK { 0% { opacity: 0; transform: scale(2.2) rotate(-6deg); filter: blur(10px); } 14% { opacity: 1; transform: scale(0.94) rotate(0); filter: none; } 20% { transform: scale(1.02); } 78% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.05) translateX(-20px); filter: blur(4px); } }
 @keyframes slamT { 0%, 12% { opacity: 0; transform: translateX(-30px); clip-path: inset(0 100% 0 0); } 30% { opacity: 1; transform: none; clip-path: inset(0 0 0 0); } 78% { opacity: 1; } 100% { opacity: 0; transform: translateX(20px); } }
 @media (max-width: 700px) { .slam { left: 50%; top: 26%; transform: translate(-50%, -50%); } .slam canvas { left: 50%; transform: translate(-50%, -50%); width: 420px; height: 240px; } }
-/* kakugan: veias subindo pelas bordas da tela */
-.veins { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 8; pointer-events: none; opacity: 0; transition: opacity .8s; }
-.veins path { fill: none; stroke: #ff1a22; stroke-linecap: round; transition: stroke-dashoffset 2.2s cubic-bezier(.3,.6,.2,1); }
-html.kak .veins { opacity: 1; animation: vPulse 2.4s ease-in-out infinite; }
-html.kak .veins path { stroke-dashoffset: 0 !important; }
-@keyframes vPulse { 50% { opacity: 0.6; } }
-html.kak body::after { content: ""; position: fixed; inset: 0; z-index: 7; pointer-events: none; background: radial-gradient(120% 90% at 50% 50%, transparent 55%, rgba(120,0,8,0.55)); animation: vPulse 2.4s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .slam.on b, .slam.on .slam-t { animation-duration: .01s; } }
 </style>
 <script src="/tg/i18n.js"></script>
@@ -637,10 +624,6 @@ html.kak body::after { content: ""; position: fixed; inset: 0; z-index: 7; point
       <span id="soundLabel">Ouvir o tema</span>
     </button>
     <button class="chip" type="button" data-lang-toggle data-noi18n aria-label="View in English">EN</button>
-    <button class="chip" id="kakBtn" type="button" aria-pressed="false" aria-label="Modo kakugan: ver a cidade com o olho de um ghoul">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path class="sclera" d="M2.5 12c2.6-4.2 5.8-6.3 9.5-6.3s6.9 2.1 9.5 6.3c-2.6 4.2-5.8 6.3-9.5 6.3S5.1 16.2 2.5 12Z"/><circle class="iris" cx="12" cy="12" r="3.4"/><circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none"/></svg>
-      <span>Kakugan</span>
-    </button>
   </div>
   <div></div>
   <div class="bottom">
@@ -660,7 +643,6 @@ html.kak body::after { content: ""; position: fixed; inset: 0; z-index: 7; point
 <div class="blackout" id="blackout" aria-hidden="true"></div>
 <canvas class="wipe" id="wipe" aria-hidden="true"></canvas>
 <div class="slam" id="slam" hidden aria-hidden="true"><canvas id="slamInk"></canvas><b id="slamK"></b><div class="slam-t"><small id="slamKick"></small><span id="slamName"></span></div></div>
-<svg class="veins" id="veins" aria-hidden="true" viewBox="0 0 1000 1000" preserveAspectRatio="none"><defs><filter id="vGlow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><g id="veinG" filter="url(#vGlow)"></g></svg>
 
 <canvas id="tear" aria-hidden="true"></canvas>
 <div class="speed" aria-hidden="true"></div>
@@ -708,7 +690,6 @@ html.kak body::after { content: ""; position: fixed; inset: 0; z-index: 7; point
   </div>
 </div>
 <div class="mil" id="mil" hidden aria-hidden="true"><b id="milN">1000</b><small id="milS">1000 − 7</small></div>
-<div class="centi" id="centi" hidden aria-hidden="true"><svg viewBox="0 0 400 60" width="100%" height="100%"><g id="centiG"></g></svg></div>
 <div class="layer" id="slip" hidden role="dialog" aria-modal="true" aria-labelledby="slipT">
   <div class="slip-in">
     <button type="button" class="slip-x" id="slipClose" aria-label="Fechar">&times;</button>
@@ -1350,47 +1331,65 @@ html.kak body::after { content: ""; position: fixed; inset: 0; z-index: 7; point
     if (pref !== "0") setTimeout(() => setSound(true), 700);
   });
 
-  // modo kakugan
-  const kakBtn = $("kakBtn");
-  const setKak = (on) => { kakBtn.setAttribute("aria-pressed", String(on)); document.documentElement.classList.toggle("kak", on); if (window.cidade) window.cidade.kakugan(on); try { sessionStorage.setItem("tg-kak", on ? "1" : "0"); } catch (e) { /* */ } };
-  kakBtn.addEventListener("click", () => setKak(kakBtn.getAttribute("aria-pressed") !== "true"));
-  try { if (sessionStorage.getItem("tg-kak") === "1") setTimeout(() => setKak(true), 0); } catch (e) { /* */ }
 
   /* ---------- transição de kagune: tentáculos varrem a tela até cobrir tudo ---------- */
   (function () {
     const cv = $("wipe"), g = cv.getContext("2d"), bo = $("blackout");
-    let raf = 0, state = 0, k = 0, dir = 1, tents = [];
+    let raf = 0, state = 0, k = 0, tents = [];
     const size = () => { const d = Math.min(2, devicePixelRatio || 1); cv.width = innerWidth * d; cv.height = innerHeight * d; g.setTransform(d, 0, 0, d, 0, 0); };
     size(); addEventListener("resize", size);
-    const make = () => { const W = innerWidth, H = innerHeight; dir = Math.random() < 0.5 ? 1 : -1; tents = Array.from({ length: 9 }, (_, i) => { const y0 = H * (i + 0.5) / 9 + (Math.random() - 0.5) * 40; return { y0, y1: y0 + (Math.random() - 0.5) * H * 0.5, c1: (Math.random() - 0.5) * H * 0.6, w: H / 9 * (1.6 + Math.random() * 0.8), d: Math.random() * 0.25, ph: Math.random() * 6 }; }); void W; };
+    // rinkaku saindo de um canto: poucos tentáculos grossos, em leque, com ponta afiada
+    let O = { x: 0, y: 0 }, drops = [];
+    const make = () => {
+      const W = innerWidth, H = innerHeight, D = Math.hypot(W, H);
+      const corner = Math.floor(Math.random() * 4);
+      O = [{ x: -W * 0.08, y: H * 1.1 }, { x: W * 1.08, y: H * 1.1 }, { x: -W * 0.08, y: -H * 0.1 }, { x: W * 1.08, y: -H * 0.1 }][corner];
+      const toC = Math.atan2(H / 2 - O.y, W / 2 - O.x), spread = 1.25;
+      tents = Array.from({ length: 6 }, (_, i) => { const u = i / 5 - 0.5; return { a: toC + u * spread + (Math.random() - 0.5) * 0.12, bend: (Math.random() - 0.5) * 0.5 + u * 0.4, len: D * (1.15 + Math.random() * 0.25), w: D * (i % 2 ? 0.2 : 0.27), d: Math.abs(u) * 0.22 + Math.random() * 0.06, ph: Math.random() * 6 }; });
+      drops = [];
+    };
     function draw() {
       const W = innerWidth, H = innerHeight; g.clearRect(0, 0, W, H);
       if (k <= 0.001) return;
-      const ease = (x) => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3);
-      // fundo que fecha por trás dos tentáculos
-      g.fillStyle = `rgba(8,1,3,${Math.pow(Math.max(0, (k - 0.55) / 0.45), 1.6)})`; g.fillRect(0, 0, W, H);
+      const ease = (x) => { x = Math.min(1, Math.max(0, x)); return 1 - Math.pow(1 - x, 4); };
+      g.fillStyle = `rgba(10,1,3,${Math.pow(Math.max(0, (k - 0.5) / 0.5), 1.5)})`; g.fillRect(0, 0, W, H);
       tents.forEach((T, ti) => {
         const p = ease((k - T.d) / (1 - T.d)); if (p <= 0) return;
-        const xs = dir > 0 ? -60 : W + 60, xe = xs + dir * (W + 160) * p;
-        const S = 26, L = [], Rr = [];
+        const S = 34, C = [], N = [];
+        const reach = T.len * p, dx = Math.cos(T.a), dy = Math.sin(T.a), nx = -dy, ny = dx;
         for (let i = 0; i <= S; i++) {
-          const u = i / S, x = xs + (xe - xs) * u, cy = T.y0 + (T.y1 - T.y0) * u + Math.sin(u * Math.PI) * T.c1 + Math.sin(u * 9 + T.ph + k * 6) * 8;
-          const w = T.w * (0.25 + 0.75 * Math.pow(1 - u, 0.6)) * (0.5 + 0.5 * p) * (1 + 0.12 * Math.sin(u * 30 - k * 20));
-          L.push([x, cy - w / 2]); Rr.push([x, cy + w / 2]);
+          const u = i / S, bendK = Math.sin(u * Math.PI) * T.bend * reach * 0.35, wr = Math.sin(u * 7 + T.ph + k * 5) * 10 * u;
+          C.push([O.x + dx * reach * u + nx * (bendK + wr), O.y + dy * reach * u + ny * (bendK + wr)]);
         }
-        const gr = g.createLinearGradient(0, T.y0 - T.w, 0, T.y0 + T.w);
-        gr.addColorStop(0, "#1a0205"); gr.addColorStop(0.5, ti % 2 ? "#8a0a12" : "#a8101a"); gr.addColorStop(1, "#1a0205");
-        g.beginPath(); g.moveTo(L[0][0], L[0][1]); L.forEach((q) => g.lineTo(q[0], q[1])); for (let i = Rr.length - 1; i >= 0; i--) g.lineTo(Rr[i][0], Rr[i][1]); g.closePath();
-        g.fillStyle = gr; g.fill();
-        g.strokeStyle = "rgba(255,60,60,0.55)"; g.lineWidth = 2; g.stroke();
-        // escamas e a veia acesa no meio
-        g.save(); g.clip(); g.strokeStyle = "rgba(0,0,0,0.35)"; g.lineWidth = 2;
-        for (let i = 1; i < S; i += 1) { const x = L[i][0], y0 = L[i][1], y1 = Rr[i][1]; for (let r = 0; r < 4; r++) { const yy = y0 + (y1 - y0) * (r + 0.5) / 4; g.beginPath(); g.arc(x, yy, (y1 - y0) / 7, -Math.PI / 2 * dir - 1.2, -Math.PI / 2 * dir + 1.2); g.stroke(); } }
-        g.restore();
-        g.globalCompositeOperation = "lighter"; g.strokeStyle = "rgba(255,90,70,0.6)"; g.lineWidth = 3; g.shadowColor = "#ff2a2f"; g.shadowBlur = 16;
-        g.beginPath(); for (let i = 0; i <= S; i++) { const x = L[i][0], y = (L[i][1] + Rr[i][1]) / 2; i ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke();
-        g.shadowBlur = 0; g.globalCompositeOperation = "source-over";
+        for (let i = 0; i <= S; i++) { const a = C[Math.max(0, i - 1)], b = C[Math.min(S, i + 1)]; let tx = b[0] - a[0], ty = b[1] - a[1]; const l = Math.hypot(tx, ty) || 1; N.push([-ty / l, tx / l]); }
+        const wAt = (u) => T.w * Math.pow(1 - u, 0.9) * (0.55 + 0.45 * p) * (1 + 0.08 * Math.sin(u * 46 - k * 18));
+        const Lp = [], Rp = [];
+        for (let i = 0; i <= S; i++) { const w = wAt(i / S) / 2; Lp.push([C[i][0] + N[i][0] * w, C[i][1] + N[i][1] * w]); Rp.push([C[i][0] - N[i][0] * w, C[i][1] - N[i][1] * w]); }
+        const shape = () => { g.beginPath(); g.moveTo(Lp[0][0], Lp[0][1]); Lp.forEach((q) => g.lineTo(q[0], q[1])); for (let i = Rp.length - 1; i >= 0; i--) g.lineTo(Rp[i][0], Rp[i][1]); g.closePath(); };
+        // corpo: vermelho escuro nas bordas, mais vivo no meio
+        const mid = C[Math.floor(S / 2)], gr = g.createLinearGradient(mid[0] + N[S >> 1][0] * T.w * 0.5, mid[1] + N[S >> 1][1] * T.w * 0.5, mid[0] - N[S >> 1][0] * T.w * 0.5, mid[1] - N[S >> 1][1] * T.w * 0.5);
+        gr.addColorStop(0, "#160104"); gr.addColorStop(0.3, "#6a0610"); gr.addColorStop(0.5, ti % 2 ? "#9a0c16" : "#b8121c"); gr.addColorStop(0.72, "#5a040c"); gr.addColorStop(1, "#120103");
+        shape(); g.fillStyle = gr; g.fill();
+        g.save(); shape(); g.clip();
+        // gomos como vértebras: anéis escuros atravessando o tentáculo
+        for (let i = 2; i < S; i += 2) { const w = wAt(i / S) * 0.55; g.strokeStyle = "rgba(10,0,2,0.45)"; g.lineWidth = Math.max(1.5, w * 0.08); g.beginPath(); g.moveTo(C[i][0] + N[i][0] * w, C[i][1] + N[i][1] * w); g.quadraticCurveTo(C[i][0] + (C[i + 1][0] - C[i][0]) * 0.6, C[i][1] + (C[i + 1][1] - C[i][1]) * 0.6, C[i][0] - N[i][0] * w, C[i][1] - N[i][1] * w); g.stroke(); }
+        // brilho molhado deslocado para um lado
+        g.globalCompositeOperation = "lighter";
+        // brilho molhado: uma faixa contínua que afina até a ponta
+        g.beginPath();
+        for (let i = 1; i < S - 1; i++) { const w = wAt(i / S); const x = C[i][0] + N[i][0] * w * 0.24, y = C[i][1] + N[i][1] * w * 0.24; i > 1 ? g.lineTo(x, y) : g.moveTo(x, y); }
+        for (let i = S - 2; i >= 1; i--) { const w = wAt(i / S); g.lineTo(C[i][0] + N[i][0] * w * 0.3, C[i][1] + N[i][1] * w * 0.3); }
+        g.closePath(); g.fillStyle = "rgba(255,170,160,0.16)"; g.fill();
+        // veia acesa no meio
+        g.strokeStyle = "rgba(255,60,50,0.75)"; g.lineWidth = 3; g.shadowColor = "#ff1a22"; g.shadowBlur = 18;
+        g.beginPath(); C.forEach((q, i) => (i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1]))); g.stroke();
+        g.shadowBlur = 0; g.globalCompositeOperation = "source-over"; g.restore();
+        // borda em brasa e a ponta quente
+        shape(); g.strokeStyle = "rgba(255,40,50,0.55)"; g.lineWidth = 1.5; g.stroke();
+        const tip = C[S]; const rg = g.createRadialGradient(tip[0], tip[1], 0, tip[0], tip[1], 26); rg.addColorStop(0, "rgba(255,200,180,0.9)"); rg.addColorStop(0.3, "rgba(255,40,40,0.6)"); rg.addColorStop(1, "rgba(255,0,0,0)"); g.fillStyle = rg; g.fillRect(tip[0] - 26, tip[1] - 26, 52, 52);
+        if (state === 1 && p > 0.5 && p < 0.98 && Math.random() < 0.5) drops.push({ x: tip[0], y: tip[1], vx: Math.cos(T.a) * (4 + Math.random() * 6) + (Math.random() - 0.5) * 5, vy: Math.sin(T.a) * (4 + Math.random() * 6) + (Math.random() - 0.5) * 5, r: 2 + Math.random() * 4, l: 1 });
       });
+      drops.forEach((q) => { q.vy += 0.4; q.x += q.vx; q.y += q.vy; q.l -= 0.03; if (q.l <= 0) return; g.fillStyle = `rgba(160,6,16,${q.l})`; g.beginPath(); g.arc(q.x, q.y, q.r, 0, 7); g.fill(); });
     }
     // por tempo, não por quadro: cobre em ~0,42 s mesmo em máquina lenta (a troca de cena acontece aos 0,55 s)
     function run(target, ms) { cancelAnimationFrame(raf); const k0 = k, t0 = performance.now(); const step = (t) => { const p = Math.min(1, (t - t0) / ms); k = target ? k0 + (1 - k0) * p : k0 * (1 - p); if (window.__wipeK != null) k = window.__wipeK; draw(); if (p < 1 || window.__wipeK != null) raf = requestAnimationFrame(step); }; raf = requestAnimationFrame(step); }
@@ -1402,16 +1401,6 @@ html.kak body::after { content: ""; position: fixed; inset: 0; z-index: 7; point
     }).observe(bo, { attributes: true, attributeFilter: ["class"] });
   })();
 
-  /* ---------- kakugan: veias crescendo das bordas ---------- */
-  (function () {
-    const G = $("veinG"); if (!G) return;
-    let seed = 7; const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
-    let h = "";
-    const vein = (x, y, a, len, w, d) => { if (d <= 0 || len < 8) return; let px = x, py = y, path = `M${x.toFixed(1)} ${y.toFixed(1)}`; const n = 6; for (let i = 0; i < n; i++) { a += (rnd() - 0.5) * 0.7; px += Math.cos(a) * len / n; py += Math.sin(a) * len / n; path += ` L${px.toFixed(1)} ${py.toFixed(1)}`; } const L = Math.ceil(len * 1.2); h += `<path d="${path}" stroke-width="${w.toFixed(2)}" style="stroke-dasharray:${L};stroke-dashoffset:${L};transition-delay:${(rnd() * 0.6 + (3 - d) * 0.35).toFixed(2)}s"/>`; if (rnd() < 0.8) vein(px, py, a - 0.6 - rnd() * 0.4, len * 0.62, w * 0.62, d - 1); if (rnd() < 0.8) vein(px, py, a + 0.5 + rnd() * 0.4, len * 0.6, w * 0.6, d - 1); };
-    for (let i = 0; i < 9; i++) { vein(0, rnd() * 1000, (rnd() - 0.5) * 0.6, 120 + rnd() * 80, 4.5, 4); vein(1000, rnd() * 1000, Math.PI + (rnd() - 0.5) * 0.6, 120 + rnd() * 80, 4.5, 4); }
-    for (let i = 0; i < 6; i++) { vein(rnd() * 1000, 0, Math.PI / 2 + (rnd() - 0.5) * 0.6, 90 + rnd() * 60, 4, 3); vein(rnd() * 1000, 1000, -Math.PI / 2 + (rnd() - 0.5) * 0.6, 90 + rnd() * 60, 4, 3); }
-    G.innerHTML = h;
-  })();
 
   /* rastro de kagune no cursor, desenhado em WebGL: tentáculos com escamas, veia acesa,
      aura e brasas; no toque, um respingo de sangue */
@@ -1421,7 +1410,7 @@ html.kak body::after { content: ""; position: fixed; inset: 0; z-index: 7; point
   const sizeTrail = () => { tdpr = Math.min(2, devicePixelRatio || 1); TW = innerWidth; TH = innerHeight; tr.width = TW * tdpr; tr.height = TH * tdpr; if (gl) gl.viewport(0, 0, tr.width, tr.height); };
   sizeTrail(); addEventListener("resize", sizeTrail);
   const kak = () => document.documentElement.classList.contains("kak");
-  const NP = 20, TENT = [0, 1, 2].map((i) => ({ pts: Array.from({ length: NP }, () => ({ x: -100, y: -100 })), ph: i * 2.1, w: i === 0 ? 1 : 0.55 - i * 0.08 }));
+  const NP = 24, TENT = [0, 1, 2].map((i) => ({ pts: Array.from({ length: NP }, () => ({ x: -100, y: -100 })), ph: i * 2.1, w: i === 0 ? 1 : 0.55 - i * 0.08 }));
   const parts = [];                       // brasas (k=0) e sangue (k=1)
   let px = -100, py = -100, lastMove = 0, trailRaf = 0, active = false, speed = 0;
   const wake = () => { if (gl && !active && !reduce) { active = true; trailRaf = requestAnimationFrame(drawTrail); } };
@@ -1435,7 +1424,7 @@ html.kak body::after { content: ""; position: fixed; inset: 0; z-index: 7; point
       void main(){
         float s=vD.x, u=vD.y, L=vD.z, a=vD.w;
         if(uMode>0.5){ // aura: brilho macio em volta do tentáculo
-          float v=exp(-s*s*4.0)*a*(1.0-u)*(0.16+0.16*uKak)*(0.85+0.15*sin(uT*6.0-L*0.05));
+          float v=exp(-s*s*4.0)*a*(1.0-u)*(0.24+0.2*uKak)*(0.85+0.15*sin(uT*6.0-L*0.05));
           gl_FragColor=vec4(vec3(1.0,0.07,0.06)*v,0.0); return;
         }
         float n=sqrt(max(0.0,1.0-s*s));
@@ -1453,9 +1442,9 @@ html.kak body::after { content: ""; position: fixed; inset: 0; z-index: 7; point
         c+=vec3(1.0,0.55,0.5)*pow(max(0.0,1.0-abs(s+0.42)*3.2),3.0)*0.55*(1.0-u);
         // veia acesa com o pulso correndo até a ponta
         float pulse=0.5+0.5*sin(L*0.07-uT*10.0);
-        c+=hot*exp(-s*s*26.0)*(0.15+0.6*pulse)*(1.0-u*0.6)*(1.0+uKak*0.6);
+        c+=hot*exp(-s*s*26.0)*(0.2+0.8*pulse)*(1.0-u*0.6)*(1.0+uKak*0.6);
         // borda em brasa
-        c+=vec3(1.0,0.1,0.06)*pow(1.0-n,2.5)*0.5;
+        c+=vec3(1.0,0.1,0.06)*pow(1.0-n,2.5)*0.7;
         float al=a*0.85*smoothstep(1.0,0.86,abs(s))*smoothstep(1.0,0.7,u);
         gl_FragColor=vec4(c*al,al);
       }`;
@@ -1481,7 +1470,7 @@ html.kak body::after { content: ""; position: fixed; inset: 0; z-index: 7; point
       for (let i = 0; i < NP - 1; i++) for (let j = 0; j < SUB; j++) cr(p, i, j / SUB, sm[k++]);
       sm[k].x = p[NP - 1].x; sm[k].y = p[NP - 1].y;
       let L = 0, o = 0;
-      const base = (kak() ? 7 : 4.2) * te.w;
+      const base = (kak() ? 10 : 6.5) * te.w;
       for (let i = 0; i < NV; i++) {
         const a = sm[Math.max(0, i - 1)], b = sm[Math.min(NV - 1, i + 1)];
         let tx = a.x - b.x, ty = a.y - b.y; const tl = Math.hypot(tx, ty) || 1; tx /= tl; ty /= tl;
@@ -1496,10 +1485,11 @@ html.kak body::after { content: ""; position: fixed; inset: 0; z-index: 7; point
       gl.enableVertexAttribArray(loc.aD); gl.vertexAttribPointer(loc.aD, 4, gl.FLOAT, false, 24, 8);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, NV * 2);
     }
-    var drawTrail = function (t) {
+    var drawTrail = function (t) { try { drawTrailIn(t); } catch (e) { active = false; try { gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT); } catch (e2) { /* */ } } };
+    var drawTrailIn = function (t) {
       const K = kak() ? 1 : 0;
       if (window.__trailHold) lastMove = t;
-      const fade = 1 - Math.min(1, Math.max(0, (t - lastMove - 200) / 450));
+      const fade = 1 - Math.min(1, Math.max(0, (t - lastMove - 260) / 520));
       speed *= 0.9;
       let alive = false;
       TENT.forEach((te, ti) => {
@@ -1514,13 +1504,13 @@ html.kak body::after { content: ""; position: fixed; inset: 0; z-index: 7; point
         if (Math.hypot(p[0].x - p[NP - 1].x, p[0].y - p[NP - 1].y) > 3 && fade > 0) alive = true;
       });
       // brasas soltando do tentáculo principal quando ele anda rápido
-      if (fade > 0.2 && speed > 6 && Math.random() < 0.35) for (let n = 0; n < 1; n++) { const q = TENT[0].pts[4 + ((Math.random() * 18) | 0)]; parts.push({ x: q.x, y: q.y, vx: (Math.random() - 0.5) * 1.2, vy: -0.4 - Math.random() * 1.2, s: 4 + Math.random() * 7, life: 1, d: 0.012 + Math.random() * 0.02, k: 0 }); }
+      if (fade > 0.2 && speed > 4 && Math.random() < 0.6) for (let n = 0; n < 1 + (speed > 14 ? 1 : 0); n++) { const q = TENT[0].pts[2 + ((Math.random() * (NP - 4)) | 0)]; parts.push({ x: q.x, y: q.y, vx: (Math.random() - 0.5) * 1.2, vy: -0.4 - Math.random() * 1.2, s: 4 + Math.random() * 7, life: 1, d: 0.012 + Math.random() * 0.02, k: 0 }); }
       gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
       gl.enable(gl.BLEND);
       if (fade > 0) {
         gl.useProgram(pr); gl.uniform2f(loc.uRes, TW, TH); gl.uniform1f(loc.uT, t * 0.001); gl.uniform1f(loc.uKak, K);
         // aura (aditiva) e o corpo por cima
-        gl.blendFunc(gl.ONE, gl.ONE); gl.uniform1f(loc.uMode, 1); TENT.forEach((te) => ribbon(te, t, fade * 0.6, 2.4));
+        gl.blendFunc(gl.ONE, gl.ONE); gl.uniform1f(loc.uMode, 1); TENT.forEach((te) => ribbon(te, t, fade * 0.8, 2.8));
         gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.uniform1f(loc.uMode, 0); for (let i = TENT.length - 1; i >= 0; i--) ribbon(TENT[i], t, fade, 1);
       }
       // partículas
@@ -1537,7 +1527,7 @@ html.kak body::after { content: ""; position: fixed; inset: 0; z-index: 7; point
       const drawPts = (kind, blend) => {
         n = 0;
         parts.forEach((q) => { if (q.k === kind) pushP(q.x, q.y, q.s * (q.k === 1 ? 0.6 + q.life * 0.4 : q.life), q.life, q.k); });
-        if (kind === 2 && fade > 0) pushP(TENT[0].pts[0].x, TENT[0].pts[0].y, (K ? 34 : 20) * (0.85 + 0.15 * Math.sin(t * 0.008)), fade * (0.3 + Math.min(0.3, speed * 0.02)), 2);
+        if (kind === 2 && fade > 0) pushP(TENT[0].pts[0].x, TENT[0].pts[0].y, (K ? 48 : 30) * (0.85 + 0.15 * Math.sin(t * 0.008)), fade * (0.4 + Math.min(0.35, speed * 0.025)), 2);
         if (!n) return;
         gl.blendFunc(blend[0], blend[1]);
         gl.bindBuffer(gl.ARRAY_BUFFER, pbuf); gl.bufferData(gl.ARRAY_BUFFER, pdat.subarray(0, n * 5), gl.DYNAMIC_DRAW);

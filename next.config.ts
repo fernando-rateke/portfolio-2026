@@ -3,11 +3,10 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   async rewrites() {
     return {
-      // A página inicial é o menu: escolher entre o vale (Studio Ghibli) e o 20º distrito (Tokyo Ghoul)
+      // A experiência do Vale (página estática em public/vale) é a página inicial
       beforeFiles: [
-        { source: "/", destination: "/escolha/index.html" },
+        { source: "/", destination: "/vale/index.html" },
         { source: "/vale", destination: "/vale/index.html" },
-        { source: "/tg", destination: "/tg/index.html" },
       ],
       afterFiles: [],
       fallback: [],
@@ -21,8 +20,6 @@ const nextConfig: NextConfig = {
     return [
       { source: "/vale/three.min.js", headers: cache },
       { source: "/vale/:dir(audio|nos|perfil|grim|trem)/:file*", headers: cache },
-      { source: "/tg/three.min.js", headers: cache },
-      { source: "/tg/audio/:file*", headers: cache },
     ];
   },
   // Rotas antigas que eram apenas apelidos de outras páginas
@@ -30,6 +27,9 @@ const nextConfig: NextConfig = {
     return [
       { source: "/projetos", destination: "/projeto", permanent: true },
       { source: "/trabalhos", destination: "/materias", permanent: true },
+      // o portfólio de Tokyo Ghoul saiu; quem tiver o link antigo cai no vale
+      { source: "/tg/:path*", destination: "/", permanent: false },
+      { source: "/tg", destination: "/", permanent: false },
     ];
   },
 };

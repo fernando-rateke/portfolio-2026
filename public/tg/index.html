@@ -578,9 +578,6 @@ html.no-webgl .cover, html.no-webgl #city { display: none; }
 .pg-cred dd { margin: 4px 0 0; font-size: .92rem; line-height: 1.5; }
 .pg-num { margin: 26px 0 0; text-align: center; font: 500 0.7rem/1 var(--f-mono); letter-spacing: 0.3em; color: #9a8070; }
 @media (max-width: 700px) { .book-pages { grid-template-columns: 1fr; } .book-pages::before { display: none; } .pg-l { border-right: 0; border-bottom: 1px solid rgba(80,50,20,0.15); } }
-/* transição: kagune varrendo a tela no lugar do preto */
-.blackout { background: transparent !important; }
-.wipe { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 60; pointer-events: none; }
 /* cartela de chegada, como título de anime */
 .slam { position: fixed; left: clamp(18px, 6vw, 90px); top: 50%; z-index: 30; transform: translateY(-50%); display: flex; align-items: center; gap: 18px; pointer-events: none; }
 .slam canvas { position: absolute; left: -120px; top: 50%; width: 560px; height: 320px; transform: translateY(-50%); }
@@ -641,7 +638,6 @@ html.no-webgl .cover, html.no-webgl #city { display: none; }
 
 <canvas id="trail" aria-hidden="true"></canvas>
 <div class="blackout" id="blackout" aria-hidden="true"></div>
-<canvas class="wipe" id="wipe" aria-hidden="true"></canvas>
 <div class="slam" id="slam" hidden aria-hidden="true"><canvas id="slamInk"></canvas><b id="slamK"></b><div class="slam-t"><small id="slamKick"></small><span id="slamName"></span></div></div>
 
 <canvas id="tear" aria-hidden="true"></canvas>
@@ -1332,74 +1328,6 @@ html.no-webgl .cover, html.no-webgl #city { display: none; }
   });
 
 
-  /* ---------- transição de kagune: tentáculos varrem a tela até cobrir tudo ---------- */
-  (function () {
-    const cv = $("wipe"), g = cv.getContext("2d"), bo = $("blackout");
-    let raf = 0, state = 0, k = 0, tents = [];
-    const size = () => { const d = Math.min(2, devicePixelRatio || 1); cv.width = innerWidth * d; cv.height = innerHeight * d; g.setTransform(d, 0, 0, d, 0, 0); };
-    size(); addEventListener("resize", size);
-    // rinkaku saindo de um canto: poucos tentáculos grossos, em leque, com ponta afiada
-    let O = { x: 0, y: 0 }, drops = [];
-    const make = () => {
-      const W = innerWidth, H = innerHeight, D = Math.hypot(W, H);
-      const corner = Math.floor(Math.random() * 4);
-      O = [{ x: -W * 0.08, y: H * 1.1 }, { x: W * 1.08, y: H * 1.1 }, { x: -W * 0.08, y: -H * 0.1 }, { x: W * 1.08, y: -H * 0.1 }][corner];
-      const toC = Math.atan2(H / 2 - O.y, W / 2 - O.x), spread = 1.25;
-      tents = Array.from({ length: 6 }, (_, i) => { const u = i / 5 - 0.5; return { a: toC + u * spread + (Math.random() - 0.5) * 0.12, bend: (Math.random() - 0.5) * 0.5 + u * 0.4, len: D * (1.15 + Math.random() * 0.25), w: D * (i % 2 ? 0.2 : 0.27), d: Math.abs(u) * 0.22 + Math.random() * 0.06, ph: Math.random() * 6 }; });
-      drops = [];
-    };
-    function draw() {
-      const W = innerWidth, H = innerHeight; g.clearRect(0, 0, W, H);
-      if (k <= 0.001) return;
-      const ease = (x) => { x = Math.min(1, Math.max(0, x)); return 1 - Math.pow(1 - x, 4); };
-      g.fillStyle = `rgba(10,1,3,${Math.pow(Math.max(0, (k - 0.5) / 0.5), 1.5)})`; g.fillRect(0, 0, W, H);
-      tents.forEach((T, ti) => {
-        const p = ease((k - T.d) / (1 - T.d)); if (p <= 0) return;
-        const S = 34, C = [], N = [];
-        const reach = T.len * p, dx = Math.cos(T.a), dy = Math.sin(T.a), nx = -dy, ny = dx;
-        for (let i = 0; i <= S; i++) {
-          const u = i / S, bendK = Math.sin(u * Math.PI) * T.bend * reach * 0.35, wr = Math.sin(u * 7 + T.ph + k * 5) * 10 * u;
-          C.push([O.x + dx * reach * u + nx * (bendK + wr), O.y + dy * reach * u + ny * (bendK + wr)]);
-        }
-        for (let i = 0; i <= S; i++) { const a = C[Math.max(0, i - 1)], b = C[Math.min(S, i + 1)]; let tx = b[0] - a[0], ty = b[1] - a[1]; const l = Math.hypot(tx, ty) || 1; N.push([-ty / l, tx / l]); }
-        const wAt = (u) => T.w * Math.pow(1 - u, 0.9) * (0.55 + 0.45 * p) * (1 + 0.08 * Math.sin(u * 46 - k * 18));
-        const Lp = [], Rp = [];
-        for (let i = 0; i <= S; i++) { const w = wAt(i / S) / 2; Lp.push([C[i][0] + N[i][0] * w, C[i][1] + N[i][1] * w]); Rp.push([C[i][0] - N[i][0] * w, C[i][1] - N[i][1] * w]); }
-        const shape = () => { g.beginPath(); g.moveTo(Lp[0][0], Lp[0][1]); Lp.forEach((q) => g.lineTo(q[0], q[1])); for (let i = Rp.length - 1; i >= 0; i--) g.lineTo(Rp[i][0], Rp[i][1]); g.closePath(); };
-        // corpo: vermelho escuro nas bordas, mais vivo no meio
-        const mid = C[Math.floor(S / 2)], gr = g.createLinearGradient(mid[0] + N[S >> 1][0] * T.w * 0.5, mid[1] + N[S >> 1][1] * T.w * 0.5, mid[0] - N[S >> 1][0] * T.w * 0.5, mid[1] - N[S >> 1][1] * T.w * 0.5);
-        gr.addColorStop(0, "#160104"); gr.addColorStop(0.3, "#6a0610"); gr.addColorStop(0.5, ti % 2 ? "#9a0c16" : "#b8121c"); gr.addColorStop(0.72, "#5a040c"); gr.addColorStop(1, "#120103");
-        shape(); g.fillStyle = gr; g.fill();
-        g.save(); shape(); g.clip();
-        // gomos como vértebras: anéis escuros atravessando o tentáculo
-        for (let i = 2; i < S; i += 2) { const w = wAt(i / S) * 0.55; g.strokeStyle = "rgba(10,0,2,0.45)"; g.lineWidth = Math.max(1.5, w * 0.08); g.beginPath(); g.moveTo(C[i][0] + N[i][0] * w, C[i][1] + N[i][1] * w); g.quadraticCurveTo(C[i][0] + (C[i + 1][0] - C[i][0]) * 0.6, C[i][1] + (C[i + 1][1] - C[i][1]) * 0.6, C[i][0] - N[i][0] * w, C[i][1] - N[i][1] * w); g.stroke(); }
-        // brilho molhado deslocado para um lado
-        g.globalCompositeOperation = "lighter";
-        // brilho molhado: uma faixa contínua que afina até a ponta
-        g.beginPath();
-        for (let i = 1; i < S - 1; i++) { const w = wAt(i / S); const x = C[i][0] + N[i][0] * w * 0.24, y = C[i][1] + N[i][1] * w * 0.24; i > 1 ? g.lineTo(x, y) : g.moveTo(x, y); }
-        for (let i = S - 2; i >= 1; i--) { const w = wAt(i / S); g.lineTo(C[i][0] + N[i][0] * w * 0.3, C[i][1] + N[i][1] * w * 0.3); }
-        g.closePath(); g.fillStyle = "rgba(255,170,160,0.16)"; g.fill();
-        // veia acesa no meio
-        g.strokeStyle = "rgba(255,60,50,0.75)"; g.lineWidth = 3; g.shadowColor = "#ff1a22"; g.shadowBlur = 18;
-        g.beginPath(); C.forEach((q, i) => (i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1]))); g.stroke();
-        g.shadowBlur = 0; g.globalCompositeOperation = "source-over"; g.restore();
-        // borda em brasa e a ponta quente
-        shape(); g.strokeStyle = "rgba(255,40,50,0.55)"; g.lineWidth = 1.5; g.stroke();
-        const tip = C[S]; const rg = g.createRadialGradient(tip[0], tip[1], 0, tip[0], tip[1], 26); rg.addColorStop(0, "rgba(255,200,180,0.9)"); rg.addColorStop(0.3, "rgba(255,40,40,0.6)"); rg.addColorStop(1, "rgba(255,0,0,0)"); g.fillStyle = rg; g.fillRect(tip[0] - 26, tip[1] - 26, 52, 52);
-        if (state === 1 && p > 0.5 && p < 0.98 && Math.random() < 0.5) drops.push({ x: tip[0], y: tip[1], vx: Math.cos(T.a) * (4 + Math.random() * 6) + (Math.random() - 0.5) * 5, vy: Math.sin(T.a) * (4 + Math.random() * 6) + (Math.random() - 0.5) * 5, r: 2 + Math.random() * 4, l: 1 });
-      });
-      drops.forEach((q) => { q.vy += 0.4; q.x += q.vx; q.y += q.vy; q.l -= 0.03; if (q.l <= 0) return; g.fillStyle = `rgba(160,6,16,${q.l})`; g.beginPath(); g.arc(q.x, q.y, q.r, 0, 7); g.fill(); });
-    }
-    // por tempo, não por quadro: cobre em ~0,42 s mesmo em máquina lenta (a troca de cena acontece aos 0,55 s)
-    function run(target, ms) { cancelAnimationFrame(raf); const k0 = k, t0 = performance.now(); const step = (t) => { const p = Math.min(1, (t - t0) / ms); k = target ? k0 + (1 - k0) * p : k0 * (1 - p); if (window.__wipeK != null) k = window.__wipeK; draw(); if (p < 1 || window.__wipeK != null) raf = requestAnimationFrame(step); }; raf = requestAnimationFrame(step); }
-    // a camada preta antiga continua avisando quando cobrir e quando abrir
-    new MutationObserver(() => {
-      const on = bo.classList.contains("on");
-      if (on && state !== 1) { state = 1; make(); k = 0; run(true, 420); }
-      else if (!on && state === 1) { state = 0; run(false, 650); }
-    }).observe(bo, { attributes: true, attributeFilter: ["class"] });
-  })();
 
 
   /* rastro de kagune no cursor, desenhado em WebGL: tentáculos com escamas, veia acesa,

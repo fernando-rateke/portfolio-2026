@@ -1100,6 +1100,68 @@
     };
   })();
 
+  /* Confeitos (konpeito): clicar ou tocar no chão perto da Torre ou da Grande Árvore joga um punhado; a fuligem corre para pegar */
+  const konpeito = (() => {
+    const tones = ["#F7A8C4", "#FFFFFF", "#FFE27A", "#A8E6B0", "#A9D4F5", "#D9B8F2"];
+    const ico = new T.IcosahedronGeometry(1, 0), dirs = [], seen = new Set(), ip = ico.attributes.position;
+    for (let i = 0; i < ip.count; i++) { const k = [ip.getX(i), ip.getY(i), ip.getZ(i)].map((v) => v.toFixed(2)).join(); if (!seen.has(k)) { seen.add(k); dirs.push(new T.Vector3(ip.getX(i), ip.getY(i), ip.getZ(i)).normalize()); } }
+    const geos = tones.map((c) => {
+      const b = Builder(), q = new T.Quaternion(), up = new T.Vector3(0, 1, 0), one = new T.Vector3(1, 1, 1);
+      b.add(new T.IcosahedronGeometry(0.72, 1), new T.Matrix4(), c, 0.22);
+      dirs.forEach((d) => { q.setFromUnitVectors(up, d); b.add(new T.ConeGeometry(0.3, 0.5, 5), new T.Matrix4().compose(d.clone().multiplyScalar(0.82), q, one), c, 0.22); }); // os biquinhos do confeito
+      return b.build();
+    });
+    const list = [], zones = []; // zones: { name, hit(ray) -> Vector3 | null, land(p) -> p ajustado, y(x, z) }
+    for (let i = 0; i < 28; i++) { const m = new T.Mesh(geos[i % geos.length], objMat); m.visible = false; scene.add(m); list.push({ m, state: "gone", pos: new T.Vector3(), to: new T.Vector3(), from: new T.Vector3(), vy: 0, k: 0, age: 0, owner: null, zone: null, spin: Math.random() * 6, size: 0.24 }); }
+    const ray = new T.Raycaster(), ndc = new T.Vector2();
+    function toss(e) {
+      if (!explore.active || intro.active) return false;
+      const r = canvas.getBoundingClientRect(); ndc.set((e.clientX - r.left) / r.width * 2 - 1, -((e.clientY - r.top) / r.height * 2 - 1)); ray.setFromCamera(ndc, camera);
+      for (const z of zones) {
+        const hit = z.hit(ray.ray); if (!hit) continue;
+        let n = 0;
+        for (const c of list) {
+          if (c.state !== "gone" || n >= 6) continue;
+          const a = Math.random() * 6.28, d = 0.25 + Math.random() * 1.5;
+          c.to.set(hit.x + Math.cos(a) * d, 0, hit.z + Math.sin(a) * d); z.land(c.to); c.to.y = z.y(c.to.x, c.to.z) + c.size * 0.8;
+          c.from.copy(c.to).lerp(camera.position, 0.16); c.from.y = c.to.y + 4.5 + Math.random() * 2.5; // vem do lado de quem jogou
+          c.pos.copy(c.from); c.k = -n * 0.07; c.vy = 0; c.age = 0; c.owner = null; c.zone = z.name; c.state = "fall"; c.m.visible = true; c.m.scale.setScalar(c.size); n++;
+        }
+        return n > 0;
+      }
+      return false;
+    }
+    let down = null;
+    canvas.addEventListener("pointerdown", (e) => { down = { x: e.clientX, y: e.clientY, t: performance.now() }; });
+    canvas.addEventListener("pointerup", (e) => { if (down && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 10 && performance.now() - down.t < 500) toss(e); down = null; });
+    return {
+      list, zones, toss,
+      // confeito livre mais próximo dentro da zona
+      claim(zone, x, z, owner) { let best = null, bd = 1e9; for (const c of list) { if (c.zone !== zone || c.owner || (c.state !== "rest" && c.state !== "fall")) continue; const d = Math.hypot(c.to.x - x, c.to.z - z); if (d < bd) { bd = d; best = c; } } if (best) best.owner = owner; return best; },
+      eat(c) { c.state = "gone"; c.owner = null; c.m.visible = false; },
+      update(dt) {
+        let over = false;
+        if (explore.active && !intro.active) { ndc.set(pointer.x, -pointer.y); ray.setFromCamera(ndc, camera); for (const z of zones) if (z.hit(ray.ray)) over = true; }
+        if (canvas.style.cursor !== (over ? "pointer" : "")) canvas.style.cursor = over ? "pointer" : "";
+        for (const c of list) {
+          if (c.state === "gone") continue;
+          c.spin += dt * 3;
+          if (c.state === "fall") {
+            c.k += dt * 1.5; const k = Math.max(0, Math.min(1, c.k));
+            c.pos.lerpVectors(c.from, c.to, k); c.pos.y = c.to.y + (c.from.y - c.to.y) * (1 - k * k);
+            c.m.rotation.set(c.spin, c.spin * 0.7, 0);
+            if (k >= 1) { c.state = "rest"; c.vy = 2.6; }
+          } else if (c.state === "rest") {
+            // quica duas vezes e sossega; se ninguém pegar, some depois de um tempo
+            if (c.vy !== 0 || c.pos.y > c.to.y) { c.vy -= 14 * dt; c.pos.y += c.vy * dt; if (c.pos.y <= c.to.y) { c.pos.y = c.to.y; c.vy = Math.abs(c.vy) > 1.2 ? -c.vy * 0.45 : 0; } }
+            c.age += dt; if (c.age > 40) { c.m.scale.multiplyScalar(Math.max(0, 1 - dt * 3)); if (c.m.scale.x < 0.02) this.eat(c); }
+          }
+          c.m.position.copy(c.pos);
+        }
+      },
+    };
+  })();
+
   /* Easter eggs da grande árvore: fuligens que fogem do cursor e kodamas que aparecem à noite */
   const forestSpirits = (() => {
     const mk = (w, h, draw) => { const c = document.createElement("canvas"); c.width = w; c.height = h; draw(c.getContext("2d"), w, h); return new T.CanvasTexture(c); };
@@ -1123,7 +1185,7 @@
       const home = new T.Vector3(GT.x + Math.cos(a) * r, 0, GT.z + Math.sin(a) * r);
       const sp = new T.Sprite(new T.SpriteMaterial({ map: sootTex, transparent: true, depthWrite: false }));
       sp.scale.setScalar(0.9 + rs() * 0.4); scene.add(sp);
-      soot.push({ sp, home, pos: home.clone(), vel: new T.Vector3(), ph: rs() * 6, s: sp.scale.x });
+      soot.push({ sp, home, pos: home.clone(), vel: new T.Vector3(), ph: rs() * 6, s: sp.scale.x, candy: null, eat: 0 });
     }
     const koda = [];
     for (let i = 0; i < 12; i++) {
@@ -1134,20 +1196,31 @@
       koda.push({ sp, ph: rs() * 20, base: sp.position.y });
     }
     const ray = new T.Raycaster(), plane = new T.Plane(new T.Vector3(0, 1, 0), 0), hit = new T.Vector3(), ndc = new T.Vector2();
+    const zHit = new T.Vector3(), zPlane = new T.Plane(new T.Vector3(0, 1, 0), 0);
+    konpeito.zones.push({ name: "arvore", y: (x, z) => ground(x, z), land: () => {},
+      hit(r) { zPlane.constant = -ground(GT.x, GT.z + 10); if (!r.intersectPlane(zPlane, zHit)) return null; zPlane.constant = -ground(zHit.x, zHit.z); if (!r.intersectPlane(zPlane, zHit)) return null; const d = Math.hypot(zHit.x - GT.x, zHit.z - GT.z); return d < 26 && d > 3 && ground(zHit.x, zHit.z) > 0.2 ? zHit : null; } });
     let lastT = null;
     return (t) => {
       const dt = lastT === null ? 0 : Math.max(0, Math.min(0.1, t - lastT)); lastT = t;
+      konpeito.update(dt);
       // onde o cursor toca o chão perto da árvore
       ndc.set(pointer.x, -pointer.y); ray.setFromCamera(ndc, camera); plane.constant = -(GT.y || 0);
       const has = ray.ray.intersectPlane(plane, hit) && hit.distanceTo(GT) < 40;
       soot.forEach((o) => {
         const away = new T.Vector3();
-        if (has) { const d = o.pos.clone().sub(hit); d.y = 0; const L = d.length(); if (L < 6) away.copy(d.normalize().multiplyScalar((6 - L) * 9)); }
+        // confeito no chão: a gula vence o medo do cursor
+        if (!o.candy) o.candy = konpeito.claim("arvore", o.pos.x, o.pos.z, o);
+        const c = o.candy;
+        if (c && c.state !== "held") { const d = c.to.clone().sub(o.pos); d.y = 0; const L = d.length(); if (L < 0.45 && c.state === "rest") { c.state = "held"; o.eat = 3.6; } else away.copy(d.normalize().multiplyScalar(Math.min(7.5, 2 + L * 3))); }
+        else if (c) { o.eat -= dt; if (o.eat <= 0) { konpeito.eat(c); o.candy = null; } }
+        else if (has) { const d = o.pos.clone().sub(hit); d.y = 0; const L = d.length(); if (L < 6) away.copy(d.normalize().multiplyScalar((6 - L) * 9)); }
         const homeward = o.home.clone().sub(o.pos).multiplyScalar(0.8); homeward.y = 0;
-        o.vel.lerp(away.lengthSq() > 0 ? away : homeward, Math.min(1, dt * 4));
+        const held = c && c.state === "held";
+        o.vel.lerp(held ? homeward.set(0, 0, 0) : away.lengthSq() > 0 ? away : homeward, Math.min(1, dt * 4));
         o.pos.addScaledVector(o.vel, dt);
-        const hop = Math.abs(Math.sin(t * (away.lengthSq() > 0 ? 14 : 3) + o.ph)) * (away.lengthSq() > 0 ? 0.6 : 0.12);
+        const hop = held ? Math.abs(Math.sin(t * 9 + o.ph)) * 0.5 : Math.abs(Math.sin(t * (away.lengthSq() > 0 ? 14 : 3) + o.ph)) * (away.lengthSq() > 0 ? 0.6 : 0.12);
         o.sp.position.set(o.pos.x, ground(o.pos.x, o.pos.z) + o.s * 0.45 + hop, o.pos.z);
+        if (held) { c.pos.set(o.pos.x, o.sp.position.y + o.s * 0.62, o.pos.z); c.m.position.copy(c.pos); c.m.rotation.y += dt * 4; c.m.scale.setScalar(c.size * Math.min(1, o.eat / 1.1)); }
         const sq = 1 + Math.sin(t * 6 + o.ph) * 0.05; o.sp.scale.set(o.s * sq, o.s / sq, 1);
       });
       const n = U.uNight.value, dk = U.uDusk.value * (1 - n);
@@ -2045,37 +2118,81 @@
     });
   }
 
-  // Fuligem: carrega pedrinhas em volta da Torre e foge quando o cursor chega perto
+  // Fuligem: carrega pedrinhas em volta da Torre e foge quando o cursor chega perto.
+  // Se cair confeito, larga a pedra, corre para pegar, come pulando e só depois volta buscar a pedra.
   {
     const N = small ? 4 : 7, top = TOWER.y + 0.65, soot = [];
-    const ray = new T.Raycaster(), plane = new T.Plane(new T.Vector3(0, 1, 0), -top), hit = new T.Vector3(), ndc = new T.Vector2();
+    const ray = new T.Raycaster(), plane = new T.Plane(new T.Vector3(0, 1, 0), -top), hit = new T.Vector3(), ndc = new T.Vector2(), zHit = new T.Vector3();
+    const ring = (p) => { const dx = p.x - TOWER.x, dz = p.z - TOWER.z, d = Math.hypot(dx, dz) || 1, k = Math.max(3.9, Math.min(6.2, d)) / d; p.x = TOWER.x + dx * k; p.z = TOWER.z + dz * k; return p; };
+    konpeito.zones.push({ name: "torre", y: () => top, land: ring, hit(r) { if (!soot.length || !mid.visible || !r.intersectPlane(plane, zHit)) return null; return Math.hypot(zHit.x - TOWER.x, zHit.z - TOWER.z) < 11 ? zHit : null; } });
     loadModel("fuligem.glb", (src) => {
       valeize(src, { line: "#141214" }); fitModel(src, 0.85);
+      // a pedra do modelo tem 9 mil triângulos; entra uma pedra facetada feita à mão no mesmo lugar, que pode ser largada
+      let rockNode = null; src.traverse((o) => { if (o.name === "rock") rockNode = o; });
+      const rb = rockNode ? new T.Box3().setFromObject(rockNode) : new T.Box3(new T.Vector3(-0.2, 0.5, -0.2), new T.Vector3(0.2, 0.9, 0.2)), rc = rb.getCenter(new T.Vector3()), rsz = rb.getSize(new T.Vector3());
+      if (rockNode) rockNode.visible = false;
+      const rg = new T.IcosahedronGeometry(0.5, 1), rp = rg.attributes.position, rr = mulberry(5);
+      const bump = {}; for (let i = 0; i < rp.count; i++) { const k = [rp.getX(i), rp.getY(i), rp.getZ(i)].map((v) => v.toFixed(2)).join(); if (!(k in bump)) bump[k] = 0.82 + rr() * 0.36; rp.setXYZ(i, rp.getX(i) * bump[k], rp.getY(i) * bump[k], rp.getZ(i) * bump[k]); }
+      rg.computeVertexNormals();
+      const rb2 = Builder(); rb2.add(rg, new T.Matrix4(), (x, y) => (y > 0.1 ? "#A9A59B" : "#8C887F")); const rockGeo = rb2.build();
       for (let i = 0; i < N; i++) {
         const g = new T.Group(), m = src.clone(true); g.add(m); mid.add(g);
+        const rock = new T.Mesh(rockGeo, objMat); rock.scale.set(rsz.x, rsz.y, rsz.z); rock.position.copy(rc); rock.rotation.y = i * 1.3; g.add(rock);
         const a = i / N * Math.PI * 2 + 0.4, r = 4.2 + (i % 3) * 0.7;
-        soot.push({ g, a, r, r0: r, ph: i * 1.7, sp: 0.16 + (i % 4) * 0.03, flee: 0 });
+        soot.push({ g, rock, rc: rc.clone(), a, r, r0: r, ph: i * 1.7, sp: 0.16 + (i % 4) * 0.03, flee: 0, mode: 0, x: 0, z: 0, candy: null, eat: 0, rx: 0, rz: 0, face: 0 });
       }
       if (reduce) render();
     });
     let lastT = null;
+    // anda em linha reta, mas contorna a torre em vez de atravessar a parede
+    const walk = (o, tx, tz, speed, dt) => {
+      let dx = tx - o.x, dz = tz - o.z; const d = Math.hypot(dx, dz); if (d < 0.3) return true;
+      dx /= d; dz /= d;
+      const cx = o.x - TOWER.x, cz = o.z - TOWER.z, cd = Math.hypot(cx, cz) || 1;
+      if (cd < 4.3 && dx * cx + dz * cz < 0) { const s = Math.sign(cx * dz - cz * dx) || 1; dx = -cz / cd * s + cx / cd * 0.25; dz = cx / cd * s + cz / cd * 0.25; }
+      const st = Math.min(d, speed * dt); o.x += dx * st; o.z += dz * st; o.face = Math.atan2(dx, dz);
+      return false;
+    };
     actors.push((t) => {
-      if (!soot.length) return;
+      if (!soot.length || peso < 1) return;
       const dt = lastT === null ? 0 : Math.max(0, Math.min(0.1, t - lastT)); lastT = t;
       ndc.set(pointer.x, -pointer.y); ray.setFromCamera(ndc, camera);
       const has = ray.ray.intersectPlane(plane, hit) && Math.hypot(hit.x - TOWER.x, hit.z - TOWER.z) < 12;
       soot.forEach((o) => {
-        const x = TOWER.x + Math.cos(o.a) * o.r, z = TOWER.z + Math.sin(o.a) * o.r;
-        const d = has ? Math.hypot(x - hit.x, z - hit.z) : 99;
-        o.flee += ((d < 2.6 ? 1 : 0) - o.flee) * Math.min(1, dt * 5);
-        // fogem dando a volta na torre e se espremem contra a parede; depois voltam ao trabalho
-        const side = has ? Math.sign(Math.sin(o.a - Math.atan2(hit.z - TOWER.z, hit.x - TOWER.x))) || 1 : 1;
-        o.a += dt * (o.sp + o.flee * 1.6 * side);
-        o.r += ((o.flee > 0.3 ? 3.4 : o.r0) - o.r) * Math.min(1, dt * 2);
-        const hop = Math.abs(Math.sin(t * (6 + o.flee * 10) + o.ph)) * (0.08 + o.flee * 0.3);
-        o.g.position.set(TOWER.x + Math.cos(o.a) * o.r, top + hop, TOWER.z + Math.sin(o.a) * o.r);
-        o.g.rotation.y = -o.a + (side * o.flee > 0 ? 0 : Math.PI); // olha para onde anda
-        o.g.rotation.z = Math.sin(t * 7 + o.ph) * 0.08;
+        if (o.mode === 0) {
+          const x = TOWER.x + Math.cos(o.a) * o.r, z = TOWER.z + Math.sin(o.a) * o.r;
+          const c = konpeito.claim("torre", x, z, o);
+          if (c) { // larga a pedra onde está e sai correndo
+            o.candy = c; o.mode = 1; o.x = x; o.z = z; o.flee = 0;
+            mid.attach(o.rock); o.rx = x + Math.cos(o.a) * 0.3; o.rz = z + Math.sin(o.a) * 0.3; o.rock.position.set(o.rx, top + o.rock.scale.y * 0.42, o.rz); o.rock.rotation.set(0.5, o.ph, 0.3);
+            return;
+          }
+          const d = has ? Math.hypot(x - hit.x, z - hit.z) : 99;
+          o.flee += ((d < 2.6 ? 1 : 0) - o.flee) * Math.min(1, dt * 5);
+          // fogem dando a volta na torre e se espremem contra a parede; depois voltam ao trabalho
+          const side = has ? Math.sign(Math.sin(o.a - Math.atan2(hit.z - TOWER.z, hit.x - TOWER.x))) || 1 : 1;
+          o.a += dt * (o.sp + o.flee * 1.6 * side);
+          o.r += ((o.flee > 0.3 ? 3.4 : o.r0) - o.r) * Math.min(1, dt * 2);
+          const hop = Math.abs(Math.sin(t * (6 + o.flee * 10) + o.ph)) * (0.08 + o.flee * 0.3);
+          o.g.position.set(TOWER.x + Math.cos(o.a) * o.r, top + hop, TOWER.z + Math.sin(o.a) * o.r);
+          o.g.rotation.y = -o.a + (side * o.flee > 0 ? 0 : Math.PI); // olha para onde anda
+          o.g.rotation.z = Math.sin(t * 7 + o.ph) * 0.08;
+          return;
+        }
+        let hop = Math.abs(Math.sin(t * 15 + o.ph)) * 0.32; const c = o.candy;
+        if (o.mode === 1) { // corre até o confeito
+          if (!c || c.state === "gone") { o.mode = 3; o.candy = null; }
+          else if (walk(o, c.to.x, c.to.z, 4.2, dt) && c.state === "rest") { c.state = "held"; o.mode = 2; o.eat = 3.8; }
+        } else if (o.mode === 2) { // come pulando no lugar, com o confeito erguido
+          o.eat -= dt; hop = Math.abs(Math.sin(t * 9 + o.ph)) * 0.42; o.face += dt * 5;
+          c.pos.set(o.x, top + hop + 1.02, o.z); c.m.position.copy(c.pos); c.m.rotation.y += dt * 4; c.m.scale.setScalar(c.size * Math.min(1, o.eat / 1.1));
+          if (o.eat <= 0) { konpeito.eat(c); o.candy = null; o.mode = 3; }
+        } else if (walk(o, o.rx, o.rz, 2.6, dt)) { // volta, pega a pedra e retoma a ronda (ou vai atrás de outro confeito)
+          o.g.position.set(o.x, top, o.z); o.g.rotation.set(0, o.face, 0); o.g.updateMatrixWorld(true);
+          o.g.add(o.rock); o.rock.position.copy(o.rc); o.rock.rotation.set(0, o.ph, 0);
+          o.a = Math.atan2(o.z - TOWER.z, o.x - TOWER.x); o.r = Math.hypot(o.x - TOWER.x, o.z - TOWER.z); o.mode = 0; return;
+        } else hop *= 0.5;
+        o.g.position.set(o.x, top + hop, o.z); o.g.rotation.set(0, o.face, Math.sin(t * 12 + o.ph) * 0.12);
       });
     });
   }
@@ -3363,7 +3480,7 @@
   if ($("introSkip")) $("introSkip").addEventListener("click", skipFilm);
   // seek: posiciona a entrada num corte e num ponto do corte (usado para revisar quadros)
   let peekCam = null;
-  window.vale = { amb: () => amb, peso: (n) => { if (n != null) setPeso(n, false); return peso; }, time: (v) => { if (v != null) clock = v; return clock; }, haku: () => hakuRef, dash: () => { if (catbusDash) catbusDash(); }, cam: (p, t) => { fixedCam = p ? { p: new T.Vector3(...p), t: new T.Vector3(...t) } : null; }, season: (n) => setSeason(n), dbg: () => ({ tp: tp.t, opened: tp.opened, running, active: explore.active, place: explore.place, k: explore.k }), toCover: () => { if (explore.active) exitExplore(true); }, info: () => ({ mem: Object.assign({}, renderer.info.memory), prog: renderer.info.programs ? renderer.info.programs.length : 0, calls: renderer.info.render.calls, tris: renderer.info.render.triangles, nodes: scene.children.length, grass: grass.geometry.instanceCount, flowers: flowers.geometry.instanceCount }), peek: (p, t) => { peekCam = p ? { p: new T.Vector3(p[0], p[1] + hillTop, p[2]), t: new T.Vector3(t[0], t[1] + hillTop, t[2]) } : null; }, star: (k) => meteors.launch(k || "vale"), playIntro, go: (id) => { if (!explore.active) startExplore(); go(id); }, seek(i, frac = 0.5) { if (!intro.active) playIntro(); startShot(i); intro.t = intro.shots[i].d * frac; } };
+  window.vale = { konpeito: () => konpeito, amb: () => amb, peso: (n) => { if (n != null) setPeso(n, false); return peso; }, time: (v) => { if (v != null) clock = v; return clock; }, haku: () => hakuRef, dash: () => { if (catbusDash) catbusDash(); }, cam: (p, t) => { fixedCam = p ? { p: new T.Vector3(...p), t: new T.Vector3(...t) } : null; }, season: (n) => setSeason(n), dbg: () => ({ tp: tp.t, opened: tp.opened, running, active: explore.active, place: explore.place, k: explore.k }), toCover: () => { if (explore.active) exitExplore(true); }, info: () => ({ mem: Object.assign({}, renderer.info.memory), prog: renderer.info.programs ? renderer.info.programs.length : 0, calls: renderer.info.render.calls, tris: renderer.info.render.triangles, nodes: scene.children.length, grass: grass.geometry.instanceCount, flowers: flowers.geometry.instanceCount }), peek: (p, t) => { peekCam = p ? { p: new T.Vector3(p[0], p[1] + hillTop, p[2]), t: new T.Vector3(t[0], t[1] + hillTop, t[2]) } : null; }, star: (k) => meteors.launch(k || "vale"), playIntro, go: (id) => { if (!explore.active) startExplore(); go(id); }, seek(i, frac = 0.5) { if (!intro.active) playIntro(); startShot(i); intro.t = intro.shots[i].d * frac; } };
 
 
   /* ------------------------------------------------------------------ */

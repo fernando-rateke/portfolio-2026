@@ -22,6 +22,12 @@
   renderer.setClearColor(0x9fcbea, 1);
 
   const scene = new T.Scene();
+  // Peso do vale: 0 leve, 1 médio (o vale como sempre foi), 2 completo. Escolhido na entrada (index.html),
+  // guardado no navegador e trocável a qualquer momento (evento "vale:peso"). `mid` guarda o que o leve não mostra,
+  // `rich` o que só o completo tem.
+  const PESOS = ["leve", "medio", "completo"];
+  let peso = 1; try { const k = PESOS.indexOf(localStorage.getItem("vale-peso")); if (k >= 0) peso = k; } catch (e) { /* sem armazenamento */ }
+  const pesoFns = [], mid = new T.Group(), rich = new T.Group(); scene.add(mid, rich); mid.visible = peso >= 1; rich.visible = peso >= 2;
   const camera = new T.PerspectiveCamera(38, 1, 0.1, 4000);
   const reflectCam = new T.PerspectiveCamera(38, 1, 0.1, 4000);
 
@@ -135,6 +141,9 @@
       return mix(col, hazeColor(), uHaze);
     }
     vec3 nightTint(vec3 c){ return c*vec3(0.20,0.27,0.40)+vec3(0.012,0.018,0.035); }
+    // sombras de contato (só no peso completo): x, z, raio, força
+    uniform vec4 uShadows[6];
+    float contactShade(vec3 w){ float s=1.0; for(int i=0;i<6;i++){ vec4 h=uShadows[i]; s*=1.0-h.w*(1.0-smoothstep(h.z*0.3,h.z,length(w.xz-h.xy))); } return s; }
   `;
   const col = (h) => new T.Color(h);
 
@@ -146,16 +155,19 @@
     uFogDay: { value: col("#C4DDE8") }, uFogDusk: { value: col("#E2A3A0") }, uFogNight: { value: col("#1A2943") },
     uFogDensity: { value: 0.0021 },
     uLanterns: { value: [new T.Vector3(), new T.Vector3()] },
+    uShadows: { value: [0, 1, 2, 3, 4, 5].map(() => new T.Vector4(0, 0, 1, 0)) },
     uWind: { value: new T.Vector2(1, -0.35).normalize() },
   };
   const MODEL_BASE = (window.VALE_BASE || "") + "modelos/";
   const gltfLoader = T.GLTFLoader ? new T.GLTFLoader() : null;
   // carrega depois que o vale já está na tela, um de cada vez, para não pesar a abertura
   const modelQueue = []; let modelBusy = false, modelsGo = false;
-  function loadModel(file, cb) { if (!gltfLoader) return; modelQueue.push([file, cb]); pumpModels(); }
+  // min: peso mínimo para baixar o modelo (1 = médio; 0 = até no leve). Os que não cabem no peso atual esperam na fila.
+  function loadModel(file, cb, min = 1) { if (!gltfLoader) return; modelQueue.push([file, cb, min]); pumpModels(); }
   function pumpModels() {
-    if (!modelsGo || modelBusy || !modelQueue.length) return;
-    const [file, cb] = modelQueue.shift(); modelBusy = true;
+    if (!modelsGo || modelBusy) return;
+    const qi = modelQueue.findIndex((q) => q[2] <= peso); if (qi < 0) return;
+    const [file, cb] = modelQueue.splice(qi, 1)[0]; modelBusy = true;
     gltfLoader.load(MODEL_BASE + file, (g) => { try { cb(g.scene); } catch (e) { console.warn("modelo", file, e); /* um modelo com problema não derruba o vale */ } modelBusy = false; pumpModels(); }, undefined, () => { modelBusy = false; pumpModels(); });
   }
   function startModels() { if (modelsGo) return; modelsGo = true; pumpModels(); }
@@ -265,6 +277,7 @@
         c=mix(c,uBank,clamp(steep*1.6,0.0,1.0)*nearW);
         c=mix(c,uBank*0.75,1.0-smoothstep(-0.06,0.1,vW.y));
         c=mix(c,seasonGround(c,n.y),step(0.05,vW.y));
+        c*=contactShade(vW);
         c=mix(c,nightTint(c),uNight);
         c+=lanternGlow(vW)*uNight;
         gl_FragColor=vec4(applyFog(c,vW),1.0);
@@ -280,7 +293,7 @@
   /* ------------------------------------------------------------------ */
   const rt = new T.WebGLRenderTarget(16, 16, { depthBuffer: true });
   const water = new T.Mesh(new T.PlaneGeometry(1100, 760, 1, 1), mat(VS_WORLD, `${COMMON}${NOISE}
-    uniform sampler2D tReflect; uniform vec2 uRes; uniform vec3 uDeepD, uDeepN; varying vec3 vW;
+    uniform sampler2D tReflect; uniform vec2 uRes; uniform vec3 uDeepD, uDeepN; uniform float uRich; varying vec3 vW;
     void main(){
       vec3 V=normalize(cameraPosition-vW);
       float fres=pow(1.0-max(V.y,0.0),3.2);
@@ -293,9 +306,17 @@
       vec3 deep=mix(uDeepD,uDeepN,uNight);
       vec3 c=mix(deep,refl,clamp(0.3+0.68*fres,0.0,0.96));
       c+=vec3(0.07)*smoothstep(0.72,0.95,r2)*(1.0-uNight)*(1.0-smoothstep(30.0,120.0,d));
+      if(uRich>0.5){
+        // peso completo: faíscas de sol (ou de lua) correndo na água e ondinhas finas perto da câmera
+        float g1=snoise(vW.xz*vec2(1.6,5.2)+vec2(uTime*0.55,uTime*0.21)), g2=snoise(vW.xz*vec2(3.1,9.0)-vec2(uTime*0.4,uTime*0.33));
+        vec3 Rv=reflect(-V,vec3(0.0,1.0,0.0)); float sunf=pow(max(dot(Rv,normalize(vec3(uSun.x,uSun.y*0.55,-abs(uSun.z)))),0.0),5.0);
+        float sp=smoothstep(0.62,0.9,g1*g2+g1*0.35)*(1.0-smoothstep(70.0,260.0,d));
+        c+=mix(vec3(1.0,0.97,0.84),vec3(0.62,0.72,0.95),uNight)*sp*(0.025+sunf*1.3)*(1.0-uNight*0.6);
+        c+=vec3(0.035)*smoothstep(0.2,0.9,g2)*(1.0-uNight)*(1.0-smoothstep(8.0,40.0,d));
+      }
       gl_FragColor=vec4(applyFog(c,vW),1.0);
     }`,
-    { tReflect: { value: rt.texture }, uRes: { value: new T.Vector2(1, 1) }, uDeepD: { value: col("#215F7D") }, uDeepN: { value: col("#0C1A2C") } }));
+    { uRich: { value: peso >= 2 ? 1 : 0 }, tReflect: { value: rt.texture }, uRes: { value: new T.Vector2(1, 1) }, uDeepD: { value: col("#215F7D") }, uDeepN: { value: col("#0C1A2C") } }));
   water.rotation.x = -Math.PI / 2; water.position.set(0, 0, -200);
   scene.add(water);
 
@@ -467,7 +488,7 @@
         const k = (70 + rr() * 50) / Math.max(sz.x, sz.z);
         c.scale.set(k, k * 0.8, k); c.position.set(-cx * k, -box.min.y * k * 0.8, -cz * k); g.add(c);
         g.position.set(x, y, z); g.rotation.y = rr() * Math.PI * 2; g.userData = { x0: x, sp: 0.9 + rr() * 0.8 };
-        scene.add(g); driftClouds.push(g);
+        mid.add(g); driftClouds.push(g);
       });
       if (reduce) render();
     });
@@ -1624,6 +1645,7 @@
   const HILL = { x: 6, z: 18 };
   const charLine = outlineMat(0.011, "#2A211D");
   const actors = [];
+  const shadowSrc = []; // quem faz sombra de contato no chão (peso completo): { o: objeto, r: raio, k: força }
   actors.push((t) => { driftClouds.forEach((g) => { const span = 760; g.position.x = ((g.userData.x0 + 380 + t * g.userData.sp) % span + span) % span - 380; }); });
 
   /* ---- Modelos que vivem no vale: Haku, o barco e o balde da Ponyo, a fuligem da Torre ---- */
@@ -1729,8 +1751,8 @@
     // pincel da ponta da cauda
     for (let i = 0; i < 9; i++) tuft(LEN - 2.4 + i * 0.28, (i % 3 - 1) * 1.2 + (rnd() - 0.5) * 0.5, 2.3 + rnd() * 1.1, 0.2, i % 2 ? TEAL : TEAL2, 0.3);
     const mesh = new T.Mesh(new T.BufferGeometry(), mat(MODEL_VS, HAKU_FS, { uShine: { value: 0 } }, { vertexColors: true }));
-    mesh.frustumCulled = false; mesh.visible = false; scene.add(mesh);
-    const line = small ? null : new T.Mesh(mesh.geometry, outlineMat(0.045, "#3A5560")); if (line) { line.frustumCulled = false; line.visible = false; scene.add(line); }
+    mesh.frustumCulled = false; mesh.visible = false; mid.add(mesh);
+    const line = small ? null : new T.Mesh(mesh.geometry, outlineMat(0.045, "#3A5560")); if (line) { line.frustumCulled = false; line.visible = false; mid.add(line); }
     hakuRef.mat = mesh.material;
     const legs = []; // {from, to, px, py, s, side, ph}
     let POS, NOR, NV = 0, RA;
@@ -1831,7 +1853,7 @@
       g.setAttribute("color", new T.BufferAttribute(C, 3)); g.setAttribute("uv", new T.BufferAttribute(UV, 2)); g.setIndex(IDX);
       hakuRef.on = true; hakuRef.update = update; update(U.uTime.value); mesh.visible = true; if (line) line.visible = true; if (reduce) render();
     });
-    actors.push((t) => { if (hakuRef.on) update(t); });
+    actors.push((t) => { if (hakuRef.on && peso >= 1) update(t); });
   }
 
   // Barco da Ponyo: dá voltas no lago perto da estação, com a vela acesa e um rastro de ondinhas
@@ -1846,7 +1868,7 @@
       const w = new T.Group(); w.rotation.y = Math.PI; w.add(m); boat.add(w); // a proa do modelo aponta para -z
       flame.position.set(0, sz.y * 0.62, 0.15); core.position.copy(flame.position); boat.add(flame, core);
       boat.visible = true; if (reduce) render();
-    });
+    }, 0);
     const at = (u, o) => o.set(L.x + Math.cos(u) * L.rx * 0.42, 0, L.z + Math.sin(u) * L.rz * 0.36);
     const p = new T.Vector3(), n = new T.Vector3(), back = new T.Vector3(); let lastWake = 0, wi = 0, lastT = null;
     actors.push((t) => {
@@ -1866,7 +1888,7 @@
 
   // Balde da Ponyo: esquecido na margem, a luz verde acende ao entardecer e solta bolhas
   {
-    const L = LAKES[2], spot = shoreOf(L, 1.85), g = new T.Group(); g.visible = false; scene.add(g);
+    const L = LAKES[2], spot = shoreOf(L, 1.85), g = new T.Group(); g.visible = false; mid.add(g);
     g.position.copy(spot); g.rotation.set(0.06, 0.7, -0.04);
     const halo = glowSprite("#8CFF9A", 2.6); halo.position.y = 1.0;
     const bubMat = new T.MeshBasicMaterial({ color: col("#D9FFF0"), transparent: true, opacity: 0.6, depthWrite: false, fog: false });
@@ -1887,8 +1909,8 @@
     const S = 0.014, top = 75 * S, sy = STATION.y;
     let ox = STATION.x - 13.6, oz = STATION.z + 0.6;
     for (let k = 0; k < 12 && heightAt(ox, oz) < 0.16; k++) oz -= 0.35; // fica na terra seca, nunca dentro do lago
-    const corner = new T.Group(); corner.position.set(ox, heightAt(ox, oz) - 0.02, oz); corner.rotation.y = 0.18; corner.visible = false; scene.add(corner);
-    const herbs = new T.Group(); herbs.position.set(STATION.x + 1.2, sy + 1.62, STATION.z - 0.9); herbs.scale.setScalar(2); herbs.visible = false; scene.add(herbs); // ervas grandes o bastante para ler de longe
+    const corner = new T.Group(); corner.position.set(ox, heightAt(ox, oz) - 0.02, oz); corner.rotation.y = 0.18; corner.visible = false; mid.add(corner);
+    const herbs = new T.Group(); herbs.position.set(STATION.x + 1.2, sy + 1.62, STATION.z - 0.9); herbs.scale.setScalar(2); herbs.visible = false; mid.add(herbs); // ervas grandes o bastante para ler de longe
     const flame = glowSprite("#FFB65C", 0.5), flameCore = glowSprite("#FFF1C8", 0.16);
     const steam = []; for (let i = 0; i < 4; i++) { const sp = glowSprite("#FFFFFF", 0.22); sp.material.blending = T.NormalBlending; steam.push({ sp, ph: i / 4 }); }
     loadModel("zeniba.glb", (src) => {
@@ -1915,7 +1937,7 @@
     });
     loadModel("sapatos.glb", (m) => {
       valeize(m); fitModel(m, 0.42, "x");
-      const g = new T.Group(); g.position.set(STATION.x + 4.4, sy + 0.56, STATION.z + 1.3); g.rotation.y = -0.25; g.add(m); scene.add(g);
+      const g = new T.Group(); g.position.set(STATION.x + 4.4, sy + 0.56, STATION.z + 1.3); g.rotation.y = -0.25; g.add(m); mid.add(g);
       if (reduce) render();
     });
     actors.push((t) => {
@@ -1931,7 +1953,8 @@
   {
     const x = GT.x + 3.4, z = GT.z + 8.8, g = new T.Group(); g.visible = false; scene.add(g);
     g.position.set(x, heightAt(x, z) - 0.05, z); g.rotation.y = Math.atan2(HILL.x - x, HILL.z - z) * 0.6;
-    loadModel("totoro.glb", (m) => { valeize(m, { line: "#3A3F48" }); fitModel(m, 3.6); g.add(m); g.visible = true; if (reduce) render(); });
+    loadModel("totoro.glb", (m) => { valeize(m, { line: "#3A3F48" }); fitModel(m, 3.6); g.add(m); g.visible = true; if (reduce) render(); }, 0);
+    shadowSrc.push({ o: g, r: 3.4, k: 0.34 });
     // respira devagar e de vez em quando balança o corpo, como quem espera a chuva passar
     actors.push((t) => { if (!g.visible) return; const b = Math.sin(t * 1.1); g.scale.set(1 + b * 0.012, 1 - b * 0.01, 1 + b * 0.012); g.rotation.z = Math.sin(t * 0.37) * 0.025; });
   }
@@ -1939,7 +1962,7 @@
   // Jiji e Lily no banco da estação, embaixo das ervas
   loadModel("jiji-lily.glb", (m) => {
     valeize(m, { line: "#2A2226" }); fitModel(m, 0.78);
-    const g = new T.Group(); g.position.set(STATION.x + 1.75, STATION.y + 1.15, STATION.z - 0.62); g.rotation.y = -0.12; g.add(m); scene.add(g);
+    const g = new T.Group(); g.position.set(STATION.x + 1.75, STATION.y + 1.15, STATION.z - 0.62); g.rotation.y = -0.12; g.add(m); mid.add(g);
     actors.push((t) => { g.rotation.z = Math.sin(t * 0.9) * 0.008; });
     if (reduce) render();
   });
@@ -1948,15 +1971,15 @@
   // e cruza a tela, num salto, quando a câmera entra num mundo
   {
     const STOP = new T.Vector3(STATION.x + 11, 0, STATION.z + 2.2), FAR = STATION.x + 85, CYCLE = small ? 120 : 95;
-    const g = new T.Group(); g.visible = false; scene.add(g);
-    const dashG = new T.Group(); dashG.visible = false; scene.add(dashG);
+    const g = new T.Group(); g.visible = false; mid.add(g);
+    const dashG = new T.Group(); dashG.visible = false; mid.add(dashG);
     const eyes = [];
     // a chuva: riscos finos caindo só em volta do ponto
     const RN = small ? 260 : 520, rp = new Float32Array(RN * 6), rs = new Float32Array(RN);
     for (let i = 0; i < RN; i++) { rs[i] = Math.random(); const x = (Math.random() - 0.5) * 22, z = (Math.random() - 0.5) * 14, y = Math.random() * 12; rp.set([x, y, z, x - 0.05, y - 0.6, z], i * 6); }
     const rg = new T.BufferGeometry(); rg.setAttribute("position", new T.BufferAttribute(rp, 3));
     const rain = new T.LineSegments(rg, new T.LineBasicMaterial({ color: col("#C9D6E4"), transparent: true, opacity: 0, depthWrite: false, fog: false }));
-    rain.position.set(STOP.x - 4, STATION.y, STOP.z); rain.visible = false; rain.frustumCulled = false; scene.add(rain);
+    rain.position.set(STOP.x - 4, STATION.y, STOP.z); rain.visible = false; rain.frustumCulled = false; mid.add(rain);
     let ready = false, scaleK = 1;
     loadModel("gatobus.glb", (m) => {
       valeize(m, { line: "#3A2414" });
@@ -2028,7 +2051,7 @@
     loadModel("fuligem.glb", (src) => {
       valeize(src, { line: "#141214" }); fitModel(src, 0.85);
       for (let i = 0; i < N; i++) {
-        const g = new T.Group(), m = src.clone(true); g.add(m); scene.add(g);
+        const g = new T.Group(), m = src.clone(true); g.add(m); mid.add(g);
         const a = i / N * Math.PI * 2 + 0.4, r = 4.2 + (i % 3) * 0.7;
         soot.push({ g, a, r, r0: r, ph: i * 1.7, sp: 0.16 + (i % 4) * 0.03, flee: 0 });
       }
@@ -2254,7 +2277,7 @@
     bare(head, flicks.build());
     g.position.set(HILL.x + 0.62, 0, HILL.z - 0.1);
     g.rotation.y = 0.08;
-    scene.add(g);
+    scene.add(g); shadowSrc.push({ o: g, r: 1.25, k: 0.5 });
     actors.push((t) => {
       g.position.y = heightAt(g.position.x, g.position.z) - 0.04;
       torso.scale.y = 1 + Math.sin(t * 1.3) * 0.006;
@@ -2314,7 +2337,7 @@
     part(head, hair.build());
     g.position.set(HILL.x - 0.02, 0, HILL.z + 0.05);
     g.rotation.y = -0.06;
-    scene.add(g);
+    scene.add(g); shadowSrc.push({ o: g, r: 1.25, k: 0.5 });
     actors.push((t) => {
       g.position.y = heightAt(g.position.x, g.position.z) - 0.03;
       torso.scale.y = 1 + Math.sin(t * 1.5 + 1) * 0.006;
@@ -2369,7 +2392,7 @@
       ],
     });
     bare(head, hair.build());
-    scene.add(g);
+    scene.add(g); shadowSrc.push({ o: g, r: 1.25, k: 0.5 });
     actors.push((t) => {
       const a = t * 0.9;
       const cx = HILL.x - 1.2, cz = HILL.z - 2.0;
@@ -2463,7 +2486,7 @@
     });
     g.position.set(HILL.x + 3.3, 0, HILL.z - 1.6);
     g.rotation.y = 0.12;
-    scene.add(g);
+    scene.add(g); shadowSrc.push({ o: g, r: 1.25, k: 0.5 });
     actors.push((t) => {
       const ph = t * 3.0;
       const hop = Math.abs(Math.sin(ph));
@@ -2509,7 +2532,7 @@
     const tail = joint(body, 0, 0.26, 0.26);
     part(tail, one(new T.ConeGeometry(0.024, 0.17, 8), FUR, M(0, 0.075, 0.02, 0.5, 0, 0)));
     g.scale.setScalar(1.5);
-    scene.add(g);
+    scene.add(g); shadowSrc.push({ o: g, r: 1.25, k: 0.5 });
     // passeia num oito na frente do grupo: anda, para, fareja, segue
     const ease3 = (k) => k * k * (3 - 2 * k);
     const pathAt = (a) => ({ x: HILL.x - 2.3 + Math.sin(a) * 1.5, z: HILL.z + 0.9 + Math.sin(a * 2) * 0.45 });
@@ -2547,6 +2570,7 @@
       return smoothstep(0.25,0.95,wave*0.55+n*0.65)*uGustAmp;
     }`;
   let grass, flowers;
+  const HILL_X = 6;
   {
     const COUNT = reduce ? 24000 : (small ? 42000 : 110000);
     const blade = new T.BufferGeometry();
@@ -2557,7 +2581,8 @@
     blade.setIndex([0, 1, 2, 2, 1, 3, 2, 3, 4, 4, 3, 5, 4, 5, 6]);
     const ig = new T.InstancedBufferGeometry();
     ig.setIndex(blade.index); ig.setAttribute("position", blade.getAttribute("position"));
-    const off = new Float32Array(COUNT * 3), sc = new Float32Array(COUNT * 2), rot = new Float32Array(COUNT), tone = new Float32Array(COUNT);
+    const EXTRA = reduce ? 0 : (small ? 26000 : 70000), TOTAL = COUNT + EXTRA; // a sobra só é desenhada no peso completo
+    const off = new Float32Array(TOTAL * 3), sc = new Float32Array(TOTAL * 2), rot = new Float32Array(TOTAL), tone = new Float32Array(TOTAL);
     const r = mulberry(9); let n = 0, tries = 0;
     while (n < COUNT && tries < COUNT * 6) {
       tries++;
@@ -2574,7 +2599,17 @@
       rot[n] = r() * Math.PI; tone[n] = r();
       n++;
     }
-    ig.instanceCount = n; ig.userData.full = n;
+    const base = n; tries = 0;
+    while (n < base + EXTRA && tries < EXTRA * 6) { // mais densa onde a câmera da capa está
+      tries++;
+      const z = 27 - Math.pow(r(), 1.7) * 30, x = HILL_X + (r() * 2 - 1) * (10 + (27 - z) * 0.75), y = heightAt(x, z);
+      if (y < 0.42) continue;
+      off[n * 3] = x; off[n * 3 + 1] = y - 0.02; off[n * 3 + 2] = z;
+      sc[n * 2] = 0.04 + r() * 0.03; sc[n * 2 + 1] = 0.2 + r() * 0.4;
+      rot[n] = r() * Math.PI; tone[n] = r();
+      n++;
+    }
+    ig.instanceCount = base; ig.userData.full = base; ig.userData.extra = n - base;
     ig.setAttribute("aOff", new T.InstancedBufferAttribute(off, 3));
     ig.setAttribute("aSc", new T.InstancedBufferAttribute(sc, 2));
     ig.setAttribute("aRot", new T.InstancedBufferAttribute(rot, 1));
@@ -2606,6 +2641,7 @@
           c=mix(c,uSheen,vG*vT*0.55);
           c*=0.78+0.22*vT;
           c=seasonGround(c,0.4+vT*0.6);
+          c*=mix(contactShade(vW),1.0,vT*0.45);
           c=mix(c,nightTint(c),uNight);
           c+=lanternGlow(vW)*uNight*0.8;
           gl_FragColor=vec4(applyFog(c,vW),1.0);
@@ -2622,13 +2658,17 @@
     const quad = new T.PlaneGeometry(1, 1);
     const ig = new T.InstancedBufferGeometry();
     ig.setIndex(quad.index); ig.setAttribute("position", quad.getAttribute("position")); ig.setAttribute("uv", quad.getAttribute("uv"));
-    const off = new Float32Array(COUNT * 3), cl = new Float32Array(COUNT * 3), sz = new Float32Array(COUNT);
+    const EXTRA = reduce ? 0 : (small ? 6000 : 16000), TOTAL = COUNT + EXTRA;
+    const off = new Float32Array(TOTAL * 3), cl = new Float32Array(TOTAL * 3), sz = new Float32Array(TOTAL);
     const palette = [["#EE93B0", "#F6B6C9", "#D9739A"], ["#F3D44F", "#FFE68A"], ["#FFFFFF", "#F4F1E6"], ["#B9A4E6", "#D6C8F2"]];
     const r = mulberry(21); let n = 0, tries = 0;
-    while (n < COUNT && tries < COUNT * 12) {
+    let base = -1;
+    while (n < TOTAL && tries < TOTAL * 12) {
       tries++;
-      const z = 20 - Math.pow(r(), 1.3) * 62;
-      const x = (r() * 2 - 1) * (30 + (20 - z) * 1.2);
+      if (base < 0 && (n >= COUNT || tries >= COUNT * 12)) base = n; // daqui em diante é a sobra do peso completo, perto da câmera
+      const near = base >= 0;
+      const z = near ? 26 - Math.pow(r(), 1.5) * 32 : 20 - Math.pow(r(), 1.3) * 62;
+      const x = near ? HILL_X + (r() * 2 - 1) * (10 + (26 - z) * 0.8) : (r() * 2 - 1) * (30 + (20 - z) * 1.2);
       const y = heightAt(x, z); if (y < 0.5) continue;
       const pv = fbm(x * 0.025 + 7, z * 0.025, 3);
       if (r() > smooth(-0.15, 0.3, pv) * 0.95 + 0.05) continue;
@@ -2640,7 +2680,8 @@
       sz[n] = (0.085 + r() * 0.075) * (1 + d * 0.009);
       n++;
     }
-    ig.instanceCount = n; ig.userData.full = n;
+    if (base < 0) base = n;
+    ig.instanceCount = base; ig.userData.full = base; ig.userData.extra = n - base;
     ig.setAttribute("aOff", new T.InstancedBufferAttribute(off, 3));
     ig.setAttribute("aCol", new T.InstancedBufferAttribute(cl, 3));
     ig.setAttribute("aSize", new T.InstancedBufferAttribute(sz, 1));
@@ -2735,6 +2776,90 @@
     }));
     flies.frustumCulled = false; scene.add(flies);
   }
+
+  /* ------------------------------------------------------------------ */
+  /* Só no peso completo: sombras de contato, borboletas e carpas         */
+  /* ------------------------------------------------------------------ */
+  {
+    // sombras: as seis fontes mais próximas da câmera escurecem o chão e a grama embaixo delas
+    const wp = new T.Vector3(), list = [];
+    actors.push(() => {
+      if (peso < 2) return;
+      list.length = 0;
+      for (const sdw of shadowSrc) { if (!sdw.o.visible) continue; sdw.o.getWorldPosition(wp); list.push([wp.distanceToSquared(camera.position), wp.x, wp.z, sdw.r, sdw.k]); }
+      list.sort((a, b) => a[0] - b[0]);
+      const day = 1 - U.uNight.value * 0.55;
+      U.uShadows.value.forEach((v, i) => { const q = list[i]; if (q) v.set(q[1], q[2], q[3], q[4] * day); else v.w = 0; });
+    });
+    if (!reduce) {
+      // borboletas: duas asas por bicho, batidas no shader; vivem sobre as flores da colina, na Grande Árvore e na estação
+      const N = small ? 16 : 34, r = mulberry(77), P = [], H = [], S = [], C = [];
+      const tones = ["#F6F2E4", "#F3D44F", "#EE93B0", "#9FC6EE", "#F2A65A"];
+      for (let i = 0; i < N; i++) {
+        let x, z; const k = i % 5;
+        if (k < 3) { z = 24 - r() * 26; x = HILL_X + (r() * 2 - 1) * (7 + (24 - z) * 0.6); }
+        else if (k === 3) { const a = r() * 6.28; x = GT.x + Math.cos(a) * (8 + r() * 9); z = GT.z + 6 + Math.sin(a) * 6; }
+        else { x = STATION.x - 14 + r() * 22; z = STATION.z + 1 + r() * 5; }
+        const y = Math.max(heightAt(x, z), 0.1) + 0.55 + r() * 0.9, c = col(tones[Math.floor(r() * tones.length)]), sd = [r(), r(), r()];
+        for (const w of [-1, 1]) for (const v of [[0, 0, 0.5], [w, 0, 0.75], [w * 0.85, 0, -0.1], [0, 0, 0.5], [w * 0.85, 0, -0.1], [0, 0, -0.45], [0, 0, -0.45], [w * 0.85, 0, -0.1], [w * 0.6, 0, -0.75]]) { P.push(v[0], v[1], v[2]); H.push(x, y, z); S.push(sd[0], sd[1], sd[2]); C.push(c.r, c.g, c.b); }
+      }
+      const g = new T.BufferGeometry();
+      g.setAttribute("position", new T.Float32BufferAttribute(P, 3)); g.setAttribute("aHome", new T.Float32BufferAttribute(H, 3)); g.setAttribute("aSeed", new T.Float32BufferAttribute(S, 3)); g.setAttribute("aCol", new T.Float32BufferAttribute(C, 3));
+      const m = mat(`uniform float uTime; attribute vec3 aHome, aSeed, aCol; varying vec3 vW; varying vec3 vC; varying float vE;
+        void main(){
+          float t=uTime*(0.35+aSeed.x*0.3)+aSeed.y*40.0;
+          // passeio: um oito irregular em volta de casa, com subidas curtas
+          vec3 c=aHome+vec3(sin(t)*2.2+sin(t*2.3+aSeed.z*6.0)*0.8, sin(t*3.1+aSeed.x*9.0)*0.3+sin(t*0.7)*0.25, cos(t*0.8+aSeed.y*5.0)*1.9+sin(t*1.9)*0.7);
+          vec2 dir=normalize(vec2(cos(t)*2.2+cos(t*2.3+aSeed.z*6.0)*1.84, -sin(t*0.8+aSeed.y*5.0)*1.52+cos(t*1.9)*1.33));
+          float flap=sin(uTime*(13.0+aSeed.z*6.0)+aSeed.x*30.0)*1.05+0.25;
+          vec3 p=position*0.15*(0.8+aSeed.y*0.5);
+          float sx=abs(p.x); p=vec3(sign(p.x)*sx*cos(flap), sx*sin(flap), p.z);
+          vec3 w=c+vec3(p.x*dir.y+p.z*dir.x, p.y, -p.x*dir.x+p.z*dir.y);
+          vW=w; vC=aCol; vE=abs(position.x);
+          gl_Position=projectionMatrix*viewMatrix*vec4(w,1.0);
+        }`, `${COMMON}
+        varying vec3 vW; varying vec3 vC; varying float vE;
+        void main(){ if(uNight>0.55) discard; vec3 c=mix(vC,vC*0.45,smoothstep(0.62,0.8,vE)); c=mix(c,nightTint(c),uNight); gl_FragColor=vec4(applyFog(c,vW),1.0); }`, {}, { side: T.DoubleSide });
+      const bf = new T.Mesh(g, m); bf.frustumCulled = false; rich.add(bf);
+
+      // carpas: vultos coloridos logo abaixo da água, nadando em roda nos lagos perto dos lugares
+      const FN = small ? 12 : 26, fr = mulberry(41), FP = [], FH = [], FS = [], FC = [];
+      const koi = [["#F2823A", "#F7F3EA"], ["#F7F3EA", "#E2452F"], ["#E9B23C", "#F7F3EA"], ["#2A2F3A", "#F2823A"], ["#F7F3EA", "#F7F3EA"]];
+      let made = 0, guard = 0;
+      while (made < FN && guard++ < 4000) {
+        const Lk = LAKES[[2, 2, 0, 0, 3][made % 5]], a = fr() * 6.28, k = 0.15 + fr() * 0.5, x = Lk.x + Math.cos(a) * Lk.rx * k, z = Lk.z + Math.sin(a) * Lk.rz * k, rad = 1.2 + fr() * 2.2;
+        let wet = true; for (let q = 0; q < 6; q++) if (heightAt(x + Math.cos(q) * (rad + 1), z + Math.sin(q) * (rad + 1)) > -0.12) wet = false;
+        if (!wet) continue;
+        const pal = koi[Math.floor(fr() * koi.length)], c0 = col(pal[0]), c1 = col(pal[1]), sd = [fr(), fr(), fr()], len = 0.75 + fr() * 0.5, SEG = 6;
+        const prof = [0.02, 0.16, 0.2, 0.15, 0.08, 0.03, 0.2]; // largura do corpo do focinho à cauda (a última é a nadadeira)
+        for (let i = 0; i < SEG; i++) {
+          const z0 = (0.5 - i / SEG) * len, z1 = (0.5 - (i + 1) / SEG) * len, w0 = prof[i] * len, w1 = prof[i + 1] * len;
+          const cc = (fr() < 0.45 ? c1 : c0);
+          for (const v of [[-w0, z0], [w0, z0], [-w1, z1], [w0, z0], [w1, z1], [-w1, z1]]) { FP.push(v[0], 0, v[1]); FH.push(x, rad, z); FS.push(sd[0], sd[1], sd[2]); FC.push(cc.r, cc.g, cc.b); }
+        }
+        made++;
+      }
+      const fg = new T.BufferGeometry();
+      fg.setAttribute("position", new T.Float32BufferAttribute(FP, 3)); fg.setAttribute("aHome", new T.Float32BufferAttribute(FH, 3)); fg.setAttribute("aSeed", new T.Float32BufferAttribute(FS, 3)); fg.setAttribute("aCol", new T.Float32BufferAttribute(FC, 3));
+      const fm = mat(`uniform float uTime; attribute vec3 aHome, aSeed, aCol; varying vec3 vW; varying vec3 vC; varying float vA;
+        void main(){
+          float dirS=aSeed.x>0.5?1.0:-1.0;
+          float a=dirS*uTime*(0.16+aSeed.y*0.14)/max(aHome.y,0.6)*2.0+aSeed.z*6.28;
+          float rr=aHome.y*(1.0+0.25*sin(a*2.0+aSeed.x*8.0));
+          vec2 c=aHome.xz+vec2(cos(a),sin(a))*rr;
+          vec2 fw=dirS*vec2(-sin(a),cos(a));
+          vec3 p=position;
+          p.x+=sin(uTime*(3.2+aSeed.y*2.0)+p.z*4.5+aSeed.z*9.0)*0.09*(0.5-p.z);   // o rabo abana mais que a cabeça
+          vec3 w=vec3(c.x+p.x*fw.y+p.z*fw.x, 0.02, c.y-p.x*fw.x+p.z*fw.y);
+          vW=w; vC=aCol; vA=0.74+0.16*sin(uTime*0.5+aSeed.x*20.0);
+          gl_Position=projectionMatrix*viewMatrix*vec4(w,1.0);
+        }`, `${COMMON}
+        varying vec3 vW; varying vec3 vC; varying float vA;
+        void main(){ if(uReflect>0.5) discard; vec3 c=mix(vC*vec3(0.86,0.93,0.95),nightTint(vC)*1.4,uNight); gl_FragColor=vec4(applyFog(c,vW),vA*(1.0-uNight*0.45)); }`, {}, { transparent: true, depthWrite: false, side: T.DoubleSide });
+      const fish = new T.Mesh(fg, fm); fish.frustumCulled = false; fish.renderOrder = 2; rich.add(fish);
+    }
+  }
+
 
   /* ------------------------------------------------------------------ */
   /* Câmera, tema, laço                                                  */
@@ -2997,13 +3122,30 @@
     { dpr: Math.min(DPR, 1.25), refl: 0.26, grass: 0.65, reflEvery: 2 },
     { dpr: 1, refl: 0.22, grass: 0.5, reflEvery: 3 },
   ];
-  const Q = { level: small ? 1 : 0, frames: 0, acc: 0, n: 0, since: 0, good: 0 };
+  const Q = { level: small && peso < 2 ? 1 : 0, frames: 0, acc: 0, n: 0, since: 0, good: 0 };
+  let reflEvery = 1;
+  // o peso escolhido muda o ponto de partida; a qualidade automática continua valendo por cima dele
   function applyQuality() {
     const L = LEVELS[Q.level];
-    renderer.setPixelRatio(L.dpr); reflScale = L.refl;
-    [grass, flowers].forEach((m) => { if (m && m.geometry.userData.full) m.geometry.instanceCount = Math.round(m.geometry.userData.full * L.grass); });
+    let dpr = L.dpr, refl = L.refl, gk = L.grass; reflEvery = L.reflEvery;
+    if (peso === 0) { dpr = Math.min(dpr, small ? 0.9 : 1); refl = 0.18; reflEvery = 8; gk *= 0.42; }
+    if (peso === 2) { refl = Math.min(0.5, refl * 1.45); if (Q.level < 2) reflEvery = 1; }
+    renderer.setPixelRatio(dpr); reflScale = refl;
+    [grass, flowers].forEach((m) => { if (m && m.geometry.userData.full) m.geometry.instanceCount = Math.round((m.geometry.userData.full + (peso === 2 ? m.geometry.userData.extra || 0 : 0)) * gk); });
     resize();
   }
+  function setPeso(n, save) {
+    n = Math.max(0, Math.min(2, n | 0)); if (save) try { localStorage.setItem("vale-peso", PESOS[n]); } catch (e) { /* sem armazenamento */ }
+    const was = peso; peso = n; mid.visible = peso >= 1; rich.visible = peso >= 2; water.material.uniforms.uRich.value = peso >= 2 ? 1 : 0;
+    if (peso < 2) U.uShadows.value.forEach((v) => { v.w = 0; });
+    if (was !== peso) { Q.level = small && peso < 2 ? 1 : 0; Q.since = 0; Q.good = 0; }
+    applyQuality(); pesoFns.forEach((f) => f(peso)); pumpModels();
+    if (reduce || !running) { updateWorld(clock); render(); }
+  }
+  // a entrada (index.html) avisa a escolha; os modelos só começam a baixar depois dela
+  let pesoOk = !document.getElementById("loader");
+  window.addEventListener("vale:peso", (e) => { const k = PESOS.indexOf(e.detail && e.detail.peso); if (k >= 0) setPeso(k, false); if (e.detail && e.detail.ok) { pesoOk = true; if (modelsWait) startModels(); } });
+  let modelsWait = false;
   function measure(ms) {
     Q.acc += ms; Q.n++; Q.since += ms;
     if (Q.acc < 2000) return;
@@ -3015,7 +3157,7 @@
   function render() {
     sky.position.copy(camera.position);
     Q.frames++;
-    if (Q.frames % LEVELS[Q.level].reflEvery === 0) renderReflection();
+    if (Q.frames % reflEvery === 0) renderReflection();
     sky.position.copy(camera.position);
     renderer.render(scene, camera);
   }
@@ -3122,7 +3264,7 @@
   if ($("introSkip")) $("introSkip").addEventListener("click", skipFilm);
   // seek: posiciona a entrada num corte e num ponto do corte (usado para revisar quadros)
   let peekCam = null;
-  window.vale = { time: (v) => { if (v != null) clock = v; return clock; }, haku: () => hakuRef, dash: () => { if (catbusDash) catbusDash(); }, cam: (p, t) => { fixedCam = p ? { p: new T.Vector3(...p), t: new T.Vector3(...t) } : null; }, season: (n) => setSeason(n), dbg: () => ({ tp: tp.t, opened: tp.opened, running, active: explore.active, place: explore.place, k: explore.k }), toCover: () => { if (explore.active) exitExplore(true); }, info: () => ({ mem: Object.assign({}, renderer.info.memory), prog: renderer.info.programs ? renderer.info.programs.length : 0, calls: renderer.info.render.calls, tris: renderer.info.render.triangles, nodes: scene.children.length, grass: grass.geometry.instanceCount, flowers: flowers.geometry.instanceCount }), peek: (p, t) => { peekCam = p ? { p: new T.Vector3(p[0], p[1] + hillTop, p[2]), t: new T.Vector3(t[0], t[1] + hillTop, t[2]) } : null; }, star: (k) => meteors.launch(k || "vale"), playIntro, go: (id) => { if (!explore.active) startExplore(); go(id); }, seek(i, frac = 0.5) { if (!intro.active) playIntro(); startShot(i); intro.t = intro.shots[i].d * frac; } };
+  window.vale = { peso: (n) => { if (n != null) setPeso(n, false); return peso; }, time: (v) => { if (v != null) clock = v; return clock; }, haku: () => hakuRef, dash: () => { if (catbusDash) catbusDash(); }, cam: (p, t) => { fixedCam = p ? { p: new T.Vector3(...p), t: new T.Vector3(...t) } : null; }, season: (n) => setSeason(n), dbg: () => ({ tp: tp.t, opened: tp.opened, running, active: explore.active, place: explore.place, k: explore.k }), toCover: () => { if (explore.active) exitExplore(true); }, info: () => ({ mem: Object.assign({}, renderer.info.memory), prog: renderer.info.programs ? renderer.info.programs.length : 0, calls: renderer.info.render.calls, tris: renderer.info.render.triangles, nodes: scene.children.length, grass: grass.geometry.instanceCount, flowers: flowers.geometry.instanceCount }), peek: (p, t) => { peekCam = p ? { p: new T.Vector3(p[0], p[1] + hillTop, p[2]), t: new T.Vector3(t[0], t[1] + hillTop, t[2]) } : null; }, star: (k) => meteors.launch(k || "vale"), playIntro, go: (id) => { if (!explore.active) startExplore(); go(id); }, seek(i, frac = 0.5) { if (!intro.active) playIntro(); startShot(i); intro.t = intro.shots[i].d * frac; } };
 
 
   /* ------------------------------------------------------------------ */
@@ -3685,7 +3827,8 @@
     if (reduce) { updateWorld(clock); place(BASE.pos, BASE.target); render(); }
     else setRunning(true);
     new IntersectionObserver((es) => { visible = es[0].isIntersecting; setRunning(visible && !document.hidden); }).observe(canvas);
-    setTimeout(startModels, 1200);
+    setTimeout(() => { modelsWait = true; if (pesoOk) startModels(); }, 1200);
+    setTimeout(startModels, 30000);
     document.addEventListener("visibilitychange", () => setRunning(visible && !document.hidden));
     let rt2; addEventListener("resize", () => { clearTimeout(rt2); rt2 = setTimeout(() => { resize(); if (reduce || !running) { place(BASE.pos, BASE.target); render(); } }, 150); });
     if (reduce) {

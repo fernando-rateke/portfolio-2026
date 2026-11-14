@@ -73,6 +73,13 @@ Procure pelos nomes (as linhas mudam):
 - Qualidade automática: `LEVELS` + `applyQuality()` + `measure()` (baixa resolução, reflexo e grama se o FPS cai).
 - `window.vale` (para testes): `time(v)` lê ou fixa o relógio do vale, `haku()` devolve `hakuRef` (posição da cabeça em `.head`), `cam([x,y,z],[tx,ty,tz])` fixa a câmera (null solta), `go(id)`, `dash()` (salto do Gatobus), `peek`, `info()`, `star()`, `season(n)`.
 
+### Peso do vale (Leve / Médio / Completo)
+- Escolha na tela de carregamento (`.ld-peso` em index.html; clicar no idioma confirma e entra) e no botão `#pesoToggle` ao lado do idioma. Guardado em `localStorage["vale-peso"]` (`leve|medio|completo`). O script de index.html (`window.valePeso`) dispara o evento `vale:peso` com `{peso, ok}`; vale.js escuta, chama `setPeso(n)` e só começa a baixar modelos depois do `ok`.
+- Em vale.js: `peso` (0, 1, 2), grupos `mid` (o que o Leve esconde: Haku, nuvens 3D, fuligem, canto da Zeniba, balde, sapatos, Jiji, Gatobus) e `rich` (só Completo: borboletas e carpas). `loadModel(arquivo, cb, min)`: `min` é o peso mínimo para baixar (padrão 1; Totoro e barco usam 0). `applyQuality()` combina o peso com a qualidade automática (`LEVELS`).
+- Leve: resolução até 1x, reflexo raro e pequeno, 42% da grama e das flores, só Totoro e barco como modelos (trem e Cabeça de Nabo ficam nas versões feitas à mão).
+- Completo: grama e flores extras no primeiro plano da colina (`userData.extra`), reflexo maior a cada quadro, faíscas na água (`uRich`), sombras de contato (`shadowSrc` + `uShadows` + `contactShade` no GLSL comum, usadas no terreno e na grama), borboletas e carpas. Não há modelos com mais polígonos: os originais não estão no repositório.
+- Coisas novas pesadas: ponha em `mid` ou `rich`, ou teste `peso` no ator. `window.vale.peso(n)` troca nos testes.
+
 ### Modelos 3D no vale
 - `loadModel(file, cb)`: fila, carrega um por vez, só depois de `startModels()` (1,2 s após o vale aparecer). Erro num modelo não derruba o vale (vai para `console.warn("modelo", ...)`).
 - `valeize(root, {line, tint, glow, glowMats:{nomeMaterial: n}, glassGlow})`: troca os materiais do GLB pelo sombreamento do vale (`MODEL_VS/MODEL_FS`, faixas, neve, noite, névoa). Materiais com "outline"/"contour" no nome viram contorno (`LINE_FS`) mantendo o `side` original. Cor por vértice é lida como está (`color.rgb`).
@@ -128,10 +135,7 @@ Os créditos estão no rodapé da estação (`pf-credits` em vale.js) e na vers�
 Cada item: implementar, capturar de dia e de noite, desktop e celular (390 px), commit e push.
 
 1. ~~Haku animado~~ FEITO (ver seção 4). Ficou com ~9 mil triângulos e 2 chamadas de desenho (antes ~28 mil e ~130).
-2. **Entrada com idioma e peso.** Na tela de carregamento (bloco `.ld-lang` em index.html), além do idioma, escolher **Leve / Médio / Completo**, trocável depois (por exemplo um botão junto de EN e do tema). Guardar no `localStorage`.
-   - Médio = o vale como está hoje (incluindo a qualidade automática).
-   - Leve = menos grama e flores, resolução menor, sem reflexo ou reflexo raro, menos modelos (pular nuvens 3D, Haku, fuligem etc. ou versões mais simples).
-   - Completo = mais pesado e mais bonito, mas só detalhes que fazem diferença na tela (perto da câmera e nos lugares), nada de enfeite invisível no fundo da montanha. Exemplos: grama mais densa perto da câmera, modelos com mais polígonos perto, água melhor, mais vida (pássaros, peixes no lago, borboletas), sombras de contato.
+2. ~~Entrada com idioma e peso~~ FEITO (ver "Peso do vale" na seção 4).
 3. **Sons do lugar onde a câmera está**, baixinho por baixo da música: "pop-pop" do barco da Ponyo, chuva no ponto do Gatobus, ronco do Totoro na toca, vela crepitando na mesa da Zeniba, vento no capim. Não há arquivos de som: gerar no navegador (WebAudio). A música não muda.
 4. **Confeitos para a fuligem**: clicar/tocar no chão perto da Torre ou da Grande Árvore joga confeitos coloridos (konpeito); a fuligem larga as pedras e corre para pegá-los. Na Grande Árvore a fuligem é de sprites (procure `koda` e `soot` perto de `GT`), na Torre é o modelo 3D.
 5. **Haku descendo**: clicar no Haku faz ele mergulhar e passar rente à câmera, com as escamas brilhando. Digitar "Kohaku" (em qualquer momento, fora de campo de texto) faz ele aparecer na hora.

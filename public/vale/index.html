@@ -267,6 +267,21 @@ html, body { height: 100%; overflow: hidden; background: #0c0c0c; }
 .pc-footer .pf-lang h3 { width: 100%; margin: 0 0 2px; }
 .lang-toggle { pointer-events: auto; min-width: 44px; min-height: 40px; display: inline-flex; align-items: center; justify-content: center; font-family: var(--f-label); font-size: 0.72rem; letter-spacing: 0.14em; color: #fff; background: rgba(10, 20, 35, 0.32); border: 1px solid rgba(255,255,255,0.35); border-radius: 999px; padding: 8px 14px; cursor: pointer; backdrop-filter: blur(6px); }
 .lang-toggle:hover, .lang-toggle:focus-visible { background: rgba(10, 20, 35, 0.5); }
+.ld-peso { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 18px; }
+.ld-peso small { font: 500 0.66rem/1.4 var(--f-label); letter-spacing: 0.2em; text-transform: uppercase; opacity: 0.8; }
+.ld-peso div { display: flex; border: 1px solid rgba(244,235,221,0.3); border-radius: 999px; padding: 3px; gap: 2px; }
+.ld-peso button { min-height: 44px; min-width: 92px; padding: 6px 14px; border-radius: 999px; border: 0; background: transparent; color: #F4EBDD; font: 600 0.9rem/1.1 var(--f-display); cursor: pointer; transition: background .2s, color .2s; }
+.ld-peso button i { display: block; margin-top: 3px; font: 500 0.56rem/1 var(--f-label); font-style: normal; letter-spacing: 0.16em; text-transform: uppercase; opacity: 0.6; }
+.ld-peso button:hover, .ld-peso button:focus-visible { background: rgba(244,235,221,0.1); }
+.ld-peso button[aria-pressed="true"] { background: #F4EBDD; color: #151A26; }
+.ld-peso p { margin: 0; min-height: 2.6em; max-width: 320px; padding: 0 12px; text-align: center; font: 400 0.8rem/1.3 var(--f-display); opacity: 0.75; }
+.peso-toggle { pointer-events: auto; min-width: 44px; min-height: 40px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-family: var(--f-label); font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: #fff; background: rgba(10, 20, 35, 0.32); border: 1px solid rgba(255,255,255,0.35); border-radius: 999px; padding: 8px 14px; cursor: pointer; backdrop-filter: blur(6px); }
+.peso-toggle:hover, .peso-toggle:focus-visible { background: rgba(10, 20, 35, 0.5); }
+.peso-toggle svg { width: 18px; height: 18px; }
+.peso-toggle svg rect { opacity: 0.3; }
+.peso-toggle[data-peso="leve"] svg rect:nth-child(1), .peso-toggle[data-peso="medio"] svg rect:nth-child(-n+2), .peso-toggle[data-peso="completo"] svg rect { opacity: 1; }
+@media (max-width: 760px) { .peso-toggle span { display: none; } .peso-toggle { padding: 8px 12px; } }
+@media (max-width: 430px) { .hero-actions { gap: 6px; flex-wrap: nowrap; } .hero-actions .sound-toggle, .hero-actions .theme-toggle { padding-right: 10px; gap: 7px; letter-spacing: 0.08em; } .peso-toggle { padding: 8px 10px; } .hero-actions .lang-toggle { padding: 8px 10px; } }
 .ld-lang { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: 22px; }
 .ld-lang small { font: 500 0.66rem/1.4 var(--f-label); letter-spacing: 0.2em; text-transform: uppercase; opacity: 0.8; text-align: center; }
 .loader.ready:not(.chosen) .ld-lang button { animation: ldpulse 1.6s ease-in-out infinite; }
@@ -863,6 +878,11 @@ a.q { text-decoration: none; }
   <p class="ld-name">Rateke</p>
   <div class="ld-bar"><i id="loaderBar"></i></div>
   <p class="ld-msg" id="loaderMsg" role="status" aria-live="polite">Preparando o vale</p>
+  <div class="ld-peso" role="group" aria-label="Peso do vale · Detail level" data-noi18n>
+    <small>Peso do vale · Detail</small>
+    <div><button type="button" data-peso="leve" aria-pressed="false">Leve<i>Light</i></button><button type="button" data-peso="medio" aria-pressed="true">Médio<i>Balanced</i></button><button type="button" data-peso="completo" aria-pressed="false">Completo<i>Full</i></button></div>
+    <p id="ldPesoHint"></p>
+  </div>
   <div class="ld-lang" role="group" aria-label="Idioma · Language" data-noi18n>
     <small>Escolha o idioma · Choose your language</small>
     <div><button type="button" data-lang="pt" aria-pressed="true" lang="pt-BR">Português</button><button type="button" data-lang="en" aria-pressed="false" lang="en">English</button></div>
@@ -909,6 +929,7 @@ a.q { text-decoration: none; }
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.6L12.5 5v14l-4.9-4.5H4z"/><path class="wave" d="M15.8 9a4.2 4.2 0 0 1 0 6"/><path class="wave" d="M18.4 6.5a7.6 7.6 0 0 1 0 11"/></svg>
         <span id="soundLabel">Ouvir o tema</span>
       </button>
+      <button class="peso-toggle" id="pesoToggle" type="button" data-peso="medio"><svg viewBox="0 0 18 18" fill="currentColor" aria-hidden="true"><rect x="2" y="11" width="3.4" height="5" rx="1"/><rect x="7.3" y="7" width="3.4" height="9" rx="1"/><rect x="12.6" y="2.5" width="3.4" height="13.5" rx="1"/></svg><span id="pesoLabel">Médio</span></button>
       <button class="lang-toggle" type="button" data-lang-toggle data-noi18n aria-label="View in English">EN</button>
       <button class="theme-toggle" id="themeToggle" type="button" aria-label="Trocar entre dia, fim de tarde e noite">
         <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.3 5.3l1.7 1.7M17 17l1.7 1.7M5.3 18.7 7 17M17 7l1.7-1.7"/></svg>
@@ -1274,6 +1295,31 @@ a.q { text-decoration: none; }
 
 
 <script>
+/* peso do vale: leve, médio ou completo. Escolhido na entrada, guardado no navegador, trocável pelo botão ao lado do idioma */
+(() => {
+  const KEY = "vale-peso", ORDER = ["leve", "medio", "completo"], NAMES = { leve: "Leve", medio: "Médio", completo: "Completo" };
+  const HINT = {
+    leve: "Para celular antigo ou internet lenta: menos grama, menos modelos. · For older phones or slow connections.",
+    medio: "O vale como ele é. · The valley as it is.",
+    completo: "Grama mais densa, sombras, borboletas, carpas e água com brilho. · Denser grass, shadows, butterflies, koi and sparkling water.",
+  };
+  let peso = "medio"; try { const s = localStorage.getItem(KEY); if (ORDER.includes(s)) peso = s; } catch (e) { /* sem storage */ }
+  const tog = document.getElementById("pesoToggle"), lab = document.getElementById("pesoLabel"), hint = document.getElementById("ldPesoHint");
+  const btns = [...document.querySelectorAll(".ld-peso [data-peso]")];
+  const sync = () => {
+    btns.forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.peso === peso)));
+    if (hint) hint.textContent = HINT[peso];
+    if (tog) { tog.dataset.peso = peso; lab.textContent = NAMES[peso]; tog.setAttribute("aria-label", "Peso do vale: " + NAMES[peso] + ". Trocar"); tog.title = "Peso do vale: " + NAMES[peso]; }
+  };
+  const set = (p, ok) => {
+    peso = p; try { localStorage.setItem(KEY, p); } catch (e) { /* sem storage */ }
+    sync(); window.dispatchEvent(new CustomEvent("vale:peso", { detail: { peso: p, ok: !!ok } }));
+  };
+  btns.forEach((b) => b.addEventListener("click", () => set(b.dataset.peso, false)));
+  if (tog) tog.addEventListener("click", () => set(ORDER[(ORDER.indexOf(peso) + 1) % 3], true));
+  window.valePeso = { get: () => peso, set, confirm: () => set(peso, true) };
+  sync();
+})();
 /* carregamento: barra avança com os arquivos e some quando o vale está pronto (o selo fica pelo menos 3 s) */
 (() => {
   const ld = document.getElementById("loader"); if (!ld) return;
@@ -1289,7 +1335,7 @@ a.q { text-decoration: none; }
   };
   const done = () => { if (ready) return; ready = true; clearInterval(tick); bar.style.width = "100%"; ld.classList.add("ready"); finish(); };
   const langBtns = [...ld.querySelectorAll("[data-lang]")];
-  langBtns.forEach((b) => b.addEventListener("click", () => { chosen = true; ld.classList.add("chosen"); langBtns.forEach((x) => x.setAttribute("aria-pressed", String(x === b))); finish(); }));
+  langBtns.forEach((b) => b.addEventListener("click", () => { chosen = true; ld.classList.add("chosen"); langBtns.forEach((x) => x.setAttribute("aria-pressed", String(x === b))); if (window.valePeso) window.valePeso.confirm(); finish(); }));
   let saved = null; try { saved = localStorage.getItem("vale-lang"); } catch (e) { /* sem storage */ }
   const pre = langBtns.find((b) => b.dataset.lang === (saved === "en" ? "en" : "pt"));
   if (pre) try { pre.focus({ preventScroll: true }); } catch (e) { /* */ }

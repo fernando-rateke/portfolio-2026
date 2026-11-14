@@ -80,6 +80,11 @@ Procure pelos nomes (as linhas mudam):
 - Completo: grama e flores extras no primeiro plano da colina (`userData.extra`), reflexo maior a cada quadro, faíscas na água (`uRich`), sombras de contato (`shadowSrc` + `uShadows` + `contactShade` no GLSL comum, usadas no terreno e na grama), borboletas e carpas. Não há modelos com mais polígonos: os originais não estão no repositório.
 - Coisas novas pesadas: ponha em `mid` ou `rich`, ou teste `peso` no ator. `window.vale.peso(n)` troca nos testes.
 
+### Sons do lugar (vale.js, procure `ambGraph`)
+- Tudo gerado com WebAudio, sem arquivos: vento no capim (segue a rajada), chuva no ponto do Gatobus, "pop-pop" do barco, ronco do Totoro sob a Grande Árvore, vela da Zeniba. Só tocam com o botão "Ouvir o tema" ligado, calam quando um mundo abre.
+- O volume de cada um depende da distância da câmera (ou do ponto para onde ela olha) até o objeto: `amb.boat`, `amb.totoro`, `amb.candle`, `amb.rain`/`amb.rainPos` são preenchidos nos blocos dos modelos. Para um som novo: crie o ganho em `ambGraph`, some um nível em `levels` no ator.
+- Teste sem ouvir: `await window.vale.amb().test("wind"|"rain"|"pop"|"breath"|"crackle")` devolve pico e média com ganho 1; `window.vale.amb().levels` mostra o ganho atual de cada som.
+
 ### Modelos 3D no vale
 - `loadModel(file, cb)`: fila, carrega um por vez, só depois de `startModels()` (1,2 s após o vale aparecer). Erro num modelo não derruba o vale (vai para `console.warn("modelo", ...)`).
 - `valeize(root, {line, tint, glow, glowMats:{nomeMaterial: n}, glassGlow})`: troca os materiais do GLB pelo sombreamento do vale (`MODEL_VS/MODEL_FS`, faixas, neve, noite, névoa). Materiais com "outline"/"contour" no nome viram contorno (`LINE_FS`) mantendo o `side` original. Cor por vértice é lida como está (`color.rgb`).
@@ -136,7 +141,7 @@ Cada item: implementar, capturar de dia e de noite, desktop e celular (390 px), 
 
 1. ~~Haku animado~~ FEITO (ver seção 4). Ficou com ~9 mil triângulos e 2 chamadas de desenho (antes ~28 mil e ~130).
 2. ~~Entrada com idioma e peso~~ FEITO (ver "Peso do vale" na seção 4).
-3. **Sons do lugar onde a câmera está**, baixinho por baixo da música: "pop-pop" do barco da Ponyo, chuva no ponto do Gatobus, ronco do Totoro na toca, vela crepitando na mesa da Zeniba, vento no capim. Não há arquivos de som: gerar no navegador (WebAudio). A música não muda.
+3. ~~Sons do lugar~~ FEITO (ver "Sons do lugar" na seção 4). Ninguém ouviu ainda: os volumes foram medidos por número, o dono precisa escutar e dizer se quer mais alto ou mais baixo.
 4. **Confeitos para a fuligem**: clicar/tocar no chão perto da Torre ou da Grande Árvore joga confeitos coloridos (konpeito); a fuligem larga as pedras e corre para pegá-los. Na Grande Árvore a fuligem é de sprites (procure `koda` e `soot` perto de `GT`), na Torre é o modelo 3D.
 5. **Haku descendo**: clicar no Haku faz ele mergulhar e passar rente à câmera, com as escamas brilhando. Digitar "Kohaku" (em qualquer momento, fora de campo de texto) faz ele aparecer na hora.
 6. **Totoro com guarda-chuva**: quando a chuva do ponto do Gatobus começar, o Totoro sob a Grande Árvore abre um guarda-chuva preto (fazer à mão). Gotas caem dos galhos e fazem barulho; clicar no Totoro faz ele pular e cair toda a água da árvore de uma vez.

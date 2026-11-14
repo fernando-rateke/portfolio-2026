@@ -1645,6 +1645,7 @@
   const HILL = { x: 6, z: 18 };
   const charLine = outlineMat(0.011, "#2A211D");
   const actors = [];
+  const amb = {}; // de onde vêm os sons do lugar (preenchido pelos blocos abaixo): boat, totoro, candle, rain, rainPos
   const shadowSrc = []; // quem faz sombra de contato no chão (peso completo): { o: objeto, r: raio, k: força }
   actors.push((t) => { driftClouds.forEach((g) => { const span = 760; g.position.x = ((g.userData.x0 + 380 + t * g.userData.sp) % span + span) % span - 380; }); });
 
@@ -1858,7 +1859,7 @@
 
   // Barco da Ponyo: dá voltas no lago perto da estação, com a vela acesa e um rastro de ondinhas
   {
-    const L = LAKES[2], boat = new T.Group(); boat.visible = false; scene.add(boat);
+    const L = LAKES[2], boat = new T.Group(); boat.visible = false; scene.add(boat); amb.boat = boat;
     const flame = glowSprite("#FFB65C", 1.1), core = glowSprite("#FFF1C8", 0.42);
     const wakeMat = new T.MeshBasicMaterial({ color: col("#EAF4F6"), transparent: true, depthWrite: false, opacity: 0, fog: false });
     const wakeGeo = new T.RingGeometry(0.82, 1, 28).rotateX(-Math.PI / 2);
@@ -1909,7 +1910,7 @@
     const S = 0.014, top = 75 * S, sy = STATION.y;
     let ox = STATION.x - 13.6, oz = STATION.z + 0.6;
     for (let k = 0; k < 12 && heightAt(ox, oz) < 0.16; k++) oz -= 0.35; // fica na terra seca, nunca dentro do lago
-    const corner = new T.Group(); corner.position.set(ox, heightAt(ox, oz) - 0.02, oz); corner.rotation.y = 0.18; corner.visible = false; mid.add(corner);
+    const corner = new T.Group(); corner.position.set(ox, heightAt(ox, oz) - 0.02, oz); corner.rotation.y = 0.18; corner.visible = false; mid.add(corner); amb.candle = corner;
     const herbs = new T.Group(); herbs.position.set(STATION.x + 1.2, sy + 1.62, STATION.z - 0.9); herbs.scale.setScalar(2); herbs.visible = false; mid.add(herbs); // ervas grandes o bastante para ler de longe
     const flame = glowSprite("#FFB65C", 0.5), flameCore = glowSprite("#FFF1C8", 0.16);
     const steam = []; for (let i = 0; i < 4; i++) { const sp = glowSprite("#FFFFFF", 0.22); sp.material.blending = T.NormalBlending; steam.push({ sp, ph: i / 4 }); }
@@ -1954,7 +1955,7 @@
     const x = GT.x + 3.4, z = GT.z + 8.8, g = new T.Group(); g.visible = false; scene.add(g);
     g.position.set(x, heightAt(x, z) - 0.05, z); g.rotation.y = Math.atan2(HILL.x - x, HILL.z - z) * 0.6;
     loadModel("totoro.glb", (m) => { valeize(m, { line: "#3A3F48" }); fitModel(m, 3.6); g.add(m); g.visible = true; if (reduce) render(); }, 0);
-    shadowSrc.push({ o: g, r: 3.4, k: 0.34 });
+    shadowSrc.push({ o: g, r: 3.4, k: 0.34 }); amb.totoro = g;
     // respira devagar e de vez em quando balança o corpo, como quem espera a chuva passar
     actors.push((t) => { if (!g.visible) return; const b = Math.sin(t * 1.1); g.scale.set(1 + b * 0.012, 1 - b * 0.01, 1 + b * 0.012); g.rotation.z = Math.sin(t * 0.37) * 0.025; });
   }
@@ -1979,7 +1980,7 @@
     for (let i = 0; i < RN; i++) { rs[i] = Math.random(); const x = (Math.random() - 0.5) * 22, z = (Math.random() - 0.5) * 14, y = Math.random() * 12; rp.set([x, y, z, x - 0.05, y - 0.6, z], i * 6); }
     const rg = new T.BufferGeometry(); rg.setAttribute("position", new T.BufferAttribute(rp, 3));
     const rain = new T.LineSegments(rg, new T.LineBasicMaterial({ color: col("#C9D6E4"), transparent: true, opacity: 0, depthWrite: false, fog: false }));
-    rain.position.set(STOP.x - 4, STATION.y, STOP.z); rain.visible = false; rain.frustumCulled = false; mid.add(rain);
+    rain.position.set(STOP.x - 4, STATION.y, STOP.z); rain.visible = false; rain.frustumCulled = false; mid.add(rain); amb.rain = rain; amb.rainPos = STOP;
     let ready = false, scaleK = 1;
     loadModel("gatobus.glb", (m) => {
       valeize(m, { line: "#3A2414" });
@@ -2862,6 +2863,104 @@
 
 
   /* ------------------------------------------------------------------ */
+  /* Sons do lugar: baixinho, por baixo da música, feitos no navegador   */
+  /* (WebAudio). Só tocam com o som ligado (botão "Ouvir o tema").       */
+  /* ------------------------------------------------------------------ */
+  // monta os sons num contexto de áudio (o de verdade ou um offline, nos testes) e devolve os controles
+  function ambGraph(ctx, out) {
+    const SR = ctx.sampleRate, nb = ctx.createBuffer(1, SR * 3, SR), nd = nb.getChannelData(0);
+    for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
+    const loop = (rate = 1) => { const q = ctx.createBufferSource(); q.buffer = nb; q.loop = true; q.playbackRate.value = rate; q.start(0, Math.random() * 2); return q; };
+    const G = (v = 0) => { const g = ctx.createGain(); g.gain.value = v; return g; };
+    const F = (type, f, q = 0.7) => { const b = ctx.createBiquadFilter(); b.type = type; b.frequency.value = f; b.Q.value = q; return b; };
+    const chain = (...n) => { for (let i = 0; i + 1 < n.length; i++) n[i].connect(n[i + 1]); return n[n.length - 1]; };
+    const burst = (t, dur) => { const q = ctx.createBufferSource(); q.buffer = nb; q.start(t, Math.random() * 2.5, dur + 0.02); return q; };
+    const wind = G(), rain = G(), boat = G(), snore = G(), candle = G();
+    [wind, rain, boat, snore, candle].forEach((g) => g.connect(out));
+    // vento no capim: ruído passado por um filtro que abre e fecha com a rajada
+    const windBp = F("bandpass", 420, 0.6); chain(loop(), windBp, F("lowpass", 1100), G(1.6), wind);
+    chain(loop(0.7), F("highpass", 2600), F("lowpass", 5200), G(0.22), wind); // o chiado das folhas
+    // chuva: chiado fino e um corpo mais grave das gotas no chão
+    chain(loop(1.3), F("highpass", 1700), F("lowpass", 7500), G(0.75), rain);
+    chain(loop(), F("bandpass", 480, 0.8), G(1.1), rain);
+    return {
+      wind, rain, boat, snore, candle, windBp,
+      // "pop" do motorzinho a vela do barco: batida grave e curta com um estalo por cima
+      pop(t, k = 1) {
+        const o = ctx.createOscillator(), g = G(); o.type = "sine"; o.frequency.setValueAtTime(190, t); o.frequency.exponentialRampToValueAtTime(74, t + 0.07);
+        g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.9 * k, t + 0.004); g.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+        chain(o, g, boat); o.start(t); o.stop(t + 0.14);
+        const g2 = G(); g2.gain.setValueAtTime(0.5 * k, t); g2.gain.exponentialRampToValueAtTime(0.001, t + 0.035); chain(burst(t, 0.04), F("bandpass", 1150, 1.3), g2, boat);
+      },
+      // ronco do Totoro: puxa o ar tremendo (grave) e solta devagar
+      breath(t) {
+        const g = G(), trem = G(0.55), lfo = ctx.createOscillator(), lg = G(0.45); lfo.type = "sawtooth"; lfo.frequency.setValueAtTime(21, t); lfo.frequency.linearRampToValueAtTime(27, t + 1.6);
+        chain(lfo, lg); lg.connect(trem.gain); lfo.start(t); lfo.stop(t + 1.9);
+        g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(1, t + 0.9); g.gain.linearRampToValueAtTime(0, t + 1.75);
+        chain(burst(t, 1.8), F("bandpass", 150, 1.1), F("lowpass", 420), trem, G(5), g, snore);
+        const o = ctx.createOscillator(), og = G(); o.type = "triangle"; o.frequency.setValueAtTime(52, t); o.frequency.linearRampToValueAtTime(61, t + 1.5);
+        og.gain.setValueAtTime(0, t); og.gain.linearRampToValueAtTime(0.22, t + 0.9); og.gain.linearRampToValueAtTime(0, t + 1.7); chain(o, og, trem); o.start(t); o.stop(t + 1.8);
+        const e = G(), t2 = t + 2.05; e.gain.setValueAtTime(0, t2); e.gain.linearRampToValueAtTime(0.5, t2 + 0.45); e.gain.linearRampToValueAtTime(0, t2 + 1.9);
+        chain(burst(t2, 2), F("bandpass", 520, 0.7), F("lowpass", 900), G(1.6), e, snore);
+      },
+      // vela: estalinhos soltos, um ou outro mais forte
+      crackle(t, k) {
+        const g = G(), d = 0.004 + Math.random() * 0.012; g.gain.setValueAtTime(k, t); g.gain.exponentialRampToValueAtTime(0.001, t + d);
+        chain(burst(t, d), F("highpass", 1800 + Math.random() * 2500), g, candle);
+      },
+    };
+  }
+  {
+    const btn = document.getElementById("soundToggle");
+    const A = window.AudioContext || window.webkitAudioContext;
+    let ctx = null, S = null, master = null, muted = false, nPop = 0, popI = 0, nBreath = 0, nCrack = 0;
+    const on = () => !!btn && btn.getAttribute("aria-pressed") === "true";
+    const wake = () => {
+      if (!A || !on()) { if (master) master.gain.setTargetAtTime(0, ctx.currentTime, 0.3); return; }
+      try {
+        if (!ctx) { ctx = new A(); master = ctx.createGain(); master.gain.value = 0; master.connect(ctx.destination); S = ambGraph(ctx, master); amb.ctx = ctx; }
+        if (ctx.state === "suspended") ctx.resume();
+        master.gain.setTargetAtTime(muted ? 0 : 0.8, ctx.currentTime, 0.6);
+      } catch (e) { /* sem áudio */ }
+    };
+    if (btn) { btn.addEventListener("click", () => setTimeout(wake, 0)); new MutationObserver(wake).observe(btn, { attributes: true, attributeFilter: ["aria-pressed"] }); }
+    window.addEventListener("mundo", (e) => { muted = e.detail === "open"; wake(); });
+    document.addEventListener("visibilitychange", () => { if (ctx && master) master.gain.setTargetAtTime(document.hidden || muted || !on() ? 0 : 0.8, ctx.currentTime, 0.3); });
+    const wp = new T.Vector3();
+    // quanto do som chega: perto da câmera ou perto do ponto para onde ela olha
+    const near = (o, R) => { if (!o) return 0; if (o.isVector3) wp.copy(o); else { if (!o.visible || (o.parent === mid && !mid.visible)) return 0; o.getWorldPosition(wp); } const d = Math.min(wp.distanceTo(camera.position), wp.distanceTo(lastTgt) * 1.15), k = Math.max(0, 1 - d / R); return k * k; };
+    const levels = { wind: 0, rain: 0, boat: 0, snore: 0, candle: 0 };
+    amb.levels = levels;
+    actors.push((t) => {
+      const gst = 0.5 + 0.5 * Math.sin(t * 0.55 + Math.sin(t * 0.21) * 2.0);
+      const hill = Math.max(0, 1 - Math.hypot(camera.position.x - HILL.x, camera.position.z - HILL.z) / 70), low = Math.max(0, 1 - camera.position.y / 90);
+      levels.wind = (0.06 + 0.14 * hill) * (0.45 + 0.55 * gst) * (0.4 + 0.6 * low);
+      levels.rain = amb.rain ? near(amb.rainPos, 70) * Math.min(1, amb.rain.material.opacity / 0.4) * (amb.rain.visible && mid.visible ? 0.2 : 0) : 0;
+      levels.boat = near(amb.boat, 48) * 0.3;
+      levels.snore = near(amb.totoro, 42) * 0.34;
+      levels.candle = near(amb.candle, 26) * 0.3 * (0.6 + 0.4 * Math.max(U.uNight.value, U.uDusk.value));
+      if (!ctx || !S || ctx.state !== "running" || !on()) return;
+      const now = ctx.currentTime;
+      for (const k in levels) S[k].gain.setTargetAtTime(levels[k], now, 0.35);
+      S.windBp.frequency.setTargetAtTime(330 + gst * 330, now, 0.5);
+      if (levels.boat > 0.002) { if (nPop < now) nPop = now + 0.05; while (nPop < now + 0.3) { S.pop(nPop, popI % 2 ? 0.7 : 1); nPop += popI++ % 2 ? 0.37 : 0.17; } }
+      if (levels.snore > 0.002) { if (nBreath < now) nBreath = now + 0.1; while (nBreath < now + 0.3) { S.breath(nBreath); nBreath += 4.5; } }
+      if (levels.candle > 0.002) { if (nCrack < now) nCrack = now + 0.05; while (nCrack < now + 0.3) { S.crackle(nCrack, Math.random() < 0.12 ? 0.9 : 0.15 + Math.random() * 0.3); nCrack += 0.03 - Math.log(1 - Math.random() * 0.98) * 0.16; } }
+    });
+    // teste: toca 6 s de um som num contexto offline e mede o volume (pico e média)
+    amb.test = async (kind) => {
+      const O = window.OfflineAudioContext || window.webkitOfflineAudioContext, oc = new O(1, 44100 * 6, 44100), X = ambGraph(oc, oc.destination);
+      X[kind === "pop" ? "boat" : kind === "breath" ? "snore" : kind === "crackle" ? "candle" : kind].gain.value = 1;
+      if (kind === "pop") for (let q = 0, i = 0; q < 5.8; q += i++ % 2 ? 0.37 : 0.17) X.pop(q, i % 2 ? 0.7 : 1);
+      if (kind === "breath") X.breath(0.1);
+      if (kind === "crackle") for (let q = 0; q < 5.9; q += 0.03 - Math.log(1 - Math.random() * 0.98) * 0.16) X.crackle(q, Math.random() < 0.12 ? 0.9 : 0.15 + Math.random() * 0.3);
+      const d = (await oc.startRendering()).getChannelData(0); let pk = 0, sq = 0; for (let i = 0; i < d.length; i++) { const v = Math.abs(d[i]); if (v > pk) pk = v; sq += v * v; }
+      return { pico: +pk.toFixed(3), media: +Math.sqrt(sq / d.length).toFixed(4) };
+    };
+  }
+
+
+  /* ------------------------------------------------------------------ */
   /* Câmera, tema, laço                                                  */
   /* ------------------------------------------------------------------ */
   const hillTop = heightAt(HILL.x, HILL.z);
@@ -3264,7 +3363,7 @@
   if ($("introSkip")) $("introSkip").addEventListener("click", skipFilm);
   // seek: posiciona a entrada num corte e num ponto do corte (usado para revisar quadros)
   let peekCam = null;
-  window.vale = { peso: (n) => { if (n != null) setPeso(n, false); return peso; }, time: (v) => { if (v != null) clock = v; return clock; }, haku: () => hakuRef, dash: () => { if (catbusDash) catbusDash(); }, cam: (p, t) => { fixedCam = p ? { p: new T.Vector3(...p), t: new T.Vector3(...t) } : null; }, season: (n) => setSeason(n), dbg: () => ({ tp: tp.t, opened: tp.opened, running, active: explore.active, place: explore.place, k: explore.k }), toCover: () => { if (explore.active) exitExplore(true); }, info: () => ({ mem: Object.assign({}, renderer.info.memory), prog: renderer.info.programs ? renderer.info.programs.length : 0, calls: renderer.info.render.calls, tris: renderer.info.render.triangles, nodes: scene.children.length, grass: grass.geometry.instanceCount, flowers: flowers.geometry.instanceCount }), peek: (p, t) => { peekCam = p ? { p: new T.Vector3(p[0], p[1] + hillTop, p[2]), t: new T.Vector3(t[0], t[1] + hillTop, t[2]) } : null; }, star: (k) => meteors.launch(k || "vale"), playIntro, go: (id) => { if (!explore.active) startExplore(); go(id); }, seek(i, frac = 0.5) { if (!intro.active) playIntro(); startShot(i); intro.t = intro.shots[i].d * frac; } };
+  window.vale = { amb: () => amb, peso: (n) => { if (n != null) setPeso(n, false); return peso; }, time: (v) => { if (v != null) clock = v; return clock; }, haku: () => hakuRef, dash: () => { if (catbusDash) catbusDash(); }, cam: (p, t) => { fixedCam = p ? { p: new T.Vector3(...p), t: new T.Vector3(...t) } : null; }, season: (n) => setSeason(n), dbg: () => ({ tp: tp.t, opened: tp.opened, running, active: explore.active, place: explore.place, k: explore.k }), toCover: () => { if (explore.active) exitExplore(true); }, info: () => ({ mem: Object.assign({}, renderer.info.memory), prog: renderer.info.programs ? renderer.info.programs.length : 0, calls: renderer.info.render.calls, tris: renderer.info.render.triangles, nodes: scene.children.length, grass: grass.geometry.instanceCount, flowers: flowers.geometry.instanceCount }), peek: (p, t) => { peekCam = p ? { p: new T.Vector3(p[0], p[1] + hillTop, p[2]), t: new T.Vector3(t[0], t[1] + hillTop, t[2]) } : null; }, star: (k) => meteors.launch(k || "vale"), playIntro, go: (id) => { if (!explore.active) startExplore(); go(id); }, seek(i, frac = 0.5) { if (!intro.active) playIntro(); startShot(i); intro.t = intro.shots[i].d * frac; } };
 
 
   /* ------------------------------------------------------------------ */

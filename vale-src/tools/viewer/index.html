@@ -1,0 +1,15 @@
+<!doctype html><html><body style="margin:0;background:#cfd8e0"><canvas id="c" width="1200" height="800"></canvas>
+<script src="bundle.js"></script>
+<script>
+const T = THREE; const r = new T.WebGLRenderer({ canvas: document.getElementById('c'), antialias: true }); r.outputEncoding = T.sRGBEncoding; r.setClearColor(0xcfd8e0);
+const sc = new T.Scene(); sc.add(new T.HemisphereLight(0xffffff, 0x667788, 1.1)); const dl = new T.DirectionalLight(0xffffff, 1.1); dl.position.set(3, 5, 4); sc.add(dl);
+const cam = new T.PerspectiveCamera(35, 1.5, 0.001, 5000);
+let obj = null;
+window.load = (url, kind) => new Promise((res) => {
+  const done = (o) => { if (obj) sc.remove(obj); obj = o; sc.add(o); const b = new T.Box3().setFromObject(o); const s = b.getSize(new T.Vector3()), c = b.getCenter(new T.Vector3()); window.fit = { c: c.toArray(), r: s.length() / 2, size: s.toArray() }; res(window.fit); };
+  if (kind === 'dae') new ColladaLoader().load(url, (d) => done(d.scene), undefined, (e) => res({ err: String(e) }));
+  else new GLTFLoader().load(url, (g) => done(g.scene), undefined, (e) => res({ err: String(e) }));
+});
+window.shot = (az, el) => { const f = window.fit, c = new T.Vector3(...f.c), d = f.r * 2.6; cam.position.set(c.x + Math.sin(az) * Math.cos(el) * d, c.y + Math.sin(el) * d, c.z + Math.cos(az) * Math.cos(el) * d); cam.near = d / 200; cam.far = d * 20; cam.updateProjectionMatrix(); cam.lookAt(c); r.render(sc, cam); };
+window.ready = true;
+</script></body></html>

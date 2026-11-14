@@ -1,0 +1,10 @@
+{ "ratio": 0.35, "error": 0.004, "texSize": 1024, "materials": {
+  "pasted__aiStandardSurface1": { "tex": "/tmp/claude-0/-home-user-portfolio-2026/67f3479a-410f-564b-a6a8-c5db2b9ab3c1/scratchpad/ana/z_train/textures/lambert18SG_Base_color.png" },
+  "pasted__aiStandardSurface2": { "tex": "/tmp/claude-0/-home-user-portfolio-2026/67f3479a-410f-564b-a6a8-c5db2b9ab3c1/scratchpad/ana/z_train/textures/lambert19SG_Base_color.png" },
+  "pasted__aiStandardSurface5": { "tex": "/tmp/claude-0/-home-user-portfolio-2026/67f3479a-410f-564b-a6a8-c5db2b9ab3c1/scratchpad/ana/z_train/textures/Doors_Base_color.png" },
+  "pasted__standardSurface2": { "tex": "/tmp/claude-0/-home-user-portfolio-2026/67f3479a-410f-564b-a6a8-c5db2b9ab3c1/scratchpad/ana/z_train/textures/Sign_Base_color.png" },
+  "pasted__lambert20": { "tex": "/tmp/claude-0/-home-user-portfolio-2026/67f3479a-410f-564b-a6a8-c5db2b9ab3c1/scratchpad/ana/z_train/textures/Sign1_Base_color.png" },
+  "pasted__aiStandardSurface3": { "color": [1.0, 0.85, 0.55, 1] },
+  "pasted__aiStandardSurface4": { "color": [0.25, 0.22, 0.2, 1] },
+  "pasted__lambert21": { "color": [0.55, 0.7, 0.78, 1], "alpha": 0.35 }
+} }

@@ -19,7 +19,7 @@ const nextConfig: NextConfig = {
     const cache = [{ key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" }];
     return [
       { source: "/vale/three.min.js", headers: cache },
-      { source: "/vale/:dir(audio|nos|perfil|grim|trem)/:file*", headers: cache },
+      { source: "/vale/:dir(audio|nos|perfil|grim|trem|modelos)/:file*", headers: cache },
     ];
   },
   // Rotas antigas que eram apenas apelidos de outras páginas

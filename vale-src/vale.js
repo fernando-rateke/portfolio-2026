@@ -1648,19 +1648,190 @@
     return (color, size) => { const sp = new T.Sprite(new T.SpriteMaterial({ map: tex, color: col(color), transparent: true, depthWrite: false, blending: T.AdditiveBlending, fog: false })); sp.scale.setScalar(size); return sp; };
   })();
 
-  // Haku: atravessa o céu em curvas de serpente, sem pressa
+  // Haku: voa como serpente. O corpo, a crina e os bigodes são feitos à mão e seguem a curva do voo;
+  // do modelo só vêm a cabeça (com olhos, orelhas e chifres) e a pata (haku-partes.glb, ver tools/prep/haku.mjs).
+  // Tudo vira uma malha só, dobrada na CPU a cada quadro: o corpo passa por onde a cabeça passou
+  // e uma onda desce da nuca até a ponta da cauda.
+  const HAKU_FS = `${COMMON}${NOISE}
+    uniform float uShine;
+    varying vec3 vW; varying vec3 vN; varying vec2 vUv; varying vec3 vC;
+    void main(){
+      if(uReflect>0.5 && vW.y<-0.02) discard;
+      vec3 base=vC; float ln=0.0;
+      if(vUv.x>-0.5){
+        float near=1.0-smoothstep(55.0,130.0,length(vW-cameraPosition));
+        float belly=1.0-smoothstep(0.1,0.112,abs(vUv.y-0.5));
+        // escamas: fileiras desencontradas de arcos
+        vec2 q=vec2(vUv.y*18.0,vUv.x*1.25); float row=floor(q.y);
+        vec2 f=vec2(fract(q.x+0.5*mod(row,2.0))-0.5,fract(q.y));
+        float edge=0.3+0.62*(1.0-4.0*f.x*f.x);
+        ln=(1.0-smoothstep(0.0,0.11,abs(f.y-edge)))*(1.0-belly);
+        base=mix(base,vec3(0.76,0.85,0.9),ln*0.6*near);
+        base*=1.0-0.05*smoothstep(edge-0.45,edge,f.y)*step(f.y,edge)*near*(1.0-belly);
+        // barriga lilás em placas
+        float pl=fract(vUv.x*0.85);
+        vec3 bl=vec3(0.79,0.69,0.84)*(1.0-0.14*smoothstep(0.82,0.98,pl)*near);
+        base=mix(base,bl,belly);
+      }
+      vec3 n=normalize(vN); if(!gl_FrontFacing) n=-n;
+      float ndl=dot(n,uSun);
+      float band=mix(0.7,0.88,smoothstep(-0.05,0.08,ndl)); band=mix(band,1.0,smoothstep(0.45,0.58,ndl));
+      vec3 c=base*band;
+      float rim=smoothstep(0.55,0.95,1.0-abs(dot(n,normalize(cameraPosition-vW))));
+      c+=base*0.08*rim;
+      // à noite ele guarda um pouco da luz da lua
+      vec3 nc=nightTint(c)*2.1+vec3(0.02,0.035,0.05)+base*rim*0.12;
+      c=mix(c,nc,uNight);
+      c+=uShine*(ln*0.8+rim*0.5+0.12)*vec3(0.62,1.0,0.92);
+      gl_FragColor=vec4(applyFog(c,vW),1.0);
+    }`;
+  const hakuRef = { head: new T.Vector3(), on: false };
   {
-    const haku = new T.Group(); haku.visible = false; scene.add(haku);
-    const body = new T.Group(); body.rotation.x = Math.PI / 2; haku.add(body); // a cabeça (alto do modelo) vai na frente
-    loadModel("haku.glb", (m) => { valeize(m, { line: "#3A4A55" }); const sz = fitModel(m, 15); m.position.y -= sz.y / 2; body.add(m); haku.visible = true; if (reduce) render(); });
+    const LEN = 34, NS = 72, DS = (LEN + 1) / (NS - 1), FINE = 110;
+    const radius = (s) => { // perfil do corpo: pescoço, tronco e cauda afinando
+      if (s < 2) return 1.02 + 0.3 * smooth(-1.4, 2, s);
+      if (s < 17) return 1.32 + 0.06 * Math.sin((s - 2) / 15 * Math.PI);
+      return Math.max(0.05, 1.32 * Math.pow(1 - smooth(17, LEN, s), 1.15) + 0.05);
+    };
+    // vértices em repouso: x lado, y cima, z frente (s = -z é a distância atrás da nuca)
+    const R = [], IDX = []; // por vértice: x y z nx ny nz r g b u v onda fase peça
+    const vtx = (x, y, z, nx, ny, nz, c, u = -1, v = 0, w = 0, ph = 0, part = 0) => R.push(x, y, z, nx, ny, nz, c.r, c.g, c.b, u, v, w, ph, part) / 14 - 1;
+    const WHITE = col("#F5F5EE"), TEAL = col("#3EBEA7"), TEAL2 = col("#1AAE98"), TEAL3 = col("#6FD3BE");
+    // corpo
+    const RINGS = 58, SEG = 14;
+    for (let i = 0; i < RINGS; i++) {
+      const s = -1.4 + (LEN + 1.4) * Math.pow(i / (RINGS - 1), 1.0), r = radius(s);
+      for (let j = 0; j <= SEG; j++) { const a = j / SEG * Math.PI * 2, sx = Math.sin(a), cy = Math.cos(a); vtx(sx * r, cy * r * 1.04, -s, sx, cy, 0, WHITE, s + 2, j / SEG); }
+      if (i) for (let j = 0; j < SEG; j++) { const a = (i - 1) * (SEG + 1) + j, b = a + SEG + 1; IDX.push(a, a + 1, b, a + 1, b + 1, b); }
+    }
+    // tufo da crina: chama curva deitada para trás, presa no dorso
+    const rnd = (() => { let k = 7; return () => { k = (k * 16807) % 2147483647; return k / 2147483647; }; })();
+    function tuft(s0, lean, h, r0, c, sink = 0.75) {
+      const NR = 6, SD = 5, base = R.length / 14, rb = radius(s0) * sink, sl = Math.sin(lean), cl = Math.cos(lean), ph = s0 * 0.55 + rnd() * 1.2, tw = rnd() * 6.28;
+      for (let k = 0; k <= NR; k++) {
+        const a = k / NR, up = h * (a * 0.9 - 0.34 * a * a + 0.3 * smooth(0.6, 1, a) * a), back = h * (0.1 * a + 0.85 * a * a - 0.12 * smooth(0.7, 1, a)), rr = k === NR ? 0.001 : r0 * Math.pow(1 - a, 0.6) * (1 + 0.55 * Math.sin(a * Math.PI));
+        const cc = c.clone().lerp(TEAL3, a * 0.5);
+        for (let j = 0; j < SD; j++) {
+          const q = tw + j / SD * Math.PI * 2, ox = Math.cos(q), oz = Math.sin(q);
+          // seção no plano (lado do tufo, eixo do corpo); "up" segue a inclinação do tufo
+          const lx = ox * rr, ly = rb + up, lz = -s0 - back + oz * rr * 1.25;
+          vtx(lx * cl + ly * sl, -lx * sl + ly * cl, lz, ox * cl + 0.25 * sl, -ox * sl + 0.25 * cl, oz, cc, -1, 0, a * a * (0.5 + h * 0.22), ph);
+        }
+        if (k) for (let j = 0; j < SD; j++) { const p0 = base + (k - 1) * SD + j, p1 = base + (k - 1) * SD + (j + 1) % SD; IDX.push(p0, p0 + SD, p1, p1, p0 + SD, p1 + SD); }
+      }
+    }
+    // crina em leque: uma fileira no meio e duas abrindo para os lados, mais alta na nuca
+    for (let s = -0.9; s < LEN - 2.5; s += 0.62) {
+      const k = s / LEN, h = (2.5 - 1.0 * smooth(0, 0.35, k) - 0.75 * smooth(0.55, 1, k)) * (0.85 + rnd() * 0.35);
+      tuft(s, (rnd() - 0.5) * 0.24, h, 0.4, TEAL);
+      if (s > -0.3) { const sd = rnd() < 0.5 ? 1 : -1; tuft(s + 0.3, sd * (0.5 + rnd() * 0.3), h * 0.78, 0.36, TEAL2); if (rnd() < 0.55) tuft(s + 0.15, -sd * (0.55 + rnd() * 0.3), h * 0.7, 0.33, TEAL2); }
+    }
+    // pincel da ponta da cauda
+    for (let i = 0; i < 9; i++) tuft(LEN - 2.4 + i * 0.28, (i % 3 - 1) * 1.2 + (rnd() - 0.5) * 0.5, 2.3 + rnd() * 1.1, 0.2, i % 2 ? TEAL : TEAL2, 0.3);
+    const mesh = new T.Mesh(new T.BufferGeometry(), mat(MODEL_VS, HAKU_FS, { uShine: { value: 0 } }, { vertexColors: true }));
+    mesh.frustumCulled = false; mesh.visible = false; scene.add(mesh);
+    const line = small ? null : new T.Mesh(mesh.geometry, outlineMat(0.045, "#3A5560")); if (line) { line.frustumCulled = false; line.visible = false; scene.add(line); }
+    hakuRef.mat = mesh.material;
+    const legs = []; // {from, to, px, py, s, side, ph}
+    let POS, NOR, NV = 0, RA;
+    const SP = new Float32Array(NS * 3), ST = new Float32Array(NS * 3), SB = new Float32Array(NS * 3), SN = new Float32Array(NS * 3), FP = new Float32Array(FINE * 3), FD = new Float32Array(FINE);
     const at = (u, o) => o.set(Math.cos(u) * 165 + Math.sin(u * 3) * 22, 46 + Math.sin(u * 2) * 8, -175 + Math.sin(u) * 95 + Math.cos(u * 3) * 14);
-    const p = new T.Vector3(), n = new T.Vector3();
-    actors.push((t) => {
-      if (!haku.visible) return;
-      const u = t * 0.045; at(u, p); at(u + 0.012, n);
-      haku.position.copy(p); haku.lookAt(n);
-      body.rotation.z = Math.sin(t * 1.1) * 0.22; body.position.y = Math.sin(t * 1.7) * 0.8;
+    hakuRef.path = at;
+    const p = new T.Vector3();
+    function spine(t) {
+      // 1. o caminho que a cabeça já fez, em passos iguais de distância
+      const u = hakuRef.u != null ? hakuRef.u : t * 0.05, du = 0.36 / FINE;
+      const src = hakuRef.trail || ((k, o) => at(u - k * du, o));
+      for (let k = 0; k < FINE; k++) { src(k, p); FP[k * 3] = p.x; FP[k * 3 + 1] = p.y; FP[k * 3 + 2] = p.z; FD[k] = k ? FD[k - 1] + Math.hypot(p.x - FP[k * 3 - 3], p.y - FP[k * 3 - 2], p.z - FP[k * 3 - 1]) : 0; }
+      let k = 0;
+      for (let i = 0; i < NS; i++) {
+        const d = i * DS; while (k < FINE - 2 && FD[k + 1] < d) k++;
+        const f = (d - FD[k]) / Math.max(1e-5, FD[k + 1] - FD[k]);
+        for (let c = 0; c < 3; c++) SP[i * 3 + c] = FP[k * 3 + c] + (FP[k * 3 + 3 + c] - FP[k * 3 + c]) * f;
+      }
+      // 2. a onda: sobe e desce (a que mais aparece de lado) e serpenteia para os lados, crescendo até a cauda
+      const frames = (wave) => {
+        for (let i = 0; i < NS; i++) {
+          const a = Math.max(0, i - 1) * 3, b = Math.min(NS - 1, i + 1) * 3;
+          let tx = SP[a] - SP[b], ty = SP[a + 1] - SP[b + 1], tz = SP[a + 2] - SP[b + 2]; const tl = Math.hypot(tx, ty, tz) || 1; tx /= tl; ty /= tl; tz /= tl;
+          let bx = tz, bz = -tx; const bl = Math.hypot(bx, bz) || 1; bx /= bl; bz /= bl; // lado = cima × frente
+          ST[i * 3] = tx; ST[i * 3 + 1] = ty; ST[i * 3 + 2] = tz; SB[i * 3] = bx; SB[i * 3 + 1] = 0; SB[i * 3 + 2] = bz;
+          // cima = frente × lado
+          SN[i * 3] = ty * bz - tz * 0; SN[i * 3 + 1] = tz * bx - tx * bz; SN[i * 3 + 2] = tx * 0 - ty * bx;
+        }
+        if (wave) for (let i = 0; i < NS; i++) {
+          const s = i * DS, env = smooth(0, 9, s) * (0.75 + 0.5 * s / LEN);
+          const v = Math.sin(s * 0.36 - t * 2.3) * 1.5 * env, l = Math.sin(s * 0.25 - t * 1.6 + 1.3) * 1.15 * env;
+          for (let c = 0; c < 3; c++) SP[i * 3 + c] += SN[i * 3 + c] * v + SB[i * 3 + c] * l;
+        }
+      };
+      frames(true); frames(false);
+    }
+    const m3 = new T.Matrix3(), e = new T.Euler(), q4 = new T.Matrix4();
+    function update(t) {
+      spine(t);
+      // patas: remam devagar, as da frente e as de trás desencontradas
+      for (const L of legs) {
+        e.set(1.12 + Math.sin(t * 1.5 - L.ph) * 0.34, 0, L.side * (0.42 + Math.sin(t * 1.5 - L.ph + 0.8) * 0.1), "ZXY"); q4.makeRotationFromEuler(e); m3.setFromMatrix4(q4); const m = m3.elements;
+        for (let i = L.from; i < L.to; i++) {
+          const o = i * 14, x = L.raw[(i - L.from) * 6] * L.side, y = L.raw[(i - L.from) * 6 + 1], z = L.raw[(i - L.from) * 6 + 2], nx = L.raw[(i - L.from) * 6 + 3] * L.side, ny = L.raw[(i - L.from) * 6 + 4], nz = L.raw[(i - L.from) * 6 + 5];
+          RA[o] = L.px + m[0] * x + m[3] * y + m[6] * z; RA[o + 1] = L.py + m[1] * x + m[4] * y + m[7] * z; RA[o + 2] = -L.s + m[2] * x + m[5] * y + m[8] * z;
+          RA[o + 3] = m[0] * nx + m[3] * ny + m[6] * nz; RA[o + 4] = m[1] * nx + m[4] * ny + m[7] * nz; RA[o + 5] = m[2] * nx + m[5] * ny + m[8] * nz;
+        }
+      }
+      for (let i = 0; i < NV; i++) {
+        const o = i * 14, w = RA[o + 11]; let x = RA[o], y = RA[o + 1]; const z = RA[o + 2];
+        if (w) { const ph = RA[o + 12]; x += Math.sin(t * 3.1 - ph) * w * 0.55; y += Math.cos(t * 2.3 - ph * 1.3) * w * 0.22; }
+        let k = 0, f = 0, ext = 0; if (z >= 0) ext = z; else { const d = -z / DS; k = Math.min(NS - 2, d | 0); f = Math.min(1.5, d - k); }
+        const a = k * 3, b = a + 3, g = 1 - f;
+        const tx = ST[a] * g + ST[b] * f, ty = ST[a + 1] * g + ST[b + 1] * f, tz = ST[a + 2] * g + ST[b + 2] * f;
+        const bx = SB[a] * g + SB[b] * f, by = SB[a + 1] * g + SB[b + 1] * f, bz = SB[a + 2] * g + SB[b + 2] * f;
+        const ux = SN[a] * g + SN[b] * f, uy = SN[a + 1] * g + SN[b + 1] * f, uz = SN[a + 2] * g + SN[b + 2] * f;
+        POS[i * 3] = SP[a] * g + SP[b] * f + bx * x + ux * y + tx * ext; POS[i * 3 + 1] = SP[a + 1] * g + SP[b + 1] * f + by * x + uy * y + ty * ext; POS[i * 3 + 2] = SP[a + 2] * g + SP[b + 2] * f + bz * x + uz * y + tz * ext;
+        const nx = RA[o + 3], ny = RA[o + 4], nz = RA[o + 5];
+        NOR[i * 3] = bx * nx + ux * ny + tx * nz; NOR[i * 3 + 1] = by * nx + uy * ny + ty * nz; NOR[i * 3 + 2] = bz * nx + uz * ny + tz * nz;
+      }
+      mesh.geometry.attributes.position.needsUpdate = true; mesh.geometry.attributes.normal.needsUpdate = true;
+      hakuRef.head.set(SP[0], SP[1], SP[2]);
+    }
+    loadModel("haku-partes.glb", (src) => {
+      src.updateMatrixWorld(true);
+      const part = (name) => { let g = null; src.traverse((o) => { if (o.isMesh && o.name === name) g = o; }); return g; };
+      const add = (o, mirror, each) => { // junta uma peça do modelo; devolve o intervalo de vértices
+        const g = o.geometry, nm = new T.Matrix3().getNormalMatrix(o.matrixWorld), P = g.attributes.position, N = g.attributes.normal, C = g.attributes.color, from = R.length / 14, v = new T.Vector3(), n = new T.Vector3();
+        for (let i = 0; i < P.count; i++) { v.fromBufferAttribute(P, i).applyMatrix4(o.matrixWorld); n.fromBufferAttribute(N, i).applyMatrix3(nm).normalize(); each(v, n); vtx(v.x, v.y, v.z, n.x, n.y, n.z, { r: C.getX(i), g: C.getY(i), b: C.getZ(i) }); }
+        const I = g.index; for (let i = 0; i < I.count; i += 3) { const a = from + I.getX(i), b = from + I.getX(i + 1), c = from + I.getX(i + 2); if (mirror) IDX.push(a, c, b); else IDX.push(a, b, c); }
+        return [from, R.length / 14];
+      };
+      // cabeça: o corte do pescoço fica na origem; entra um pouco no corpo
+      const hg = part("cabeca"); let tip = new T.Vector3(0, 0, -9);
+      add(hg, false, (v) => { v.z += 0.55; v.y += 0.12; if (v.z > tip.z) tip.copy(v); });
+      // bigodes: dois fios longos saindo do focinho, soltos no vento
+      for (const sd of [-1, 1]) {
+        const base = R.length / 14, NR = 14, SD = 4, len = 9.5;
+        for (let k = 0; k <= NR; k++) {
+          const a = k / NR, cx = sd * (0.42 + 2.5 * Math.sin(a * 1.9) * (1 - a * 0.25)), cy = tip.y + 0.25 - 1.5 * Math.sin(a * 2.4) * (1 - a * 0.5), cz = tip.z - 0.55 - len * a * (0.35 + 0.65 * a), rr = k === NR ? 0.002 : 0.085 * (1 - a * 0.75);
+          for (let j = 0; j < SD; j++) { const q = j / SD * Math.PI * 2, ox = Math.cos(q), oy = Math.sin(q); vtx(cx + ox * rr, cy + oy * rr, cz, ox, oy, 0, WHITE, -1, 0, Math.pow(a, 1.4) * 2.2, a * 4.2 + sd); }
+          if (k) for (let j = 0; j < SD; j++) { const p0 = base + (k - 1) * SD + j, p1 = base + (k - 1) * SD + (j + 1) % SD; IDX.push(p0, p0 + SD, p1, p1, p0 + SD, p1 + SD); }
+        }
+      }
+      // patas: a mesma peça quatro vezes (espelhada do outro lado), presas no flanco
+      const lg = part("pata");
+      [[7.2, 1, 0], [7.2, -1, 2.4], [19.5, 1, 3.3], [19.5, -1, 5.4]].forEach(([s, side, ph]) => {
+        const raw = []; const [from, to] = add(lg, side < 0, (v, n) => { v.multiplyScalar(1.05); raw.push(v.x, v.y, v.z, n.x, n.y, n.z); });
+        const r = radius(s); legs.push({ from, to, raw, s, side, ph, px: side * r * 0.7, py: -r * 0.2 });
+        // tufo no cotovelo
+        tuft(s + 0.5, side * 2.0, 1.5, 0.22, TEAL2, 0.8);
+      });
+      RA = new Float32Array(R); NV = RA.length / 14; POS = new Float32Array(NV * 3); NOR = new Float32Array(NV * 3);
+      const C = new Float32Array(NV * 3), UV = new Float32Array(NV * 2);
+      for (let i = 0; i < NV; i++) { C[i * 3] = RA[i * 14 + 6]; C[i * 3 + 1] = RA[i * 14 + 7]; C[i * 3 + 2] = RA[i * 14 + 8]; UV[i * 2] = RA[i * 14 + 9]; UV[i * 2 + 1] = RA[i * 14 + 10]; }
+      const g = mesh.geometry;
+      g.setAttribute("position", new T.BufferAttribute(POS, 3).setUsage(T.DynamicDrawUsage)); g.setAttribute("normal", new T.BufferAttribute(NOR, 3).setUsage(T.DynamicDrawUsage));
+      g.setAttribute("color", new T.BufferAttribute(C, 3)); g.setAttribute("uv", new T.BufferAttribute(UV, 2)); g.setIndex(IDX);
+      hakuRef.on = true; hakuRef.update = update; update(U.uTime.value); mesh.visible = true; if (line) line.visible = true; if (reduce) render();
     });
+    actors.push((t) => { if (hakuRef.on) update(t); });
   }
 
   // Barco da Ponyo: dá voltas no lago perto da estação, com a vela acesa e um rastro de ondinhas
@@ -2951,7 +3122,7 @@
   if ($("introSkip")) $("introSkip").addEventListener("click", skipFilm);
   // seek: posiciona a entrada num corte e num ponto do corte (usado para revisar quadros)
   let peekCam = null;
-  window.vale = { dash: () => { if (catbusDash) catbusDash(); }, cam: (p, t) => { fixedCam = p ? { p: new T.Vector3(...p), t: new T.Vector3(...t) } : null; }, season: (n) => setSeason(n), dbg: () => ({ tp: tp.t, opened: tp.opened, running, active: explore.active, place: explore.place, k: explore.k }), toCover: () => { if (explore.active) exitExplore(true); }, info: () => ({ mem: Object.assign({}, renderer.info.memory), prog: renderer.info.programs ? renderer.info.programs.length : 0, calls: renderer.info.render.calls, tris: renderer.info.render.triangles, nodes: scene.children.length, grass: grass.geometry.instanceCount, flowers: flowers.geometry.instanceCount }), peek: (p, t) => { peekCam = p ? { p: new T.Vector3(p[0], p[1] + hillTop, p[2]), t: new T.Vector3(t[0], t[1] + hillTop, t[2]) } : null; }, star: (k) => meteors.launch(k || "vale"), playIntro, go: (id) => { if (!explore.active) startExplore(); go(id); }, seek(i, frac = 0.5) { if (!intro.active) playIntro(); startShot(i); intro.t = intro.shots[i].d * frac; } };
+  window.vale = { time: (v) => { if (v != null) clock = v; return clock; }, haku: () => hakuRef, dash: () => { if (catbusDash) catbusDash(); }, cam: (p, t) => { fixedCam = p ? { p: new T.Vector3(...p), t: new T.Vector3(...t) } : null; }, season: (n) => setSeason(n), dbg: () => ({ tp: tp.t, opened: tp.opened, running, active: explore.active, place: explore.place, k: explore.k }), toCover: () => { if (explore.active) exitExplore(true); }, info: () => ({ mem: Object.assign({}, renderer.info.memory), prog: renderer.info.programs ? renderer.info.programs.length : 0, calls: renderer.info.render.calls, tris: renderer.info.render.triangles, nodes: scene.children.length, grass: grass.geometry.instanceCount, flowers: flowers.geometry.instanceCount }), peek: (p, t) => { peekCam = p ? { p: new T.Vector3(p[0], p[1] + hillTop, p[2]), t: new T.Vector3(t[0], t[1] + hillTop, t[2]) } : null; }, star: (k) => meteors.launch(k || "vale"), playIntro, go: (id) => { if (!explore.active) startExplore(); go(id); }, seek(i, frac = 0.5) { if (!intro.active) playIntro(); startShot(i); intro.t = intro.shots[i].d * frac; } };
 
 
   /* ------------------------------------------------------------------ */

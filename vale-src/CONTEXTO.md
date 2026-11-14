@@ -43,7 +43,7 @@ vale-src/            fonte legível (EDITE AQUI)
   tools/             ferramentas Node (npm install dentro de vale-src/tools)
     prep/            preparo de modelos (gltf-transform + meshoptimizer + sharp)
     viewer/          visualizador para inspecionar modelos (esbuild + three)
-    test/            scripts Playwright de captura usados até aqui (caminhos podem precisar de ajuste)
+    test/            scripts Playwright de captura; `shot.cjs` é o geral (ver o cabeçalho dele): tema, celular, câmera, relógio, JS antes de cada captura
   modelos-fonte/     sculpts já reduzidos SEM pintura (raw_totoro, raw_catbus, raw_jiji), para repintar
 public/vale/         SAÍDA do build (não editar à mão): index.html, *.js minificados, three.min.js,
                      audio/ nos/ perfil/ grim/ trem/ (mídia) e modelos/ (GLBs prontos)
@@ -71,12 +71,13 @@ Procure pelos nomes (as linhas mudam):
 - `actors`: lista de funções `(t) => {}` chamadas todo quadro. `t` é o relógio do vale (no Playwright com swiftshader ele anda bem devagar; em navegador normal é tempo real).
 - `PLACES`: os lugares (nome, texto, `anchor`, `view`, `actions`, `entry`). `go(id)`, `startExplore`, `enterVia(world)` (caminhada + fade + abre o mundo), `openWorld(n)`, `lastTrain()`.
 - Qualidade automática: `LEVELS` + `applyQuality()` + `measure()` (baixa resolução, reflexo e grama se o FPS cai).
-- `window.vale` (para testes): `cam([x,y,z],[tx,ty,tz])` fixa a câmera (null solta), `go(id)`, `dash()` (salto do Gatobus), `peek`, `info()`, `star()`, `season(n)`.
+- `window.vale` (para testes): `time(v)` lê ou fixa o relógio do vale, `haku()` devolve `hakuRef` (posição da cabeça em `.head`), `cam([x,y,z],[tx,ty,tz])` fixa a câmera (null solta), `go(id)`, `dash()` (salto do Gatobus), `peek`, `info()`, `star()`, `season(n)`.
 
 ### Modelos 3D no vale
 - `loadModel(file, cb)`: fila, carrega um por vez, só depois de `startModels()` (1,2 s após o vale aparecer). Erro num modelo não derruba o vale (vai para `console.warn("modelo", ...)`).
 - `valeize(root, {line, tint, glow, glowMats:{nomeMaterial: n}, glassGlow})`: troca os materiais do GLB pelo sombreamento do vale (`MODEL_VS/MODEL_FS`, faixas, neve, noite, névoa). Materiais com "outline"/"contour" no nome viram contorno (`LINE_FS`) mantendo o `side` original. Cor por vértice é lida como está (`color.rgb`).
 - `fitModel(m, tamanho, eixo)`: escala pelo eixo, centraliza em x/z e apoia a base em y = 0. `shoreOf(lago, ângulo)`: ponto de margem seca. `glowSprite(cor, tamanho)`: brilho aditivo.
+- Haku (procure `HAKU_FS` e `hakuRef`): uma malha só, dobrada na CPU a cada quadro. Vértices em repouso com o corpo reto (x lado, y cima, z frente, s = -z é a distância atrás da nuca); `spine(t)` refaz o caminho que a cabeça já percorreu em passos iguais e soma a onda; `update(t)` gira as patas e dobra tudo. Corpo (tubo com escamas no shader, barriga lilás pelo `uv.y`), crina (`tuft`), bigodes e pincel da cauda são feitos à mão; cabeça e pata vêm de `haku-partes.glb`. `uShine` acende as escamas; `hakuRef.u`/`hakuRef.trail` permitem trocar o caminho.
 - Bloco "Modelos que vivem no vale" (procure esse texto) tem: Haku, barco e balde da Ponyo, canto da Zeniba + ramen + sapatos, Totoro, Jiji e Lily, Gatobus (visita ao ponto com chuva, primeira visita ~40 s, ciclo 95 s; `catbusDash` no `enterVia`), fuligem da Torre.
 - O trem, a Cabeça de Nabo e as nuvens são carregados perto do código procedural que substituem (procure `trem.glb`, `cabeca-de-nabo.glb`, `nuvens.glb`). As peças feitas à mão só somem quando o modelo chega.
 - Armadilhas já vividas: `const` usada antes de definida trava o vale inteiro (TDZ) — o carregador fica logo depois de `U`, e `driftClouds`/`catbusDash` são declarados ali também; nunca ponha código depois de um comentário `//` na mesma linha (já engoliu um `scene.add`).
@@ -87,7 +88,7 @@ Procure pelos nomes (as linhas mudam):
 | trem.glb | trem de A Viagem de Chihiro | zip sem autor (link pendente) |
 | cabeca-de-nabo.glb | Cabeça de Nabo | zip sem autor (pendente) |
 | nuvens.glb | nuvens estilizadas | lavakongen, CC BY 4.0 |
-| haku.glb | Haku dragão (pose enrolada em S) | zip sem autor (pendente) |
+| haku-partes.glb | só a cabeça (com olhos, orelhas, chifres) e uma pata do Haku, tiradas do modelo original por `tools/prep/haku.mjs`; o original inteiro (pose em S) está em `vale-src/modelos-fonte/haku.glb` | zip sem autor (pendente) |
 | ponyoboat.glb | barquinho do Sosuke | zip sem autor (pendente) |
 | balde.glb | balde verde da Ponyo | zip sem autor (pendente) |
 | fuligem.glb | fuligem carregando pedra | zip sem autor (pendente) |
@@ -126,7 +127,7 @@ Os créditos estão no rodapé da estação (`pf-credits` em vale.js) e na vers�
 
 Cada item: implementar, capturar de dia e de noite, desktop e celular (390 px), commit e push.
 
-1. **Haku animado.** Hoje ele cruza o céu rígido, enrolado em S (pose do modelo). Ele quer o Haku se mexendo de verdade, voando como serpente. Caminho sugerido: corpo novo seguindo uma curva (tubo com escamas brancas, barriga lilás clara, crina verde-água em leque nas costas, nadadeiras), reaproveitando do modelo só cabeça, chifres, patas e bigodes; ondulação percorrendo o corpo; patas acompanhando. Cores medidas do modelo: corpo branco, crina `#1AAE98`/`#3EBEA7`, chifres `#C77D51`, boca `#C06F71`. Tem que continuar leve.
+1. ~~Haku animado~~ FEITO (ver seção 4). Ficou com ~9 mil triângulos e 2 chamadas de desenho (antes ~28 mil e ~130).
 2. **Entrada com idioma e peso.** Na tela de carregamento (bloco `.ld-lang` em index.html), além do idioma, escolher **Leve / Médio / Completo**, trocável depois (por exemplo um botão junto de EN e do tema). Guardar no `localStorage`.
    - Médio = o vale como está hoje (incluindo a qualidade automática).
    - Leve = menos grama e flores, resolução menor, sem reflexo ou reflexo raro, menos modelos (pular nuvens 3D, Haku, fuligem etc. ou versões mais simples).

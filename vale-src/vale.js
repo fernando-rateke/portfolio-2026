@@ -1111,6 +1111,7 @@
       dirs.forEach((d) => { q.setFromUnitVectors(up, d); b.add(new T.ConeGeometry(0.3, 0.5, 5), new T.Matrix4().compose(d.clone().multiplyScalar(0.82), q, one), c, 0.22); }); // os biquinhos do confeito
       return b.build();
     });
+    const clickables = []; // coisas do vale que respondem ao clique antes dos confeitos: { hit(nx, ny, px), run() }
     const list = [], zones = []; // zones: { name, hit(ray) -> Vector3 | null, land(p) -> p ajustado, y(x, z) }
     for (let i = 0; i < 28; i++) { const m = new T.Mesh(geos[i % geos.length], objMat); m.visible = false; scene.add(m); list.push({ m, state: "gone", pos: new T.Vector3(), to: new T.Vector3(), from: new T.Vector3(), vy: 0, k: 0, age: 0, owner: null, zone: null, spin: Math.random() * 6, size: 0.24 }); }
     const ray = new T.Raycaster(), ndc = new T.Vector2();
@@ -1135,17 +1136,18 @@
     canvas.addEventListener("pointerdown", (e) => { down = { x: e.clientX, y: e.clientY, t: performance.now() }; });
     canvas.addEventListener("pointerup", (e) => { if (down && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 10 && performance.now() - down.t < 500) {
       const r = canvas.getBoundingClientRect(), touch = e.pointerType === "touch";
-      if (!intro.active && hakuRef.hit && hakuRef.hit((e.clientX - r.left) / r.width * 2 - 1, -((e.clientY - r.top) / r.height * 2 - 1), touch ? 46 : 26) && hakuRef.dive()) { /* o Haku mergulha */ } else toss(e);
+      const nx = (e.clientX - r.left) / r.width * 2 - 1, ny = -((e.clientY - r.top) / r.height * 2 - 1);
+      if (!intro.active && clickables.some((c) => c.hit(nx, ny, touch ? 46 : 26) && c.run() !== false)) { /* alguém respondeu */ } else toss(e);
     } down = null; });
     return {
-      list, zones, toss,
+      list, zones, toss, clickables,
       // confeito livre mais próximo dentro da zona
       claim(zone, x, z, owner) { let best = null, bd = 1e9; for (const c of list) { if (c.zone !== zone || c.owner || (c.state !== "rest" && c.state !== "fall")) continue; const d = Math.hypot(c.to.x - x, c.to.z - z); if (d < bd) { bd = d; best = c; } } if (best) best.owner = owner; return best; },
       eat(c) { c.state = "gone"; c.owner = null; c.m.visible = false; },
       update(dt) {
         let over = false;
         if (explore.active && !intro.active) { ndc.set(pointer.x, -pointer.y); ray.setFromCamera(ndc, camera); for (const z of zones) if (z.hit(ray.ray)) over = true; }
-        if (!over && !intro.active && hakuRef.hit && hakuRef.hit(pointer.x, -pointer.y, 26)) over = true;
+        if (!over && !intro.active && clickables.some((c) => c.hit(pointer.x, -pointer.y, 26))) over = true;
         if (canvas.style.cursor !== (over ? "pointer" : "")) canvas.style.cursor = over ? "pointer" : "";
         for (const c of list) {
           if (c.state === "gone") continue;
@@ -1722,6 +1724,9 @@
   const HILL = { x: 6, z: 18 };
   const charLine = outlineMat(0.011, "#2A211D");
   const actors = [];
+  // a chuva que vem com o Gatobus: 0 a 1 conforme o relógio do vale (vale também no peso leve, sem o Gatobus)
+  const BUS_CYCLE = small ? 120 : 95;
+  const busRain = (t) => { const c = (t + BUS_CYCLE - 40) % BUS_CYCLE; return c > 7 && c < 17 ? Math.min(1, (c - 7) / 1.5) * Math.min(1, (17 - c) / 1.5) : 0; };
   const amb = {}; // de onde vêm os sons do lugar (preenchido pelos blocos abaixo): boat, totoro, candle, rain, rainPos
   const shadowSrc = []; // quem faz sombra de contato no chão (peso completo): { o: objeto, r: raio, k: força }
   actors.push((t) => { driftClouds.forEach((g) => { const span = 760; g.position.x = ((g.userData.x0 + 380 + t * g.userData.sp) % span + span) % span - 380; }); });
@@ -1866,6 +1871,7 @@
       return true;
     }
     hakuRef.dive = startDive;
+    konpeito.clickables.push({ hit: (nx, ny, px) => hakuRef.hit(nx, ny, px), run: () => startDive(false) });
     hakuRef.state = () => (dive ? { q: Math.round(dive.q), len: Math.round(dive.len) } : null);
     hakuRef.skip = (q) => { if (dive) dive.q = q < 0 ? dive.len + q : q; }; // testes: pula para um ponto do mergulho
     // o ponteiro está em cima dele? (compara na tela com alguns pontos da espinha)
@@ -2089,8 +2095,91 @@
     g.position.set(x, heightAt(x, z) - 0.05, z); g.rotation.y = Math.atan2(HILL.x - x, HILL.z - z) * 0.6;
     loadModel("totoro.glb", (m) => { valeize(m, { line: "#3A3F48" }); fitModel(m, 3.6); g.add(m); g.visible = true; if (reduce) render(); }, 0);
     shadowSrc.push({ o: g, r: 3.4, k: 0.34 }); amb.totoro = g;
-    // respira devagar e de vez em quando balança o corpo, como quem espera a chuva passar
-    actors.push((t) => { if (!g.visible) return; const b = Math.sin(t * 1.1); g.scale.set(1 + b * 0.012, 1 - b * 0.01, 1 + b * 0.012); g.rotation.z = Math.sin(t * 0.37) * 0.025; });
+    // Quando a chuva do Gatobus chega, ele abre um guarda-chuva preto; as gotas pingam dos galhos e batem no pano.
+    // Clicar nele: ele pula e toda a água da árvore cai de uma vez.
+    const um = new T.Group(); um.position.set(0.95, 0, 0.5); um.visible = false; g.add(um);
+    const canopy = new T.Group(); canopy.position.y = 4.55; um.add(canopy);
+    {
+      const BLK = "#1D1D24", BLK2 = "#2B2B35", WOOD = "#8A6A44";
+      const cb = Builder(), R = 2.0, SEG = 8, RINGS = 5;
+      // pano: oito gomos, borda recortada entre as varetas
+      for (let i = 0; i < SEG; i++) {
+        const a0 = i / SEG * Math.PI * 2, a1 = (i + 1) / SEG * Math.PI * 2, pos = [], idx = [];
+        for (let k = 0; k <= RINGS; k++) for (let j = 0; j <= 4; j++) {
+          const u = k / RINGS, a = a0 + (a1 - a0) * j / 4, sag = 1 - 0.07 * Math.sin(j / 4 * Math.PI) * u, r = R * Math.sin(u * 1.25) / Math.sin(1.25) * sag;
+          pos.push(Math.cos(a) * r, 0.78 * (Math.cos(u * 1.25) - Math.cos(1.25)) / (1 - Math.cos(1.25)) + 0.1 * Math.sin(j / 4 * Math.PI) * u * u, Math.sin(a) * r);
+        }
+        for (let k = 0; k < RINGS; k++) for (let j = 0; j < 4; j++) { const p0 = k * 5 + j, p1 = p0 + 5; idx.push(p0, p0 + 1, p1, p0 + 1, p1 + 1, p1); }
+        const gg = new T.BufferGeometry(); gg.setAttribute("position", new T.Float32BufferAttribute(pos, 3)); gg.setIndex(idx); gg.computeVertexNormals();
+        cb.add(gg, new T.Matrix4(), i % 2 ? BLK : BLK2);
+      }
+      cb.add(new T.ConeGeometry(0.07, 0.42, 6), M(0, 0.98, 0), BLK);
+      const cg = cb.build(); const cm = new T.Mesh(cg, mat(OBJ_VS, OBJ_FS, {}, { side: T.DoubleSide })); canopy.add(cm, new T.Mesh(cg, charLine));
+      const sb = Builder();
+      sb.add(new T.CylinderGeometry(0.045, 0.045, 3.3, 6), M(0, 3.75, 0), BLK);
+      sb.add(new T.TorusGeometry(0.2, 0.06, 6, 10, Math.PI), M(0.2, 2.1, 0, 0, 0, Math.PI), WOOD); // cabo curvo
+      const sg = sb.build(); um.add(new T.Mesh(sg, objMat), new T.Mesh(sg, charLine));
+    }
+    // gotas: riscos que caem dos galhos em volta dele; as que acertam o pano param ali
+    const DN = small ? 46 : 90, dp = new Float32Array(DN * 6), dg = new T.BufferGeometry(); dg.setAttribute("position", new T.BufferAttribute(dp, 3).setUsage(T.DynamicDrawUsage));
+    const dropsM = new T.LineSegments(dg, new T.LineBasicMaterial({ color: col("#E6F1FA"), transparent: true, opacity: 0.9, depthWrite: false, fog: false })); dropsM.frustumCulled = false; dropsM.visible = false; scene.add(dropsM);
+    const drops = Array.from({ length: DN }, () => ({ on: false, x: 0, y: 0, z: 0, v: 0, floor: 0, cloth: false }));
+    const splash = Array.from({ length: 14 }, () => { const sp = glowSprite("#E8F3FF", 0.5); sp.material.blending = T.NormalBlending; sp.visible = false; scene.add(sp); return { sp, age: 9 }; });
+    let wet = 0, open = 0, jump = -1, lastT = null, acc = 0, si = 0, burst = 0, dryIn = 0;
+    const umW = new T.Vector3(), gy = heightAt(x, z);
+    const spawn = (all) => {
+      const d = drops.find((q) => !q.on); if (!d) return;
+      const a = Math.random() * 6.28, r = Math.sqrt(Math.random()) * (all ? 9 : 7);
+      d.x = x + Math.cos(a) * r; d.z = z + 1 + Math.sin(a) * r; d.y = 9 + Math.random() * 5; d.v = 4 + Math.random() * 3; d.on = true;
+      d.cloth = open > 0.6 && Math.hypot(d.x - umW.x, d.z - umW.z) < 1.9; d.floor = d.cloth ? umW.y + 0.55 : Math.max(heightAt(d.x, d.z), 0) + 0.05;
+    };
+    konpeito.clickables.push({
+      hit(nx, ny, px) { if (!g.visible || jump >= 0) return false; const c = umW.set(x, gy + 1.9, z).project(camera); if (c.z > 1) return false; const top = new T.Vector3(x, gy + 3.7, z).project(camera); const rpx = Math.max(px, Math.abs(top.y - c.y) * H * 0.5 * 1.05); return Math.hypot((c.x - nx) * W * 0.5, (c.y - ny) * H * 0.5) < rpx; },
+      run() { jump = 0; },
+    });
+    amb.totoroJump = () => { jump = 0; };
+    actors.push((t) => {
+      if (!g.visible) return;
+      const dt = lastT === null ? 0 : Math.max(0, Math.min(0.1, t - lastT)); lastT = t;
+      const rain = busRain(t);
+      // a árvore encharca com a chuva e fica pingando um bom tempo depois
+      if (rain > 0.05) { wet = Math.min(1, wet + dt * 0.5); dryIn = 26; } else if (dryIn > 0) dryIn -= dt; else wet = Math.max(0, wet - dt * 0.12);
+      const wantOpen = wet > 0.04 || burst > 0 ? 1 : 0; open += (wantOpen - open) * Math.min(1, dt * (wantOpen ? 3.2 : 1.6));
+      um.visible = open > 0.02; amb.awake = um.visible || jump >= 0;
+      // abre com um estalinho: o pano passa um pouco do ponto e volta
+      const k = Math.min(1, open * 1.15), ov = 1 + Math.sin(Math.min(1, open) * Math.PI) * 0.12;
+      canopy.scale.set(0.1 + 0.9 * k * ov, 1.25 - 0.25 * k, 0.1 + 0.9 * k * ov); um.position.y = -1.6 * (1 - Math.min(1, open * 2));
+      um.rotation.z = Math.sin(t * 0.9) * 0.03 + 0.09; um.rotation.x = Math.sin(t * 0.7 + 1) * 0.025;
+      // corpo: respira; no pulo, agacha, sobe e cai com o tranco
+      let y = 0, sq = Math.sin(t * 1.1) * 0.012;
+      if (jump >= 0) {
+        jump += dt;
+        if (jump < 0.35) sq = -0.12 * Math.sin(jump / 0.35 * Math.PI * 0.5);
+        else if (jump < 1.25) { const q = (jump - 0.35) / 0.9; y = 1.9 * 4 * q * (1 - q); sq = 0.08 * (1 - q) - 0.12 * (1 - Math.min(1, q * 6)); }
+        else if (jump < 1.75) { const q = (jump - 1.25) / 0.5; sq = -0.15 * (1 - q) * Math.cos(q * 9); if (burst === 0 && q < 0.3) { burst = 1.3; if (wet > 0.05 && amb.shower) amb.shower(); } }
+        else jump = -1;
+      }
+      g.position.y = gy - 0.05 + y; g.scale.set(1 - sq, 1 + sq * 1.3, 1 - sq); g.rotation.z = Math.sin(t * 0.37) * 0.025;
+      canopy.getWorldPosition(umW);
+      // quantas gotas: pingando conforme a árvore está molhada; no tranco do pulo cai tudo de uma vez
+      if (burst > 0) { burst = Math.max(0, burst - dt); if (wet > 0.05) for (let i = 0; i < 6; i++) spawn(true); if (burst === 0) { wet = Math.min(wet, 0.03); dryIn = 3.5; } }
+      acc += dt * wet * (small ? 8 : 15); while (acc > 1) { acc -= 1; spawn(false); }
+      let any = false;
+      for (let i = 0; i < DN; i++) {
+        const d = drops[i], o = i * 6;
+        if (d.on) {
+          d.v += 22 * dt; d.y -= d.v * dt;
+          if (d.y <= d.floor) {
+            d.on = false; const sp = splash[si++ % splash.length]; sp.age = 0; sp.sp.position.set(d.x, d.floor + 0.08, d.z); sp.sp.visible = true;
+            if (amb.drop && burst === 0) amb.drop(d.cloth, 0.6 + Math.random() * 0.4);
+          }
+        }
+        if (d.on) { any = true; dp[o] = d.x; dp[o + 1] = d.y; dp[o + 2] = d.z; dp[o + 3] = d.x; dp[o + 4] = d.y + 0.3 + d.v * 0.05; dp[o + 5] = d.z; }
+        else { dp[o] = dp[o + 3] = 0; dp[o + 1] = dp[o + 4] = -50; dp[o + 2] = dp[o + 5] = 0; }
+      }
+      dg.attributes.position.needsUpdate = true; dropsM.visible = any;
+      splash.forEach((sp) => { if (sp.age > 0.4) { sp.sp.visible = false; return; } sp.age += dt; const e = sp.age / 0.4; sp.sp.scale.setScalar(0.25 + e * 0.7); sp.sp.material.opacity = (1 - e) * 0.7; });
+    });
   }
 
   // Jiji e Lily no banco da estação, embaixo das ervas
@@ -2104,7 +2193,7 @@
   // Gatobus: chega ao ponto da estação com os olhos acesos e uma chuva que vem junto;
   // e cruza a tela, num salto, quando a câmera entra num mundo
   {
-    const STOP = new T.Vector3(STATION.x + 11, 0, STATION.z + 2.2), FAR = STATION.x + 85, CYCLE = small ? 120 : 95;
+    const STOP = new T.Vector3(STATION.x + 11, 0, STATION.z + 2.2), FAR = STATION.x + 85, CYCLE = BUS_CYCLE;
     const g = new T.Group(); g.visible = false; mid.add(g);
     const dashG = new T.Group(); dashG.visible = false; mid.add(dashG);
     const eyes = [];
@@ -3052,8 +3141,8 @@
     const F = (type, f, q = 0.7) => { const b = ctx.createBiquadFilter(); b.type = type; b.frequency.value = f; b.Q.value = q; return b; };
     const chain = (...n) => { for (let i = 0; i + 1 < n.length; i++) n[i].connect(n[i + 1]); return n[n.length - 1]; };
     const burst = (t, dur) => { const q = ctx.createBufferSource(); q.buffer = nb; q.start(t, Math.random() * 2.5, dur + 0.02); return q; };
-    const wind = G(), rain = G(), boat = G(), snore = G(), candle = G();
-    [wind, rain, boat, snore, candle].forEach((g) => g.connect(out));
+    const wind = G(), rain = G(), boat = G(), snore = G(), candle = G(), drip = G();
+    [wind, rain, boat, snore, candle, drip].forEach((g) => g.connect(out));
     // vento no capim: ruído passado por um filtro que abre e fecha com a rajada
     const windBp = F("bandpass", 420, 0.6); chain(loop(), windBp, F("lowpass", 1100), G(1.6), wind);
     chain(loop(0.7), F("highpass", 2600), F("lowpass", 5200), G(0.22), wind); // o chiado das folhas
@@ -3062,6 +3151,16 @@
     chain(loop(), F("bandpass", 480, 0.8), G(1.1), rain);
     return {
       wind, rain, boat, snore, candle, windBp,
+      // gota: no guarda-chuva faz "toc" (pano esticado), no chão quase não se ouve
+      drop(t, onCloth, k = 1) {
+        const o = ctx.createOscillator(), g = G(), f0 = onCloth ? 300 + Math.random() * 160 : 900 + Math.random() * 500; o.type = "triangle"; o.frequency.setValueAtTime(f0 * 1.6, t); o.frequency.exponentialRampToValueAtTime(f0, t + 0.04);
+        g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime((onCloth ? 0.5 : 0.12) * k, t + 0.003); g.gain.exponentialRampToValueAtTime(0.001, t + (onCloth ? 0.09 : 0.04));
+        chain(o, g, drip); o.start(t); o.stop(t + 0.12);
+        if (onCloth) { const g2 = G(); g2.gain.setValueAtTime(0.25 * k, t); g2.gain.exponentialRampToValueAtTime(0.001, t + 0.02); chain(burst(t, 0.03), F("bandpass", 2200, 1), g2, drip); }
+      },
+      // toda a água da árvore caindo de uma vez
+      shower(t) { const g = G(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(1, t + 0.12); g.gain.exponentialRampToValueAtTime(0.001, t + 1.7); chain(burst(t, 1.8), F("highpass", 900), F("lowpass", 6000), G(1.2), g, drip); },
+      drip,
       // o Haku passando: um sopro que abre e fecha
       whoosh(t) {
         const f = F("bandpass", 300, 0.9), g = G(); f.frequency.setValueAtTime(260, t); f.frequency.exponentialRampToValueAtTime(1500, t + 3.2); f.frequency.exponentialRampToValueAtTime(380, t + 7);
@@ -3113,7 +3212,9 @@
     // quanto do som chega: perto da câmera ou perto do ponto para onde ela olha
     const near = (o, R) => { if (!o) return 0; if (o.isVector3) wp.copy(o); else { if (!o.visible || (o.parent === mid && !mid.visible)) return 0; o.getWorldPosition(wp); } const d = Math.min(wp.distanceTo(camera.position), wp.distanceTo(lastTgt) * 1.15), k = Math.max(0, 1 - d / R); return k * k; };
     amb.whoosh = () => { if (ctx && S && ctx.state === "running" && on()) S.whoosh(ctx.currentTime + 1.2); };
-    const levels = { wind: 0, rain: 0, boat: 0, snore: 0, candle: 0 };
+    amb.drop = (onCloth, k) => { if (ctx && S && ctx.state === "running" && on() && levels.drip > 0.004) S.drop(ctx.currentTime + 0.01, onCloth, k); };
+    amb.shower = () => { if (ctx && S && ctx.state === "running" && on() && levels.drip > 0.004) S.shower(ctx.currentTime + 0.01); };
+    const levels = { wind: 0, rain: 0, boat: 0, snore: 0, candle: 0, drip: 0 };
     amb.levels = levels;
     actors.push((t) => {
       const gst = 0.5 + 0.5 * Math.sin(t * 0.55 + Math.sin(t * 0.21) * 2.0);
@@ -3121,7 +3222,8 @@
       levels.wind = (0.06 + 0.14 * hill) * (0.45 + 0.55 * gst) * (0.4 + 0.6 * low);
       levels.rain = amb.rain ? near(amb.rainPos, 70) * Math.min(1, amb.rain.material.opacity / 0.4) * (amb.rain.visible && mid.visible ? 0.2 : 0) : 0;
       levels.boat = near(amb.boat, 48) * 0.3;
-      levels.snore = near(amb.totoro, 42) * 0.34;
+      levels.snore = near(amb.totoro, 42) * 0.34 * (amb.awake ? 0 : 1);
+      levels.drip = near(amb.totoro, 46) * 0.4;
       levels.candle = near(amb.candle, 26) * 0.3 * (0.6 + 0.4 * Math.max(U.uNight.value, U.uDusk.value));
       if (!ctx || !S || ctx.state !== "running" || !on()) return;
       const now = ctx.currentTime;

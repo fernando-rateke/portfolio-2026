@@ -248,6 +248,55 @@ html, body { height: 100%; overflow: hidden; background: #0c0c0c; }
 .pc-footer .pf-chip[aria-pressed="true"] { background: #C22026; color: #fff; border-color: #C22026; }
 .pc-footer .pf-lang { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .pc-footer .pf-lang h3 { width: 100%; margin: 0 0 2px; }
+/* ---- Yubaba e o contrato: ela pede o nome e fica com um pedaço dele ---- */
+.yubaba { position: fixed; inset: 0; z-index: 190; display: grid; place-items: center; overflow-y: auto; padding: 16px; box-sizing: border-box; color: #F4EBDD; background: radial-gradient(ellipse at 50% 18%, #5A1E22 0%, #2A0E13 46%, #110507 100%); transition: opacity .8s ease, visibility .8s; }
+.yubaba[hidden] { display: none; }
+.yubaba.out { opacity: 0; visibility: hidden; pointer-events: none; }
+.yb-box { width: min(1060px, 100%); display: grid; grid-template-columns: minmax(200px, 1fr) 1fr; gap: 8px 36px; align-items: center; }
+.yb-fig { width: 100%; max-width: 500px; overflow: visible; justify-self: center; filter: drop-shadow(0 18px 30px rgba(0,0,0,0.5)); }
+.yb-fig .yb-head { transform-box: view-box; transform-origin: 200px 300px; animation: ybnod 5s ease-in-out infinite; }
+.yb-fig .yb-lid { transform-origin: 200px 196px; animation: ybblink 4.6s infinite; }
+.yb-fig .yb-hand { transform-origin: 318px 330px; animation: ybhand 3.4s ease-in-out infinite; }
+.yubaba.took .yb-fig .yb-hand { animation: ybgrab .9s ease both; }
+@keyframes ybnod { 50% { transform: rotate(-1.6deg) translateY(2px); } }
+@keyframes ybblink { 0%, 92%, 100% { transform: scaleY(0); } 95% { transform: scaleY(1); } }
+@keyframes ybhand { 50% { transform: rotate(5deg) translateY(-3px); } }
+@keyframes ybgrab { 40% { transform: rotate(-16deg) translate(-10px, -16px) scale(1.08); } 100% { transform: rotate(4deg); } }
+.yb-side { display: grid; gap: 14px; }
+.yb-say { margin: 0; font: 600 clamp(1.15rem, 2.6vw, 1.6rem)/1.3 var(--f-display); min-height: 2.6em; text-wrap: balance; }
+.yb-say b { color: #F3C969; font-weight: 700; }
+.yb-paper { position: relative; background: #F1E6CE; color: #2A211D; border-radius: 4px; padding: 18px 18px 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(90,60,30,0.25); transform: rotate(-0.6deg); }
+.yb-paper h2 { margin: 0 0 4px; font: 800 1.05rem/1.2 var(--f-display); letter-spacing: 0.3em; text-align: center; color: #7A1B1F; }
+.yb-paper small { display: block; text-align: center; font: 500 0.62rem/1.4 var(--f-label); letter-spacing: 0.16em; text-transform: uppercase; color: #6C5A45; }
+.yb-paper label { display: block; margin-top: 12px; font: 500 0.62rem/1.4 var(--f-label); letter-spacing: 0.16em; text-transform: uppercase; color: #6C5A45; }
+.yb-paper input { width: 100%; box-sizing: border-box; margin-top: 4px; padding: 8px 4px; border: 0; border-bottom: 2px solid #2A211D; background: transparent; color: #2A211D; font: 600 1.5rem/1.2 var(--f-display); outline: none; border-radius: 0; }
+.yb-paper input:focus-visible { border-bottom-color: #C22026; }
+.yb-letters { min-height: 2.6rem; margin-top: 4px; padding: 6px 4px; border-bottom: 2px solid #2A211D; font: 600 1.7rem/1.2 var(--f-display); display: flex; flex-wrap: wrap; }
+.yb-letters span { display: inline-block; white-space: pre; transition: transform 1.1s cubic-bezier(.5,-0.3,.6,1), opacity 1.1s ease .2s, max-width .7s ease .9s, color .4s; max-width: 1.2em; }
+.yb-letters span.gone { transform: translate(var(--dx, -140px), var(--dy, -160px)) rotate(var(--r, 40deg)) scale(0.5); opacity: 0; max-width: 0; color: #C22026; }
+.yb-letters span.keep { color: #7A1B1F; }
+.yb-btns { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.yb-btns button { min-height: 44px; padding: 10px 18px; border-radius: 999px; border: 1px solid rgba(244,235,221,0.4); background: transparent; color: #F4EBDD; font: 600 0.92rem/1 var(--f-display); cursor: pointer; }
+.yb-btns button.primary { background: #C22026; border-color: #C22026; color: #fff; }
+.yb-btns button:hover, .yb-btns button:focus-visible { border-color: #F4EBDD; }
+.yb-btns button.quiet { border-color: transparent; text-decoration: underline; text-underline-offset: 4px; opacity: 0.8; font-weight: 500; }
+.yb-note { margin: 0; font: 400 0.78rem/1.4 var(--f-display); opacity: 0.65; }
+@media (max-width: 680px) { .yb-box { grid-template-columns: 1fr; } .yb-fig { max-width: min(250px, 34svh); } .yb-say { min-height: 0; text-align: center; } .yb-btns { justify-content: center; } .yb-note { text-align: center; } }
+@media (max-height: 560px) and (min-width: 681px) { .yb-fig { max-width: 230px; } }
+.ld-back { margin: 0; font: 600 1.05rem/1.3 var(--f-display); opacity: 0.92; }
+.ld-back b { color: #F3C969; }
+.hero-title .who-you { font: 600 1.05rem/1.2 var(--f-display); text-shadow: 0 1px 10px rgba(0,0,0,0.5); }
+.hero-title .who-you b { color: #FFE3A0; }
+.pc-you { margin: 8px 0 0; font: 500 0.8rem/1.4 var(--f-display); color: #6C6156; }
+.pc-you b { color: #C22026; }
+.pf-you { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.pf-you h3 { width: 100%; margin: 0 0 2px; }
+.pf-you p { margin: 0; font: 500 0.94rem/1.3 var(--f-display); }
+.pf-you p b { color: #C22026; }
+.marker.seen b { box-shadow: 0 0 0 2px #F3C969; }
+.world-ticket { position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); top: 74px; z-index: 4; display: grid; gap: 2px; padding: 10px 16px 10px 14px; background: #F1E6CE; color: #2A211D; border-radius: 3px; border-left: 6px dotted #7A1B1F; box-shadow: 0 8px 22px rgba(0,0,0,0.35); transform: rotate(2deg); font: 500 0.6rem/1.4 var(--f-label); letter-spacing: 0.16em; text-transform: uppercase; }
+.world-ticket[hidden] { display: none; }
+.world-ticket b { font: 700 1.1rem/1.1 var(--f-display); letter-spacing: 0; text-transform: none; color: #7A1B1F; }
 .lang-toggle { pointer-events: auto; min-width: 44px; min-height: 40px; display: inline-flex; align-items: center; justify-content: center; font-family: var(--f-label); font-size: 0.72rem; letter-spacing: 0.14em; color: #fff; background: rgba(10, 20, 35, 0.32); border: 1px solid rgba(255,255,255,0.35); border-radius: 999px; padding: 8px 14px; cursor: pointer; backdrop-filter: blur(6px); }
 .lang-toggle:hover, .lang-toggle:focus-visible { background: rgba(10, 20, 35, 0.5); }
 .ld-peso { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 18px; }
@@ -850,6 +899,65 @@ a.q { text-decoration: none; }
   </defs>
 </svg>
 
+<div class="yubaba" id="yubaba" hidden role="dialog" aria-modal="true" aria-labelledby="ybSay">
+  <div class="yb-box">
+    <svg class="yb-fig" viewBox="-40 -64 480 484" aria-hidden="true" stroke-linejoin="round" stroke-linecap="round">
+      <defs><radialGradient id="ybGlow" cx="50%" cy="40%" r="60%"><stop offset="0" stop-color="#F3C969" stop-opacity="0.35"/><stop offset="1" stop-color="#F3C969" stop-opacity="0"/></radialGradient></defs>
+      <ellipse cx="200" cy="200" rx="200" ry="200" fill="url(#ybGlow)"/>
+      <!-- vestido azul e gola -->
+      <path d="M96 420 C92 352 128 318 200 316 C272 318 308 352 304 420 Z" fill="#2E4C8E" stroke="#1B1420" stroke-width="5"/>
+      <path d="M150 326 Q200 356 250 326 Q244 352 200 362 Q156 352 150 326 Z" fill="#F4EFE4" stroke="#1B1420" stroke-width="4"/>
+      <circle cx="200" cy="372" r="11" fill="#C22026" stroke="#1B1420" stroke-width="4"/>
+      <g transform="translate(200 250) scale(1.22) translate(-200 -250)"><g class="yb-head">
+        <!-- cabelo: coque enorme -->
+        <ellipse cx="200" cy="34" rx="52" ry="46" fill="#D8D4CB" stroke="#1B1420" stroke-width="5"/>
+        <path d="M70 172 C36 84 116 36 200 40 C284 36 364 84 330 172 C322 120 268 96 200 96 C132 96 78 120 70 172 Z" fill="#D8D4CB" stroke="#1B1420" stroke-width="5"/>
+        <path d="M176 30 Q200 14 224 30 M120 84 Q200 52 280 84" fill="none" stroke="#B2ADA2" stroke-width="4"/>
+        <!-- rosto largo -->
+        <path d="M70 172 C66 250 104 312 200 312 C296 312 334 250 330 172 C324 124 270 98 200 98 C130 98 76 124 70 172 Z" fill="#EBC6A8" stroke="#1B1420" stroke-width="5"/>
+        <path d="M92 236 Q104 268 132 286 M308 236 Q296 268 268 286" fill="none" stroke="#C99A7C" stroke-width="4"/>
+        <!-- brincos -->
+        <circle cx="66" cy="232" r="15" fill="#3FA07A" stroke="#1B1420" stroke-width="4"/><circle cx="334" cy="232" r="15" fill="#3FA07A" stroke="#1B1420" stroke-width="4"/>
+        <!-- olhos: pálpebra azul, olho grande -->
+        <path d="M96 190 Q132 146 172 186 Q134 172 96 190 Z M228 186 Q268 146 304 190 Q266 172 228 186 Z" fill="#4E73B5" stroke="#1B1420" stroke-width="4"/>
+        <ellipse cx="134" cy="196" rx="34" ry="21" fill="#F7F0D9" stroke="#1B1420" stroke-width="4"/><ellipse cx="266" cy="196" rx="34" ry="21" fill="#F7F0D9" stroke="#1B1420" stroke-width="4"/>
+        <circle cx="142" cy="197" r="9" fill="#1B1420"/><circle cx="258" cy="197" r="9" fill="#1B1420"/><circle cx="145" cy="194" r="2.5" fill="#fff"/><circle cx="261" cy="194" r="2.5" fill="#fff"/>
+        <g class="yb-lid"><ellipse cx="134" cy="196" rx="35" ry="22" fill="#4E73B5" stroke="#1B1420" stroke-width="4"/><ellipse cx="266" cy="196" rx="35" ry="22" fill="#4E73B5" stroke="#1B1420" stroke-width="4"/></g>
+        <path d="M92 158 Q130 132 176 160 M224 160 Q270 132 308 158" fill="none" stroke="#1B1420" stroke-width="6"/>
+        <!-- verruga, narigão e boca -->
+        <circle cx="200" cy="150" r="12" fill="#9A5E45" stroke="#1B1420" stroke-width="4"/>
+        <path d="M186 176 C178 220 150 246 168 268 C182 284 218 284 232 268 C250 246 222 220 214 176 Z" fill="#E3B594" stroke="#1B1420" stroke-width="5"/>
+        <path d="M176 262 Q186 270 196 264 M204 264 Q214 270 224 262" fill="none" stroke="#1B1420" stroke-width="4"/>
+        <path d="M146 290 Q200 276 254 290 Q200 306 146 290 Z" fill="#B3262B" stroke="#1B1420" stroke-width="4"/>
+        <path d="M150 290 Q200 296 250 290" fill="none" stroke="#1B1420" stroke-width="3"/>
+        <!-- olheiras, rugas e narinas -->
+        <path d="M104 222 Q134 236 166 222 M234 222 Q266 236 296 222 M110 232 Q134 244 160 234 M240 234 Q266 244 290 232" fill="none" stroke="#C99A7C" stroke-width="3.5"/>
+        <path d="M150 128 Q200 118 250 128 M162 116 Q200 108 238 116" fill="none" stroke="#C99A7C" stroke-width="3.5"/>
+        <path d="M128 300 Q140 296 146 290 M272 300 Q260 296 254 290" fill="none" stroke="#1B1420" stroke-width="3.5"/>
+        <!-- mechas do cabelo -->
+        <path d="M84 150 Q110 108 160 100 M316 150 Q290 108 240 100 M150 70 Q200 56 250 70" fill="none" stroke="#B2ADA2" stroke-width="4"/>
+      </g></g>
+      <!-- mão estendida, anéis e unhas -->
+      <g class="yb-hand">
+        <path d="M300 372 C296 340 312 318 336 320 C354 300 372 306 368 326 C384 322 392 338 380 350 C390 360 384 378 368 378 C360 396 320 402 300 372 Z" fill="#EBC6A8" stroke="#1B1420" stroke-width="5"/>
+        <path d="M332 322 Q340 340 336 356 M362 330 Q358 346 350 356" fill="none" stroke="#1B1420" stroke-width="3.5"/>
+        <circle cx="366" cy="312" r="8" fill="#C22026" stroke="#1B1420" stroke-width="3"/><circle cx="386" cy="340" r="7" fill="#C22026" stroke="#1B1420" stroke-width="3"/>
+        <rect x="318" y="336" width="22" height="12" rx="5" fill="#F3C969" stroke="#1B1420" stroke-width="3" transform="rotate(-18 329 342)"/><circle cx="329" cy="336" r="7" fill="#3FA07A" stroke="#1B1420" stroke-width="3"/>
+      </g>
+    </svg>
+    <div class="yb-side">
+      <p class="yb-say" id="ybSay"></p>
+      <form class="yb-paper" id="ybForm" autocomplete="off">
+        <h2>契約書</h2><small>Contrato de passagem pelo vale</small>
+        <label id="ybLabel" for="ybNome">Assine aqui</label>
+        <input id="ybNome" name="nome" maxlength="24" placeholder="Seu nome" inputmode="text" autocapitalize="words" spellcheck="false">
+        <div class="yb-letters" id="ybLetters" hidden aria-hidden="true"></div>
+      </form>
+      <div class="yb-btns"><button type="button" class="primary" id="ybSign">Assinar</button><button type="button" class="quiet" id="ybSkip">Entrar sem assinar</button></div>
+      <p class="yb-note">O nome fica guardado só neste navegador. Dá para trocar depois, na estação do fim da linha.</p>
+    </div>
+  </div>
+</div>
 <div class="loader" id="loader" role="dialog" aria-modal="true" aria-label="Idioma · Language">
   <svg class="ld-seal" viewBox="0 0 120 120" aria-hidden="true">
     <rect class="ld-fill" x="6" y="6" width="108" height="108" rx="12"/>
@@ -860,6 +968,7 @@ a.q { text-decoration: none; }
     </g>
   </svg>
   <p class="ld-name">Rateke</p>
+  <p class="ld-back" id="ldBack" hidden><span>Você voltou,</span> <b data-noi18n></b></p>
   <div class="ld-bar"><i id="loaderBar"></i></div>
   <p class="ld-msg" id="loaderMsg" role="status" aria-live="polite">Preparando o vale</p>
   <div class="ld-peso" role="group" aria-label="Peso do vale · Detail level" data-noi18n>
@@ -897,6 +1006,7 @@ a.q { text-decoration: none; }
       <span class="w-kicker" id="pcKicker"></span>
       <h2 id="pcTitle"></h2>
       <p id="pcText"></p>
+      <p class="pc-you" id="pcYou" hidden><span>Você já passou por aqui,</span> <b data-noi18n></b></p>
       <div class="pc-footer" id="pcFooter" hidden></div>
          <div class="pc-actions" id="pcActions"></div>
     </div>
@@ -927,6 +1037,7 @@ a.q { text-decoration: none; }
       <div class="lockup" id="heroLockup" role="button" tabindex="0" aria-label="Abrir o perfil"><svg viewBox="0 0 120 120" aria-hidden="true"><use href="#seal"/></svg><span class="wordmark">Rateke</span></div>
       <h1>A jornada é o que dá forma ao mundo.</h1>
       <span class="who">Fernando Rateke · Portfólio 2026</span>
+      <span class="who-you" id="whoYou" hidden><span></span> <b data-noi18n></b></span>
     </div>
   </div>
 </header>
@@ -1097,6 +1208,7 @@ a.q { text-decoration: none; }
   <canvas id="worldCanvas" role="img" aria-label="Mundo de destaque em 3D"></canvas>
   <div class="world-labels" id="worldLabels" aria-hidden="true"></div>
   <p class="world-line" id="worldLine" aria-live="polite"></p>
+  <div class="world-ticket" id="worldTicket" hidden><span>Bilhete · Fim da linha</span><b data-noi18n></b><span>Só de ida</span></div>
   <div class="world-top">
     <button class="w-btn" id="worldBack" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>Voltar ao vale</button>
     <div class="world-title" id="worldTitle"></div>
@@ -1271,6 +1383,79 @@ a.q { text-decoration: none; }
 
 
 <script>
+/* visitante: a Yubaba fica com um pedaço do nome (Chihiro vira Sen) e o vale passa a chamar a pessoa pelo que sobrou.
+   Sem login: tudo fica no localStorage deste navegador (nome, lugares visitados, se já deixou ema). */
+(() => {
+  const KEY = "vale-visitante", fns = [];
+  let v = null, back = false;
+  try { v = JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) { v = null; }
+  if (v && typeof v === "object") { back = true; v.lugares = Array.isArray(v.lugares) ? v.lugares : []; try { if (!sessionStorage.getItem("vale-visita")) { v.visitas = (v.visitas || 1) + 1; sessionStorage.setItem("vale-visita", "1"); } } catch (e) { /* */ } } else v = null;
+  const save = () => { try { if (v) localStorage.setItem(KEY, JSON.stringify(v)); else localStorage.removeItem(KEY); } catch (e) { /* sem storage */ } fns.forEach((f) => { try { f(api); } catch (e) { /* */ } }); };
+  // o pedaço que sobra: a primeira sílaba do primeiro nome, com pelo menos três letras quando o nome deixa
+  const steal = (full) => {
+    const first = String(full).trim().split(/\s+/)[0].replace(/[^\p{L}'-]/gu, "");
+    const plain = first.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase(), vow = (c) => "aeiouy".includes(c);
+    if (first.length <= 3) return first.length <= 2 ? first : first.slice(0, 2);
+    let i = 0; while (i < plain.length && !vow(plain[i])) i++; while (i < plain.length && vow(plain[i])) i++;
+    if (i < plain.length - 1 && !vow(plain[i]) && !vow(plain[i + 1])) i++;
+    i = Math.max(i, Math.min(3, first.length - 1)); i = Math.min(i, first.length - 1, 5);
+    return first.slice(0, i);
+  };
+  const api = {
+    get: () => v, back: () => back, steal,
+    nome: () => (v && v.resto) || null,
+    sign(full) { const clean = String(full).trim().replace(/\s+/g, " ").slice(0, 24), resto = steal(clean); if (!resto) return null; const r = resto[0].toUpperCase() + resto.slice(1); v = Object.assign(v || { desde: new Date().toISOString(), visitas: 1, lugares: [] }, { nome: clean, resto: r, pulou: false }); save(); return r; },
+    skip() { v = Object.assign(v || { desde: new Date().toISOString(), visitas: 1, lugares: [] }, { pulou: true }); save(); },
+    visit(id) { if (!v || !id) return false; const had = v.lugares.includes(id); if (!had) { v.lugares.push(id); save(); } return had; },
+    seen: (id) => !!(v && v.lugares.includes(id)),
+    mark(k, val) { if (v) { v[k] = val; save(); } },
+    on: (f) => fns.push(f),
+  };
+  window.visitante = api;
+  const T = (s) => (window.i18n ? window.i18n.t(s) : s);
+  // onde o nome aparece fora dos cartões: carregamento, capa e bilhete do trem
+  const paint = () => {
+    const n = api.nome(), lb = document.getElementById("ldBack"), wy = document.getElementById("whoYou"), tk = document.getElementById("worldTicket");
+    if (lb) { lb.hidden = !(n && back); lb.querySelector("b").textContent = n ? n + "." : ""; }
+    if (wy) { wy.hidden = !n; wy.querySelector("span").textContent = back ? "Você voltou," : "Bem-vindo ao vale,"; wy.querySelector("b").textContent = n ? n + "." : ""; }
+    if (tk) tk.querySelector("b").textContent = n || T("Passageiro sem nome");
+  };
+  api.on(paint); paint();
+  window.addEventListener("mundo", (e) => { const w = document.getElementById("world"), tk = document.getElementById("worldTicket"); if (tk) tk.hidden = !(e.detail === "open" && w && /^(trem|ultimo)$/.test(w.dataset.world || "")); });
+
+  /* a cena do contrato */
+  const el = document.getElementById("yubaba"); if (!el) return;
+  const say = document.getElementById("ybSay"), form = document.getElementById("ybForm"), inp = document.getElementById("ybNome"), letters = document.getElementById("ybLetters"), label = document.getElementById("ybLabel");
+  const bSign = document.getElementById("ybSign"), bSkip = document.getElementById("ybSkip");
+  let done = null, step = 0;
+  const line = (parts) => { say.textContent = ""; parts.forEach((p) => { if (typeof p === "string") { const sp = document.createElement("span"); sp.textContent = p; say.appendChild(sp); } else { const b = document.createElement("b"); b.dataset.noi18n = ""; b.textContent = p[0]; say.appendChild(b); } }); };
+  const close = () => { el.classList.add("out"); setTimeout(() => { el.hidden = true; el.classList.remove("out", "took"); if (done) done(); done = null; }, 820); };
+  const reset = (again) => {
+    step = 0; el.classList.remove("took"); inp.hidden = false; inp.value = ""; letters.hidden = true; letters.textContent = ""; label.textContent = "Assine aqui";
+    bSign.textContent = "Assinar"; bSkip.hidden = false; bSkip.textContent = again ? "Deixar como está" : "Entrar sem assinar";
+    line([again ? "De novo você? Quer outro nome? Assine outra vez." : "Então você quer atravessar o meu vale. Assine o contrato."]);
+  };
+  const sign = () => {
+    if (step === 1) { close(); return; }
+    const full = inp.value.trim(); if (!full) { line(["Sem nome não tem contrato. Escreva."]); inp.focus(); return; }
+    const first = full.split(/\s+/)[0], resto = api.sign(full); if (!resto) { line(["Isso não é nome. Escreva direito."]); inp.focus(); return; }
+    step = 1; inp.hidden = true; letters.hidden = false; letters.textContent = ""; label.textContent = "Assinado";
+    const r = letters.getBoundingClientRect(), hand = el.querySelector(".yb-hand").getBoundingClientRect();
+    [...full].forEach((ch, i) => { const sp = document.createElement("span"); sp.textContent = i === 0 ? ch.toUpperCase() : ch; const keep = i < resto.length; sp.className = keep ? "keep" : ""; letters.appendChild(sp);
+      if (!keep) { sp.style.setProperty("--dx", Math.round(hand.left + hand.width / 2 - r.left - i * 14) + "px"); sp.style.setProperty("--dy", Math.round(hand.top + hand.height / 2 - r.top) + "px"); sp.style.setProperty("--r", (i % 2 ? 50 : -40) + "deg"); sp.style.transitionDelay = (0.5 + (i - resto.length) * 0.09) + "s, " + (0.7 + (i - resto.length) * 0.09) + "s, " + (1.4 + (i - resto.length) * 0.05) + "s, 0s"; } });
+    const stolen = full.length > resto.length;
+    line(stolen ? [[first], "? Que nome exagerado. Esse pedaço agora é meu."] : ["Um nome tão pequeno não dá nem para roubar."]);
+    bSign.disabled = true; bSkip.hidden = true;
+    setTimeout(() => { el.classList.add("took"); letters.querySelectorAll("span:not(.keep)").forEach((sp) => sp.classList.add("gone")); }, 60);
+    setTimeout(() => { line(stolen ? ["De agora em diante você se chama ", [resto], ". Entendeu, ", [resto], "? Agora vá."] : ["Fique com ele, ", [resto], ". E não me atrapalhe."]); bSign.disabled = false; bSign.textContent = "Entrar no vale"; bSign.focus(); }, stolen ? 2300 : 900);
+  };
+  bSign.addEventListener("click", sign); form.addEventListener("submit", (e) => { e.preventDefault(); sign(); });
+  bSkip.addEventListener("click", () => { if (!v || !v.resto) api.skip(); close(); });
+  // abre a cena; cb roda quando ela fecha. again: a pessoa pediu para trocar de nome
+  window.yubaba = { needed: () => !v || (!v.resto && !v.pulou), open(cb, again) { done = cb || null; reset(!!again); el.hidden = false; setTimeout(() => { try { inp.focus({ preventScroll: true }); } catch (e) { /* */ } }, 300); } };
+})();
+</script>
+<script>
 /* peso do vale: leve, médio ou completo. Escolhido na entrada, guardado no navegador, trocável pelo botão ao lado do idioma */
 (() => {
   const KEY = "vale-peso", ORDER = ["leve", "medio", "completo"], NAMES = { leve: "Leve", medio: "Médio", completo: "Completo" };
@@ -1306,6 +1491,7 @@ a.q { text-decoration: none; }
   let ready = false, chosen = false, closing = false;
   const finish = () => {
     if (!ready || !chosen || closing) return; closing = true;
+    if (window.yubaba && window.yubaba.needed()) window.yubaba.open();
     setTimeout(() => ld.classList.add("done"), Math.max(250, 3000 - (performance.now() - t0)));
     setTimeout(() => ld.remove(), Math.max(1200, 4100 - (performance.now() - t0)));
   };
@@ -1419,9 +1605,9 @@ a.q { text-decoration: none; }
         try { localStorage.setItem(LOCAL, JSON.stringify(list.slice(0, 30))); } catch (e) { /* sem storage */ }
         status.textContent = "Pendurado (só neste navegador, por enquanto).";
       }
-      txt.value = ""; sync(); load();
+      txt.value = ""; sync(); load(); if (window.visitante) window.visitante.mark("ema", true);
     });
-    const open = () => { lastFocus = document.activeElement; box.hidden = false; status.textContent = ""; sync(); load(); setTimeout(() => txt.focus(), 50); };
+    const open = () => { lastFocus = document.activeElement; box.hidden = false; status.textContent = ""; const vn = window.visitante && window.visitante.nome(); if (vn && !nome.value) nome.value = vn; sync(); load(); setTimeout(() => txt.focus(), 50); };
     const close = () => { box.hidden = true; if (lastFocus && lastFocus.focus) lastFocus.focus(); };
     document.getElementById("emaClose").addEventListener("click", close);
     box.addEventListener("click", (e) => { if (e.target === box) close(); });

@@ -4040,6 +4040,9 @@
     $("pcKicker").textContent = P.kicker;
     $("pcTitle").innerHTML = `<span aria-hidden="true">${P.k}</span>${P.name}`;
     $("pcText").textContent = P.text;
+    // o vale lembra por onde a pessoa já passou e a chama pelo nome que sobrou
+    const you = $("pcYou"), vz = window.visitante;
+    if (you && vz) { const n = vz.nome(), had = vz.visit(id); you.hidden = !(n && had); you.querySelector("b").textContent = n ? n + "." : ""; const mk = explore.markers[id]; if (mk && mk.classList) mk.classList.add("seen"); }
     $("placeCard").classList.toggle("is-footer", !!P.footer);
     const foot = $("pcFooter");
     if (foot) { foot.hidden = !P.footer; if (P.footer) fillFooter(foot); }
@@ -4069,10 +4072,12 @@
       <div class="pf-season" role="group" aria-label="Estação do ano no vale"><h3>季節 · Estação do ano</h3>
         ${[["auto", "暦", "Pelo calendário"], ["primavera", "春", "Primavera"], ["verao", "夏", "Verão"], ["outono", "秋", "Outono"], ["inverno", "冬", "Inverno"]].map(([id, k, n]) => `<button type="button" class="pf-chip" data-season="${id}" aria-pressed="${(seasonPick || "auto") === id}"><b aria-hidden="true">${k}</b>${n}</button>`).join("")}
       </div>
+      <div class="pf-you"><h3>名 · Seu nome no vale</h3><p>${window.visitante && window.visitante.nome() ? `<span>A Yubaba deixou você com</span> <b data-noi18n>${window.visitante.nome().replace(/[<>&"]/g, "")}</b>` : "<span>Você entrou sem assinar o contrato.</span>"}</p><button type="button" class="pf-chip" data-yubaba>${window.visitante && window.visitante.nome() ? "Trocar de nome" : "Assinar o contrato"}</button></div>
       <div class="pf-lang" role="group" aria-label="Idioma · Language" data-noi18n><h3>言語 · Idioma · Language</h3>${[["pt", "Português"], ["en", "English"]].map(([id, n]) => `<button type="button" class="pf-chip" data-lang="${id}" aria-pressed="${((window.i18n && window.i18n.lang) || "pt") === id}">${n}</button>`).join("")}</div>
       <p class="pf-credits">© 2026 Fernando Rateke. Vale feito à mão com Three.js. Homenagem ao Studio Ghibli: personagens e castelo pertencem aos seus autores. Músicas: Joe Hisaishi, Evan Call e Claude Debussy.</p>
       <p class="pf-credits">Modelos 3D: Totoro, Gatobus, Jiji e Lily por Patrickart.hk, reduzidos e pintados com permissão do autor. Nuvens por lavakongen (CC BY 4.0). Objetos da mesa da Zeniba por SkizardSel (CC BY-NC 4.0). Trem, Cabeça de Nabo, Haku, fuligem, barco e balde da Ponyo, ramen e sapatos da Chihiro: modelos de seus respectivos autores, adaptados para o vale.</p>`;
     foot.querySelectorAll("[data-season]").forEach((b) => b.addEventListener("click", () => setSeason(b.dataset.season)));
+    const ybB = foot.querySelector("[data-yubaba]"); if (ybB) ybB.addEventListener("click", () => { if (window.yubaba) window.yubaba.open(() => { if (explore.place) showCard(explore.place); }, true); });
     const emaB = foot.querySelector("[data-ema]"); if (emaB) emaB.addEventListener("click", () => { if (window.emaMural) window.emaMural.open(); });
     const ul = foot.querySelector(".pf-links");
     links.forEach((a) => { const li = document.createElement("li"); const c = a.cloneNode(true); c.className = ""; li.appendChild(c); ul.appendChild(li); });

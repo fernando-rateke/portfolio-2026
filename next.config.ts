@@ -7,6 +7,8 @@ const nextConfig: NextConfig = {
       beforeFiles: [
         { source: "/", destination: "/vale/index.html" },
         { source: "/vale", destination: "/vale/index.html" },
+        // moderação das emas: página estática; a senha é conferida nas rotas /api/admin
+        { source: "/admin", destination: "/admin/index.html" },
       ],
       afterFiles: [],
       fallback: [],

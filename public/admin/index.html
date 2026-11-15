@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Rateke · Mural de ema</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<style>
+  :root { --paper: #F1E6CE; --ink: #2A211D; --red: #C22026; --mute: #6C5A45; }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; background: #151A26; color: #F4EBDD; font: 400 16px/1.5 Georgia, "Times New Roman", serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 28px 16px 64px; }
+  h1 { margin: 0 0 4px; font-size: 1.6rem; }
+  .sub { margin: 0 0 22px; opacity: 0.7; font-size: 0.92rem; }
+  .card { background: var(--paper); color: var(--ink); border-radius: 6px; padding: 18px; box-shadow: 0 10px 30px rgba(0,0,0,0.35); }
+  label { display: block; font: 600 0.72rem/1.4 ui-monospace, monospace; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mute); }
+  input[type=password] { width: 100%; margin: 6px 0 14px; padding: 12px; font: inherit; border: 1px solid #B9A98C; border-radius: 6px; background: #fff; color: var(--ink); }
+  button { min-height: 44px; padding: 10px 16px; border-radius: 999px; border: 1px solid rgba(42,33,29,0.35); background: transparent; color: inherit; font: 600 0.9rem/1 Georgia, serif; cursor: pointer; }
+  button.primary { background: var(--red); border-color: var(--red); color: #fff; }
+  button.danger { color: var(--red); border-color: rgba(194,32,38,0.5); }
+  button:disabled { opacity: 0.5; cursor: default; }
+  .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 0 0 16px; }
+  .bar .sp { flex: 1; }
+  .bar button { color: #F4EBDD; border-color: rgba(244,235,221,0.4); }
+  .bar button[aria-pressed=true] { background: #F4EBDD; color: #151A26; }
+  .msg { min-height: 1.5em; margin: 10px 0 0; font-size: 0.92rem; }
+  .list { display: grid; gap: 12px; }
+  .ema { display: grid; gap: 8px; border-left: 8px solid #B98A52; }
+  .ema[data-cor=vermelho] { border-left-color: #C22026; } .ema[data-cor=azul] { border-left-color: #3B6FA8; } .ema[data-cor=verde] { border-left-color: #4E8B5A; }
+  .ema header { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: baseline; }
+  .ema b { font-size: 1.05rem; }
+  .ema time { font: 500 0.72rem/1 ui-monospace, monospace; color: var(--mute); }
+  .ema p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .tag { font: 600 0.66rem/1 ui-monospace, monospace; letter-spacing: 0.12em; text-transform: uppercase; padding: 5px 8px; border-radius: 999px; background: #E3D3B0; color: var(--mute); }
+  .tag.ok { background: #CFE3C8; color: #2F5A36; }
+  .acts { display: flex; flex-wrap: wrap; gap: 8px; }
+  .empty { opacity: 0.7; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Mural de ema</h1>
+  <p class="sub">Recados deixados na estação do fim da linha. Só os aprovados aparecem para os visitantes.</p>
+
+  <form class="card" id="login" hidden>
+    <label for="senha">Senha</label>
+    <input type="password" id="senha" autocomplete="current-password" required>
+    <button class="primary" type="submit">Entrar</button>
+    <p class="msg" id="loginMsg" role="status"></p>
+  </form>
+
+  <section id="painel" hidden>
+    <div class="bar">
+      <button type="button" data-f="pendentes" aria-pressed="true">Esperando</button>
+      <button type="button" data-f="aprovadas" aria-pressed="false">Aprovadas</button>
+      <button type="button" data-f="todas" aria-pressed="false">Todas</button>
+      <span class="sp"></span>
+      <button type="button" id="recarregar">Atualizar</button>
+      <button type="button" id="sair">Sair</button>
+    </div>
+    <p class="msg" id="msg" role="status"></p>
+    <div class="list" id="lista"></div>
+  </section>
+</main>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const login = $("login"), painel = $("painel"), lista = $("lista"), msg = $("msg"), loginMsg = $("loginMsg");
+  let emas = [], filtro = "pendentes";
+  const api = async (url, method = "GET", body) => {
+    const r = await fetch(url, { method, headers: body ? { "Content-Type": "application/json" } : undefined, body: body ? JSON.stringify(body) : undefined, credentials: "same-origin", cache: "no-store" });
+    let j = {}; try { j = await r.json(); } catch (e) { /* sem corpo */ }
+    return { status: r.status, ok: r.ok && j.ok !== false, j };
+  };
+  const mostra = (dentro) => { login.hidden = dentro; painel.hidden = !dentro; if (!dentro) $("senha").focus(); };
+  const desenha = () => {
+    lista.textContent = "";
+    const vis = emas.filter((e) => filtro === "todas" || (filtro === "aprovadas") === !!e.aprovado);
+    if (!vis.length) { const p = document.createElement("p"); p.className = "empty"; p.textContent = filtro === "pendentes" ? "Nenhum recado esperando aprovação." : "Nada por aqui."; lista.appendChild(p); return; }
+    for (const e of vis) {
+      const a = document.createElement("article"); a.className = "card ema"; a.dataset.cor = e.cor || "madeira";
+      const h = document.createElement("header"), b = document.createElement("b"), t = document.createElement("time"), tag = document.createElement("span");
+      b.textContent = e.nome || "Visitante"; t.textContent = e.criado_em ? new Date(e.criado_em).toLocaleString("pt-BR") : "";
+      tag.className = "tag" + (e.aprovado ? " ok" : ""); tag.textContent = e.aprovado ? "Aprovada" : "Esperando";
+      h.append(b, t, tag);
+      const p = document.createElement("p"); p.textContent = e.recado;
+      const acts = document.createElement("div"); acts.className = "acts";
+      const ap = document.createElement("button"); ap.type = "button"; ap.className = e.aprovado ? "" : "primary"; ap.textContent = e.aprovado ? "Esconder" : "Aprovar";
+      ap.addEventListener("click", () => muda(e, "PATCH", { id: e.id, aprovado: !e.aprovado }, ap));
+      const del = document.createElement("button"); del.type = "button"; del.className = "danger"; del.textContent = "Apagar";
+      del.addEventListener("click", () => { if (confirm("Apagar este recado para sempre?")) muda(e, "DELETE", { id: e.id }, del); });
+      acts.append(ap, del); a.append(h, p, acts); lista.appendChild(a);
+    }
+  };
+  const carrega = async () => {
+    msg.textContent = "Carregando...";
+    const r = await api("/api/admin/ema");
+    if (r.status === 401) { mostra(false); return; }
+    if (!r.ok) { msg.textContent = r.j.motivo === "sem-banco" ? "O banco não está configurado neste ambiente." : "Não deu para carregar. Tente de novo."; return; }
+    emas = r.j.emas || []; const n = emas.filter((e) => !e.aprovado).length;
+    msg.textContent = emas.length + " recados no total, " + n + " esperando."; desenha();
+  };
+  const muda = async (e, method, body, btn) => {
+    btn.disabled = true;
+    const r = await api("/api/admin/ema", method, body);
+    if (r.status === 401) { mostra(false); return; }
+    if (!r.ok) { msg.textContent = "Não deu certo. Tente de novo."; btn.disabled = false; return; }
+    if (method === "DELETE") emas = emas.filter((x) => x.id !== e.id); else e.aprovado = body.aprovado;
+    msg.textContent = method === "DELETE" ? "Recado apagado." : body.aprovado ? "Recado aprovado." : "Recado escondido."; desenha();
+  };
+  login.addEventListener("submit", async (ev) => {
+    ev.preventDefault(); loginMsg.textContent = "";
+    const r = await api("/api/admin/login", "POST", { senha: $("senha").value });
+    $("senha").value = "";
+    if (!r.ok) { loginMsg.textContent = r.status === 429 ? "Muitas tentativas. Espere alguns minutos." : r.status === 503 ? "A senha de administração não está configurada neste ambiente." : "Senha errada."; return; }
+    mostra(true); carrega();
+  });
+  document.querySelectorAll("[data-f]").forEach((b) => b.addEventListener("click", () => { filtro = b.dataset.f; document.querySelectorAll("[data-f]").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); desenha(); }));
+  $("recarregar").addEventListener("click", carrega);
+  $("sair").addEventListener("click", async () => { await api("/api/admin/login", "DELETE"); mostra(false); });
+  api("/api/admin/login").then((r) => { const dentro = !!(r.j && r.j.dentro); mostra(dentro); if (dentro) carrega(); });
+})();
+</script>
+</body>
+</html>

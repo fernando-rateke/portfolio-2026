@@ -1133,7 +1133,10 @@
     }
     let down = null;
     canvas.addEventListener("pointerdown", (e) => { down = { x: e.clientX, y: e.clientY, t: performance.now() }; });
-    canvas.addEventListener("pointerup", (e) => { if (down && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 10 && performance.now() - down.t < 500) toss(e); down = null; });
+    canvas.addEventListener("pointerup", (e) => { if (down && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 10 && performance.now() - down.t < 500) {
+      const r = canvas.getBoundingClientRect(), touch = e.pointerType === "touch";
+      if (!intro.active && hakuRef.hit && hakuRef.hit((e.clientX - r.left) / r.width * 2 - 1, -((e.clientY - r.top) / r.height * 2 - 1), touch ? 46 : 26) && hakuRef.dive()) { /* o Haku mergulha */ } else toss(e);
+    } down = null; });
     return {
       list, zones, toss,
       // confeito livre mais próximo dentro da zona
@@ -1142,6 +1145,7 @@
       update(dt) {
         let over = false;
         if (explore.active && !intro.active) { ndc.set(pointer.x, -pointer.y); ray.setFromCamera(ndc, camera); for (const z of zones) if (z.hit(ray.ray)) over = true; }
+        if (!over && !intro.active && hakuRef.hit && hakuRef.hit(pointer.x, -pointer.y, 26)) over = true;
         if (canvas.style.cursor !== (over ? "pointer" : "")) canvas.style.cursor = over ? "pointer" : "";
         for (const c of list) {
           if (c.state === "gone") continue;
@@ -1834,10 +1838,57 @@
     const at = (u, o) => o.set(Math.cos(u) * 165 + Math.sin(u * 3) * 22, 46 + Math.sin(u * 2) * 8, -175 + Math.sin(u) * 95 + Math.cos(u * 3) * 14);
     hakuRef.path = at;
     const p = new T.Vector3();
+    // Mergulho: clicar no Haku (ou digitar "Kohaku") faz ele largar a rota, descer e passar rente à câmera com as
+    // escamas acesas, e depois subir de volta. A cabeça segue uma curva nova; o corpo continua passando por onde ela passou.
+    let dive = null, uOff = 0, uNow = 0, lastT = null, shine = 0;
+    const MIDI = (NS >> 1) * 3, DQ = (LEN + 3) / FINE, UP = new T.Vector3(0, 1, 0), tmpA = new T.Vector3(), tmpB = new T.Vector3();
+    function diveAt(q, o) {
+      const d = dive;
+      if (q < 0) return d.summon ? o.copy(d.p0).addScaledVector(d.back, -q) : at(d.u0 + q / d.v0, o);
+      if (q > d.len) return at(d.u1 + (q - d.len) / d.v1, o);
+      return o.copy(d.curve.getPointAt(q / d.len));
+    }
+    function startDive(summon) {
+      if (!hakuRef.on || dive || peso < 1 || reduce) return false;
+      const C = camera.position, D = camera.getWorldDirection(new T.Vector3()), R = new T.Vector3().crossVectors(D, UP).normalize(), Dh = new T.Vector3(D.x, 0, D.z).normalize();
+      const side = hakuRef.head.clone().sub(C).dot(R) >= 0 ? 1 : -1;
+      const far = camera.aspect < 1 ? 2.1 : 1; // tela em pé: passa mais longe para caber inteiro
+      const P = (f, r, h) => { const v = C.clone().addScaledVector(Dh, f * far).addScaledVector(R, r * side); v.y = Math.max(C.y + h, Math.max(heightAt(v.x, v.z), 0) + 2.6); return v; };
+      const u0 = uNow, u1 = u0 + 0.5, pts = [];
+      const p0 = summon ? P(120, 85, 34) : at(u0, new T.Vector3());
+      pts.push(p0); if (!summon) pts.push(at(u0 + 0.02, new T.Vector3()));
+      pts.push(P(75, 46, 12), P(30, 17, 0.4), P(19, -5, -1.6), P(30, -36, 5), P(75, -78, 28));
+      pts.push(at(u1 - 0.03, new T.Vector3()), at(u1, new T.Vector3()));
+      const curve = new T.CatmullRomCurve3(pts, false, "centripetal"); curve.arcLengthDivisions = 400;
+      const sp = (u) => at(u + 0.004, tmpA).distanceTo(at(u, tmpB)) / 0.004;
+      dive = { curve, len: curve.getLength(), q: 0, u0, u1, v0: sp(u0), v1: sp(u1), summon, p0, back: summon ? p0.clone().sub(pts[1]).normalize() : null };
+      if (amb.whoosh) amb.whoosh();
+      return true;
+    }
+    hakuRef.dive = startDive;
+    hakuRef.state = () => (dive ? { q: Math.round(dive.q), len: Math.round(dive.len) } : null);
+    hakuRef.skip = (q) => { if (dive) dive.q = q < 0 ? dive.len + q : q; }; // testes: pula para um ponto do mergulho
+    // o ponteiro está em cima dele? (compara na tela com alguns pontos da espinha)
+    hakuRef.hit = (nx, ny, px) => {
+      if (!hakuRef.on || !mid.visible) return false;
+      for (let i = 0; i < NS; i += 3) { p.set(SP[i * 3], SP[i * 3 + 1], SP[i * 3 + 2]).project(camera); if (p.z < 1 && Math.hypot((p.x - nx) * W * 0.5, (p.y - ny) * H * 0.5) < px) return true; }
+      return false;
+    };
+    let typed = "";
+    addEventListener("keydown", (e) => {
+      const el = e.target; if (e.key.length !== 1 || e.ctrlKey || e.metaKey || e.altKey || (el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)))) return;
+      typed = (typed + e.key.toLowerCase()).slice(-6); if (typed === "kohaku") { typed = ""; if (running) startDive(true); }
+    });
+    const sparks = []; for (let i = 0; i < (small ? 6 : 12); i++) { const sp = glowSprite(i % 2 ? "#BFFFF0" : "#FFFFFF", 1); sp.visible = false; mid.add(sp); sparks.push(sp); }
     function spine(t) {
+      const dt = lastT === null ? 0 : Math.max(0, Math.min(0.1, t - lastT)); lastT = t;
+      if (dive) {
+        dive.q += dt * (8 + 24 * smooth(0, 30, dive.q) * (1 - smooth(dive.len - 80, dive.len, dive.q)));
+        if (dive.q > dive.len + LEN + 2) { uOff = dive.u1 + (dive.q - dive.len) / dive.v1 - t * 0.05; dive = null; }
+      }
       // 1. o caminho que a cabeça já fez, em passos iguais de distância
-      const u = hakuRef.u != null ? hakuRef.u : t * 0.05, du = 0.36 / FINE;
-      const src = hakuRef.trail || ((k, o) => at(u - k * du, o));
+      const u = t * 0.05 + uOff, du = 0.36 / FINE; uNow = u;
+      const src = dive ? (k, o) => diveAt(dive.q - k * DQ, o) : (k, o) => at(u - k * du, o);
       for (let k = 0; k < FINE; k++) { src(k, p); FP[k * 3] = p.x; FP[k * 3 + 1] = p.y; FP[k * 3 + 2] = p.z; FD[k] = k ? FD[k - 1] + Math.hypot(p.x - FP[k * 3 - 3], p.y - FP[k * 3 - 2], p.z - FP[k * 3 - 1]) : 0; }
       let k = 0;
       for (let i = 0; i < NS; i++) {
@@ -1889,6 +1940,15 @@
       }
       mesh.geometry.attributes.position.needsUpdate = true; mesh.geometry.attributes.normal.needsUpdate = true;
       hakuRef.head.set(SP[0], SP[1], SP[2]);
+      // escamas acesas enquanto ele passa perto, com faíscas soltando do corpo
+      const want = dive ? 1 - smooth(22, 110, Math.min(hakuRef.head.distanceTo(camera.position), p.set(SP[MIDI], SP[MIDI + 1], SP[MIDI + 2]).distanceTo(camera.position))) : 0;
+      shine += (want - shine) * 0.08; mesh.material.uniforms.uShine.value = shine * 0.85;
+      sparks.forEach((sp, i) => {
+        sp.visible = shine > 0.03; if (!sp.visible) return;
+        const k = ((t * 0.9 + i * 0.37) % 1), j = Math.min(NS - 1, ((i + 0.5) / sparks.length * (NS - 6)) | 0) * 3, a = t * 2 + i * 2.4;
+        sp.position.set(SP[j] + Math.cos(a) * (1.4 + k * 2.2), SP[j + 1] + 0.6 + k * 3 * Math.sin(i * 1.7), SP[j + 2] + Math.sin(a) * (1.4 + k * 2.2));
+        sp.material.opacity = shine * Math.sin(k * Math.PI) * 0.9; sp.scale.setScalar(0.5 + (1 - k) * 0.9);
+      });
     }
     loadModel("haku-partes.glb", (src) => {
       src.updateMatrixWorld(true);
@@ -3002,6 +3062,12 @@
     chain(loop(), F("bandpass", 480, 0.8), G(1.1), rain);
     return {
       wind, rain, boat, snore, candle, windBp,
+      // o Haku passando: um sopro que abre e fecha
+      whoosh(t) {
+        const f = F("bandpass", 300, 0.9), g = G(); f.frequency.setValueAtTime(260, t); f.frequency.exponentialRampToValueAtTime(1500, t + 3.2); f.frequency.exponentialRampToValueAtTime(380, t + 7);
+        g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.5, t + 3.4); g.gain.linearRampToValueAtTime(0, t + 7.5);
+        const q = ctx.createBufferSource(); q.buffer = nb; q.loop = true; q.start(t); q.stop(t + 7.6); chain(q, f, g, out);
+      },
       // "pop" do motorzinho a vela do barco: batida grave e curta com um estalo por cima
       pop(t, k = 1) {
         const o = ctx.createOscillator(), g = G(); o.type = "sine"; o.frequency.setValueAtTime(190, t); o.frequency.exponentialRampToValueAtTime(74, t + 0.07);
@@ -3046,6 +3112,7 @@
     const wp = new T.Vector3();
     // quanto do som chega: perto da câmera ou perto do ponto para onde ela olha
     const near = (o, R) => { if (!o) return 0; if (o.isVector3) wp.copy(o); else { if (!o.visible || (o.parent === mid && !mid.visible)) return 0; o.getWorldPosition(wp); } const d = Math.min(wp.distanceTo(camera.position), wp.distanceTo(lastTgt) * 1.15), k = Math.max(0, 1 - d / R); return k * k; };
+    amb.whoosh = () => { if (ctx && S && ctx.state === "running" && on()) S.whoosh(ctx.currentTime + 1.2); };
     const levels = { wind: 0, rain: 0, boat: 0, snore: 0, candle: 0 };
     amb.levels = levels;
     actors.push((t) => {

@@ -2089,6 +2089,55 @@
     });
   }
 
+  // Emas de verdade: as aprovadas ganham plaquinha colorida na fileira de cima do porta-ema; quando a pessoa pendura a dela,
+  // uma pena escreve na mesa da Zeniba, a plaquinha voa até o porta-ema e fica balançando.
+  const emaRack = (() => {
+    const sy = STATION.y, RX = STATION.x - 10.5, RZ = STATION.z + 1.2, TONES = { madeira: "#D8B48A", vermelho: "#C9584C", azul: "#5F8FC4", verde: "#6BA674" };
+    const shape = new T.Shape(); shape.moveTo(-0.17, -0.12); shape.lineTo(0.17, -0.12); shape.lineTo(0.17, 0.08); shape.lineTo(0, 0.17); shape.lineTo(-0.17, 0.08); shape.closePath();
+    const base = new T.ExtrudeGeometry(shape, { depth: 0.03, bevelEnabled: false }), geos = {};
+    for (const k in TONES) { const b = Builder(); b.add(base, M(0, -0.34, 0), TONES[k]); b.add(new T.BoxGeometry(0.012, 0.2, 0.012), M(0, -0.1, 0.015), "#E8E0D0"); b.add(new T.BoxGeometry(0.2, 0.012, 0.004), M(0, -0.33, 0.033), "#3A2A20"); b.add(new T.BoxGeometry(0.14, 0.012, 0.004), M(-0.02, -0.38, 0.033), "#3A2A20"); geos[k] = b.build(); }
+    // cada plaquinha gira em torno do alto do cordão
+    const slots = Array.from({ length: 9 }, (_, i) => { const g = new T.Group(), m = new T.Mesh(geos.madeira, objMat); g.add(m); g.visible = false; g.position.set(RX - 1.4 + i * 0.35, sy + 2.5, RZ + 0.14 + (i % 2) * 0.02); scene.add(g); return { g, m, ph: i * 1.9, swing: 0 }; });
+    // a pena: haste e barbas brancas, feita à mão (a do modelo vem colada no tinteiro)
+    const quill = new T.Group(); quill.visible = false; scene.add(quill);
+    { const b = Builder(); b.add(new T.CylinderGeometry(0.006, 0.012, 0.5, 5), M(0, 0.25, 0), "#EDE6D6");
+      const f = new T.Shape(); f.moveTo(0, 0.12); f.quadraticCurveTo(0.09, 0.26, 0.05, 0.5); f.quadraticCurveTo(0.02, 0.56, 0, 0.6); f.quadraticCurveTo(-0.05, 0.46, -0.06, 0.3); f.quadraticCurveTo(-0.05, 0.18, 0, 0.12);
+      b.add(new T.ShapeGeometry(f), new T.Matrix4(), (x, y) => (y > 0.42 ? "#FFFFFF" : "#F1ECE2")); const g = b.build(); const m = new T.Mesh(g, mat(OBJ_VS, OBJ_FS, {}, { side: T.DoubleSide })); m.rotation.z = -0.5; quill.add(m); }
+    let fly = null; // { t0, from, to, slot }
+    const table = new T.Vector3(STATION.x - 13.6 + 0.32, 0, STATION.z + 0.6 + 0.2);
+    const api = {
+      cam: null, // câmera emprestada enquanto a plaquinha é pendurada
+      // plaquinhas das emas aprovadas (as mais novas), na fileira de cima
+      show(list) { slots.slice(0, 8).forEach((sl, i) => { const e = list[i]; sl.g.visible = !!e; if (e) sl.m.geometry = geos[e.cor] || geos.madeira; }); },
+      hang(cor) {
+        const sl = slots[8]; sl.m.geometry = geos[cor] || geos.madeira; sl.g.visible = true; sl.swing = 0;
+        for (let k = 0; k < 14 && heightAt(table.x, table.z) < 0.16; k++) table.z -= 0.35;
+        table.y = heightAt(table.x, table.z) - 0.02 + 75 * 0.014 + 0.05;
+        fly = { t0: null, to: sl.g.position.clone(), sl };
+        const tall = camera.aspect < 1, P = new T.Vector3(RX - (tall ? 0.7 : 0.9), sy + (tall ? 2.8 : 3.0), RZ + (tall ? 18.5 : 7.4)), Tg = new T.Vector3(RX - (tall ? 0.7 : 0.8), sy + (tall ? 1.2 : 1.75), RZ - 0.2);
+        root.classList.add("ema-hanging"); // os cartões saem da frente enquanto a plaquinha é pendurada
+        api.cam = { p: P, t: Tg, w: 0, until: null };
+        if (reduce) { sl.g.position.copy(fly.to); fly = null; api.cam = null; root.classList.remove("ema-hanging"); render(); }
+      },
+    };
+    actors.push((t) => {
+      slots.forEach((sl) => { if (sl.g.visible && sl !== (fly && fly.sl)) sl.g.rotation.z = Math.sin(t * 1.3 + sl.ph) * (0.05 + sl.swing * 0.5); sl.swing *= 0.985; });
+      if (!fly) { if (api.cam) { api.cam.w = Math.max(0, api.cam.w - 0.02); if (api.cam.w === 0) api.cam = null; } return; }
+      if (fly.t0 !== null && t - fly.t0 > 6.4) root.classList.remove("ema-hanging");
+      if (fly.t0 === null) fly.t0 = t;
+      const e = t - fly.t0, sl = fly.sl; api.cam.w = Math.min(1, api.cam.w + 0.03);
+      if (e < 2.6) { // deitada na mesa, a pena escrevendo por cima
+        sl.g.position.set(table.x, table.y + 0.36, table.z); sl.g.rotation.set(-Math.PI / 2, 0, 0.2);
+        quill.visible = true; quill.position.set(table.x - 0.1 + (e / 2.6) * 0.2 + Math.sin(e * 17) * 0.025, table.y + 0.04 + Math.abs(Math.sin(e * 17)) * 0.02, table.z + 0.3 + Math.sin(e * 9) * 0.03); quill.rotation.set(0.25, 0.6, Math.sin(e * 17) * 0.12);
+      } else if (e < 4.3) { // voa em arco até o porta-ema
+        quill.visible = false; const k = (e - 2.6) / 1.7, q = k * k * (3 - 2 * k);
+        sl.g.position.set(table.x + (fly.to.x - table.x) * q, table.y + 0.36 + (fly.to.y - table.y - 0.36) * q + Math.sin(k * Math.PI) * 1.1, table.z + (fly.to.z - table.z) * q);
+        sl.g.rotation.set(-Math.PI / 2 * (1 - q), 0, Math.sin(k * 9) * 0.5 * (1 - k));
+      } else { sl.g.position.copy(fly.to); sl.g.rotation.set(0, 0, 0); sl.swing = 1; if (e > 7) fly = null; else sl.g.rotation.z = Math.sin((e - 4.3) * 6) * 0.45 * Math.exp(-(e - 4.3) * 0.9); }
+    });
+    return api;
+  })();
+
   // Totoro sentado sob a Grande Árvore, olhando o vale
   {
     const x = GT.x + 3.4, z = GT.z + 8.8, g = new T.Group(); g.visible = false; scene.add(g);
@@ -3493,6 +3542,7 @@
   const lastTgt = new T.Vector3();
   let fixedCam = null; // só para conferência: câmera parada num ponto do mundo
   function place(pos, target) {
+    if (emaRack.cam && emaRack.cam.w > 0) { const w = emaRack.cam.w * emaRack.cam.w * (3 - 2 * emaRack.cam.w); pos = pos.clone().lerp(emaRack.cam.p, w); target = target.clone().lerp(emaRack.cam.t, w); }
     if (fixedCam) { pos = fixedCam.p; target = fixedCam.t; }
     lastTgt.copy(target);
     camera.position.copy(pos); camera.lookAt(target); camera.updateMatrixWorld();
@@ -3649,7 +3699,7 @@
   if ($("introSkip")) $("introSkip").addEventListener("click", skipFilm);
   // seek: posiciona a entrada num corte e num ponto do corte (usado para revisar quadros)
   let peekCam = null;
-  window.vale = { konpeito: () => konpeito, amb: () => amb, peso: (n) => { if (n != null) setPeso(n, false); return peso; }, time: (v) => { if (v != null) clock = v; return clock; }, haku: () => hakuRef, dash: () => { if (catbusDash) catbusDash(); }, cam: (p, t) => { fixedCam = p ? { p: new T.Vector3(...p), t: new T.Vector3(...t) } : null; }, season: (n) => setSeason(n), dbg: () => ({ tp: tp.t, opened: tp.opened, running, active: explore.active, place: explore.place, k: explore.k }), toCover: () => { if (explore.active) exitExplore(true); }, info: () => ({ mem: Object.assign({}, renderer.info.memory), prog: renderer.info.programs ? renderer.info.programs.length : 0, calls: renderer.info.render.calls, tris: renderer.info.render.triangles, nodes: scene.children.length, grass: grass.geometry.instanceCount, flowers: flowers.geometry.instanceCount }), peek: (p, t) => { peekCam = p ? { p: new T.Vector3(p[0], p[1] + hillTop, p[2]), t: new T.Vector3(t[0], t[1] + hillTop, t[2]) } : null; }, star: (k) => meteors.launch(k || "vale"), playIntro, go: (id) => { if (!explore.active) startExplore(); go(id); }, seek(i, frac = 0.5) { if (!intro.active) playIntro(); startShot(i); intro.t = intro.shots[i].d * frac; } };
+  window.vale = { ema: emaRack, konpeito: () => konpeito, amb: () => amb, peso: (n) => { if (n != null) setPeso(n, false); return peso; }, time: (v) => { if (v != null) clock = v; return clock; }, haku: () => hakuRef, dash: () => { if (catbusDash) catbusDash(); }, cam: (p, t) => { fixedCam = p ? { p: new T.Vector3(...p), t: new T.Vector3(...t) } : null; }, season: (n) => setSeason(n), dbg: () => ({ tp: tp.t, opened: tp.opened, running, active: explore.active, place: explore.place, k: explore.k }), toCover: () => { if (explore.active) exitExplore(true); }, info: () => ({ mem: Object.assign({}, renderer.info.memory), prog: renderer.info.programs ? renderer.info.programs.length : 0, calls: renderer.info.render.calls, tris: renderer.info.render.triangles, nodes: scene.children.length, grass: grass.geometry.instanceCount, flowers: flowers.geometry.instanceCount }), peek: (p, t) => { peekCam = p ? { p: new T.Vector3(p[0], p[1] + hillTop, p[2]), t: new T.Vector3(t[0], t[1] + hillTop, t[2]) } : null; }, star: (k) => meteors.launch(k || "vale"), playIntro, go: (id) => { if (!explore.active) startExplore(); go(id); }, seek(i, frac = 0.5) { if (!intro.active) playIntro(); startShot(i); intro.t = intro.shots[i].d * frac; } };
 
 
   /* ------------------------------------------------------------------ */
@@ -4110,7 +4160,7 @@
   function frameAroundCard(dt) {
     const card = $("placeCard"), W2 = canvas.clientWidth, H2 = canvas.clientHeight;
     let tx = 0, ty = 0, tz = 1;
-    if (card && !card.hidden && !explore.dolly) {
+    if (card && !card.hidden && !explore.dolly && !emaRack.cam) { // com a ema sendo pendurada o cartão some, então a imagem volta ao centro
       const r = card.getBoundingClientRect(), c = canvas.getBoundingClientRect();
       const top = r.top - c.top, left = r.left - c.left, right = c.right - r.right;
       const above = W2 * top, onLeft = left * H2, onRight = right * H2;

@@ -1,5 +1,6 @@
 // Capturas do vale. Uso: node shot.cjs '<json>'   (servidor em localhost:8124, ver CONTEXTO.md)
 // json: { out: "pasta", w: 1366, h: 768, mobile: false, theme: "light", wait: 9000, raw: false,
+//         base: outra URL (ex.: http://localhost:3111/ com `next start` e o banco de mentira em tools/test/mock.cjs)
 //         shots: [ { name, cam: [[x,y,z],[tx,ty,tz]], js: "código antes", time: 123, wait: 1500, clip: {x,y,width,height} } ] }
 // raw: usa vale-src/vale.js sem minificar (stack legível). time: fixa o relógio do vale naquele quadro.
 const { chromium } = require('playwright'); const fs = require('fs'), path = require('path');
@@ -12,7 +13,7 @@ const { chromium } = require('playwright'); const fs = require('fs'), path = req
   p.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') errs.push(m.type() + ' ' + m.text().slice(0, 600)); });
   if (cfg.raw) for (const f of ['vale.js', 'mundos.js']) await p.route('**/vale/' + f, (r) => r.fulfill({ body: fs.readFileSync(path.join(__dirname, '..', '..', f), 'utf8'), contentType: 'text/javascript' }));
   if (cfg.init) await p.addInitScript(cfg.init);
-  await p.goto('http://localhost:8124/vale/' + (cfg.query || ''), { waitUntil: 'load' }); await p.waitForTimeout(1500);
+  await p.goto((cfg.base || 'http://localhost:8124/vale/') + (cfg.query || ''), { waitUntil: 'load' }); await p.waitForTimeout(1500);
   if (cfg.pre) await p.evaluate(cfg.pre);
   if (!cfg.noLang) await p.getByText('Português', { exact: true }).click();
   const theme = cfg.theme || 'light';

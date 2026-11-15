@@ -738,6 +738,12 @@ a.q { text-decoration: none; }
 .ema-plate[data-cor="azul"] { --wood: #6A92C2; --ink: #0E1A2A; }
 .ema-plate[data-cor="verde"] { --wood: #8AB078; --ink: #142010; }
 .ema-plate-new { animation: none; }
+.ema-hanging .place-card, .ema-hanging .mm-wrap, .ema-hanging .markers { opacity: 0 !important; pointer-events: none; transition: opacity .5s ease; }
+.place-card, .mm-wrap { transition: opacity .5s ease; }
+.ema-quill { position: absolute; left: 0; top: 0; width: 34px; height: 51px; pointer-events: none; transform: translate(var(--qx, 20px), var(--qy, 40px)) translate(-4px, -48px) rotate(8deg); transform-origin: 4px 48px; transition: transform .16s ease-out; filter: drop-shadow(0 3px 3px rgba(0,0,0,0.25)); }
+.ema-quill.writing { animation: emaquill .22s ease-in-out infinite; }
+@keyframes emaquill { 50% { transform: translate(var(--qx, 20px), var(--qy, 40px)) translate(-4px, -50px) rotate(16deg); } }
+@media (prefers-reduced-motion: reduce) { .ema-quill.writing { animation: none; } }
 .ema-empty { grid-column: 1 / -1; margin: 6px 0; font-size: 0.95rem; opacity: 0.75; }
 @keyframes emasway { 50% { transform: rotate(calc(var(--rot, 0deg) * -1)); } }
 @media (max-width: 680px) { .ema-form { grid-template-columns: 1fr; } .ema-k { display: none; } }
@@ -1239,7 +1245,7 @@ a.q { text-decoration: none; }
     <button class="ema-close" id="emaClose" type="button" aria-label="Fechar o mural">&times;</button>
     <header class="ema-head"><span class="ema-k" aria-hidden="true">絵馬</span><div><h2 id="emaTitle">Mural de recados</h2><p>Nos santuários, as pessoas escrevem desejos em plaquinhas de madeira, os ema, e penduram para todo mundo ver. Este é o da estação.</p></div></header>
     <form class="ema-form" id="emaForm" autocomplete="off">
-      <div class="ema-plate ema-plate-new" id="emaPreview" data-cor="madeira"><b id="emaPrevNome">Seu nome</b><span id="emaPrevTxt">Seu recado aparece aqui.</span></div>
+      <div class="ema-plate ema-plate-new" id="emaPreview" data-cor="madeira"><b id="emaPrevNome">Seu nome</b><span id="emaPrevTxt">Seu recado aparece aqui.</span><svg class="ema-quill" id="emaQuill" viewBox="0 0 60 90" aria-hidden="true"><path d="M8 86 L30 40" stroke="#3A2A20" stroke-width="2.5" stroke-linecap="round"/><path d="M30 42 C22 26 30 8 50 3 C56 20 50 38 36 46 Z" fill="#FBF7EE" stroke="#3A2A20" stroke-width="2" stroke-linejoin="round"/><path d="M32 40 L47 9 M36 30 L28 24 M40 22 L33 15 M38 34 L47 30" stroke="#B9AE9A" stroke-width="1.4" stroke-linecap="round" fill="none"/></svg></div>
       <div class="ema-fields">
         <label>Nome <input name="nome" id="emaNome" maxlength="30" placeholder="Como quer assinar"></label>
         <label>Recado <textarea name="recado" id="emaTxt" maxlength="140" rows="3" required placeholder="Um desejo, um elogio, um oi"></textarea></label>
@@ -1575,17 +1581,30 @@ a.q { text-decoration: none; }
       if (!list.length) { const p = document.createElement("p"); p.className = "ema-empty"; p.textContent = "Ainda não há recados. Que tal ser o primeiro?"; wall.appendChild(p); }
       list.forEach((e, i) => wall.appendChild(plate(e, i)));
     };
+    // as plaquinhas em 3D no porta-ema da estação mostram as mesmas emas
+    const rack = (list) => { if (window.vale && window.vale.ema) window.vale.ema.show(list); };
+    setTimeout(() => { if (box.hidden) load(); }, 7000);
     async function load() {
       try {
         const r = await fetch("/api/ema", { cache: "no-store" });
         if (!r.ok) throw new Error(String(r.status));
-        const j = await r.json(); online = true; render(j.emas || []);
+        const j = await r.json(); online = true; render(j.emas || []); rack(j.emas || []);
       } catch (e) {
         online = false;
         render(local(), "O mural público ainda está sendo instalado. Por enquanto, seus recados ficam guardados só neste navegador.");
+        rack(local());
       }
     }
-    const sync = () => { prevN.textContent = nome.value.trim() || "Seu nome"; prevT.textContent = txt.value.trim() || "Seu recado aparece aqui."; count.textContent = `${txt.value.length} / 140`; prev.dataset.cor = cor; };
+    // a pena da Zeniba acompanha o fim do texto e risca enquanto a pessoa digita
+    const quill = document.getElementById("emaQuill"); let quillT;
+    const moveQuill = (el, writing) => {
+      if (!quill) return; const rg = document.createRange(); rg.selectNodeContents(el); rg.collapse(false);
+      const rs = rg.getClientRects(), r = rs.length ? rs[rs.length - 1] : el.getBoundingClientRect(), pr = prev.getBoundingClientRect();
+      quill.style.setProperty("--qx", Math.round(Math.min(pr.width - 8, r.right - pr.left)) + "px"); quill.style.setProperty("--qy", Math.round(r.bottom - pr.top) + "px");
+      if (writing) { quill.classList.add("writing"); clearTimeout(quillT); quillT = setTimeout(() => quill.classList.remove("writing"), 500); }
+    };
+    let lastEl = null;
+    const sync = (ev) => { prevN.textContent = nome.value.trim() || "Seu nome"; prevT.textContent = txt.value.trim() || "Seu recado aparece aqui."; count.textContent = `${txt.value.length} / 140`; prev.dataset.cor = cor; if (ev && ev.target === nome) lastEl = prevN; else if (ev && ev.target === txt) lastEl = prevT; moveQuill(lastEl || prevT, !!(ev && ev.type === "input")); };
     nome.addEventListener("input", sync); txt.addEventListener("input", sync);
     box.querySelectorAll("[data-cor]").forEach((b) => { if (b.tagName !== "BUTTON") return; b.addEventListener("click", () => { cor = b.dataset.cor; box.querySelectorAll(".ema-cores button").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); sync(); }); });
     form.addEventListener("submit", async (ev) => {
@@ -1606,6 +1625,8 @@ a.q { text-decoration: none; }
         status.textContent = "Pendurado (só neste navegador, por enquanto).";
       }
       txt.value = ""; sync(); load(); if (window.visitante) window.visitante.mark("ema", true);
+      // fecha o mural e mostra a plaquinha sendo pendurada no porta-ema da estação
+      const corNova = cor; setTimeout(() => { if (window.vale && window.vale.ema && !box.hidden) { close(); window.vale.ema.hang(corNova); } }, 1100);
     });
     const open = () => { lastFocus = document.activeElement; box.hidden = false; status.textContent = ""; const vn = window.visitante && window.visitante.nome(); if (vn && !nome.value) nome.value = vn; sync(); load(); setTimeout(() => txt.focus(), 50); };
     const close = () => { box.hidden = true; if (lastFocus && lastFocus.focus) lastFocus.focus(); };

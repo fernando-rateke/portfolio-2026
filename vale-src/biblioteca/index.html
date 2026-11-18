@@ -55,6 +55,14 @@ body.flying .hud.fade-on-fly { opacity: 0.35; }
 /* o lugar atual, com voltar e avançar */
 .nav { bottom: max(18px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; }
 .nav .back[hidden] { display: none; }
+.nav { transition: opacity 1.2s; }
+.nav.quiet { opacity: 0.18; }
+.nav.quiet:hover, .nav:focus-within { opacity: 1; }
+.index .search { width: 100%; margin: 0 0 14px; }
+.index .results { margin-top: 8px; }
+.idx-foot { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 6px; padding-top: 14px; border-top: 1px solid var(--line); }
+.dobra { position: fixed; inset: 0; z-index: 15; pointer-events: none; opacity: 0; transition: opacity 0.65s ease-in-out; background: radial-gradient(circle at 50% 50%, rgba(255, 222, 160, 0.22), rgba(6, 4, 3, 0.97) 62%); }
+.dobra.on { opacity: 1; }
 .marcas { position: fixed; inset: 0; z-index: 3; pointer-events: none; overflow: hidden; }
 .mk { position: absolute; left: 0; top: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; border: 0; background: none; padding: 0; color: var(--ink); cursor: pointer; opacity: 0; visibility: hidden; transition: opacity 0.35s, visibility 0.35s; will-change: transform; }
 .mk.on { visibility: visible; pointer-events: auto; }
@@ -89,7 +97,7 @@ body.apresentando .mk span { background: rgba(20, 14, 9, 0.6); }
 .index ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 2px; }
 .index li.grp { font: 500 0.56rem/1.3 var(--f-label); letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); padding: 14px 10px 4px; }
 .index li.grp:first-child { padding-top: 2px; }
-.index button { width: 100%; text-align: left; display: grid; gap: 2px; padding: 9px 10px; border-radius: 10px; border: 0; background: none; cursor: pointer; }
+.index #listaLugares button { width: 100%; text-align: left; display: grid; gap: 2px; padding: 9px 10px; border-radius: 10px; border: 0; background: none; cursor: pointer; }
 .index button:hover, .index button[aria-current="true"] { background: rgba(217, 164, 65, 0.14); }
 .index button b { font: 600 1.02rem/1.2 var(--f-book); }
 .index button span:empty { display: none; }
@@ -171,28 +179,25 @@ body.apresentando canvas#lib { cursor: none; }
 </style>
 </head>
 <body>
-<canvas id="lib" tabindex="0" aria-label="Biblioteca infinita em 3D. Clique nas etiquetas para ir a um lugar, use o Mapa e arraste para olhar em volta."></canvas>
+<canvas id="lib" tabindex="0" aria-label="Biblioteca infinita em 3D. Clique numa porta para seguir pelo corredor até outra sala, use o Mapa e arraste para olhar em volta."></canvas>
 <div class="hud brand fade-on-fly"><a href="/" title="Início"><span class="seal">ラテケ</span><span><b>Biblioteca Infinita</b><small>Fernando Rateke · Portfólio 2026</small></span></a></div>
-<div class="hud top-right fade-on-fly">
-  <button class="pill" id="apresentar" type="button" title="Controlar pelo celular (tecla P)">Apresentar</button>
-  <div class="search" role="search">
-    <input id="busca" type="search" placeholder="Procurar nas estantes" autocomplete="off" aria-label="Procurar uma atividade nas estantes" aria-controls="resultados">
-    <ul id="resultados" class="results" hidden></ul>
-  </div>
-</div>
-<div class="marcas" id="marcas"></div>
-<div class="hud nav">
+<div class="hud nav" id="nav">
   <button class="pill back" id="voltar" type="button" hidden aria-label="Voltar ao lugar anterior">‹ Voltar</button>
   <div class="here" id="aqui" role="button" tabindex="0" aria-label="Abrir o mapa"><small id="aquiK">O Grande Salão</small><b id="aquiT">Entrada</b></div>
 </div>
 <div class="hud left-bottom fade-on-fly"><button class="pill" id="abrirIndice" type="button">Mapa</button></div>
-<div class="hud right-bottom fade-on-fly"><a class="pill" href="/vale">Ir ao vale</a></div>
-<div class="hint" id="dica">Clique nas etiquetas douradas para ir até lá · arraste para olhar em volta<br>O Mapa leva a qualquer lugar · clique nos livros que brilham, nas fendas e nos objetos da mesa</div>
+<div class="hint" id="dica">Clique numa porta para seguir pelo corredor · arraste para olhar em volta<br>A placa em cima de cada porta diz para onde ela leva · o Mapa leva a qualquer sala</div>
 <nav class="index" id="indice" aria-label="Lugares da biblioteca" aria-hidden="true">
   <button class="pill x" id="fecharIndice" type="button" aria-label="Fechar">Fechar</button>
-  <h2>Mapa</h2><p>Vá para onde quiser</p>
+  <h2>Mapa</h2><p>Vá para qualquer sala</p>
+  <div class="search" role="search">
+    <input id="busca" type="search" placeholder="Procurar nas estantes" autocomplete="off" aria-label="Procurar uma atividade nas estantes" aria-controls="resultados">
+    <ul id="resultados" class="results" hidden></ul>
+  </div>
   <ul id="listaLugares"></ul>
+  <div class="idx-foot"><button class="pill" id="apresentar" type="button" title="Controlar pelo celular (tecla P)">Apresentar pelo celular</button><a class="pill" href="/vale">Ir ao vale</a></div>
 </nav>
+<div class="dobra" id="dobra" aria-hidden="true"></div>
 <aside class="panel" id="painel" aria-hidden="true" aria-labelledby="pTitulo">
   <header><div class="kick" id="pKick"></div><h2 id="pTitulo"></h2><button class="close" id="pFechar" type="button" aria-label="Fechar">×</button></header>
   <div class="body" id="pCorpo"></div>

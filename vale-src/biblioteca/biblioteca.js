@@ -1,9 +1,9 @@
-/* Biblioteca Infinita (v2): um portfólio de lugares, como o vale. A câmera voa de um lugar ao outro;
-   ninguém anda. O Grande Salão (galerias de estantes subindo até sumirem na névoa, lareira, mesa de
-   trabalho e as fendas para os mundos) leva, pela porta de madeira, às salas das matérias, aos
-   certificados e, no fim, à sala de leitura com a Estante dos Visitantes, onde se fica para sempre.
-   Atmosfera: luz amarela de verdade (as 16 luzes mais próximas), neblina que se mexe, feixes de luz,
-   brasas, poeira e um acabamento de imagem (brilho, vinheta, grão).
+/* Biblioteca Infinita (v3): o tesseract. Salas octogonais numa malha que não acaba, em todas as direções.
+   Cada parede tem uma porta: as das quinas dão em corredores na diagonal; as das faces, em rampas que sobem
+   ou descem meio andar até outra sala, que tem mais corredores. O piso de vidro no meio mostra as salas de
+   baixo, e o óculo do teto, as de cima. Dezesseis salas guardam o portfólio (as matérias, o curso técnico,
+   a jornada, os certificados e o fim); o resto é biblioteca sem fim, sumindo na névoa.
+   A câmera desliza devagar pelos corredores e quase nada fica por cima da tela.
    O controle pelo celular fala com window.biblioteca. */
 (() => {
   const T = window.THREE;
@@ -20,19 +20,19 @@
   renderer.setPixelRatio(DPR);
   const scene = new T.Scene();
   scene.background = new T.Color("#070504");
-  const camera = new T.PerspectiveCamera(58, 1, 0.05, 260);
+  const camera = new T.PerspectiveCamera(62, 1, 0.05, 220);
 
-  /* ---------------- medidas ---------------- */
-  const R = 7, A = R * Math.sqrt(3) / 2, C = 2.4, D = 2 * A + C, H = 5.4, CEIL = 5.0;
-  const RS = 2.3, RSA = RS * Math.sqrt(3) / 2, DOOR = 1.1, DOORH = 3.2, SHELF_TOP = 4.6, ROW = 0.6, BASE = 0.25;
-  const XE = -A, HL = 30, XW = XE - HL, HZ = 11, BD = 2.6, LV = small ? 5 : 7; // o salão
-  const CERT = 10, FIM = 11;                         // salas especiais da ala das matérias
-  const NR = small ? 2 : 3, NF = small ? 2 : 3;
-  const EYE = 1.72;
-
+  /* ---------------- medidas do tesseract ---------------- */
+  const LS = 22, HS = 3.5;                              // malha: distância entre salas no plano, e meio andar
+  const AP = 7, RH = 6, OC = 2.0;                        // sala octogonal: apótema, altura, raio do óculo de vidro
+  const FS = 2 * AP * Math.tan(Math.PI / 8);             // lado do octógono
+  const DW = 2.6, DH = 3.2, CW = 2.8, CH = 3.2;          // porta e corredor
+  const LD = LS * Math.SQRT2 - 2 * AP, LR = LS - 2 * AP;  // corredor diagonal; rampa (medida no chão)
+  const EYE = 1.7, ROW = 0.6, BASE = 0.25;
+  const NRH = small ? 1 : 2, NV = small ? 2 : 3;          // quantas salas em volta ficam montadas
   const NL = 16;
   const U = {
-    uTime: { value: 0 }, uD: { value: D }, uH: { value: H }, uXE: { value: XE },
+    uTime: { value: 0 }, uS: { value: LS },
     uFog: { value: new T.Color("#0b0806") }, uFogD: { value: small ? 0.04 : 0.036 },
     uAmb: { value: new T.Vector3(0.05, 0.042, 0.034) },
     uLP: { value: Array.from({ length: NL }, () => new T.Vector3(0, -999, 0)) },
@@ -41,7 +41,7 @@
 
   /* luz e névoa comuns a tudo */
   const COMMON = `
-    uniform float uTime, uD, uH, uXE, uFogD; uniform vec3 uFog, uAmb;
+    uniform float uTime, uS, uFogD; uniform vec3 uFog, uAmb;
     uniform vec3 uLP[${NL}]; uniform vec3 uLC[${NL}];
     float h1(float n){ return fract(sin(n) * 43758.5453123); }
     float h2(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123); }
@@ -49,8 +49,6 @@
     float vnoise(vec3 p){ vec3 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
       return mix(mix(mix(h3(i), h3(i + vec3(1,0,0)), f.x), mix(h3(i + vec3(0,1,0)), h3(i + vec3(1,1,0)), f.x), f.y),
                  mix(mix(h3(i + vec3(0,0,1)), h3(i + vec3(1,0,1)), f.x), mix(h3(i + vec3(0,1,1)), h3(i + vec3(1,1,1)), f.x), f.y), f.z); }
-    float hexD(vec2 p){ p = abs(p); return max(p.x, dot(p, vec2(0.5, 0.8660254))); }
-    vec3 roomLocal(vec3 w){ return vec3(mod(w.x + uD * 0.5, uD) - uD * 0.5, mod(w.y, uH), w.z); }
     vec3 scat;
     vec3 lights(vec3 w, vec3 n){
       vec3 acc = uAmb; scat = vec3(0.0);
@@ -60,7 +58,7 @@
         acc += uLC[i] * ndl / (1.0 + dd * 0.16);
         scat += uLC[i] / (1.0 + dd * 0.045);
       }
-      if (w.x > uXE - 0.2) { vec3 l = roomLocal(w); float r = length(l.xz); acc += vec3(0.30, 0.36, 0.50) * 0.2 * exp(-r * 0.6) * (0.5 + 0.5 * n.y * n.y); }
+      { vec2 l = mod(w.xz + uS * 0.5, uS) - uS * 0.5; float r = length(l); acc += vec3(0.30, 0.36, 0.50) * 0.24 * exp(-r * 0.5) * (0.5 + 0.5 * n.y * n.y); } // a luz fria que desce pelos óculos
       return acc;
     }
     vec3 band(vec3 l){ return mix(l, floor(l * 7.0 + 0.5) / 7.0, 0.18); }
@@ -94,14 +92,6 @@
         float pz = vW.z / 0.24; float row = floor(pz); float px = (vW.x + h1(row) * 3.0) / 1.9;
         float seam = smoothstep(0.0, 0.05, fract(pz)) * smoothstep(0.0, 0.02, fract(px));
         c *= (0.8 + 0.3 * h2(vec2(row, floor(px)))) * (0.55 + 0.45 * seam);
-        if (vW.x > uXE) {
-          vec3 l = roomLocal(vW); float hd = hexD(l.zx);
-          float rug = smoothstep(2.62, 2.66, hd) * (1.0 - smoothstep(4.34, 4.38, hd));
-          float border = (1.0 - smoothstep(0.03, 0.05, abs(hd - 2.82))) + (1.0 - smoothstep(0.03, 0.05, abs(hd - 4.18)));
-          float motif = step(0.5, fract((atan(l.z, l.x) * 6.0 / 3.14159) * 2.0)) * (1.0 - smoothstep(0.08, 0.12, abs(hd - 3.5)));
-          vec3 rugC = mix(vec3(0.34, 0.08, 0.07), vec3(0.22, 0.05, 0.05), motif);
-          rugC = mix(rugC, vec3(0.72, 0.52, 0.22), clamp(border, 0.0, 1.0)); c = mix(c, rugC, rug);
-        }
       } else if (vK > 1.5) {
         vec2 q = fract(vec2(vW.x, vW.z) / 1.4); float e = min(min(q.x, 1.0 - q.x), min(q.y, 1.0 - q.y));
         c *= 0.6 + 0.4 * smoothstep(0.02, 0.09, e);
@@ -122,7 +112,7 @@
     }
     void main(){
       vec3 n = normalize(vN); float u = vUv.x, v = vUv.y;
-      float seed = vK * 3.17 + floor(vO.x / uD + 0.5) * 13.1 + floor(vO.y / uH + 0.5) * 7.7;
+      float seed = vK * 3.17 + h3(floor(vO / 3.5 + 0.5)) * 97.0;
       vec3 wood = vec3(0.30, 0.19, 0.12), woodD = vec3(0.16, 0.10, 0.07);
       vec3 c; float spec = 0.0;
       float post = 1.0 - smoothstep(0.035, 0.045, abs(fract(u / 1.25 + 0.5) - 0.5) * 1.25);
@@ -162,7 +152,6 @@
   const mkMat = (fs, decl = "", body = "") => { const m = new T.ShaderMaterial({ uniforms: U, vertexShader: VS(decl, body), fragmentShader: fs, side: T.DoubleSide }); m.extensions = { derivatives: true }; return m; };
   const structMat = mkMat(STRUCT_FS);
   const bookMat = mkMat(BOOK_FS, "attribute vec2 aUv; attribute float aTop; varying vec2 vUv; varying float vTop;", "vUv = aUv; vTop = aTop;");
-
   /* objetos (GLB): textura + as mesmas luzes e névoa */
   const PROP_VS = `varying vec3 vW; varying vec3 vN; varying vec2 vUv; void main(){ vUv = uv; vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; vN = normalize(mat3(modelMatrix) * normal); gl_Position = projectionMatrix * viewMatrix * w; }`;
   const PROP_FS = `${COMMON} uniform sampler2D map; uniform float uHasMap, uEmit, uHot, uCut, uAlpha; uniform vec3 uTint, uEmitC; varying vec3 vW; varying vec3 vN; varying vec2 vUv;
@@ -182,6 +171,7 @@
   function propize(root, o = {}) {
     root.traverse((m) => {
       if (!m.isMesh) return;
+      if (!m.geometry.attributes.normal) m.geometry.computeVertexNormals(); // alguns modelos vieram sem normais (ficavam pretos)
       const src = m.material, key = src.uuid + JSON.stringify(o);
       let mm = propMats.get(key);
       if (!mm) {
@@ -207,8 +197,7 @@
     while (busy < 3 && queue.length) {
       const { file, cb } = queue.shift(); busy++;
       if (!cache.has(file)) cache.set(file, new Promise((ok) => loader.load("/biblioteca/modelos/" + file + ".glb", (g) => ok(g.scene), undefined, () => ok(null))));
-      let first = !cache.get(file).used; cache.get(file).used = true;
-      cache.get(file).then((sc) => { if (sc) { try { cb(first ? sc : sc.clone(true)); } catch (e) { console.warn("objeto", file, e); } } busy--; pump(); });
+      cache.get(file).then((sc) => { if (sc) { try { cb(sc.clone(true)); } catch (e) { console.warn("objeto", file, e); } } busy--; pump(); });
     }
   }
   // coloca um objeto: escala pela maior medida (ou altura), apoia no chão, centraliza
@@ -227,12 +216,11 @@
   function ownMats(g) {
     const list = [];
     g.traverse((o) => { if (!o.isMesh || !o.material.uniforms || !o.material.uniforms.uHot) return; const m = o.material, un = {};
-      for (const k in m.uniforms) un[k] = k in U ? U[k] : { value: m.uniforms[k].value && m.uniforms[k].value.clone ? m.uniforms[k].value.clone() : m.uniforms[k].value };
+      for (const k in m.uniforms) { const v = m.uniforms[k].value; un[k] = k in U ? U[k] : { value: v && v.clone && !v.isTexture ? v.clone() : v }; }
       const nm = new T.ShaderMaterial({ uniforms: un, vertexShader: m.vertexShader, fragmentShader: m.fragmentShader, side: m.side, transparent: m.transparent }); nm.extensions = m.extensions; o.material = nm; list.push(nm); });
     return list;
   }
 
-  /* ---------------- construtor de geometria ---------------- */
   const M = (x = 0, y = 0, z = 0, ry = 0, sx = 1, sy = 1, sz = 1, rx = 0, rz = 0) => new T.Matrix4().compose(new T.Vector3(x, y, z), new T.Quaternion().setFromEuler(new T.Euler(rx, ry, rz)), new T.Vector3(sx, sy, sz));
   const alignX = (dx, dz) => Math.atan2(-dz, dx);
   function Builder() {
@@ -257,138 +245,116 @@
       },
     };
   }
-  const hexShape = (r) => { const s = new T.Shape(); for (let k = 0; k < 6; k++) { const a = Math.PI / 6 + k * Math.PI / 3; const x = r * Math.cos(a), y = r * Math.sin(a); if (k) s.lineTo(x, y); else s.moveTo(x, y); } s.closePath(); return s; };
-  const SIDES = [0, 1, 2, 3, 4, 5].map((k) => { const th = k * Math.PI / 3; return { k, th, c: Math.cos(th), s: Math.sin(th) }; });
   const WOOD = "#5A3A26", WOOD_D = "#3A251A", GOLD = "#B88A40", FLOOR = "#5E412D", CEILC = "#36261C";
+  const V3 = (x, y, z) => new T.Vector3(x, y, z);
 
-  /* ---------------- a sala hexagonal (repetida sem fim na ala das matérias) ---------------- */
-  const S = Builder(), W = Builder();
+  /* ---------------- a malha ---------------- */
+  // oito faces: as pares (0, 2, 4, 6) são rampas (0 e 2 sobem, 4 e 6 descem); as ímpares, corredores na diagonal
+  const FACE = [0, 1, 2, 3, 4, 5, 6, 7].map((m) => { const a = m * Math.PI / 4, c = Math.cos(a), s = Math.sin(a); return { m, a, c, s, tx: -s, tz: c, ramp: m % 2 === 0, up: m === 0 || m === 2 }; });
+  const STEP = [[1, 1, 0], [1, 0, 1], [0, 1, 1], [-1, 0, 1], [-1, -1, 0], [-1, 0, -1], [0, -1, -1], [1, 0, -1]];
+  const par = (i, j, k) => ((((i + j + k) % 2) + 2) % 2) === 0;
+  const key = (n) => n.join(",");
+  const nodePos = (n) => V3(n[0] * LS, n[1] * HS, n[2] * LS);
+  const neighbor = (n, m) => [n[0] + STEP[m][0], n[1] + STEP[m][1], n[2] + STEP[m][2]];
+  const faceDir = (m) => V3(FACE[m].c, 0, FACE[m].s);
+  const ryFront = (m) => Math.atan2(-FACE[m].c, -FACE[m].s);   // +z local olhando para dentro da sala
+  const ryX = (m) => Math.atan2(FACE[m].s, -FACE[m].c);        // +x local olhando para dentro da sala
+  const faceTo = (x, z, tx, tz) => Math.atan2(tx - x, tz - z);
+
+  // a sala: chão e teto com o óculo, estantes nas oito faces, uma porta em cada, colunas e lâmpadas nas quinas
+  const oct = (rIn) => { const s = new T.Shape(), R = rIn / Math.cos(Math.PI / 8); for (let k = 0; k < 8; k++) { const a = (k + 0.5) * Math.PI / 4, x = R * Math.cos(a), y = R * Math.sin(a); if (k) s.lineTo(x, y); else s.moveTo(x, y); } s.closePath(); return s; };
+  const RB = Builder(), RWb = Builder(), LAMPS = [];
   {
-    const ring = new T.Shape(); hexShape(R + 0.08).getPoints().forEach((p, i) => (i ? ring.lineTo(p.x, p.y) : ring.moveTo(p.x, p.y)));
-    ring.holes.push(new T.Path(hexShape(RS).getPoints()));
-    const fg = new T.ShapeGeometry(ring); fg.rotateX(-Math.PI / 2); S.add(fg, M(), FLOOR, 1);
-    const cg = new T.ShapeGeometry(ring); cg.rotateX(Math.PI / 2); S.add(cg, M(0, CEIL, 0), CEILC, 2);
-    for (const sd of SIDES) {
-      const nx = -sd.c, nz = -sd.s, cx = RSA * sd.c, cz = RSA * sd.s;
-      S.add(new T.PlaneGeometry(RS + 0.02, H - CEIL + 0.02), M(cx, (CEIL + H) / 2, cz, Math.atan2(nx, nz)), WOOD_D, 0);
-      const tx = -sd.s, tz = sd.c, ry = alignX(tx, tz), rr = RSA + 0.06;
-      S.add(new T.BoxGeometry(RS + 0.08, 0.08, 0.12), M(rr * sd.c, 1.0, rr * sd.s, ry), WOOD, 0);
-      S.add(new T.BoxGeometry(RS + 0.08, 0.02, 0.13), M(rr * sd.c, 1.045, rr * sd.s, ry), GOLD, 0);
-      S.add(new T.BoxGeometry(RS, 0.06, 0.08), M(rr * sd.c, 0.12, rr * sd.s, ry), WOOD, 0);
-      for (let b = 0; b <= 8; b++) { const t = -RS / 2 + RS * b / 8; S.add(new T.BoxGeometry(0.035, 0.86, 0.035), M(rr * sd.c + tx * t, 0.57, rr * sd.s + tz * t), WOOD_D, 0); }
-      S.add(new T.BoxGeometry(0.11, 1.15, 0.11), M(rr * sd.c + tx * RS / 2, 0.58, rr * sd.s + tz * RS / 2), WOOD, 0);
-    }
-    for (const sd of SIDES) {
-      const nx = -sd.c, nz = -sd.s, tx = -sd.s, tz = sd.c, cx = (A - 0.01) * sd.c, cz = (A - 0.01) * sd.s, x0 = cx - tx * R / 2, z0 = cz - tz * R / 2;
-      if (sd.k === 0 || sd.k === 3) {
-        const seg = R / 2 - DOOR - 0.16;
-        W.wall(x0, z0, tx, tz, nx, nz, seg, 0, CEIL, 0, sd.k + 0.5, SHELF_TOP);
-        W.wall(x0 + tx * (R - seg), z0 + tz * (R - seg), tx, tz, nx, nz, seg, 0, CEIL, R - seg, sd.k + 0.7, SHELF_TOP);
-        S.add(new T.PlaneGeometry(2 * DOOR + 0.34, CEIL - DOORH), M(cx, (CEIL + DOORH) / 2, cz, Math.atan2(nx, nz)), WOOD_D, 0);
-        for (const sg of [-1, 1]) S.add(new T.BoxGeometry(0.3, DOORH + 0.25, 0.5), M(cx + tx * sg * (DOOR + 0.12), (DOORH + 0.25) / 2, cz + tz * sg * (DOOR + 0.12), alignX(tx, tz)), WOOD, 0);
-        S.add(new T.BoxGeometry(2 * DOOR + 0.6, 0.3, 0.52), M(cx, DOORH + 0.12, cz, alignX(tx, tz)), WOOD, 0);
-        S.add(new T.BoxGeometry(2 * DOOR + 0.62, 0.04, 0.54), M(cx, DOORH + 0.29, cz, alignX(tx, tz)), GOLD, 0);
-      } else {
-        W.wall(x0, z0, tx, tz, nx, nz, R, 0, CEIL, 0, sd.k + 0.5, SHELF_TOP);
-        S.add(new T.BoxGeometry(0.34, CEIL, 0.34), M(x0 + nx * 0.06, CEIL / 2, z0 + nz * 0.06), WOOD_D, 0);
+    const ring = oct(AP + 0.05), hole = new T.Path(); hole.absarc(0, 0, OC, 0, Math.PI * 2, true); ring.holes.push(hole);
+    const fg = new T.ShapeGeometry(ring, 40); fg.rotateX(-Math.PI / 2); RB.add(fg, M(), FLOOR, 1);
+    const cg = new T.ShapeGeometry(ring, 40); cg.rotateX(Math.PI / 2); RB.add(cg, M(0, RH, 0), CEILC, 2);
+    RB.add(new T.CylinderGeometry(OC, OC, 2 * HS - RH, 40, 1, true), M(0, (RH + 2 * HS) / 2, 0), WOOD_D, 0);
+    for (const y of [0.02, RH - 0.02]) { const tg = new T.TorusGeometry(OC, 0.05, 8, 56); tg.rotateX(Math.PI / 2); RB.add(tg, M(0, y, 0), GOLD, 0); }
+    for (const f of FACE) {
+      const cx = AP * f.c, cz = AP * f.s, nx = -f.c, nz = -f.s, tx = f.tx, tz = f.tz, ry = alignX(tx, tz);
+      const half = DW / 2 + 0.14, seg = FS / 2 - half;
+      RWb.wall(cx - tx * FS / 2, cz - tz * FS / 2, tx, tz, nx, nz, seg, 0, RH, 0, f.m + 0.5, RH - 0.55);
+      RWb.wall(cx + tx * half, cz + tz * half, tx, tz, nx, nz, seg, 0, RH, FS - seg, f.m + 0.7, RH - 0.55);
+      RWb.wall(cx - tx * half, cz - tz * half, tx, tz, nx, nz, 2 * half, DH + 0.34, RH, seg, f.m + 0.9, RH - 0.55 - DH - 0.34, DH + 0.34);
+      for (const sg of [-1, 1]) RB.add(new T.BoxGeometry(0.26, DH + 0.34, 0.56), M(cx + tx * sg * (DW / 2 + 0.07), (DH + 0.34) / 2, cz + tz * sg * (DW / 2 + 0.07), ry), WOOD, 0);
+      RB.add(new T.BoxGeometry(DW + 0.54, 0.32, 0.58), M(cx, DH + 0.16, cz, ry), WOOD, 0);
+      RB.add(new T.BoxGeometry(DW + 0.56, 0.04, 0.6), M(cx, DH + 0.33, cz, ry), GOLD, 0);
+      RB.add(new T.BoxGeometry(FS + 0.12, 0.16, 0.32), M(cx + nx * 0.14, RH - 0.5, cz + nz * 0.14, ry), WOOD, 0);
+      RB.add(new T.BoxGeometry(FS + 0.12, 0.03, 0.34), M(cx + nx * 0.14, RH - 0.41, cz + nz * 0.14, ry), GOLD, 0);
+      const va = f.a + Math.PI / 8, vr = AP / Math.cos(Math.PI / 8) - 0.2, vx = vr * Math.cos(va), vz = vr * Math.sin(va);
+      RB.add(new T.BoxGeometry(0.44, RH, 0.44), M(vx, RH / 2, vz, -va), WOOD_D, 0);
+      RB.add(new T.BoxGeometry(0.58, 0.18, 0.58), M(vx, RH - 0.22, vz, -va), GOLD, 0);
+      if (f.m % 2 === 0) {
+        const lr = vr - 0.45; LAMPS.push(V3(lr * Math.cos(va), 3.7, lr * Math.sin(va)));
+        RB.add(new T.SphereGeometry(0.17, 12, 8), M(lr * Math.cos(va), 3.7, lr * Math.sin(va)), "#FFC06A", 3);
+        RB.add(new T.CylinderGeometry(0.09, 0.14, 0.07, 10), M(lr * Math.cos(va), 3.9, lr * Math.sin(va)), GOLD, 0);
+        RB.add(new T.BoxGeometry(0.42, 0.05, 0.05), M((vr - 0.24) * Math.cos(va), 3.92, (vr - 0.24) * Math.sin(va), -va), GOLD, 0);
       }
-      S.add(new T.BoxGeometry(R + 0.1, 0.12, 0.32), M(cx + nx * 0.12, SHELF_TOP + 0.06, cz + nz * 0.12, alignX(tx, tz)), WOOD, 0);
-      S.add(new T.BoxGeometry(R + 0.1, 0.025, 0.34), M(cx + nx * 0.12, SHELF_TOP + 0.13, cz + nz * 0.12, alignX(tx, tz)), GOLD, 0);
-    }
-    const cf = new T.PlaneGeometry(C + 0.1, 2 * DOOR); cf.rotateX(-Math.PI / 2); S.add(cf, M(A + C / 2, 0.001, 0), FLOOR, 1);
-    const cc = new T.PlaneGeometry(C + 0.1, 2 * DOOR); cc.rotateX(Math.PI / 2); S.add(cc, M(A + C / 2, DOORH, 0), CEILC, 2);
-    W.wall(A - 0.05, -DOOR, 1, 0, 0, 1, C + 0.1, 0, DOORH, 0, 9.5, DOORH - 0.3);
-    W.wall(A - 0.05, DOOR, 1, 0, 0, -1, C + 0.1, 0, DOORH, 0, 10.5, DOORH - 0.3);
-    for (const z of [3.75, -3.75]) {
-      S.add(new T.SphereGeometry(0.2, 14, 10), M(0, 4.05, z), "#FFC06A", 3);
-      S.add(new T.CylinderGeometry(0.1, 0.16, 0.08, 10), M(0, 4.26, z), GOLD, 0);
-      S.add(new T.CylinderGeometry(0.012, 0.012, CEIL - 4.3, 4), M(0, (CEIL + 4.3) / 2, z), WOOD_D, 0);
     }
   }
-  const N_INST = (2 * NR + 1) * (2 * NF + 1);
-  const roomS = new T.InstancedMesh(S.build(), structMat, N_INST), roomW = new T.InstancedMesh(W.build(), bookMat, N_INST);
-  [roomS, roomW].forEach((m) => { m.frustumCulled = false; scene.add(m); });
-
-  /* ---------------- o Grande Salão ---------------- */
-  const HB = Builder(), HW = Builder();
+  // o corredor na diagonal (ao longo de +x local, da porta de uma sala à porta da outra)
+  const DB = Builder(), DWb = Builder();
   {
-    const X0 = XW, X1 = XE, Z0 = -HZ, Z1 = HZ, IX0 = XW + BD, IX1 = XE - BD, IZ0 = -HZ + BD, IZ1 = HZ - BD;
-    // chão
-    const fl = new T.PlaneGeometry(HL, 2 * HZ); fl.rotateX(-Math.PI / 2); HB.add(fl, M((X0 + X1) / 2, 0, 0), FLOOR, 1);
-    for (let L = 0; L < LV; L++) {
-      const y0 = L * H, wh = L === 0 ? H - 0.4 : H - 0.4;
-      // estantes nas quatro paredes, com as aberturas do térreo e da janela
-      const wall = (x0, z0, tx, tz, nx, nz, len, seed, cuts = [], back = null) => {
-        // cuts: [início, fim, até-altura]
-        let s = 0; const segs = []; cuts.sort((a, b) => a[0] - b[0]);
-        for (const [a, b, h] of cuts) { if (a > s) segs.push([s, a, wh]); segs.push([a, b, h, true]); s = b; } if (s < len) segs.push([s, len, wh]);
-        for (const [a, b, hh, cut] of segs) {
-          if (!cut) HW.wall(x0 + tx * a, z0 + tz * a, tx, tz, nx, nz, b - a, y0, y0 + wh, a, seed + L * 1.7, SHELF_TOP, y0);
-          else {
-            if (hh < wh) HB.add(new T.PlaneGeometry(b - a, wh - hh), M(x0 + tx * (a + b) / 2, y0 + (hh + wh) / 2, z0 + tz * (a + b) / 2, Math.atan2(nx, nz)), WOOD_D, 0);
-            if (back) HB.add(new T.PlaneGeometry(b - a, hh), M(x0 + tx * (a + b) / 2 - nx * 0.06, y0 + hh / 2, z0 + tz * (a + b) / 2 - nz * 0.06, Math.atan2(nx, nz)), back[0], back[1]);
-          }
-        }
-      };
-      wall(X0, Z0 + 0.01, 1, 0, 0, 1, HL, 21.5);                         // norte
-      wall(X0, Z1 - 0.01, 1, 0, 0, -1, HL, 22.5);                        // sul
-      wall(X0 + 0.01, Z0, 0, 1, 1, 0, 2 * HZ, 23.5, L === 0 ? [[HZ - 2.1, HZ + 2.1, 3.1]] : L === 1 ? [[HZ - 2.3, HZ + 2.3, 4.6]] : [], L === 0 ? ["#3A2E28", 0] : L === 1 ? ["#3A5070", 3] : null); // oeste: lareira (pedra) e janela (a noite lá fora)
-      wall(X1 - 0.01, Z0, 0, 1, -1, 0, 2 * HZ, 24.5, L === 0 ? [[HZ - 1.6, HZ + 1.6, 3.6]] : []); // leste: a porta
-      // painel de madeira em cima das estantes de cada andar
-      if (L > 0) {
-        // galerias: piso em volta, guarda-corpo na borda de dentro, colunas
-        const slab = (cx, cz, sx, sz) => { HB.add(new T.BoxGeometry(sx, 0.4, sz), M(cx, y0 - 0.2, cz), WOOD_D, 0); const p = new T.PlaneGeometry(sx, sz); p.rotateX(-Math.PI / 2); HB.add(p, M(cx, y0 + 0.003, cz), FLOOR, 1); };
-        slab((X0 + X1) / 2, (Z0 + IZ0) / 2, HL, BD); slab((X0 + X1) / 2, (Z1 + IZ1) / 2, HL, BD);
-        slab((X0 + IX0) / 2, 0, BD, IZ1 - IZ0); slab((X1 + IX1) / 2, 0, BD, IZ1 - IZ0);
-        const rail = (xa, za, xb, zb) => {
-          const len = Math.hypot(xb - xa, zb - za), tx = (xb - xa) / len, tz = (zb - za) / len, ry = alignX(tx, tz), cx = (xa + xb) / 2, cz = (za + zb) / 2;
-          HB.add(new T.BoxGeometry(len, 0.08, 0.14), M(cx, y0 + 1.02, cz, ry), WOOD, 0);
-          HB.add(new T.BoxGeometry(len, 0.02, 0.15), M(cx, y0 + 1.07, cz, ry), GOLD, 0);
-          HB.add(new T.BoxGeometry(len, 0.06, 0.1), M(cx, y0 + 0.12, cz, ry), WOOD, 0);
-          HB.add(new T.BoxGeometry(len, 0.4, 0.06), M(cx, y0 - 0.2, cz, ry), GOLD, 0);
-          const nb = Math.floor(len / 0.4); for (let b = 0; b <= nb; b++) HB.add(new T.BoxGeometry(0.04, 0.88, 0.04), M(xa + tx * b * len / nb, y0 + 0.58, za + tz * b * len / nb), WOOD_D, 0);
-        };
-        rail(IX0, IZ0, IX1, IZ0); rail(IX0, IZ1, IX1, IZ1); rail(IX0, IZ0, IX0, IZ1); rail(IX1, IZ0, IX1, IZ1);
-      }
-      // colunas na borda das galerias, do chão do andar ao de cima
-      const cols = []; for (let k = 0; k <= 5; k++) { const x = IX0 + (IX1 - IX0) * k / 5; cols.push([x, IZ0], [x, IZ1]); } if (L > 0) cols.push([IX0, 0], [IX1, 0]); // no térreo elas ficariam na frente da porta e da lareira
-      for (const [x, z] of cols) { HB.add(new T.BoxGeometry(0.46, H, 0.46), M(x, y0 + H / 2 - 0.2, z), WOOD_D, 0); HB.add(new T.BoxGeometry(0.6, 0.18, 0.6), M(x, y0 + H - 0.5, z), GOLD, 0); }
-      // cornija contínua no alto das estantes
-      for (const [cx, cz, len, ry] of [[(X0 + X1) / 2, Z0 + 0.14, HL, 0], [(X0 + X1) / 2, Z1 - 0.14, HL, 0], [X0 + 0.14, 0, 2 * HZ, Math.PI / 2], [X1 - 0.14, 0, 2 * HZ, Math.PI / 2]]) {
-        HB.add(new T.BoxGeometry(len, 0.14, 0.3), M(cx, y0 + SHELF_TOP + 0.07, cz, ry), WOOD, 0);
-        HB.add(new T.BoxGeometry(len, 0.03, 0.32), M(cx, y0 + SHELF_TOP + 0.15, cz, ry), GOLD, 0);
-      }
-    }
-    // a moldura da porta de madeira e a da lareira
-    HB.add(new T.BoxGeometry(0.5, 3.9, 0.5), M(X1 - 0.2, 1.95, -1.85), WOOD, 0); HB.add(new T.BoxGeometry(0.5, 3.9, 0.5), M(X1 - 0.2, 1.95, 1.85), WOOD, 0);
-    HB.add(new T.BoxGeometry(0.55, 0.45, 4.2), M(X1 - 0.2, 3.85, 0), WOOD, 0); HB.add(new T.BoxGeometry(0.57, 0.05, 4.24), M(X1 - 0.2, 4.1, 0), GOLD, 0);
+    const fl = new T.PlaneGeometry(LD, CW); fl.rotateX(-Math.PI / 2); DB.add(fl, M(LD / 2, 0.003, 0), FLOOR, 1);
+    const ce = new T.PlaneGeometry(LD, CW); ce.rotateX(Math.PI / 2); DB.add(ce, M(LD / 2, CH, 0), CEILC, 2);
+    DWb.wall(0, -CW / 2, 1, 0, 0, 1, LD, 0, CH, 0, 11.5, CH - 0.45);
+    DWb.wall(0, CW / 2, 1, 0, 0, -1, LD, 0, CH, 0, 12.5, CH - 0.45);
+    const n = Math.round(LD / 3.4);
+    for (let q = 1; q < n; q++) { const x = LD * q / n; for (const sz of [-1, 1]) DB.add(new T.BoxGeometry(0.22, CH, 0.2), M(x, CH / 2, sz * (CW / 2 - 0.07)), WOOD_D, 0); DB.add(new T.BoxGeometry(0.24, 0.24, CW), M(x, CH - 0.12, 0), WOOD, 0); DB.add(new T.BoxGeometry(0.25, 0.03, CW), M(x, CH - 0.25, 0), GOLD, 0); }
+    DB.add(new T.SphereGeometry(0.15, 12, 8), M(LD / 2, CH - 0.42, 0), "#FFC06A", 3);
+    DB.add(new T.CylinderGeometry(0.012, 0.012, 0.3, 4), M(LD / 2, CH - 0.2, 0), WOOD_D, 0);
   }
-  const hallS = new T.Mesh(HB.build(), structMat), hallW = new T.Mesh(HW.build(), bookMat);
-  scene.add(hallS, hallW);
+  // a rampa (degraus), subindo meio andar ao longo de +x local; as estantes sobem em degraus junto
+  const PB = Builder(), PWb = Builder(), NSTEP = 10, RUN = LR / NSTEP, RISE = HS / NSTEP;
+  {
+    for (let q = 0; q < NSTEP; q++) {
+      PB.add(new T.BoxGeometry(RUN + 0.01, RISE * (q + 1), CW), M(RUN * (q + 0.5), RISE * (q + 1) / 2, 0), FLOOR, 1);
+      const y0 = RISE * (q + 1);
+      PWb.wall(RUN * q, -CW / 2, 1, 0, 0, 1, RUN, y0, y0 + CH + RISE, RUN * q, 13.5, CH - 0.45, y0);
+      PWb.wall(RUN * q, CW / 2, 1, 0, 0, -1, RUN, y0, y0 + CH + RISE, RUN * q, 14.5, CH - 0.45, y0);
+      if (q % 3 === 1) { for (const sz of [-1, 1]) PB.add(new T.BoxGeometry(0.22, CH, 0.2), M(RUN * (q + 0.5), y0 + CH / 2, sz * (CW / 2 - 0.07)), WOOD_D, 0); }
+    }
+    const cl = Math.hypot(LR, HS), pg = new T.PlaneGeometry(cl, CW); pg.rotateX(Math.PI / 2);
+    PB.add(pg, M(LR / 2, CH + HS / 2, 0, 0, 1, 1, 1, 0, Math.atan2(HS, LR)), CEILC, 2);
+    PB.add(new T.SphereGeometry(0.15, 12, 8), M(LR / 2, HS / 2 + CH - 0.4, 0), "#FFC06A", 3);
+  }
+  const lampDiag = V3(LD / 2, CH - 0.42, 0), lampRamp = V3(LR / 2, HS / 2 + CH - 0.4, 0);
+
+  // o vidro do óculo: quase invisível, com uma rosa dos ventos gravada em ouro
+  const GLASS_FS = `${COMMON}
+    varying vec3 vW; varying vec3 vN; varying vec3 vC; varying float vK; varying vec3 vO;
+    void main(){
+      vec3 V = normalize(cameraPosition - vW); float fr = pow(1.0 - abs(dot(normalize(vN), V)), 2.0);
+      vec2 l = vW.xz - vO.xz; float r = length(l), a = atan(l.y, l.x);
+      float ring = 0.0; for (int i = 0; i < 3; i++) { float rr = 0.7 + float(i) * 0.6; ring += 1.0 - smoothstep(0.006, 0.018, abs(r - rr)); }
+      float rad = (1.0 - smoothstep(0.004, 0.016, abs(sin(a * 4.0)) * r)) * step(0.25, r);
+      float e = clamp(ring + rad * 0.7, 0.0, 1.0);
+      vec3 lit = lights(vW, vec3(0.0, 1.0, 0.0));
+      vec3 col = vec3(0.55, 0.68, 0.82) * (0.04 + fr * 0.3) + vec3(1.0, 0.78, 0.42) * e * (0.25 + lit * 0.3);
+      gl_FragColor = vec4(fogIt(col, vW), 0.06 + fr * 0.3 + e * 0.4);
+    }`;
+  const glassMat = new T.ShaderMaterial({ uniforms: U, vertexShader: VS(), fragmentShader: GLASS_FS, transparent: true, depthWrite: false, side: T.DoubleSide });
+  const glassGeo = new T.CircleGeometry(OC, 56); glassGeo.rotateX(-Math.PI / 2); glassGeo.translate(0, 0.01, 0);
+
+  const NMAX = (2 * NRH + 1) * (2 * NRH + 1) * (2 * NV + 1);
+  const inst = (geo, mat, n) => { const m = new T.InstancedMesh(geo, mat, n); m.frustumCulled = false; m.count = 0; scene.add(m); return m; };
+  const roomS = inst(RB.build(), structMat, NMAX), roomW = inst(RWb.build(), bookMat, NMAX);
+  const diagS = inst(DB.build(), structMat, 2 * NMAX), diagW = inst(DWb.build(), bookMat, 2 * NMAX);
+  const rampS = inst(PB.build(), structMat, 2 * NMAX), rampW = inst(PWb.build(), bookMat, 2 * NMAX);
+  const glassI = inst(glassGeo, glassMat, NMAX); glassI.renderOrder = 2;
 
   /* ---------------- luzes ---------------- */
   const LIGHTS = []; // { p, c (Color), i, flick, ph }
   const addLight = (x, y, z, color, i, flick = 0) => { const L = { p: new T.Vector3(x, y, z), c: new T.Color(color), i, i0: i, flick, ph: Math.random() * 10 }; LIGHTS.push(L); return L; };
-  const chand = [XW + 7.5, XW + 15, XW + 22.5].map((x, k) => addLight(x, 7.2 + (k === 1 ? 0.6 : 0), 0, "#FFB25A", 3.2, 0.03));
-  const fire = addLight(XW + 0.95, 0.75, 0, "#FF7A2A", 5.2, 0.28);
-  const desk = addLight(XW + 8.2 - 0.3, 1.25, 0.72, "#FFC070", 1.6, 0.05);
-  addLight(XW + 0.6, 2.9, 1.3, "#FFB060", 0.5, 0.12); addLight(XW + 0.6, 2.9, -1.3, "#FFB060", 0.5, 0.12); // velas na lareira
-  // arandelas nas colunas, em todos os andares (as mais próximas acendem de verdade)
-  const sconces = [];
-  for (let L = 0; L < LV; L++) for (let k = 0; k <= 5; k += (L === 0 ? 1 : 2)) for (const z of [-HZ + BD - 0.32, HZ - BD + 0.32]) {
-    const x = XW + BD + (HL - 2 * BD) * k / 5; sconces.push([x, L * H + 2.4, z, z < 0 ? 0 : Math.PI]); addLight(x, L * H + 2.4, z + (z < 0 ? 0.25 : -0.25), "#FFB868", 0.55, 0.06);
-  }
-  const roomLamp = []; // luzes das salas perto da câmera (preenchidas por quadro)
+  const lightAt = (p, color, i, flick = 0) => addLight(p.x, p.y, p.z, color, i, flick);
+  const lampC = new T.Color("#FFB45E");
+  let lampList = [];
   const lightTmp = [];
   function updateLights(t) {
-    lightTmp.length = 0;
-    for (const L of LIGHTS) { if (L.flick) L.i = L.i0 * (1 - L.flick + L.flick * (0.6 + 0.4 * Math.sin(t * 11 + L.ph) * Math.sin(t * 7.3 + L.ph * 2))); lightTmp.push(L); }
-    const i0 = Math.round(camera.position.x / D);
-    roomLamp.length = 0;
-    for (let i = Math.max(0, i0 - 2); i <= i0 + 2; i++) for (const z of [3.75, -3.75]) roomLamp.push({ p: new T.Vector3(i * D, 4.05, z), c: new T.Color("#FFB45E"), i: 1.6 * (0.94 + 0.06 * Math.sin(t * 7 + i)) });
-    lightTmp.push(...roomLamp);
-    const cp = camera.position;
-    lightTmp.sort((a, b) => (b.i / (1 + b.p.distanceToSquared(cp) * 0.02)) - (a.i / (1 + a.p.distanceToSquared(cp) * 0.02)));
+    lightTmp.length = 0; const cp = camera.position;
+    for (const L of LIGHTS) { if (L.flick) L.i = L.i0 * (1 - L.flick + L.flick * (0.6 + 0.4 * Math.sin(t * 11 + L.ph) * Math.sin(t * 7.3 + L.ph * 2))); L.s = L.i / (1 + L.p.distanceToSquared(cp) * 0.02); lightTmp.push(L); }
+    for (const L of lampList) { const d2 = L.p.distanceToSquared(cp); if (d2 > 1300) continue; L.i = L.i0 * (0.95 + 0.05 * Math.sin(t * 6 + L.ph)); L.s = L.i / (1 + d2 * 0.02); lightTmp.push(L); }
+    lightTmp.sort((a, b) => b.s - a.s);
     for (let k = 0; k < NL; k++) {
       const L = lightTmp[k];
       if (L) { U.uLP.value[k].copy(L.p); U.uLC.value[k].set(L.c.r * L.i, L.c.g * L.i, L.c.b * L.i); } else { U.uLP.value[k].set(0, -999, 0); U.uLC.value[k].set(0, 0, 0); }
@@ -398,7 +364,7 @@
   /* brilho das lâmpadas, poeira, brasas e feixes */
   const glowTex = (() => { const c = document.createElement("canvas"); c.width = c.height = 64; const g = c.getContext("2d"); const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, "rgba(255,255,255,1)"); gr.addColorStop(0.2, "rgba(255,255,255,0.5)"); gr.addColorStop(1, "rgba(255,255,255,0)"); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return new T.CanvasTexture(c); })();
   const pts = (n, size, color, op) => { const g = new T.BufferGeometry(); g.setAttribute("position", new T.BufferAttribute(new Float32Array(n * 3), 3)); const p = new T.Points(g, new T.PointsMaterial({ map: glowTex, color, size, transparent: true, opacity: op, depthWrite: false, blending: T.AdditiveBlending })); p.frustumCulled = false; scene.add(p); return p; };
-  const halos = pts(N_INST * 2 + 64, 2.4, 0xffb35c, 0.5);
+  const HMAX = NMAX * 8; const halos = pts(HMAX, 1.15, 0xffb35c, 0.32);
   const DUST = small ? 360 : 900; const dust = pts(DUST, 0.045, 0xffd9a0, 0.6); const ds = new Float32Array(DUST).map(() => Math.random());
   { const P = dust.geometry.attributes.position.array; for (let i = 0; i < DUST; i++) P.set([(Math.random() - 0.5) * 22, Math.random() * 9, (Math.random() - 0.5) * 22], i * 3); }
   const EMB = 70; const embers = pts(EMB, 0.07, 0xff8a3a, 0.9); const es = new Float32Array(EMB).map(() => Math.random());
@@ -413,37 +379,120 @@
     const g = new T.CylinderGeometry(r0, r1, len, 24, 1, true); g.translate(0, -len / 2, 0);
     const m = new T.Mesh(g, rayMat(color, k)); m.position.copy(from); m.quaternion.setFromUnitVectors(new T.Vector3(0, -1, 0), dir.normalize()); scene.add(m); return m;
   };
-  ray(new T.Vector3(XW + 15, LV * H + 6, 0), new T.Vector3(XW + 15, 0, 0), 2.2, 5.6, "#9DB4D8", 0.11);           // a luz fria que desce do alto
-  for (const z of [-1.4, 0, 1.4]) ray(new T.Vector3(XW + 0.4, H + 2.6, z * 0.9), new T.Vector3(XW + 11, 0, z * 2.4), 0.5, 1.9, "#C8D4EA", 0.07); // da janela
-  for (const L of chand) ray(new T.Vector3(L.p.x, L.p.y + 0.2, 0), new T.Vector3(L.p.x, 0, 0), 0.5, 3.4, "#FFB860", 0.06);
 
-  /* ---------------- cômodos instanciados ---------------- */
-  let centerRoom = null; const tmpM = new T.Matrix4(), zero = new T.Matrix4().makeScale(0, 0, 0);
-  function placeRooms(i0) {
-    if (i0 === centerRoom) return; centerRoom = i0; let n = 0; const hp = halos.geometry.attributes.position.array; hp.fill(0); hp.fill(-999, 1, 2);
-    let hi = 0;
-    for (let di = -NR; di <= NR; di++) for (let f = -NF; f <= NF; f++) {
-      const i = i0 + di;
-      if (i < 0) { roomS.setMatrixAt(n, zero); roomW.setMatrixAt(n, zero); n++; continue; }
-      const x = i * D, y = f * H; tmpM.makeTranslation(x, y, 0); roomS.setMatrixAt(n, tmpM); roomW.setMatrixAt(n, tmpM);
-      hp.set([x, y + 4.05, 3.75, x, y + 4.05, -3.75], hi * 3); hi += 2; n++;
+  /* ---------------- as salas montadas em volta da câmera ---------------- */
+  let latKey = "";
+  const mtx = new T.Matrix4(), qY = new T.Quaternion(), eu = new T.Euler(), one = new T.Vector3(1, 1, 1);
+  const compose = (p, ry) => mtx.compose(p, qY.setFromEuler(eu.set(0, ry, 0)), one);
+  function placeLattice(force) {
+    const ci = Math.round(cam.pos.x / LS), ck = Math.round(cam.pos.z / LS), cj = Math.round((cam.pos.y - EYE) / HS);
+    const kk = ci + "," + cj + "," + ck; if (kk === latKey && !force) return; latKey = kk;
+    let nr = 0, nd = 0, np = 0, hi = 0; lampList = [];
+    const hp = halos.geometry.attributes.position.array;
+    const lamp = (p, i, ph) => { lampList.push({ p, c: lampC, i0: i, i, ph }); if (hi < HMAX) { hp[hi * 3] = p.x; hp[hi * 3 + 1] = p.y; hp[hi * 3 + 2] = p.z; hi++; } };
+    for (let i = ci - NRH; i <= ci + NRH; i++) for (let k = ck - NRH; k <= ck + NRH; k++) for (let j = cj - NV; j <= cj + NV; j++) {
+      if (!par(i, j, k)) continue;
+      const p = nodePos([i, j, k]);
+      compose(p, 0); roomS.setMatrixAt(nr, mtx); roomW.setMatrixAt(nr, mtx); glassI.setMatrixAt(nr, mtx); nr++;
+      for (const L of LAMPS) lamp(p.clone().add(L), 1.5, i * 3.1 + j * 7.7 + k);
+      for (const [m, ry] of [[1, -Math.PI / 4], [7, Math.PI / 4]]) {
+        const s = p.clone().add(V3(AP * FACE[m].c, 0, AP * FACE[m].s)); compose(s, ry); diagS.setMatrixAt(nd, mtx); diagW.setMatrixAt(nd, mtx); nd++;
+        lamp(s.clone().add(V3(lampDiag.x * FACE[m].c, lampDiag.y, lampDiag.x * FACE[m].s)), 0.9, nd);
+      }
+      for (const [m, ry] of [[0, 0], [2, -Math.PI / 2]]) {
+        const s = p.clone().add(V3(AP * FACE[m].c, 0, AP * FACE[m].s)); compose(s, ry); rampS.setMatrixAt(np, mtx); rampW.setMatrixAt(np, mtx); np++;
+        lamp(s.clone().add(V3(lampRamp.x * FACE[m].c, lampRamp.y, lampRamp.x * FACE[m].s)), 0.9, np + 50);
+      }
     }
-    for (const L of chand) { hp.set([L.p.x, L.p.y, 0], hi * 3); hi++; }
-    for (let k = hi; k < hp.length / 3; k++) hp.set([0, -999, 0], k * 3);
-    roomS.instanceMatrix.needsUpdate = roomW.instanceMatrix.needsUpdate = true; halos.geometry.attributes.position.needsUpdate = true;
+    roomS.count = roomW.count = glassI.count = nr; diagS.count = diagW.count = nd; rampS.count = rampW.count = np;
+    for (const m of [roomS, roomW, glassI, diagS, diagW, rampS, rampW]) m.instanceMatrix.needsUpdate = true;
+    for (let k = hi; k < HMAX; k++) { hp[k * 3] = 0; hp[k * 3 + 1] = -999; hp[k * 3 + 2] = 0; }
+    halos.geometry.attributes.position.needsUpdate = true;
   }
 
-  /* ---------------- objetos do salão ---------------- */
+  /* ---------------- as salas do portfólio ---------------- */
+  // cada uma num nó da malha; as que são vizinhas ficam ligadas por um corredor (diagonal ou rampa)
+  const ROOMS = [
+    { id: "escritorio", n: [0, 0, 0], g: "O centro", t: "O Escritório", sub: "a lareira, a mesa e o piano", focus: 2, extra: 6 },
+    { id: "linguagens", n: [1, 0, 1], g: "Ensino médio", subj: "Área de Linguagens", world: 1 },
+    { id: "matematica", n: [1, 0, -1], g: "Ensino médio", subj: "Área de Matemática", world: 2 },
+    { id: "natureza", n: [-1, 0, 1], g: "Ensino médio", subj: "Ciências da Natureza", world: 3 },
+    { id: "humanas", n: [-1, 0, -1], g: "Ensino médio", subj: "Ciências Humanas", world: 4 },
+    { id: "tecnica", n: [-1, -1, 0], g: "Curso técnico", t: "Área técnica", sub: "a entrada do curso", world: 5 },
+    { id: "modelagem", n: [0, -1, 1], g: "Curso técnico", subj: "Modelagem de Sistemas" },
+    { id: "desenvolvimento", n: [-2, -1, 1], g: "Curso técnico", subj: "Desenvolvimento de Sistemas" },
+    { id: "aplicativos", n: [-2, -1, -1], g: "Curso técnico", subj: "Programação de Aplicativos" },
+    { id: "iot", n: [-2, -2, 0], g: "Curso técnico", subj: "IoT - Internet das Coisas" },
+    { id: "banco", n: [-3, -2, 1], g: "Curso técnico", subj: "Banco de Dados" },
+    { id: "quemsou", n: [1, 1, 0], g: "A jornada", t: "Quem sou", sub: "interesses e valores", world: 0 },
+    { id: "trem", n: [0, 1, -1], g: "A jornada", t: "1º e 2º ano", sub: "o que veio antes", world: 6 },
+    { id: "certificados", n: [2, 1, -1], g: "A jornada", t: "Certificados", sub: "feiras e iniciação científica", world: 7 },
+    { id: "objetivos", n: [2, 2, 0], g: "A jornada", t: "Objetivos e futuro", sub: "para onde eu vou", world: 8 },
+    { id: "fim", n: [2, 3, 1], g: "A jornada", t: "Sala de Leitura", sub: "o fim, e a Estante dos Visitantes", world: 9 },
+  ];
+  const roomByKey = new Map();
+  ROOMS.forEach((r, ri) => { r.ri = ri; r.c = nodePos(r.n); r.t = r.t || r.subj; roomByKey.set(key(r.n), r); });
+  ROOMS.forEach((r) => { r.links = []; for (const f of FACE) { const nb = roomByKey.get(key(neighbor(r.n, f.m))); if (nb) r.links.push({ m: f.m, to: nb }); } });
+  { const q = [ROOMS[0]]; ROOMS[0].depth = 0; while (q.length) { const r = q.shift(); for (const l of r.links) if (l.to.depth == null) { l.to.depth = r.depth + 1; l.to.parentM = (l.m + 4) % 8; q.push(l.to); } } }
+  const mdist = (a, b) => { const d = Math.abs(a - b) % 8; return Math.min(d, 8 - d); };
+  ROOMS.forEach((r) => {
+    const linked = new Set(r.links.map((l) => l.m)), free = [0, 1, 2, 3, 4, 5, 6, 7].filter((m) => !linked.has(m));
+    const ent = r.parentM != null ? r.parentM : 6;
+    if (r.focus == null) r.focus = free.slice().sort((a, b) => mdist(b, ent) - mdist(a, ent) || (a % 2) - (b % 2))[0];
+    const rest = free.filter((m) => m !== r.focus).sort((a, b) => mdist(a, r.focus) - mdist(b, r.focus));
+    if (r.extra == null) { r.rift = rest[0]; r.extra = rest[1]; } else r.rift = null;
+    r.fa = r.focus * Math.PI / 4;
+  });
+  const polar = (r, a, rad, y = 0) => V3(r.c.x + rad * Math.cos(a), r.c.y + y, r.c.z + rad * Math.sin(a));
+  const facePt = (r, m, inset = 0, y = 0, u = 0) => V3(r.c.x + (AP - inset) * FACE[m].c + FACE[m].tx * u, r.c.y + y, r.c.z + (AP - inset) * FACE[m].s + FACE[m].tz * u);
+  const rel = (r, deg, rad, y = 0) => polar(r, r.fa + deg * Math.PI / 180, rad, y);
+  const lookC = (r, p) => faceTo(p.x, p.z, r.c.x, r.c.z);
+
+  // portas fechadas por estantes (onde ficam os livros, a lareira, o piano e as fendas)
+  const CB = Builder(), CWb = Builder();
+  function plug(r, m, depth = 0) {
+    const f = FACE[m], half = DW / 2 + 0.14, cx = r.c.x + (AP + depth) * f.c, cz = r.c.z + (AP + depth) * f.s;
+    CWb.wall(cx - f.tx * half, cz - f.tz * half, f.tx, f.tz, -f.c, -f.s, 2 * half, r.c.y, r.c.y + DH + 0.34, 0, 30 + r.ri * 1.3 + m * 0.1, DH - 0.25, r.c.y);
+    if (depth > 0.05) for (const sg of [-1, 1]) CWb.wall(cx + f.tx * sg * half, cz + f.tz * sg * half, f.c, f.s, f.tx * -sg, f.tz * -sg, depth, r.c.y, r.c.y + DH + 0.34, 0, 40 + m, DH - 0.25, r.c.y);
+  }
+  ROOMS.forEach((r) => { plug(r, r.focus, r.id === "escritorio" ? 0.8 : 0); if (r.rift != null) plug(r, r.rift); if (r.id === "escritorio") plug(r, r.extra, 0.2); });
+
+  /* ---------------- placas: o nome da sala e, em cima de cada porta, para onde ela leva ---------------- */
+  const signMat = (tex) => new T.ShaderMaterial({ uniforms: Object.assign({ map: { value: tex } }, U), vertexShader: PROP_VS, fragmentShader: `${COMMON} uniform sampler2D map; varying vec3 vW; varying vec3 vN; varying vec2 vUv; void main(){ vec4 c = texture2D(map, vUv); if (c.a < 0.1) discard; vec3 l = band(lights(vW, normalize(vN))); gl_FragColor = vec4(fogIt(c.rgb * (0.45 + l * 0.8), vW), 1.0); }`, transparent: false });
+  function signTex(name, sub, color, w = 640, h = 150) {
+    const c = document.createElement("canvas"); c.width = w; c.height = h; const g = c.getContext("2d");
+    g.fillStyle = "#22160E"; g.fillRect(0, 0, w, h); g.strokeStyle = "#B88A40"; g.lineWidth = 4; g.strokeRect(9, 9, w - 18, h - 18);
+    g.fillStyle = color; g.fillRect(26, h / 2 - 10, 9, 14); g.fillRect(w - 35, h / 2 - 10, 9, 14);
+    g.fillStyle = "#F1E6CF"; g.textAlign = "center"; let fs = 46; g.font = `600 ${fs}px 'Shippori Mincho', serif`;
+    while (g.measureText(name).width > w - 110 && fs > 22) { fs -= 2; g.font = `600 ${fs}px 'Shippori Mincho', serif`; }
+    g.fillText(name, w / 2, sub ? h / 2 + 4 : h / 2 + fs / 3);
+    if (sub) { g.fillStyle = "#C9A867"; g.font = "500 19px 'Geist Mono', monospace"; g.fillText(sub.toUpperCase(), w / 2, h - 30); }
+    const t = new T.CanvasTexture(c); t.anisotropy = 4; return t;
+  }
+  function sign(pos, ry, name, sub, color, w = 2.3, h = 0.54) { const m = new T.Mesh(new T.PlaneGeometry(w, h), signMat(signTex(name, sub, color))); m.position.copy(pos); m.rotation.y = ry; scene.add(m); return m; }
+
+  /* ---------------- portas: clicar numa leva pelo corredor até a sala do outro lado ---------------- */
   const clickables = []; // { mesh, kind, data, hot }
-  const propHot = []; // objetos clicáveis que brilham de leve e acendem com o cursor
+  const propHot = [];    // objetos clicáveis que brilham de leve e acendem com o cursor
   const clickable = (g, kind, data, label) => {
     const c = { g, kind, data, hot: 0, label };
     if (label) { c.mats = ownMats(g); propHot.push(c); }
     g.traverse((o) => { if (o.isMesh && o.visible) { o.userData.click = c; clickables.push(o); } }); return c;
   };
-  const V3 = (x, y, z) => new T.Vector3(x, y, z);
-  const DESKX = XW + 8.2, DESKY = 0.82;
-  /* o globo: o modelo veio branco; pinta oceano, continentes e a grade num mapa antigo */
+  const doorTex = (() => { const c = document.createElement("canvas"); c.width = 64; c.height = 128; const g = c.getContext("2d"); const gr = g.createLinearGradient(0, 128, 0, 0); gr.addColorStop(0, "rgba(255,200,120,0.9)"); gr.addColorStop(0.55, "rgba(255,190,110,0.35)"); gr.addColorStop(1, "rgba(255,190,110,0)"); g.fillStyle = gr; g.fillRect(0, 0, 64, 128); const gx = g.createLinearGradient(0, 0, 64, 0); gx.addColorStop(0, "rgba(0,0,0,1)"); gx.addColorStop(0.2, "rgba(0,0,0,0)"); gx.addColorStop(0.8, "rgba(0,0,0,0)"); gx.addColorStop(1, "rgba(0,0,0,1)"); g.globalCompositeOperation = "destination-out"; g.fillStyle = gx; g.fillRect(0, 0, 64, 128); return new T.CanvasTexture(c); })();
+  const doors = [];
+  const wayWord = (m) => (FACE[m].ramp ? (FACE[m].up ? "sobe a rampa" : "desce a rampa") : "segue o corredor");
+  ROOMS.forEach((r) => {
+    for (const l of r.links) {
+      const p = facePt(r, l.m, -0.08, DH / 2);
+      const mat = new T.MeshBasicMaterial({ map: doorTex, color: 0xffc27a, transparent: true, opacity: 0.1, depthWrite: false, blending: T.AdditiveBlending, side: T.DoubleSide });
+      const mesh = new T.Mesh(new T.PlaneGeometry(DW - 0.1, DH - 0.05), mat); mesh.position.copy(p); mesh.rotation.y = ryFront(l.m); mesh.renderOrder = 4; scene.add(mesh);
+      const d = { r, m: l.m, to: l.to, mesh, hot: 0 }; doors.push(d); clickable(mesh, "porta", d);
+      sign(facePt(r, l.m, 0.31, DH + 0.66), ryFront(l.m), l.to.t, wayWord(l.m), "#C8A04A", 2.2, 0.5);
+    }
+  });
+
+  /* ---------------- a mobília (os modelos que você mandou), sala por sala ---------------- */
   const GLOBE_FS = `${COMMON} uniform vec3 uC; uniform float uR, uHot; varying vec3 vW; varying vec3 vN; varying vec2 vUv;
     void main(){
       vec3 n = normalize(vN); if (!gl_FrontFacing) n = -n;
@@ -473,7 +522,7 @@
     const g = new T.ExtrudeGeometry(sh, { depth: d - 2 * b, bevelEnabled: true, bevelThickness: b, bevelSize: b, bevelSegments: 4, curveSegments: 4 });
     g.translate(0, 0, -(d - 2 * b) / 2); g.computeVertexNormals(); return g;
   }
-  function armchair(x, z, ry, color = "#5E2219") {
+  function armchair(x, z, ry, y = 0, color = "#5E2219") {
     const g = new T.Group(), leather = new T.MeshBasicMaterial({ color }), wood = new T.MeshBasicMaterial({ color: "#24160C" }), cushion = new T.MeshBasicMaterial({ color: new T.Color(color).multiplyScalar(1.12) });
     const add = (geo, mat, px, py, pz, rx = 0) => { const m = new T.Mesh(geo, mat); m.position.set(px, py, pz); m.rotation.x = rx; g.add(m); };
     add(rbox(0.92, 0.3, 0.86, 0.06), leather, 0, 0.3, 0);                // base
@@ -482,12 +531,12 @@
     add(rbox(0.62, 0.46, 0.1, 0.05), cushion, 0, 0.82, -0.22, -0.14);    // almofada do encosto
     for (const sx of [-1, 1]) { add(rbox(0.16, 0.5, 0.86, 0.06), leather, sx * 0.38, 0.4, 0); add(rbox(0.2, 0.08, 0.9, 0.04), leather, sx * 0.38, 0.66, 0.01); }
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(new T.CylinderGeometry(0.03, 0.022, 0.16, 8), wood, sx * 0.38, 0.08, sz * 0.36);
-    propize(g); g.position.set(x, 0, z); g.rotation.y = ry; scene.add(g); return g;
+    propize(g); g.position.set(x, y, z); g.rotation.y = ry; scene.add(g); return g;
   }
-  const faceTo = (x, z, tx, tz) => Math.atan2(tx - x, tz - z);
-  armchair(XW + 2.6, 1.35, faceTo(XW + 2.6, 1.35, XW + 0.6, -0.1));
-  armchair(XW + 2.6, -1.35, faceTo(XW + 2.6, -1.35, XW + 0.6, 0.1));
-  /* fogo de verdade na lareira: chamas em shader, lenha em brasa e o brilho no chão */
+  /* tudo apoiado de verdade: mede o tampo de cada móvel antes de pôr algo em cima */
+  const rcDown = new T.Raycaster();
+  function topOf(g, x, z) { g.updateMatrixWorld(true); rcDown.set(V3(x, g.position.y + 30, z), V3(0, -1, 0)); const h = rcDown.intersectObject(g, true).find((i) => i.object.visible); return h ? h.point.y : g.position.y; }
+  const on = (g, p) => V3(p.x, topOf(g, p.x, p.z), p.z);
   const FIRE_FS = `${COMMON} uniform float uSeed; varying vec3 vW; varying vec3 vN; varying vec2 vUv;
     void main(){
       vec2 p = vUv; float t = uTime + uSeed;
@@ -499,110 +548,112 @@
       col = mix(col, vec3(1.0, 0.9, 0.62), smoothstep(0.7, 1.0, a));
       gl_FragColor = vec4(col * a * 1.5, a);
     }`;
-  const FIREX = XW + 0.22;
-  const fireGroup = new T.Group(); fireGroup.position.set(FIREX, 0.12, 0); scene.add(fireGroup);
+  const R0 = ROOMS[0];
+  // o Escritório: a lareira na face de trás, poltronas, a mesa de trabalho, o gramofone e o piano
+  const FIRE = facePt(R0, R0.focus, 0.15 - 0.23, 0.12), FIREN = faceDir(R0.focus).negate(), FIRET = V3(FACE[R0.focus].tx, 0, FACE[R0.focus].tz);
+  const fireGroup = new T.Group(); fireGroup.position.copy(FIRE); scene.add(fireGroup);
   [[0.95, 0.95, 0, 0], [0.7, 0.72, -0.22, 3.1], [0.62, 0.66, 0.24, 7.7]].forEach(([w, h, dz, seed]) => {
-    const geo = new T.PlaneGeometry(w, h); geo.translate(0, h / 2, 0);
+    const geo = new T.PlaneGeometry(w, h); geo.translate(dz, h / 2, 0);
     const m = new T.Mesh(geo, new T.ShaderMaterial({ uniforms: Object.assign({ uSeed: { value: seed } }, U), vertexShader: PROP_VS, fragmentShader: FIRE_FS, transparent: true, depthWrite: false, blending: T.AdditiveBlending, side: T.DoubleSide }));
-    m.position.z = dz; m.renderOrder = 3; fireGroup.add(m);
+    m.renderOrder = 3; fireGroup.add(m);
   });
   { const logs = new T.Group(), lm = new T.MeshBasicMaterial({ color: "#2B1A10" });
     [[0, 0.06, 0, 0.35], [0.05, 0.06, 0.02, -0.4], [-0.06, 0.16, 0, 0.05]].forEach(([dx, y, dz, r]) => { const c = new T.Mesh(new T.CylinderGeometry(0.065, 0.075, 0.78, 10), lm); c.rotation.set(Math.PI / 2, r, 0); c.position.set(dx, y, dz); logs.add(c); });
-    propize(logs, { emit: 0.55, emitC: "#FF5A1A" }); logs.position.set(FIREX, 0.08, 0); scene.add(logs);
+    propize(logs, { emit: 0.55, emitC: "#FF5A1A" }); logs.position.copy(FIRE).setY(R0.c.y + 0.08); logs.rotation.y = ryFront(R0.focus) + Math.PI / 2; scene.add(logs);
     const glow = new T.Mesh(new T.PlaneGeometry(1.6, 1.4), new T.MeshBasicMaterial({ map: glowTex, color: 0xff7a2a, transparent: true, opacity: 0.55, depthWrite: false, blending: T.AdditiveBlending }));
-    glow.rotation.x = -Math.PI / 2; glow.position.set(FIREX + 0.55, 0.02, 0); scene.add(glow); }
-  prop("porta", (m) => place(m, { at: V3(XE - 0.05, 0, 0), h: 3.55, ry: -Math.PI / 2 }), 1);
-  prop("lareira", (m) => place(m, { at: V3(XW + 0.45, 0, 0), h: 3.0, ry: Math.PI / 2 }), 1);
-  prop("tapete", (m) => place(m, { at: V3(XW + 16, 0.012, 0), size: 15, ry: Math.PI / 2 }), 1);
-  // a mesa de trabalho é maior que o modelo original: comprida e funda, para caber tudo em cima
+    glow.rotation.x = -Math.PI / 2; glow.position.copy(FIRE).addScaledVector(FIREN, 0.55).setY(R0.c.y + 0.02); scene.add(glow); }
+  lightAt(FIRE.clone().addScaledVector(FIREN, 0.7).setY(R0.c.y + 0.75), "#FF7A2A", 5.2, 0.28);
+  prop("lareira", (m) => place(m, { at: facePt(R0, R0.focus, 0.15), h: 3.0, ry: ryFront(R0.focus) }), 1);
+  prop("candelabro", (m) => { for (const u of [-1.95, 1.95]) { place(m.clone(true), { at: facePt(R0, R0.focus, 0.55, 0, u), h: 1.84, emit: 0.18 }); lightAt(facePt(R0, R0.focus, 0.6, 1.95, u), "#FFB060", 0.7, 0.14); } }, 3);
+  prop("utensilios", (m) => place(m, { at: facePt(R0, R0.focus, 0.95, 0, -1.35), h: 0.95, drop: (o) => o.name !== "pCylinder162" }), 3);
+  for (const s of [-1, 1]) { const p = rel(R0, s * 27, 4.2); armchair(p.x, p.z, faceTo(p.x, p.z, FIRE.x, FIRE.z), p.y); }
+  prop("velas", (m) => { place(m.clone(true), { at: facePt(R0, R0.focus, 0.5, 2.62, 1.3), size: 0.32, emit: 0.5 }); place(m, { at: facePt(R0, R0.focus, 0.5, 2.62, -1.3), size: 0.32, emit: 0.5 }); }, 3);
+  // a mesa de trabalho (num grupo próprio: tudo em cima dela é posto em coordenadas da mesa)
+  const DESKA = 22.5 * Math.PI / 180, DESKY = 0.82;
+  const deskG = new T.Group(); deskG.position.copy(polar(R0, DESKA, 4.35)); deskG.rotation.y = Math.PI - DESKA; scene.add(deskG); deskG.updateMatrixWorld(true);
+  const onDesk = (dx, dz) => V3(dx, DESKY, dz);
+  const inDesk = (o) => Object.assign({ parent: deskG }, o);
   prop("mesa", (m) => {
-    place(m.clone(true), { at: V3(DESKX, 0, 0), h: DESKY, ry: Math.PI / 2, stretch: [1.5, 1, 1.45] });
-    place(m.clone(true), { at: V3(XW + 5.3, 0, -3.9), h: 0.68, ry: 0.5, stretch: [0.62, 1, 0.9] }); // mesinha do gramofone
-    place(m, { at: V3(FIM * D - 4.2, 0, -2.6), h: DESKY, ry: 0.5 });
-  }, 2);
-  prop("lustre", (m) => { for (const L of chand) { const g = place(m.clone(true), { at: V3(L.p.x, L.p.y - 1.2, 0), h: 3.0 }); g.add(new T.Mesh(new T.CylinderGeometry(0.02, 0.02, 30, 4), structMat)); g.children[1].position.y = 17; } }, 2);
-  // em cima da mesa (a câmera fica do lado +x; esquerda é +z)
-  const onDesk = (dx, dz) => V3(DESKX + dx, DESKY, dz);
-  prop("maquina", (m) => clickable(place(m, { at: onDesk(0.12, 0.02), size: 0.46, ry: Math.PI / 2 }), "recado", null, ["Máquina de escrever", "Deixar um recado"]), 2);
-  prop("lampiao", (m) => place(m, { at: onDesk(-0.3, 0.72), h: 0.5, emit: 0.5 }), 2);
-  prop("mapa", (m) => clickable(place(m, { at: onDesk(0.16, 0.6), size: 0.44, rot: [0, 0, Math.PI / 2], ry: 0.18 }), "indice", null, ["Mapa", "Ver todos os lugares"]), 2);
-  prop("lupa", (m) => clickable(place(m, { at: onDesk(0.27, -0.47), size: 0.4, ry: Math.PI / 2 + 0.25 }), "busca", null, ["Lupa", "Procurar uma atividade"]), 2);
-  prop("telefone", (m) => clickable(place(m, { at: onDesk(-0.3, -0.62), size: 0.4, ry: Math.PI / 2 + 0.6 }), "contato", null, ["Telefone", "Falar comigo"]), 2);
-  prop("tinteiro", (m) => place(m, { at: onDesk(-0.1, 0.36), size: 0.19, ry: 2.2 }), 3);
-  prop("pergaminho", (m) => place(m, { at: onDesk(-0.42, 0.06), size: 0.5, ry: Math.PI / 2 + 0.12 }), 3);
-  prop("livros-gastos", (m) => place(m, { at: onDesk(-0.34, -0.98), size: 0.4, ry: Math.PI / 2 + 0.15 }), 3);
-  prop("papeis", (m) => place(m, { at: onDesk(0.22, -0.92), h: 0.08, stretch: [3.5, 1, 3.5], ry: 0.25 }), 3);
-  prop("bussola", (m) => clickable(place(m, { at: onDesk(-0.06, -0.36), size: 0.22, ry: 0.4 }), "mundos", null, ["Bússola", "Ir até os mundos"]), 3);
-  // globo pintado à mão (o modelo vinha branco, com umas placas soltas no chão)
+    clickable(place(m.clone(true), inDesk({ at: V3(0, 0, 0), h: DESKY, ry: Math.PI / 2, stretch: [1.5, 1, 1.45] })), "mesa", null, ["A mesa de trabalho", "Chegar perto"]);
+    for (const r of ROOMS.filter((x) => x.id === "fim")) prop("lampiao", (k) => place(k, { at: on(place(m.clone(true), { at: rel(r, 70, 4.1), h: DESKY, ry: 0.5 }), rel(r, 70, 3.8)), h: 0.55, emit: 0.4 }), 7);
+  }, 1);
+  prop("maquina", (m) => clickable(place(m, inDesk({ at: onDesk(0.12, 0.02), size: 0.46, ry: Math.PI / 2 })), "recado", null, ["Máquina de escrever", "Deixar um recado"]), 2);
+  prop("lampiao", (m) => place(m, inDesk({ at: onDesk(-0.3, 0.72), h: 0.5, emit: 0.5 })), 2);
+  prop("mapa", (m) => clickable(place(m, inDesk({ at: onDesk(0.16, 0.6), size: 0.44, rot: [0, 0, Math.PI / 2], ry: 0.18 })), "indice", null, ["Mapa", "Ver todos os lugares"]), 2);
+  prop("lupa", (m) => clickable(place(m, inDesk({ at: onDesk(0.27, -0.47), size: 0.4, ry: Math.PI / 2 + 0.25 })), "busca", null, ["Lupa", "Procurar uma atividade"]), 2);
+  prop("telefone", (m) => clickable(place(m, inDesk({ at: onDesk(-0.3, -0.62), size: 0.4, ry: Math.PI / 2 + 0.6 })), "contato", null, ["Telefone", "Falar comigo"]), 2);
+  prop("tinteiro", (m) => place(m, inDesk({ at: onDesk(-0.1, 0.36), size: 0.19, ry: 2.2 })), 3);
+  prop("pergaminho", (m) => place(m, inDesk({ at: onDesk(-0.42, 0.06), size: 0.5, ry: Math.PI / 2 + 0.12 })), 3);
+  prop("livros-gastos", (m) => place(m, inDesk({ at: onDesk(-0.34, -0.98), size: 0.4, ry: Math.PI / 2 + 0.15 })), 3);
+  prop("papeis", (m) => place(m, inDesk({ at: onDesk(0.22, -0.92), h: 0.08, stretch: [3.5, 1, 3.5], ry: 0.25 })), 3);
+  prop("bussola", (m) => clickable(place(m, inDesk({ at: onDesk(-0.06, -0.36), size: 0.22, ry: 0.4 })), "mundos", null, ["Bússola", "Ver os mundos"]), 3);
+  prop("caneca", (m) => place(m, inDesk({ at: onDesk(0.16, 0.98), h: 0.11, ry: 2.4 })), 3);
+  prop("cadeira", (m) => place(m, inDesk({ at: V3(0.98, 0, -0.95), h: 1.25, ry: faceTo(0.98, -0.95, 0, -0.2) })), 3);
   prop("globo", (m) => {
-    const g = place(m, { at: V3(DESKX - 0.95, 0, 1.75), h: 1.08, ry: -0.6, drop: (o) => !/Line001/.test(o.name) && !/Line001/.test(o.parent && o.parent.name || "") });
+    const g = place(m, inDesk({ at: V3(-0.55, 0, 1.85), h: 1.08, ry: -0.6, drop: (o) => !/Line001/.test(o.name) && !/Line001/.test(o.parent && o.parent.name || "") }));
     const s0 = g.userData.size.y / 85.81, C = new T.Vector3(0, 56.54, -0.59);
     g.updateMatrixWorld(true); m.localToWorld(C);
     const gm = new T.ShaderMaterial({ uniforms: Object.assign({ uC: { value: C }, uR: { value: 21.57 * s0 }, uHot: { value: 0 } }, U), vertexShader: PROP_VS, fragmentShader: GLOBE_FS, side: T.DoubleSide });
     g.traverse((o) => { if (o.isMesh && o.visible) o.material = gm; });
-    clickable(g, "mundos", null, ["Globo", "Ir até os mundos"]);
+    clickable(g, "mundos", null, ["Globo", "Ver os mundos"]);
   }, 2);
-  prop("gramofone", (m) => clickable(place(m, { at: V3(XW + 5.3, 0.68, -3.9), h: 0.85, ry: 0.5 + Math.PI }), "musica", null, ["Gramofone", "Tocar ou pausar a música"]), 3);
-  prop("piano", (m) => { const g = place(m, { at: V3(XW + 3.0, 0, -5.4), h: 1.32, ry: -0.81 }); prop("disco", (d) => place(d, { at: on(g, XW + 2.85, -5.55), size: 0.55, ry: -0.81 }), 5); }, 3);
-  prop("velas", (m) => { place(m.clone(true), { at: V3(XW + 0.55, 2.62, 1.3), size: 0.32, emit: 0.5 }); place(m, { at: V3(XW + 0.55, 2.62, -1.3), size: 0.32, emit: 0.5 }); }, 3);
-  prop("relogio", (m) => place(m, { at: V3(XE - 0.6, 0, -2.5), h: 2.3, ry: -Math.PI / 2 }), 4);
-  prop("espelho", (m) => place(m, { at: V3(XW + 1.0, 0, HZ - 1.4), h: 2.1, ry: Math.PI / 2 + 0.5, tint: "#9aa6ad" }), 6);
-  prop("janela", (m) => place(m, { at: V3(XW + 0.12, H + 0.5, 0), h: 4.0, ry: Math.PI / 2, emit: 0.25, emitC: "#8FA6CC" }), 5);
-  prop("cortinas", (m) => place(m, { at: V3(XW + 0.4, H + 0.2, 0), h: 4.6, ry: Math.PI / 2, tint: "#7A2A24" }), 6);
-  prop("arandela", (m) => { for (const [x, y, z, ry] of sconces) place(m.clone(true), { at: V3(x, y - 0.25, z), h: 0.45, ry, emit: 0.35 }); }, 4);
-  /* tudo apoiado de verdade: mede o tampo de cada móvel antes de pôr algo em cima */
-  const rcDown = new T.Raycaster();
-  function topOf(g, x, z) { g.updateMatrixWorld(true); rcDown.set(V3(x, 30, z), V3(0, -1, 0)); const h = rcDown.intersectObject(g, true).find((i) => i.object.visible); return h ? h.point.y : 0; }
-  const on = (g, x, z) => V3(x, topOf(g, x, z), z);
-  // perto da lareira: candelabros, ferramentas e a cômoda com livros
-  prop("candelabro", (m) => { for (const z of [-1.85, 1.85]) { place(m.clone(true), { at: V3(XW + 0.85, 0, z), h: 1.84, emit: 0.18 }); addLight(XW + 0.9, 1.95, z, "#FFB060", 0.7, 0.14); } }, 3);
-  prop("utensilios", (m) => {
-    place(m.clone(true), { at: V3(XW + 1.05, 0, -1.25), h: 0.95, drop: (o) => o.name !== "pCylinder162" });     // o suporte de ferramentas da lareira
-    { const c = place(m.clone(true), { at: V3(XW + 4.3, 2.35, -4.9), h: 1.2, drop: (o) => o.name !== "Chandelier", emit: 0.2 }); // lustre de ferro pendurado sobre o piano
-      const ch = new T.Mesh(new T.CylinderGeometry(0.012, 0.012, 30, 4), structMat); ch.position.set(XW + 4.3, 2.35 + 1.1 + 15, -4.9); scene.add(ch); }
-    addLight(XW + 4.3, 2.6, -4.9, "#FFB868", 1.1, 0.12);
-    prop("mesa-longa", (t) => {  // a bancada comprida do sul, com potes, frascos e poções
-      const g = place(t, { at: V3(XW + 12.5, 0, HZ - 1.05), h: 0.78, ry: Math.PI / 2 });
-      place(m, { at: on(g, XW + 12.5, HZ - 1.0), size: 1.05, drop: (o) => /pCube748|pCylinder162|Chandelier|pCube746|pCylinder144/.test(o.name), ry: Math.PI });
-      prop("tubos", (k) => place(k, { at: on(g, XW + 11.85, HZ - 1.1), size: 0.36, ry: Math.PI }), 4);
-      prop("pocao-caveira", (k) => place(k, { at: on(g, XW + 13.2, HZ - 1.05), size: 0.42, ry: Math.PI + 0.4 }), 4);
-      prop("garrafa-hera", (k) => place(k, { at: on(g, XW + 11.55, HZ - 0.85), h: 0.3, ry: 0.6 }), 4);
-      prop("frasco", (k) => place(k, { at: on(g, XW + 13.5, HZ - 1.25), h: 0.2 }), 4);
-    }, 4);
-  }, 3);
-  prop("comoda", (c) => {
-    const g = place(c, { at: V3(XW + 0.5, 0, -3.2), h: 0.86, ry: Math.PI / 2 });
-    prop("livros-vela", (k) => place(k, { at: on(g, XW + 0.5, -3.35), size: 0.34, ry: 1.2, emit: 0.1 }), 4);
-    prop("livro-couro", (k) => clickable(place(k, { at: on(g, XW + 0.55, -2.95), size: 0.3, ry: 1.9 }), "sobre", null, ["Livro de couro", "Sobre esta biblioteca"]), 4);
-    addLight(XW + 0.9, 1.35, -3.35, "#FFB060", 0.45, 0.15);
-  }, 3);
-  // a mesa do alquimista, inteira (velas, caveira, livros e barril), encostada no sul
-  prop("mesa-alquimista", (m) => { place(m, { at: V3(XW + 7.5, 0, HZ - 1.3), h: 1.84, ry: Math.PI / 2 }); addLight(XW + 7.5, 1.9, HZ - 1.6, "#FFB868", 0.9, 0.14); }, 4);
-  // cadeira de espaldar alto puxada da mesa de trabalho; caneca em cima da mesa
-  prop("cadeira", (m) => place(m, { at: V3(DESKX + 0.98, 0, -0.95), h: 1.25, ry: faceTo(DESKX + 0.98, -0.95, DESKX, -0.2) }), 3);
-  prop("caneca", (m) => place(m, { at: onDesk(0.16, 0.98), h: 0.11, ry: 2.4 }), 3);
-  // discos de vinil em cima do piano
-  // mesas de leitura com cadeiras, dos dois lados do tapete, cada uma com sua lanterna
-  prop("mesa-leitura", (m) => { for (const z of [-5.7, 5.7]) { place(m.clone(true), { at: V3(XW + 17.5, 0, z), h: 1.05, ry: z > 0 ? Math.PI : 0 }); addLight(XW + 17.5, 2.7, z, "#FFB25A", 1.7, 0.05); } }, 4);
-  prop("lustre", (m) => { for (const z of [-5.7, 5.7]) { const g = place(m.clone(true), { at: V3(XW + 17.5, 2.55, z), h: 1.35, emit: 0.25 }); const c = new T.Mesh(new T.CylinderGeometry(0.015, 0.015, 30, 4), structMat); c.position.y = 16.3; g.add(c); } }, 5);
-  // entrada: balcão do bibliotecário, estantes e um armário curvo, a vitrine com as poções
-  prop("estantes-livros", (m) => place(m, { at: V3(XE - 0.95, 0, 6.25), h: 2.62, ry: -Math.PI / 2 }), 5);
-  prop("armario", (m) => place(m, { at: V3(XE - 0.65, 0, -6.4), h: 1.81, ry: -Math.PI / 2 }), 5);
-  prop("balcao", (m) => {
-    const g = place(m, { at: V3(XE - 6.4, 0, 6.3), h: 2.1, ry: Math.PI });
-    prop("castical", (k) => { const y = topOf(g, XE - 6.4, 5.4); place(k, { at: V3(XE - 7.3, y, 5.4), h: 0.3, emit: 0.3 }); addLight(XE - 7.3, y + 0.45, 5.4, "#FFB060", 0.6, 0.15); }, 5);
-    prop("moedas", (k) => place(k, { at: on(g, XE - 6.0, 5.45), size: 0.3 }), 6);
-    prop("calice", (k) => place(k, { at: on(g, XE - 5.5, 5.4), h: 0.24 }), 6);
-  }, 5);
-  prop("vitrine", (m) => {
-    const g = place(m, { at: V3(XE - 4.4, 0, -6.6), h: 2.2, ry: -0.3 });
-    g.updateMatrixWorld(true); rcDown.set(V3(XE - 4.4, 30, -6.6), V3(0, -1, 0));
-    const floor = rcDown.intersectObject(g, true).map((i) => i.point.y).filter((y) => y < 1.2).sort((a, b) => b - a)[0] || 0.3; // o fundo da vitrine, não o vidro de cima
-    prop("pocoes", (k) => place(k, { at: V3(XE - 4.4, floor + 0.02, -6.6), size: 0.95, ry: 0.3, emit: 0.35, emitC: "#B0E0FF" }), 6);
-    addLight(XE - 4.4, 1.6, -6.0, "#CFE6FF", 1.1, 0.02);
-  }, 5);
+  lightAt(deskG.localToWorld(V3(-0.3, 1.25, 0.72)), "#FFC070", 1.6, 0.05);
+  // gramofone na mesinha, a cômoda com livros, o atril com o livro aberto, o piano na porta da frente
+  { const p = polar(R0, 202.5 * Math.PI / 180, 4.7), ry = lookC(R0, p);
+    prop("mesa", (m) => place(m, { at: p, h: 0.68, ry: ry + Math.PI / 2, stretch: [0.62, 1, 0.9] }), 3);
+    prop("gramofone", (m) => clickable(place(m, { at: p.clone().setY(R0.c.y + 0.68), h: 0.85, ry: ry + Math.PI }), "musica", null, ["Gramofone", "Tocar ou pausar a música"]), 3); }
+  { const p = polar(R0, 157.5 * Math.PI / 180, 5.55);
+    prop("comoda", (c) => {
+      const g = place(c, { at: p, h: 0.86, ry: lookC(R0, p) });
+      prop("livros-vela", (k) => place(k, { at: on(g, p.clone().add(V3(0.12, 0, -0.1))), size: 0.34, ry: 1.2, emit: 0.1 }), 4);
+      prop("livro-couro", (k) => clickable(place(k, { at: on(g, p.clone().add(V3(-0.15, 0, 0.15))), size: 0.3, ry: 1.9 }), "sobre", null, ["Livro de couro", "Sobre esta biblioteca"]), 4);
+      lightAt(p.clone().setY(R0.c.y + 1.35), "#FFB060", 0.45, 0.15);
+    }, 3); }
+  { const p = polar(R0, 247.5 * Math.PI / 180, 4.3);
+    prop("atril", (m) => { place(m, { at: p, h: 1.25, ry: lookC(R0, p) + Math.PI }); prop("livro-magico", (b) => clickable(place(b, { at: p.clone().setY(R0.c.y + 1.26), size: 0.62, ry: lookC(R0, p) + Math.PI, emit: 0.15, emitC: "#FFD9A0" }), "sobre", null, ["O livro aberto", "Sobre esta biblioteca"]), 2); }, 2); }
+  prop("piano", (m) => { const g = place(m, { at: facePt(R0, R0.extra, 0.55), h: 1.32, ry: ryX(R0.extra) }); prop("disco", (d) => place(d, { at: on(g, facePt(R0, R0.extra, 0.6)), size: 0.55, ry: ryX(R0.extra) }), 5); }, 3);
 
-  /* as fendas: uma para cada mundo, rasgando as estantes do térreo */
+  // as outras salas: um móvel de cada, do lado oposto ao da fenda
+  const furnSide = (r) => (r.rift != null && mdist(r.rift, (r.focus + 1) % 8) === 0 ? -1 : 1);
+  const spot = (r, deg = 67.5, rad = 4.5) => rel(r, furnSide(r) * deg, rad);
+  const room = (id) => ROOMS.find((r) => r.id === id);
+  { const r = room("linguagens"), p = spot(r, 67.5, 5.6); prop("mesa-leitura", (m) => place(m, { at: p, h: 1.05, ry: lookC(r, p) }), 5); }
+  { const r = room("iot"), p = spot(r, 67.5, 5.6); prop("mesa-leitura", (m) => place(m, { at: p, h: 1.05, ry: lookC(r, p) }), 6); }
+  { const r = room("matematica"), p = spot(r, 67.5, 5.5);
+    prop("mesa-longa", (t) => { const g = place(t, { at: p, h: 0.78, ry: lookC(r, p) + Math.PI / 2 });
+      prop("tubos", (k) => place(k, { at: on(g, p.clone().add(V3(0.25, 0, 0.25))), size: 0.36, ry: lookC(r, p) }), 5);
+      prop("frasco", (k) => place(k, { at: on(g, p.clone().add(V3(-0.3, 0, -0.25))), h: 0.2 }), 5); }, 5); }
+  { const r = room("natureza"), p = spot(r, 67.5, 5.5); prop("mesa-alquimista", (m) => { place(m, { at: p, h: 1.84, ry: lookC(r, p) + Math.PI / 2 }); lightAt(p.clone().setY(r.c.y + 1.9), "#FFB868", 0.9, 0.14); }, 5);
+    const q = spot(r, 112.5, 4.6); prop("garrafa-hera", (m) => place(m, { at: q, h: 0.55, ry: 0.6 }), 6); }
+  { const r = room("humanas"), p = spot(r, 67.5, 5.4);
+    prop("vitrine", (m) => { const g = place(m, { at: p, h: 2.2, ry: lookC(r, p) });
+      g.updateMatrixWorld(true); rcDown.set(V3(p.x, r.c.y + 30, p.z), V3(0, -1, 0));
+      const fl = rcDown.intersectObject(g, true).map((i) => i.point.y).filter((y) => y < r.c.y + 1.2).sort((a, b) => b - a)[0] || r.c.y + 0.3;
+      prop("pocoes", (k) => place(k, { at: V3(p.x, fl + 0.02, p.z), size: 0.95, ry: 0.3, emit: 0.35, emitC: "#B0E0FF" }), 6);
+      lightAt(p.clone().setY(r.c.y + 1.6), "#CFE6FF", 1.1, 0.02); }, 5); }
+  { const r = room("tecnica"), p = spot(r, 67.5, 5.7);
+    prop("balcao", (m) => { const g = place(m, { at: p, h: 2.1, ry: lookC(r, p) + Math.PI });
+      prop("castical", (k) => { const y = topOf(g, p.x, p.z); place(k, { at: V3(p.x, y, p.z), h: 0.3, emit: 0.3 }); addLight(p.x, y + 0.45, p.z, "#FFB060", 0.6, 0.15); }, 5);
+      prop("moedas", (k) => place(k, { at: on(g, p.clone().add(V3(0.4, 0, 0.3))), size: 0.3 }), 6); }, 5);
+    const q = spot(r, -112.5, 5.6); prop("relogio", (m) => place(m, { at: q, h: 2.3, ry: lookC(r, q) }), 5); }
+  { const r = room("quemsou"), p = spot(r, 67.5, 5.4); prop("espelho", (m) => place(m, { at: p, h: 2.1, ry: lookC(r, p), tint: "#9aa6ad" }), 5);
+    const q = spot(r, 112.5, 5.6); prop("armario", (m) => place(m, { at: q, h: 1.81, ry: lookC(r, q) }), 6); }
+  { const r = room("trem"), p = spot(r, 67.5, 5.2);
+    prop("comoda", (c) => { const g = place(c, { at: p, h: 0.86, ry: lookC(r, p) }); prop("castical", (k) => { const y = topOf(g, p.x, p.z); place(k, { at: V3(p.x, y, p.z), h: 0.3, emit: 0.3 }); addLight(p.x, y + 0.45, p.z, "#FFB060", 0.6, 0.15); }, 6); }, 6);
+    const q = spot(r, 112.5, 4.4); armchair(q.x, q.z, lookC(r, q), q.y); }
+  { const r = room("objetivos");
+    prop("janela", (m) => place(m, { at: facePt(r, r.focus, 0.05, 0.25), h: 3.0, ry: ryFront(r.focus), emit: 0.3, emitC: "#8FA6CC" }), 5);
+    prop("cortinas", (m) => place(m, { at: facePt(r, r.focus, 0.25, 0.1), h: 3.3, ry: ryFront(r.focus), tint: "#7A2A24" }), 6);
+    const q = rel(r, 180, 2.8); armchair(q.x, q.z, faceTo(q.x, q.z, facePt(r, r.focus).x, facePt(r, r.focus).z), q.y); }
+  for (const id of ["modelagem", "desenvolvimento", "aplicativos", "banco"]) { const r = room(id), p = spot(r, 67.5, 4.3); prop("atril", (m) => place(m, { at: p, h: 1.25, ry: lookC(r, p) + Math.PI }), 6); }
+  { const r = room("fim"), p = rel(r, 110, 4.2); armchair(p.x, p.z, lookC(r, p), p.y);
+    prop("tinteiro", (m) => clickable(place(m, { at: rel(r, 70, 4.35, DESKY), size: 0.24 }), "recado", null, ["Tinteiro", "Deixar um livro na estante"]), 7);
+    prop("pergaminho", (m) => clickable(place(m, { at: rel(r, 74, 3.95, DESKY), size: 0.36, ry: 0.4 }), "recado", null, ["Pergaminho", "Deixar um livro na estante"]), 7);
+    lightAt(rel(r, 70, 4.0, 1.4), "#FFC070", 1.2, 0.05); }
+  // a luz fria que desce pelos óculos das salas do portfólio
+  for (const r of ROOMS) ray(V3(r.c.x, r.c.y + 4 * HS + 4, r.c.z), V3(r.c.x, r.c.y, r.c.z), OC * 0.75, OC * 1.05, "#9DB4D8", 0.07);
+
+  /* ---------------- as fendas: cada mundo numa porta da sala dele ---------------- */
   const WORLDS = [
     { t: "Quem sou", s: "Tokyo Ghoul", c: "#C0303A" }, { t: "Linguagens", s: "Death Note", c: "#D8D2C2" },
     { t: "Matemática", s: "Evangelion", c: "#8A4FC0" }, { t: "Ciências da Natureza", s: "Ponyo e Totoro", c: "#45B079" },
@@ -616,27 +667,25 @@
       vec3 col = mix(uRC * 0.35, uRC * 2.2 + vec3(0.35), swirl * n) * (1.0 + uHot * 0.8);
       gl_FragColor = vec4(fogIt(col, vW), 1.0); }`;
   const rifts = [];
-  WORLDS.forEach((w, k) => {
-    const north = k < 5, x = XW + 5 + (k % 5) * 5, z = north ? -HZ + 0.32 : HZ - 0.32;
-    w.pos = V3(x, 1.9, z); w.n = north ? 1 : -1; w.k = k;
-    addLight(x, 1.9, z + w.n * 0.6, w.c, 0.9, 0.15);
-    const label = (() => { const c = document.createElement("canvas"); c.width = 512; c.height = 128; const g = c.getContext("2d"); g.fillStyle = "rgba(0,0,0,0)"; g.fillRect(0, 0, 512, 128); g.textAlign = "center"; g.fillStyle = "#F1E6CF"; g.font = "600 44px 'Shippori Mincho', serif"; g.fillText(w.t, 256, 58); g.fillStyle = w.c; g.font = "500 22px 'Geist Mono', monospace"; g.fillText(w.s.toUpperCase(), 256, 100); const t = new T.CanvasTexture(c); return t; })();
-    const lm = new T.Mesh(new T.PlaneGeometry(3.4, 0.85), new T.MeshBasicMaterial({ map: label, transparent: true, depthWrite: false, color: new T.Color(1.35, 1.3, 1.2) }));
-    lm.position.set(x, 4.05, z + w.n * 0.05); lm.rotation.y = north ? 0 : Math.PI; scene.add(lm); w.label = lm;
+  ROOMS.forEach((r) => {
+    if (r.world == null || r.rift == null) return;
+    const w = Object.assign({}, WORLDS[r.world]); w.room = r; w.m = r.rift; w.k = r.world;
+    w.pos = facePt(r, r.rift, 0.3, 1.7); w.nx = -FACE[r.rift].c; w.nz = -FACE[r.rift].s;
+    lightAt(facePt(r, r.rift, 0.9, 1.7), w.c, 0.9, 0.15);
+    sign(facePt(r, r.rift, 0.31, DH + 0.66), ryFront(r.rift), w.t, w.s, w.c, 2.2, 0.5);
     rifts.push(w);
   });
-  prop("atril", (m) => { const g = place(m, { at: V3(XW + 21, 0, 0), h: 1.25, ry: -Math.PI / 2 }); prop("livro-magico", (b) => clickable(place(b, { at: V3(XW + 21, 1.26, 0), size: 0.62, ry: -Math.PI / 2, emit: 0.15, emitC: "#FFD9A0" }), "sobre", null, ["O livro aberto", "Sobre esta biblioteca"]), 2); }, 2);
   prop("fenda", (m) => {
     for (const w of rifts) {
-      const g = place(m.clone(true), { at: V3(w.pos.x, 0.15, w.pos.z), h: 3.6, ry: w.n > 0 ? -Math.PI / 2 : Math.PI / 2 });
+      const g = place(m.clone(true), { at: facePt(w.room, w.m, 0.22, 0.1), h: 3.0, ry: ryX(w.m) });
       const mat = new T.ShaderMaterial({ uniforms: Object.assign({ uRC: { value: new T.Color(w.c) }, uHot: { value: 0 } }, U), vertexShader: PROP_VS, fragmentShader: PORTAL_FS, side: T.DoubleSide });
       g.traverse((o) => { if (o.isMesh) o.material = mat; }); w.mat = mat;
-      const halo = new T.Sprite(new T.SpriteMaterial({ map: glowTex, color: new T.Color(w.c), transparent: true, opacity: 0.35, depthWrite: false, blending: T.AdditiveBlending })); halo.scale.set(3.4, 5, 1); halo.position.set(w.pos.x, 2, w.pos.z + w.n * 0.2); scene.add(halo); w.halo = halo;
+      const halo = new T.Sprite(new T.SpriteMaterial({ map: glowTex, color: new T.Color(w.c), transparent: true, opacity: 0.35, depthWrite: false, blending: T.AdditiveBlending })); halo.scale.set(3.0, 4.2, 1); halo.position.copy(facePt(w.room, w.m, 0.5, 1.7)); scene.add(halo); w.halo = halo;
       clickable(g, "mundo", w);
     }
   }, 2);
 
-  /* ---------------- as atividades: livros de verdade nas salas ---------------- */
+  /* ---------------- as atividades: livros de verdade na estante de cada sala ---------------- */
   const COLORS = ["#2E7D5B", "#9C4A2F", "#7A3E8E", "#2E5E9C", "#3A8C8C", "#B07A2A", "#A8435A", "#4E8A3A", "#5A5AA8", "#8C6A3A"];
   const books = []; let subjects = [];
   function spineTexture(title, color, sub) {
@@ -664,42 +713,33 @@
         gl_FragColor = vec4(fogIt(col, vW), 1.0);
       }`,
   });
-  function shelfBook(room, wall, slot, nPer, row, title, color, sub) {
-    const sd = SIDES[wall], u = (slot - (nPer - 1) / 2) * 1.15, nx = -sd.c, nz = -sd.s, tx = -sd.s, tz = sd.c;
-    const g = new T.Group(); g.position.set(room * D + A * sd.c + tx * u + nx * 0.2, BASE + ROW * row + 0.045, A * sd.s + tz * u + nz * 0.2); g.rotation.y = Math.atan2(nx, nz);
+  // um livro na estante da face m da sala r: u é a posição ao longo da parede, row a prateleira
+  function bookAt(r, m, u, row, title, color, sub) {
+    const f = FACE[m], nx = -f.c, nz = -f.s, g = new T.Group();
+    g.position.set(r.c.x + (AP - 0.2) * f.c + f.tx * u, r.c.y + BASE + ROW * row + 0.045, r.c.z + (AP - 0.2) * f.s + f.tz * u); g.rotation.y = Math.atan2(nx, nz);
     const mats = [actMat(color, null, 0), actMat(color, null, 0), actMat(color, null, 1), actMat(color, null, 0), actMat(color, spineTexture(title, color, sub), 2), actMat(color, null, 0)];
     const body = new T.Mesh(new T.BoxGeometry(0.12, 0.38, 0.27), mats); body.position.y = 0.19; g.add(body);
     const halo = new T.Sprite(new T.SpriteMaterial({ map: glowTex, color: new T.Color(color).lerp(new T.Color("#ffd28a"), 0.5), transparent: true, opacity: 0.2, depthWrite: false, blending: T.AdditiveBlending })); halo.scale.set(0.75, 0.75, 1); halo.position.set(0, 0.2, 0.18); g.add(halo);
-    scene.add(g); return { g, body, halo, mats, nx, nz, room, out: 0, match: 0 };
+    g.scale.setScalar(1.5); scene.add(g); return { g, body, halo, mats, nx, nz, room: r, out: 0, match: 0 };
   }
+  const SLOT = (k, n) => (k - (n - 1) / 2) * 1.25;
   function addActivityBooks(list) {
     subjects = list;
     list.forEach((sub, si) => {
-      const room = si + 1, color = COLORS[si % COLORS.length]; sub.room = room; sub.color = color;
-      plaque(room, sub.name, sub.cat === "curso-tecnico" ? "Curso técnico" : "Ensino médio", color);
+      const r = ROOMS.find((x) => x.subj === sub.name); if (!r) return;
+      const color = COLORS[si % COLORS.length]; sub.color = color; r.sub = r.sub || (sub.cat === "curso-tecnico" ? "curso técnico" : "ensino médio");
+      sign(facePt(r, r.focus, 0.24, DH + 0.85), ryFront(r.focus), sub.name, sub.cat === "curso-tecnico" ? "Curso técnico" : "Ensino médio", color, 2.6, 0.62);
       sub.acts.forEach((a, ai) => {
-        const wall = ai < 4 ? 1 : 5, nPer = Math.min(4, ai < 4 ? sub.acts.length : sub.acts.length - 4);
-        const b = shelfBook(room, wall, ai % 4, nPer, 2, a.t, color); Object.assign(b, { a, sub, id: `${si}-${ai}`, wall });
+        const row = ai < 4 ? 2 : 3, nPer = ai < 4 ? Math.min(4, sub.acts.length) : sub.acts.length - 4;
+        const b = bookAt(r, r.focus, SLOT(ai % 4, nPer), row, a.t, color); Object.assign(b, { a, sub, id: `${si}-${ai}` });
         books.push(b); clickable(b.body, "livro", b);
       });
     });
-    plaque(CERT, "Certificados", "Feiras e Iniciação Científica", "#C8A04A");
-    plaque(FIM, "Sala de Leitura", "A Estante dos Visitantes", "#C22026");
-    buildPlaces(); buildMarkers(); renderIndex(); go(placeIdx, true);
-  }
-  function plaque(room, name, sub, color) {
-    const c = document.createElement("canvas"); c.width = 640; c.height = 160; const g = c.getContext("2d");
-    g.fillStyle = "#24170F"; g.fillRect(0, 0, 640, 160); g.strokeStyle = "#B88A40"; g.lineWidth = 4; g.strokeRect(10, 10, 620, 140);
-    g.fillStyle = color; g.fillRect(24, 72, 10, 16); g.fillStyle = "#F1E6CF"; g.textAlign = "center";
-    let fs = 46; g.font = `600 ${fs}px 'Shippori Mincho', serif`; while (g.measureText(name).width > 560 && fs > 24) { fs -= 2; g.font = `600 ${fs}px 'Shippori Mincho', serif`; }
-    g.fillText(name, 320, 92); g.fillStyle = "#BBA986"; g.font = "500 18px 'Geist Mono', monospace"; g.fillText(sub.toUpperCase() + "  ·  SALA " + room, 320, 130);
-    const tex = new T.CanvasTexture(c); tex.anisotropy = 4;
-    const mat = new T.ShaderMaterial({ uniforms: Object.assign({ map: { value: tex } }, U), vertexShader: PROP_VS, fragmentShader: `${COMMON} uniform sampler2D map; varying vec3 vW; varying vec3 vN; varying vec2 vUv; void main(){ vec3 c = texture2D(map, vUv).rgb; vec3 l = band(lights(vW, normalize(vN))); gl_FragColor = vec4(fogIt(c * (0.4 + l * 0.9), vW), 1.0); }` });
-    const m = new T.Mesh(new T.PlaneGeometry(2.4, 0.6), mat); m.position.set((room - 1) * D + A - 0.04, DOORH + 0.78, 0); m.rotation.y = -Math.PI / 2; scene.add(m);
-    const m2 = m.clone(); m2.position.set(room * D - A + 0.04, DOORH + 0.78, 0); m2.rotation.y = Math.PI / 2; scene.add(m2);
+    for (const r of ROOMS) if (!r.subj && r.id !== "escritorio" && r.id !== "objetivos") sign(facePt(r, r.focus, 0.24, DH + 0.85), ryFront(r.focus), r.t, r.sub, "#C8A04A", 2.6, 0.62);
+    buildPlaces(); renderIndex(); if (!hist.length && !fly) go(placeIdx, true); else label();
   }
 
-  /* certificados: um em cada redoma */
+  /* certificados: um em cada redoma, em roda do óculo */
   const CERTS = [
     { t: "Infomatrix 2025", s: "Credencial para a MILSET Expo 2026, em Fortaleza", p: "AcousticBuild" },
     { t: "XI FEBIC 2026", s: "2º lugar em Ciências Exatas e da Terra e credencial para a FoCiTeCu 2027, na Argentina", p: "AcousticBuild" },
@@ -719,29 +759,26 @@
   }
   const certItems = [];
   prop("redoma", (m) => {
+    const r = room("certificados");
     CERTS.forEach((cf, k) => {
-      const a = [0.75, 1.55, 2.35, 3.93, 4.71, 5.5][k], r = 5.0, x = CERT * D + r * Math.cos(a), z = r * Math.sin(a);
-      const g = place(m.clone(true), { at: V3(x, 0, z), h: 1.6, ry: -a - Math.PI / 2 });
+      const deg = [-22.5, 22.5, -67.5, 67.5, -112.5, 112.5][k], p = rel(r, deg, 4.4), a = r.fa + deg * Math.PI / 180;
+      const g = place(m.clone(true), { at: p, h: 1.6, ry: lookC(r, p) });
       const card = new T.Mesh(new T.PlaneGeometry(0.3, 0.4), new T.MeshBasicMaterial({ map: certTexture(cf) }));
-      card.position.set(x, 1.38, z); card.lookAt(CERT * D, 1.38, 0); scene.add(card);
-      addLight(x - Math.cos(a) * 0.4, 1.9, z - Math.sin(a) * 0.4, "#FFD08A", 0.45, 0.02);
-      const it = { cf, g, card, pos: V3(x, 1.4, z), nx: -Math.cos(a), nz: -Math.sin(a) }; certItems.push(it); clickable(g, "cert", it); clickable(card, "cert", it);
+      card.position.copy(p).setY(r.c.y + 1.38); card.lookAt(r.c.x, r.c.y + 1.38, r.c.z); scene.add(card);
+      lightAt(p.clone().setY(r.c.y + 1.9).lerp(r.c.clone().setY(r.c.y + 1.9), 0.08), "#FFD08A", 0.45, 0.02);
+      const it = { cf, g, card, pos: p.clone().setY(r.c.y + 1.4), nx: -Math.cos(a), nz: -Math.sin(a) }; certItems.push(it); clickable(g, "cert", it); clickable(card, "cert", it);
     });
   }, 6);
 
-  /* sala de leitura: poltrona, mesa, lampião e a Estante dos Visitantes */
-  armchair(FIM * D - 3.4, 2.9, 2.5);
-  prop("lampiao", (m) => place(m, { at: V3(FIM * D - 4.3, DESKY, -2.5), h: 0.55, emit: 0.4 }), 7);
-  prop("tinteiro", (m) => clickable(place(m, { at: V3(FIM * D - 4.0, DESKY, -2.85), size: 0.24 }), "recado", null, ["Tinteiro", "Deixar um livro na estante"]), 7);
-  prop("pergaminho", (m) => clickable(place(m, { at: V3(FIM * D - 4.45, DESKY, -2.9), size: 0.36, ry: 0.4 }), "recado", null, ["Pergaminho", "Deixar um livro na estante"]), 7);
-  addLight(FIM * D - 4.3, 1.4, -2.5, "#FFC070", 1.2, 0.05);
+  /* a Estante dos Visitantes, na Sala de Leitura */
   const visitorBooks = [];
   const VCOL = { madeira: "#6B4A2E", vermelho: "#8E2A24", azul: "#2E4A7A", verde: "#2F5A3A" };
   function addVisitors(list) {
     visitorBooks.forEach((b) => scene.remove(b.g)); visitorBooks.length = 0;
-    list.slice(0, 24).forEach((e, k) => {
-      const wall = k < 12 ? 1 : 5, kk = k % 12, row = 1 + Math.floor(kk / 4), slot = kk % 4;
-      const b = shelfBook(FIM, wall, slot, 4, row, e.nome || "Visitante", VCOL[e.cor] || VCOL.madeira, new Date(e.criado_em || Date.now()).toLocaleDateString("pt-BR"));
+    const r = room("fim");
+    list.slice(0, 16).forEach((e, k) => {
+      const row = 1 + Math.floor(k / 4), slot = k % 4;
+      const b = bookAt(r, r.focus, SLOT(slot, 4), row, e.nome || "Visitante", VCOL[e.cor] || VCOL.madeira, new Date(e.criado_em || Date.now()).toLocaleDateString("pt-BR"));
       b.visitor = e; visitorBooks.push(b); clickable(b.body, "visitante", b);
     });
   }
@@ -752,79 +789,84 @@
       addVisitors(list);
     }).catch(() => { try { addVisitors(JSON.parse(localStorage.getItem("biblioteca-meus") || "[]")); } catch (e) { /* nada */ } });
   }
+  // as estantes que fecham as portas e as que contornam a lareira
+  scene.add(new T.Mesh(CB.build(), structMat), new T.Mesh(CWb.build(), bookMat));
 
   /* ---------------- os lugares ---------------- */
   let places = [], placeIdx = 0;
-  const wallView = (room, wall, dist = 3.0) => { const sd = SIDES[wall], cx = room * D + A * sd.c, cz = A * sd.s; return { pos: V3(cx - sd.c * dist, EYE, cz - sd.s * dist), tgt: V3(cx, 1.62, cz) }; };
-  let extraMarks = [], marks = [];
+  function roomPose(r) {
+    const fd = faceDir(r.focus);
+    if (r.id === "escritorio") return { pos: r.c.clone().addScaledVector(fd, -4.5).setY(r.c.y + 2.05), tgt: r.c.clone().addScaledVector(fd, AP).setY(r.c.y + 1.45) };
+    let side = V3();
+    if (r.rift != null) { const rd = faceDir(r.rift); side = rd.sub(fd.clone().multiplyScalar(rd.dot(fd))); if (side.length() > 0.1) side.normalize(); else side.set(0, 0, 0); }
+    return { pos: r.c.clone().addScaledVector(fd, -2.7).addScaledVector(side, -0.8).setY(r.c.y + 2.0), tgt: r.c.clone().addScaledVector(fd, AP).addScaledVector(side, 1.4).setY(r.c.y + 1.75) };
+  }
   function buildPlaces() {
-    const wallAnchor = (room, wall) => { const sd = SIDES[wall]; return V3(room * D + (A - 0.6) * sd.c, 3.15, (A - 0.6) * sd.s); };
-    const P = (o) => Object.assign({ area: o.room != null ? o.room : -1 }, o);
-    places = [
-      P({ id: "salao", g: "O Grande Salão", t: "Entrada", pose: { pos: V3(XE - 2.4, 2.05, 0.2), tgt: V3(XW + 12, 3.0, 0) }, anchor: V3(XW + 21, 2.4, 0) }),
-      P({ id: "mesa", g: "O Grande Salão", t: "A mesa de trabalho", pose: { pos: V3(DESKX + 1.85, 1.62, 0.62), tgt: V3(DESKX - 0.35, 0.92, -0.05) }, anchor: V3(DESKX, 1.75, 0) }),
-      P({ id: "mundos-n", g: "O Grande Salão", t: "Os mundos", sub: "fendas do norte", pose: { pos: V3(XW + 15, 3.4, 5.2), tgt: V3(XW + 15, 2.0, -HZ) }, anchor: V3(XW + 15, 5.0, -HZ + 1.2) }),
-      P({ id: "mundos-s", g: "O Grande Salão", t: "Os mundos", sub: "fendas do sul", pose: { pos: V3(XW + 15, 3.4, -5.2), tgt: V3(XW + 15, 2.0, HZ) }, anchor: V3(XW + 15, 5.0, HZ - 1.2) }),
-      ...subjects.flatMap((sj) => [
-        P({ id: "sala" + sj.room, g: "Salas das matérias", t: sj.name, sub: `sala ${sj.room}`, room: sj.room, pose: wallView(sj.room, 1), anchor: wallAnchor(sj.room, 1) }),
-        ...(sj.acts.length > 4 ? [P({ id: "sala" + sj.room + "b", g: "Salas das matérias", t: sj.name, sub: "a outra estante", room: sj.room, pose: wallView(sj.room, 5), anchor: wallAnchor(sj.room, 5), minor: true })] : []),
-      ]),
-      P({ id: "certificados", g: "Mais adiante", t: "Certificados", sub: `sala ${CERT}`, room: CERT, pose: { pos: V3(CERT * D - 4.9, 2.1, 0.4), tgt: V3(CERT * D + 2.5, 1.2, 0) }, anchor: V3(CERT * D, 3.2, 0) }),
-      P({ id: "fim", g: "Mais adiante", t: "Sala de Leitura", sub: "o fim", room: FIM, pose: { pos: V3(FIM * D - 4.9, 1.85, 0.5), tgt: V3(FIM * D + A + 8, 1.7, 0) }, anchor: V3(FIM * D, 3.2, 0) }),
-      P({ id: "estante", g: "Mais adiante", t: "Estante dos Visitantes", sub: "deixe um livro", room: FIM, pose: wallView(FIM, 1, 2.8), anchor: wallAnchor(FIM, 1), minor: true }),
-    ];
-    // atalhos que não são lugares: a porta do salão leva à primeira sala
-    extraMarks = subjects.length ? [{ id: "porta", t: "As salas das matérias", sub: "pela porta", area: -1, anchor: V3(XE - 0.4, 4.35, 0), to: "sala1" }] : [];
+    places = ROOMS.map((r) => ({ id: r.id, g: r.g, t: r.t, sub: r.sub || "", room: r, pose: roomPose(r) }));
+    places.splice(1, 0, { id: "mesa", g: "O centro", t: "A mesa de trabalho", sub: "o recado, a busca e o contato", room: R0, pose: { pos: deskG.localToWorld(V3(1.85, 1.62, 0.62)), tgt: deskG.localToWorld(V3(-0.35, 0.92, -0.05)) } });
   }
   buildPlaces();
 
-  /* ---------------- câmera: voar de um lugar ao outro ---------------- */
-  const cam = { pos: V3(XE - 2.4, 2.05, 0.2), tgt: V3(XW + 12, 3.0, 0), yaw: 0, pitch: 0, yawT: 0, pitchT: 0 };
-  let fly = null, focus = null;
-  const areaOf = (p) => (p.x < XE - 0.2 ? -1 : Math.round(p.x / D));
-  const ringPt = (room, a, r = 4.25) => V3(room * D + r * Math.cos(a), EYE, r * Math.sin(a));
-  function route(a, b) {
-    const pts = [a.clone()]; let ar = areaOf(a); const br = areaOf(b);
-    const around = (rm, a0, a1) => { let d = a1 - a0; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; if (Math.abs(Math.abs(d) - Math.PI) < 0.25) d = Math.abs(d); const n = Math.max(1, Math.ceil(Math.abs(d) / 0.4)); for (let k = 1; k <= n; k++) pts.push(ringPt(rm, a0 + d * k / n)); };
-    const ang = (p, rm) => Math.atan2(p.z, p.x - rm * D);
-    if (ar === br) {
-      if (ar >= 0) { const a0 = ang(a, ar), a1 = ang(b, ar); if (Math.abs(a0 - a1) > 0.8) { pts.push(ringPt(ar, a0)); around(ar, a0, a1); } }
-      else pts.push(a.clone().lerp(b, 0.5).setY(Math.max(a.y, b.y) + 0.5));
-      pts.push(b.clone()); return pts;
-    }
-    let angle;
-    if (ar < 0) { pts.push(V3(XE - 1.4, EYE, 0)); pts.push(V3(-A + 0.7, EYE, 0)); ar = 0; angle = Math.PI; pts.push(ringPt(0, angle)); }
-    else { angle = ang(a, ar); if (Math.hypot(a.x - ar * D, a.z) > 3.2) pts.push(ringPt(ar, angle)); }
-    const target = br < 0 ? 0 : br;
-    while (ar !== target) { const dir = Math.sign(target - ar); around(ar, angle, dir > 0 ? 0 : Math.PI); pts.push(V3(ar * D + dir * (A - 0.3), EYE, 0)); ar += dir; pts.push(V3(ar * D - dir * (A - 0.3), EYE, 0)); angle = dir > 0 ? Math.PI : 0; pts.push(ringPt(ar, angle)); }
-    if (br < 0) { around(0, angle, Math.PI); pts.push(V3(-A + 0.7, EYE, 0)); pts.push(V3(XE - 1.4, EYE, 0)); }
-    else around(br, angle, ang(b, br));
-    pts.push(b.clone());
-    const clean = [pts[0]]; for (const p of pts) if (p.distanceTo(clean[clean.length - 1]) > 0.25) clean.push(p);
-    return clean;
+  /* ---------------- câmera: deslizar devagar, pelos corredores ---------------- */
+  const cam = { pos: V3(0, EYE, 0), tgt: V3(0, EYE, 5), yaw: 0, pitch: 0, yawT: 0, pitchT: 0 };
+  let fly = null, focus = null, lookReady = false; const lookS = V3();
+  const smoother = (x) => x * x * x * (x * (x * 6 - 15) + 10);
+  const sstep = (a, b, x) => { const v = Math.max(0, Math.min(1, (x - a) / (b - a))); return v * v * (3 - 2 * v); };
+  function glide(pts, tgt, done, minDur = 2.2) {
+    const end = pts[pts.length - 1];
+    if (reduce) { cam.pos.copy(end); cam.tgt.copy(tgt); lookReady = false; if (done) done(); return; }
+    const clean = [pts[0].clone()]; for (const p of pts.slice(1)) if (p.distanceTo(clean[clean.length - 1]) > 0.3) clean.push(p.clone());
+    let curve = null, len = 0;
+    if (clean.length >= 2) { curve = new T.CatmullRomCurve3(clean, false, "centripetal", 0.5); len = curve.getLength(); }
+    if (Math.abs(cam.yaw) > 1e-3 || Math.abs(cam.pitch) > 1e-3) { const d = cam.tgt.clone().sub(cam.pos), r = d.length(), yw = Math.atan2(d.z, d.x) + cam.yaw, pt = Math.asin(Math.max(-0.99, Math.min(0.99, d.y / r))) + cam.pitch; cam.tgt.set(cam.pos.x + Math.cos(yw) * Math.cos(pt) * r, cam.pos.y + Math.sin(pt) * r, cam.pos.z + Math.sin(yw) * Math.cos(pt) * r); }
+    cam.yaw = cam.pitch = cam.yawT = cam.pitchT = 0;
+    const d0 = cam.tgt.clone().sub(cam.pos).normalize();
+    fly = { curve, len, u: 0, dur: curve ? Math.min(9, Math.max(minDur, len / 4.6)) : 1.4, d0, t1: tgt.clone(), done };
+    document.body.classList.add("flying");
   }
-  function flyTo(pose, done) {
-    const pts = route(cam.pos, pose.pos);
-    if (reduce || pts.length < 2) { cam.pos.copy(pose.pos); cam.tgt.copy(pose.tgt); if (done) done(); return; }
-    const curve = new T.CatmullRomCurve3(pts, false, "centripetal", 0.4); const len = curve.getLength();
-    fly = { curve, len, u: 0, dur: Math.min(7.5, Math.max(1.4, len / 7)), t0: cam.tgt.clone(), t1: pose.tgt.clone(), done };
-    cam.yawT = cam.pitchT = 0; document.body.classList.add("flying");
+  const linkFace = (A, B) => { const l = A.links.find((x) => x.to === B); return l ? l.m : -1; };
+  function corridorPts(A, m) {
+    const B = A.links.find((x) => x.m === m).to, d = faceDir(m), y0 = A.c.y + EYE, y1 = B.c.y + EYE, sl = FACE[m].ramp ? (y1 - y0) / LR : 0;
+    return [A.c.clone().addScaledVector(d, AP - 2.4).setY(y0), A.c.clone().addScaledVector(d, AP + 0.9).setY(y0 + sl * 0.9),
+      B.c.clone().addScaledVector(d, -(AP + 0.9)).setY(y1 - sl * 0.9), B.c.clone().addScaledVector(d, -(AP - 2.4)).setY(y1)];
   }
-  const ease = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+  // longe demais para um corredor só: a biblioteca se dobra e a câmera aparece do outro lado
+  const veil = $("dobra");
+  function fold(p, done) {
+    if (reduce) { cam.pos.copy(p.pose.pos); cam.tgt.copy(p.pose.tgt); lookReady = false; latKey = ""; if (done) done(); return; }
+    fly = { hold: true }; veil.classList.add("on"); document.body.classList.add("flying");
+    setTimeout(() => {
+      const back = p.pose.pos.clone().sub(p.pose.tgt).setY(0).normalize();
+      cam.pos.copy(p.pose.pos).addScaledVector(back, 1.8).add(V3(0, 0.3, 0)); cam.tgt.copy(p.pose.tgt); lookReady = false; cam.yaw = cam.pitch = 0;
+      fly = null; glide([cam.pos.clone(), p.pose.pos.clone()], p.pose.tgt, done, 2.4);
+      veil.classList.remove("on");
+    }, 700);
+  }
+  function travel(A, p, done) {
+    const B = p.room;
+    if (A === B) { const mid = cam.pos.clone().lerp(p.pose.pos, 0.5); mid.y = Math.max(cam.pos.y, p.pose.pos.y) + 0.15; glide([cam.pos.clone(), mid, p.pose.pos], p.pose.tgt, done); return; }
+    const m = linkFace(A, B);
+    if (m >= 0) { const mid = A.c.clone().addScaledVector(faceDir(m), 1.2).setY(A.c.y + 1.85); glide([cam.pos.clone(), mid, ...corridorPts(A, m), p.pose.pos], p.pose.tgt, done, 3.2); return; } // passa pelo meio da sala, longe dos móveis
+    fold(p, done);
+  }
 
   /* ---------------- navegação ---------------- */
   const cur = () => places[placeIdx];
-  const hist = [];
-  function go(i, instant = false, fromBack = false) {
+  const hist = []; let quietT = 0;
+  function label() {
+    $("aquiK").textContent = cur().g; $("aquiT").textContent = cur().t; $("voltar").hidden = !hist.length;
+    const nav = $("nav"); nav.classList.remove("quiet"); clearTimeout(quietT); quietT = setTimeout(() => nav.classList.add("quiet"), 4200);
+  }
+  function go(i, instant = false, fromBack = false, done) {
     if (typeof i === "string") i = places.findIndex((p) => p.id === i);
     if (i < 0 || i >= places.length) return;
-    closePanel(); closeIndex(); focus = null; hotC = null; canvas.classList.remove("hot"); rotulo.classList.remove("on");
+    closePanel(true); closeIndex(); focus = null; hotC = null; canvas.classList.remove("hot"); rotulo.classList.remove("on");
+    const from = cur(), to = places[i];
     if (!fromBack && !instant && i !== placeIdx) { hist.push(placeIdx); if (hist.length > 30) hist.shift(); }
-    placeIdx = i; const pose = cur().pose;
-    if (instant) { cam.pos.copy(pose.pos); cam.tgt.copy(pose.tgt); } else flyTo(pose);
-    $("aquiK").textContent = cur().g; $("aquiT").textContent = cur().t + (cur().sub ? " · " + cur().sub : "");
-    $("voltar").hidden = !hist.length;
-    renderIndex(); hint(); if (!instant) $("hero").classList.add("off");
+    placeIdx = i;
+    if (instant) { cam.pos.copy(to.pose.pos); cam.tgt.copy(to.pose.tgt); lookReady = false; if (done) done(); }
+    else if (fly) fold(to, done); else travel(from.room, to, done);
+    label(); renderIndex(); hint(); if (!instant) $("hero").classList.add("off");
   }
   function back() { if (panel.classList.contains("open")) { closePanel(); return; } const i = hist.pop(); if (i != null) go(i, false, true); $("voltar").hidden = !hist.length; }
   $("voltar").addEventListener("click", back);
@@ -838,59 +880,7 @@
   $("abrirIndice").addEventListener("click", openIndex); $("fecharIndice").addEventListener("click", closeIndex);
   $("aqui").addEventListener("click", openIndex); $("aqui").addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openIndex(); } });
   $("listaLugares").addEventListener("click", (e) => { const b = e.target.closest("button[data-i]"); if (b) go(+b.dataset.i); });
-
-  /* marcadores no espaço: etiquetas sobre os lugares; clicar leva até lá */
-  function buildMarkers() {
-    const box = $("marcas"); box.innerHTML = ""; marks = [];
-    for (const m of places.map((p, i) => ({ ...p, to: i })).concat(extraMarks)) {
-      const b = document.createElement("button"); b.type = "button"; b.className = "mk" + (m.minor ? " minor" : "");
-      b.innerHTML = `<i></i><span><b>${esc(m.t)}</b>${m.sub ? `<small>${esc(m.sub)}</small>` : ""}</span>`;
-      b.addEventListener("click", (e) => { e.stopPropagation(); go(m.to); });
-      box.appendChild(b); marks.push({ el: b, m, shown: false });
-    }
-  }
-  const mv = new T.Vector3(), mc = new T.Vector3();
-  function updateMarkers() {
-    const ca = areaOf(cam.pos), W = innerWidth, Hh = innerHeight, small = W < 640, edges = [];
-    for (const k of marks) {
-      const m = k.m, here = typeof m.to === "number" && m.to === placeIdx;
-      const near = m.area === ca || (ca >= 0 && m.area >= 0 && Math.abs(m.area - ca) <= 1) || (ca === -1 && m.area <= 1) || (ca <= 1 && m.area === -1);
-      const dist = camera.position.distanceTo(m.anchor);
-      let vis = !fly && !here && near && dist < 34 && dist > 1.2 && !(ca >= 0 && m.area === -1 && m.id !== "salao"), edge = false, x = 0, y = 0;
-      if (vis) {
-        mc.copy(m.anchor).applyMatrix4(camera.matrixWorldInverse); mv.copy(m.anchor).project(camera);
-        const inFront = mc.z < -0.2, onScreen = inFront && Math.abs(mv.x) < 0.94 && Math.abs(mv.y) < 0.86;
-        if (onScreen) { x = mv.x; y = mv.y; }
-        else if (m.minor && m.area !== ca || ca === -1 && m.area >= 0) vis = false; // na borda, só o que importa
-        else {
-          edge = true; let dx = mc.x, dy = mc.y * 0.35; if (!inFront && Math.abs(dx) < 0.01) dx = 1;
-          const sx = (small ? 0.80 : 0.88) / Math.max(1e-4, Math.abs(dx)), sy = 0.62 / Math.max(1e-4, Math.abs(dy)), sc = Math.min(sx, sy);
-          x = dx * sc; y = Math.max(-0.62, Math.min(0.62, dy * sc));
-          if (!inFront) { x = Math.sign(dx) * (small ? 0.80 : 0.88); y = Math.max(-0.5, Math.min(0.5, mc.y * 0.1)); } // atrás: vai para o lado mais perto
-        }
-      }
-      k.sx = (x * 0.5 + 0.5) * W; k.sy = (-y * 0.5 + 0.5) * Hh;
-      if (vis && edge) edges.push(k);
-      else if (vis) {
-        k.el.style.transform = `translate(${k.sx}px, ${k.sy}px) translate(-50%, -100%)`;
-        k.el.style.opacity = String(Math.max(0.4, 1 - dist / 38));
-      }
-      if (vis && edge) k.el.style.opacity = "0.92";
-      if (edge !== k.edge) { k.edge = edge; k.el.classList.toggle("edge", edge); }
-      if (vis !== k.shown) { k.shown = vis; k.el.classList.toggle("on", vis); k.el.tabIndex = vis ? 0 : -1; if (!vis) k.el.style.opacity = "0"; }
-    }
-    for (const side of [-1, 1]) {
-      const g = edges.filter((k) => Math.sign(k.sx - W / 2 || 1) === side).sort((p, q) => p.sy - q.sy);
-      for (let j = 1; j < g.length; j++) if (g[j].sy - g[j - 1].sy < 50) g[j].sy = g[j - 1].sy + 50;
-      const over = g.length ? g[g.length - 1].sy - (Hh - 120) : 0; if (over > 0) g.forEach((k) => (k.sy -= over));
-      const fixed = marks.filter((k) => k.shown && !k.edge).map((k) => ({ x: k.sx, y: k.sy - 22, w: (k.el.offsetWidth || 160) / 2 + 8 }));
-      for (const k of g) { k.el.classList.toggle("left", side < 0); const w = k.el.offsetWidth || 160, xx = Math.min(W - 14 - w / 2, Math.max(14 + w / 2, k.sx));
-        for (let n = 0; n < 6 && fixed.some((f) => Math.abs(f.x - xx) < f.w + w / 2 && Math.abs(f.y - k.sy) < 46); n++) k.sy += 46;
-        k.el.style.transform = `translate(${xx}px, ${k.sy}px) translate(-50%, -50%)`; }
-    }
-  }
-
-  let hinted = false; function hint() { if (hinted) return; hinted = true; setTimeout(() => $("dica").classList.add("off"), 6000); }
+  let hinted = false; function hint() { if (hinted) return; hinted = true; setTimeout(() => $("dica").classList.add("off"), 7000); }
 
   /* ---------------- painel, avisos e o recado ---------------- */
   const panel = $("painel"); let openThing = null;
@@ -899,8 +889,9 @@
     openThing = thing || null; $("pKick").textContent = kick; $("pTitulo").textContent = title; $("pCorpo").innerHTML = html;
     panel.classList.add("open"); panel.setAttribute("aria-hidden", "false");
   }
-  function closePanel() { if (!panel.classList.contains("open")) return; panel.classList.remove("open"); panel.setAttribute("aria-hidden", "true"); openThing = null; books.concat(visitorBooks).forEach((b) => (b.open = false)); if (focus) { focus = null; flyTo(cur().pose); } }
-  $("pFechar").addEventListener("click", closePanel);
+  function closePanel(silent) { if (!panel.classList.contains("open")) return; panel.classList.remove("open"); panel.setAttribute("aria-hidden", "true"); openThing = null; books.concat(visitorBooks).forEach((b) => (b.open = false)); if (focus) { focus = null; if (!silent) glide([cam.pos.clone(), cur().pose.pos], cur().pose.tgt, null, 1.8); } }
+  $("pFechar").addEventListener("click", () => closePanel());
+  $("pCorpo").addEventListener("click", (e) => { const a = e.target.closest("[data-go]"); if (a) { e.preventDefault(); go(a.dataset.go); } });
   let toastT = 0;
   function toast(k, t, s) { $("avisoK").textContent = k; $("avisoT").textContent = t; $("avisoS").textContent = s || ""; const el = $("aviso"); el.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove("on"), 3600); }
   function openBook(b) {
@@ -911,7 +902,7 @@
     showPanel(`${b.sub.name} · ${b.a.s || ""}`, b.a.t, img + `<p>${esc(b.a.r)}</p>` + (k ? `<h3>Competências</h3><ul class="k">${k}</ul>` : "") + (l ? `<h3>Ver</h3><div class="links">${l}</div>` : ""), b);
     focusOn(b.g.position, b.nx, b.nz, 1.35);
   }
-  function focusOn(p, nx, nz, dist) { focus = { pos: V3(p.x + nx * dist, EYE - 0.05, p.z + nz * dist), tgt: V3(p.x, p.y + 0.15, p.z) }; flyTo(focus); }
+  function focusOn(p, nx, nz, dist) { focus = { pos: V3(p.x + nx * dist, p.y + 0.14, p.z + nz * dist), tgt: V3(p.x, p.y + 0.15, p.z) }; glide([cam.pos.clone(), focus.pos], focus.tgt, null, 1.8); }
   function formRecado() {
     const nome = (window.visitante && window.visitante.nome && window.visitante.nome()) || "";
     showPanel("A Estante dos Visitantes", "Deixe um livro na estante", `<p>Escreva um recado. Ele vira um livro na Estante dos Visitantes, na Sala de Leitura, e fica lá para quem vier depois.</p>
@@ -925,7 +916,7 @@
         const mine = { id: d.ema && d.ema.id, nome: body.nome, recado: body.recado, cor: body.cor, criado_em: new Date().toISOString(), meu: true };
         try { const arr = JSON.parse(localStorage.getItem("biblioteca-meus") || "[]"); arr.unshift(mine); localStorage.setItem("biblioteca-meus", JSON.stringify(arr.slice(0, 6))); } catch (er) { /* sem storage */ }
         loadVisitors(); closePanel(); toast("Estante dos Visitantes", "Seu livro está na estante", d.moderado ? "Os outros visitantes vão vê-lo assim que for aprovado." : "");
-        go("estante");
+        go("fim");
       }).catch(() => { $("fNota").textContent = "Sem conexão com a estante agora."; });
     });
   }
@@ -939,28 +930,30 @@
       case "livro": openBook(c.data); break;
       case "mundo": toast(c.data.s, c.data.t, "Este mundo ainda está sendo construído. A fenda já está aberta, falta o outro lado."); break;
       case "recado": formRecado(); break;
-      case "busca": $("busca").focus(); break;
+      case "busca": openIndex(); setTimeout(() => busca.focus(), 350); break;
       case "indice": openIndex(); break;
-      case "mundos": go("mundos-n"); break;
+      case "mundos": showPanel("Os mundos", "Dez fendas, dez mundos", `<p>Cada parte do portfólio tem uma fenda para um mundo, numa porta da sala dela. Escolha uma para ir até lá.</p><div class="links">${rifts.map((w) => `<a href="#" data-go="${w.room.id}">${esc(w.t)} · ${esc(w.s)}</a>`).join("")}</div>`); break;
+      case "mesa": go("mesa"); break;
+      case "porta": go(places.findIndex((p) => p.room === c.data.to && p.id !== "mesa")); break;
       case "musica": toggleMusic(); break;
       case "contato": showPanel("Contato", "Fernando Rateke", `<p>Estudante do Ensino Médio integrado ao Técnico em Análise e Desenvolvimento de Sistemas, no SESI SENAI, em Florianópolis.</p><div class="links"><a href="mailto:fernando_rateke-n@estudante.sesisenai.org.br">E-mail</a><a href="https://github.com/fernando-rateke" target="_blank" rel="noopener">GitHub</a></div>`); break;
-      case "sobre": showPanel("O Grande Salão", "Fernando Rateke · Portfólio 2026", `<p><i>A jornada é o que dá forma ao mundo.</i></p><p>Esta biblioteca não tem fim. As fendas nas estantes levam aos mundos; a porta de madeira leva às salas das matérias, aos certificados e, no fim, à Sala de Leitura, onde fica a Estante dos Visitantes.</p><p>Clique nas etiquetas douradas para ir até um lugar, ou abra o Mapa e escolha para onde ir.</p>`); break;
+      case "sobre": showPanel("A Biblioteca Infinita", "Fernando Rateke · Portfólio 2026", `<p><i>A jornada é o que dá forma ao mundo.</i></p><p>Esta biblioteca não tem fim: cada sala tem oito portas, e cada porta dá num corredor que segue na diagonal ou numa rampa que sobe ou desce até outra sala, com mais portas. Dezesseis delas guardam este portfólio; o resto continua para sempre.</p><p>Clique numa porta para seguir pelo corredor. A placa em cima diz para onde ela leva. O Mapa leva a qualquer sala.</p>`); break;
       case "cert": showPanel("Certificado", c.data.cf.t, `<p>${esc(c.data.cf.s)}</p><p class="note">${esc(c.data.cf.p)}</p>`); focusOn(c.data.pos, c.data.nx, c.data.nz, 1.4); break;
       case "visitante": c.data.open = true; showPanel(`Estante dos Visitantes · ${new Date(c.data.visitor.criado_em || Date.now()).toLocaleDateString("pt-BR")}`, c.data.visitor.nome || "Visitante", `<p>${esc(c.data.visitor.recado)}</p>` + (c.data.visitor.meu ? `<p class="note">Este é o seu. Ele aparece para todos depois de aprovado.</p>` : "")); focusOn(c.data.g.position, c.data.nx, c.data.nz, 1.35); break;
     }
   }
 
-  /* ---------------- busca ---------------- */
+  /* ---------------- busca (dentro do mapa) ---------------- */
   const norm = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   const busca = $("busca"), res = $("resultados");
   busca.addEventListener("input", () => {
     const q = norm(busca.value.trim()); books.forEach((b) => (b.match = 0));
     if (!q) { res.hidden = true; res.innerHTML = ""; return; }
     const found = books.filter((b) => norm(b.a.t + " " + b.sub.name + " " + (b.a.s || "") + " " + (b.a.r || "")).includes(q)); found.forEach((b) => (b.match = 1));
-    res.innerHTML = found.length ? found.slice(0, 10).map((b) => `<li><button type="button" data-id="${b.id}"><b>${esc(b.a.t)}</b><span>${esc(b.sub.name)} · sala ${b.room}</span></button></li>`).join("") : `<li class="none">Nenhum livro com isso nas estantes.</li>`;
+    res.innerHTML = found.length ? found.slice(0, 10).map((b) => `<li><button type="button" data-id="${b.id}"><b>${esc(b.a.t)}</b><span>${esc(b.sub.name)}</span></button></li>`).join("") : `<li class="none">Nenhum livro com isso nas estantes.</li>`;
     res.hidden = false;
   });
-  res.addEventListener("click", (e) => { const bt = e.target.closest("button[data-id]"); if (!bt) return; const b = books.find((o) => o.id === bt.dataset.id); if (!b) return; res.hidden = true; busca.blur(); const pi = places.findIndex((p) => p.id === "sala" + b.room + (b.wall === 5 ? "b" : "")); if (pi >= 0) { if (pi !== placeIdx) hist.push(placeIdx); placeIdx = pi; $("aquiK").textContent = cur().g; $("aquiT").textContent = cur().t + (cur().sub ? " · " + cur().sub : ""); $("voltar").hidden = !hist.length; renderIndex(); } openBook(b); });
+  res.addEventListener("click", (e) => { const bt = e.target.closest("button[data-id]"); if (!bt) return; const b = books.find((o) => o.id === bt.dataset.id); if (!b) return; res.hidden = true; busca.value = ""; books.forEach((o) => (o.match = 0)); busca.blur(); closeIndex(); const pi = places.findIndex((p) => p.room === b.room && p.id !== "mesa"); if (pi === placeIdx || pi < 0) openBook(b); else go(pi, false, false, () => openBook(b)); });
   busca.addEventListener("keydown", (e) => { if (e.key === "Enter") { const f = res.querySelector("button[data-id]"); if (f) f.click(); } });
 
   /* ---------------- entradas: teclado, arrastar para olhar, clicar ---------------- */
@@ -968,7 +961,7 @@
     if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) { if (e.key === "Escape") e.target.blur(); return; }
     if (e.key === "Backspace") { e.preventDefault(); back(); }
     else if (e.key === "Escape") { closePanel(); closeIndex(); }
-    else if (e.key === "/") { e.preventDefault(); busca.focus(); }
+    else if (e.key === "/") { e.preventDefault(); openIndex(); setTimeout(() => busca.focus(), 350); }
     else if (e.key.toLowerCase() === "m") openIndex();
   });
   const ptr = new T.Vector2(); let drag = null, hotC = null;
@@ -980,7 +973,7 @@
   });
   canvas.addEventListener("pointerup", (e) => { if (!drag || drag.id !== e.pointerId) return; canvas.classList.remove("drag"); if (drag.moved < 7) { ptr.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1); clickAt(ptr); } drag = null; });
   canvas.addEventListener("pointercancel", () => { drag = null; canvas.classList.remove("drag"); });
-  function look(dx, dy) { cam.yawT = Math.max(-0.75, Math.min(0.75, cam.yawT - dx * 0.0035)); cam.pitchT = Math.max(-0.45, Math.min(0.45, cam.pitchT - dy * 0.0035)); }
+  function look(dx, dy) { if (fly) return; cam.yawT -= dx * 0.0032; cam.pitchT = Math.max(-0.3, Math.min(0.3, cam.pitchT - dy * 0.003)); }
   const rc = new T.Raycaster();
   function pick(p) { rc.setFromCamera(p, camera); const h = rc.intersectObjects(clickables, false)[0]; return h && h.distance < 30 ? h.object.userData.click : null; }
   const rotulo = $("rotulo");
@@ -989,6 +982,7 @@
     const d = c.data || {};
     if (c.kind === "livro") return [d.a && d.a.t || "Atividade", "Abrir"];
     if (c.kind === "mundo") return [d.t, d.s + " · em construção"];
+    if (c.kind === "porta") return [d.to.t, FACE[d.m].ramp ? (FACE[d.m].up ? "subir a rampa" : "descer a rampa") : "seguir pelo corredor"];
     if (c.kind === "cert") return ["Certificado", d.cf && d.cf.t || "Ver de perto"];
     if (c.kind === "visitante") return [d.visitor && d.visitor.nome || "Visitante", "Ler o recado"];
     return [c.kind, ""];
@@ -1005,13 +999,13 @@
 
   /* ---------------- o controle pelo celular fala por aqui ---------------- */
   window.biblioteca = {
-    view: (p, t) => { flyTo({ pos: V3(...p), tgt: V3(...t) }); },
-    go, back, marks: () => marks.filter((k) => k.shown).map((k) => ({ t: k.m.t, id: k.m.id, edge: !!k.edge, x: Math.round(k.sx), y: Math.round(k.sy) })),
-    places: () => places.map((p, i) => ({ i, id: p.id, t: p.t, g: p.g, sub: p.sub || "" })),
+    go, back, places: () => places.map((p, i) => ({ i, id: p.id, t: p.t, g: p.g, sub: p.sub || "" })),
+    view: (p, t) => glide([cam.pos.clone(), V3(...p)], V3(...t)),
+    doors: () => doors.filter((d) => d.r === cur().room).map((d) => { const v = d.mesh.position.clone().project(camera); return { to: d.to.id, x: Math.round((v.x * 0.5 + 0.5) * innerWidth), y: Math.round((-v.y * 0.5 + 0.5) * innerHeight), front: v.z < 1 && Math.abs(v.x) < 1 && Math.abs(v.y) < 1 }; }),
     look, pointer: (nx, ny) => { ptr.set(nx, ny); hover(ptr); return !!hotC; }, click: (nx, ny) => clickAt(new T.Vector2(nx, ny)),
-    close: () => { closePanel(); closeIndex(); }, books: () => books.map((b) => ({ id: b.id, t: b.a.t, room: b.room })),
+    close: () => { closePanel(); closeIndex(); }, books: () => books.map((b) => ({ id: b.id, t: b.a.t, room: b.room.id })),
     openBook: (id) => { const b = books.find((o) => o.id === id); if (b) openBook(b); },
-    state: () => ({ place: placeIdx, id: cur().id, flying: !!fly, panel: panel.classList.contains("open") }),
+    state: () => ({ place: placeIdx, id: cur().id, flying: !!fly, u: fly && fly.u != null ? fly.u : null, panel: panel.classList.contains("open") }),
     time: (v) => { if (v != null) clockT = v; return clockT; },
   };
 
@@ -1142,49 +1136,52 @@
   const postScene = new T.Scene(); postScene.add(post); const postCam = new T.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
   /* ---------------- laço ---------------- */
-  let baseFov = 58;
-  function resize() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); rt.setSize(Math.floor(w * DPR), Math.floor(h * DPR)); post.material.uniforms.uRes.value.set(w * DPR, h * DPR); camera.aspect = w / h; baseFov = w / h < 0.8 ? 72 : 58; camera.fov = baseFov * zoomK; camera.updateProjectionMatrix(); }
+  let baseFov = 62;
+  function resize() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); rt.setSize(Math.floor(w * DPR), Math.floor(h * DPR)); post.material.uniforms.uRes.value.set(w * DPR, h * DPR); camera.aspect = w / h; baseFov = w / h < 0.8 ? 78 : 62; camera.fov = baseFov * zoomK; camera.updateProjectionMatrix(); }
   addEventListener("resize", resize); resize();
-  const clock = new T.Clock(); let clockT = 0; const tmp = new T.Vector3(), la = new T.Vector3();
+  const clock = new T.Clock(); let clockT = 0; const tmp = new T.Vector3(), tmp2 = new T.Vector3(), la = new T.Vector3(), dirv = new T.Vector3();
   function frame() {
     const dt = Math.min(0.05, clock.getDelta()); clockT += dt; const t = clockT; U.uTime.value = t;
-    if (fly) {
-      fly.u = Math.min(1, fly.u + dt / fly.dur); const e = ease(fly.u);
-      fly.curve.getPointAt(e, cam.pos); fly.curve.getPointAt(Math.min(1, e + 0.06), la); la.y = Math.max(la.y, 1.2);
-      const look = tmp.copy(la).add(V3(0, -0.05, 0));
-      const a = Math.min(1, fly.u / 0.18), b = Math.max(0, (fly.u - 0.62) / 0.38);
-      cam.tgt.copy(fly.t0).lerp(look, a).lerp(fly.t1, b * b * (3 - 2 * b));
-      if (fly.u >= 1) { const d = fly.done; fly = null; document.body.classList.remove("flying"); if (d) d(); }
+    if (fly && !fly.hold) {
+      fly.u = Math.min(1, fly.u + dt / fly.dur); const e = smoother(fly.u);
+      if (fly.curve) { fly.curve.getPointAt(e, cam.pos); fly.curve.getPointAt(Math.min(1, e + 3.5 / Math.max(fly.len, 0.01)), la); } else la.copy(cam.pos).add(fly.d0);
+      const dPath = tmp.copy(la).sub(cam.pos); if (dPath.lengthSq() < 1e-6) dPath.copy(fly.d0); dPath.normalize(); dPath.y = Math.max(-0.35, Math.min(0.35, dPath.y)); dPath.normalize();
+      const dEnd = tmp2.copy(fly.t1).sub(cam.pos).normalize();
+      const a = fly.curve ? sstep(0, 0.3, fly.u) : 0, b = fly.curve ? sstep(0.55, 1, fly.u) : smoother(fly.u);
+      dirv.copy(fly.d0).lerp(dPath, a).lerp(dEnd, b).normalize();
+      cam.tgt.copy(cam.pos).addScaledVector(dirv, Math.max(1, 6 + (fly.t1.distanceTo(cam.pos) - 6) * b));
+      if (fly.u >= 1) { cam.tgt.copy(fly.t1); const d = fly.done; fly = null; document.body.classList.remove("flying"); if (d) d(); }
     }
-    cam.yaw += (cam.yawT - cam.yaw) * Math.min(1, dt * 5); cam.pitch += (cam.pitchT - cam.pitch) * Math.min(1, dt * 5);
-    // um respiro de câmera parada, e o olhar em volta somado à pose do lugar
-    const br = reduce ? 0 : Math.sin(t * 0.6) * 0.02;
-    camera.position.copy(cam.pos).add(V3(0, br, 0));
-    const dir = tmp.subVectors(cam.tgt, cam.pos); const dist = dir.length(); dir.normalize();
+    const k = 1 - Math.exp(-dt * 3.5); cam.yaw += (cam.yawT - cam.yaw) * k; cam.pitch += (cam.pitchT - cam.pitch) * k;
+    const br = reduce ? 0 : Math.sin(t * 0.5) * 0.012;
+    camera.position.copy(cam.pos); camera.position.y += br;
+    const dir = tmp.subVectors(cam.tgt, cam.pos).normalize();
     const yaw = Math.atan2(dir.z, dir.x) + cam.yaw, pitch = Math.asin(Math.max(-0.99, Math.min(0.99, dir.y))) + cam.pitch;
-    la.set(cam.pos.x + Math.cos(yaw) * Math.cos(pitch) * dist, cam.pos.y + Math.sin(pitch) * dist, cam.pos.z + Math.sin(yaw) * Math.cos(pitch) * dist);
-    camera.lookAt(la);
-    if (Math.abs(zoomT - zoomK) > 0.001) { zoomK += (zoomT - zoomK) * Math.min(1, dt * 4); camera.fov = baseFov * zoomK; camera.updateProjectionMatrix(); }
-    placeRooms(Math.max(0, Math.round(cam.pos.x / D)));
-    updateLights(t); updateMarkers();
+    la.set(cam.pos.x + Math.cos(yaw) * Math.cos(pitch) * 8, cam.pos.y + Math.sin(pitch) * 8, cam.pos.z + Math.sin(yaw) * Math.cos(pitch) * 8);
+    if (!lookReady) { lookS.copy(la); lookReady = true; } else lookS.lerp(la, 1 - Math.exp(-dt * 9));
+    camera.lookAt(lookS);
+    if (Math.abs(zoomT - zoomK) > 0.001) { zoomK += (zoomT - zoomK) * Math.min(1, dt * 3); camera.fov = baseFov * zoomK; camera.updateProjectionMatrix(); }
+    placeLattice(); updateLights(t);
     // poeira acompanha a câmera
     const P = dust.geometry.attributes.position.array;
     for (let i = 0; i < DUST; i++) { let x = P[i * 3], y = P[i * 3 + 1], z = P[i * 3 + 2]; y += dt * (0.04 + ds[i] * 0.07); x += Math.sin(t * 0.3 + i) * dt * 0.06; const cx = cam.pos.x, cz = cam.pos.z, cy = cam.pos.y;
-      if (y > cy + 5) y = cy - 3; if (x - cx > 11) x -= 22; if (x - cx < -11) x += 22; if (z - cz > 11) z -= 22; if (z - cz < -11) z += 22; P[i * 3] = x; P[i * 3 + 1] = y; P[i * 3 + 2] = z; }
+      if (y > cy + 5) y = cy - 3; if (y < cy - 4) y = cy + 4; if (x - cx > 11) x -= 22; if (x - cx < -11) x += 22; if (z - cz > 11) z -= 22; if (z - cz < -11) z += 22; P[i * 3] = x; P[i * 3 + 1] = y; P[i * 3 + 2] = z; }
     dust.geometry.attributes.position.needsUpdate = true;
     // brasas da lareira: sobem do fogo, algumas escapam um pouco para a sala
     const E = embers.geometry.attributes.position.array;
-    for (let i = 0; i < EMB; i++) { const k = (t * (0.25 + es[i] * 0.3) + es[i]) % 1, out = es[i] > 0.8 ? 0.9 : 0.12; E.set([FIREX + 0.05 + k * out + Math.sin(t * 2 + i) * 0.06, 0.25 + k * (es[i] > 0.8 ? 1.6 : 1.0), (es[i] - 0.5) * 0.8 + Math.sin(t * 1.3 + i) * 0.1], i * 3); }
-    fireGroup.rotation.y = Math.atan2(camera.position.x - FIREX, camera.position.z);
+    for (let i = 0; i < EMB; i++) { const q = (t * (0.25 + es[i] * 0.3) + es[i]) % 1, out = es[i] > 0.8 ? 0.9 : 0.12, side = (es[i] - 0.5) * 0.8 + Math.sin(t * 1.3 + i) * 0.1, fw = 0.05 + q * out + Math.sin(t * 2 + i) * 0.04;
+      E[i * 3] = FIRE.x + FIREN.x * fw + FIRET.x * side; E[i * 3 + 1] = R0.c.y + 0.25 + q * (es[i] > 0.8 ? 1.6 : 1.0); E[i * 3 + 2] = FIRE.z + FIREN.z * fw + FIRET.z * side; }
+    embers.geometry.attributes.position.needsUpdate = true; embers.material.opacity = 0.75 + 0.25 * Math.sin(t * 9);
+    fireGroup.rotation.y = Math.atan2(camera.position.x - FIRE.x, camera.position.z - FIRE.z);
     for (let i = 0; i < propHot.length; i++) { const c = propHot[i]; c.hot += ((hotC === c ? 1 : 0) - c.hot) * Math.min(1, dt * 7); const v = 0.1 + 0.1 * Math.sin(t * 2.1 + i * 1.7) + c.hot * 1.1; for (const m of c.mats) m.uniforms.uHot.value = v; }
     if (fly && hotC) { hotC = null; canvas.classList.remove("hot"); rotulo.classList.remove("on"); }
-    embers.geometry.attributes.position.needsUpdate = true; embers.material.opacity = 0.75 + 0.25 * Math.sin(t * 9);
+    for (const d of doors) { const h = hotC && hotC.data === d ? 1 : 0; d.hot += (h - d.hot) * Math.min(1, dt * 6); d.mesh.material.opacity = 0.07 + 0.035 * Math.sin(t * 1.6 + d.m) + d.hot * 0.32; }
     // livros, fendas, certificados
     for (const b of books.concat(visitorBooks)) {
       const target = b.open ? 1 : hotC && hotC.data === b ? 0.4 : 0; b.out += (target - b.out) * Math.min(1, dt * 6);
       b.body.position.set(0, 0.19 + b.out * 0.05, b.out * 0.16); b.body.rotation.x = -b.out * 0.12;
       b.mats.forEach((m) => { m.uniforms.uHot.value = b.out; m.uniforms.uMatch.value = b.match; });
-      b.halo.material.opacity = 0.14 + 0.1 * Math.sin(t * 2.2 + b.g.position.x) + b.out * 0.25 + b.match * 0.45;
+      b.halo.material.opacity = 0.3 + 0.14 * Math.sin(t * 2.2 + b.g.position.x) + b.out * 0.25 + b.match * 0.45;
     }
     for (const w of rifts) if (w.mat) { const h = hotC && hotC.data === w ? 1 : 0; w.mat.uniforms.uHot.value += (h - w.mat.uniforms.uHot.value) * Math.min(1, dt * 6); w.halo.material.opacity = 0.28 + 0.08 * Math.sin(t * 1.7 + w.k) + w.mat.uniforms.uHot.value * 0.3; }
     renderer.setRenderTarget(rt); renderer.render(scene, camera); renderer.setRenderTarget(null); renderer.render(postScene, postCam);
@@ -1197,7 +1194,7 @@
     try { addActivityBooks(list || []); } catch (e) { console.warn("livros", e); }
     loadVisitors();
   });
-  buildMarkers(); renderIndex(); go(0, true);
+  renderIndex(); go(0, true); placeLattice(true);
   requestAnimationFrame(frame);
   setTimeout(() => $("fade").classList.add("gone"), 500);
 })();

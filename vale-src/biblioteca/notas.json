@@ -1,87 +1,61 @@
 {
-  "salao": [
+  "escritorio": [
     "Apresente-se: nome, turma 3B, Ensino Médio com o Técnico em Desenvolvimento de Sistemas.",
     "A ideia: uma biblioteca sem fim que guarda tudo o que eu fiz.",
-    "As fendas levam aos mundos; a porta leva às matérias."
-  ],
-  "salaob": [
-    "Apresente-se: nome, turma 3B, Ensino Médio com o Técnico em Desenvolvimento de Sistemas.",
-    "A ideia: uma biblioteca sem fim que guarda tudo o que eu fiz.",
-    "As fendas levam aos mundos; a porta leva às matérias."
+    "Cada porta leva a outra sala; as placas em cima dizem para onde."
   ],
   "mesa": [
     "Cada objeto da mesa faz algo: a lupa procura, o mapa mostra os lugares, a máquina de escrever deixa um recado."
   ],
-  "mundos-n": [
-    "Cada fenda é uma parte pedida pela banca, num universo diferente.",
-    "Escolha a ordem: quem sou, matérias, técnica, 1º e 2º ano, certificados, futuro, agradecimentos."
-  ],
-  "mundos-s": [
-    "Cada fenda é uma parte pedida pela banca, num universo diferente.",
-    "Escolha a ordem: quem sou, matérias, técnica, 1º e 2º ano, certificados, futuro, agradecimentos."
-  ],
-  "sala1": [
+  "natureza": [
     "Ciências da Natureza: contexto, aprendizagens, competências e importância das duas atividades."
   ],
-  "sala1b": [
-    "Ciências da Natureza: contexto, aprendizagens, competências e importância das duas atividades."
-  ],
-  "sala2": [
+  "humanas": [
     "Ciências Humanas: contexto, aprendizagens, competências e importância das duas atividades."
   ],
-  "sala2b": [
-    "Ciências Humanas: contexto, aprendizagens, competências e importância das duas atividades."
-  ],
-  "sala3": [
+  "linguagens": [
     "Linguagens: contexto, aprendizagens, competências e importância das duas atividades."
   ],
-  "sala3b": [
-    "Linguagens: contexto, aprendizagens, competências e importância das duas atividades."
-  ],
-  "sala4": [
+  "matematica": [
     "Matemática: contexto, aprendizagens, competências e importância das duas atividades."
   ],
-  "sala4b": [
-    "Matemática: contexto, aprendizagens, competências e importância das duas atividades."
-  ],
-  "sala5": [
+  "modelagem": [
     "Técnico (Modelagem de Sistemas): por que escolhi e o que aprendi."
   ],
-  "sala5b": [
-    "Técnico (Modelagem de Sistemas): por que escolhi e o que aprendi."
-  ],
-  "sala6": [
+  "desenvolvimento": [
     "Técnico (Desenvolvimento de Sistemas): o AcousticBuild, minha parte e o que aprendi."
   ],
-  "sala6b": [
-    "Técnico (Desenvolvimento de Sistemas): o AcousticBuild, minha parte e o que aprendi."
-  ],
-  "sala7": [
+  "aplicativos": [
     "Técnico (Programação de Aplicativos)."
   ],
-  "sala7b": [
-    "Técnico (Programação de Aplicativos)."
-  ],
-  "sala8": [
+  "iot": [
     "Técnico (IoT): as práticas com o circuito e a lógica de controle."
   ],
-  "sala8b": [
-    "Técnico (IoT): as práticas com o circuito e a lógica de controle."
-  ],
-  "sala9": [
+  "banco": [
     "Técnico (Banco de Dados)."
   ],
-  "sala9b": [
-    "Técnico (Banco de Dados)."
+  "tecnica": [
+    "A entrada do curso técnico: daqui saem as salas de cada matéria do curso.",
+    "A fenda leva ao mundo de Lain."
+  ],
+  "quemsou": [
+    "Quem sou: interesses, valores e o que me move.",
+    "A fenda leva ao mundo de Tokyo Ghoul."
+  ],
+  "trem": [
+    "1º e 2º ano: o que veio antes deste ano.",
+    "A fenda leva ao trem."
   ],
   "certificados": [
     "Infomatrix 2025, DUAL 2025 e 2026, FEBRACE 2026, FEBIC 2026 (2º lugar) e a Iniciação Científica."
   ],
+  "objetivos": [
+    "Objetivos e futuro: para onde eu vou depois do 3º ano.",
+    "A fenda leva ao mundo de Attack on Titan."
+  ],
   "fim": [
     "Agradeça a quem fez parte da jornada.",
-    "Convide a plateia a deixar um recado na Estante dos Visitantes."
-  ],
-  "estante": [
+    "Convide a plateia a deixar um recado na Estante dos Visitantes.",
     "A Estante dos Visitantes: quem passou deixou um livro aqui.",
     "Pelo QR no fim, quem está assistindo pode deixar um recado também."
   ]

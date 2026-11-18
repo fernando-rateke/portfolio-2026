@@ -62,4 +62,12 @@ if not os.path.exists(TERSER):
 for f in ("vale.js", "mundos.js", "i18n.js"):
     subprocess.run([TERSER, os.path.join(here, f), "--compress", "passes=2", "--mangle", "--ecma", "2020", "--comments", "false", "-o", os.path.join(out, f)], check=True)
 shutil.copy(os.path.join(here, "gltf.js"), os.path.join(out, "gltf.js"))
-print("ok:", out)
+# Biblioteca Infinita: página própria em /biblioteca, com as atividades tiradas do mesmo conteúdo do vale
+lib_src, lib_out = os.path.join(here, "biblioteca"), os.path.join(repo, "public", "biblioteca")
+os.makedirs(lib_out, exist_ok=True)
+shutil.copy(os.path.join(lib_src, "index.html"), os.path.join(lib_out, "index.html"))
+subprocess.run([TERSER, os.path.join(lib_src, "biblioteca.js"), "--compress", "passes=2", "--mangle", "--ecma", "2020", "--comments", "false", "-o", os.path.join(lib_out, "biblioteca.js")], check=True)
+mg = re.search(r'<script type="application/json" id="grimorios">(.*?)</script>', html, re.S)
+atividades = json.loads(mg.group(1)) if mg else []
+json.dump([{"id": s.get("id"), "name": s["name"], "cat": s.get("cat"), "desc": s.get("desc", ""), "acts": s["acts"]} for s in atividades], open(os.path.join(lib_out, "atividades.json"), "w"), ensure_ascii=False)
+print("ok:", out, "+", lib_out)

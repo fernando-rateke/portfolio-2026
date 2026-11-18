@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Biblioteca Infinita · Rateke</title>
+<meta name="description" content="A biblioteca infinita do portfólio de Fernando Rateke: salas hexagonais sem fim, e nas estantes, todas as atividades.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;600;800&family=Geist+Mono:wght@400;500&family=Cormorant+Garamond:ital,wght@0,500;1,500&display=swap">
+<style>
+:root {
+  --ink: #F1E6CF; --ink-2: #B9A98A; --ink-3: #7E715C;
+  --paper: #F3EAD6; --paper-ink: #2A211A;
+  --gold: #D9A441; --red: #C22026;
+  --glass: rgba(14, 12, 10, 0.72); --line: rgba(241, 230, 207, 0.16);
+  --f-display: "Shippori Mincho", "Hiragino Mincho ProN", Georgia, serif;
+  --f-label: "Geist Mono", ui-monospace, Menlo, monospace;
+  --f-book: "Cormorant Garamond", Garamond, Georgia, serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: #07080c; color: var(--ink); overflow: hidden; }
+body { font-family: var(--f-book); -webkit-tap-highlight-color: transparent; }
+canvas#lib { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+canvas#lib.drag { cursor: grabbing; }
+canvas#lib.hot { cursor: pointer; }
+button { font: inherit; color: inherit; }
+.hud { position: fixed; z-index: 5; pointer-events: none; }
+.hud > * { pointer-events: auto; }
+.brand { top: max(16px, env(safe-area-inset-top)); left: 16px; display: flex; gap: 12px; align-items: center; }
+.brand a { display: flex; gap: 10px; align-items: center; text-decoration: none; color: var(--ink); }
+.brand .seal { width: 34px; height: 34px; border-radius: 7px; background: var(--red); color: #fff; display: grid; place-items: center; font: 800 12px/1 var(--f-display); writing-mode: vertical-rl; box-shadow: 0 2px 14px rgba(0,0,0,0.5); }
+.brand b { font: 600 1.05rem/1.1 var(--f-display); display: block; }
+.brand small { font: 500 0.62rem/1.2 var(--f-label); letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-2); }
+.search { top: max(16px, env(safe-area-inset-top)); right: 16px; width: min(340px, calc(100vw - 32px)); }
+.search input { width: 100%; padding: 11px 14px 11px 38px; border-radius: 999px; border: 1px solid var(--line); background: var(--glass) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23B9A98A' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") no-repeat 14px 50%; color: var(--ink); font: 500 0.82rem/1.2 var(--f-label); backdrop-filter: blur(10px); outline: none; }
+.search input:focus { border-color: rgba(217, 164, 65, 0.7); }
+.search input::placeholder { color: var(--ink-3); }
+.results { margin: 8px 0 0; padding: 6px; list-style: none; border-radius: 14px; background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(10px); max-height: 52vh; overflow: auto; }
+.results[hidden] { display: none; }
+.results button { width: 100%; text-align: left; background: none; border: 0; padding: 9px 10px; border-radius: 9px; cursor: pointer; display: grid; gap: 2px; }
+.results button:hover, .results button:focus-visible { background: rgba(217, 164, 65, 0.14); outline: none; }
+.results b { font: 600 0.98rem/1.2 var(--f-book); }
+.results span { font: 500 0.62rem/1.3 var(--f-label); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); }
+.results .none { padding: 10px; font: 500 0.75rem var(--f-label); color: var(--ink-2); }
+.room { bottom: max(18px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); text-align: center; pointer-events: none; }
+.room small { display: block; font: 500 0.6rem/1.3 var(--f-label); letter-spacing: 0.22em; text-transform: uppercase; color: var(--ink-2); }
+.room b { font: 600 1.15rem/1.2 var(--f-display); text-shadow: 0 2px 16px rgba(0,0,0,0.8); }
+.hint { bottom: max(18px, env(safe-area-inset-bottom)); left: 16px; max-width: 280px; font: 500 0.66rem/1.5 var(--f-label); color: var(--ink-2); letter-spacing: 0.04em; transition: opacity 1.2s; }
+.hint.off { opacity: 0; }
+.back { bottom: max(18px, env(safe-area-inset-bottom)); right: 16px; }
+.back a { display: inline-block; padding: 9px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--glass); color: var(--ink); text-decoration: none; font: 500 0.66rem/1 var(--f-label); letter-spacing: 0.14em; text-transform: uppercase; backdrop-filter: blur(10px); }
+.joy { position: fixed; left: 22px; bottom: calc(max(18px, env(safe-area-inset-bottom)) + 44px); width: 120px; height: 120px; border-radius: 50%; border: 1px solid var(--line); background: rgba(14,12,10,0.35); z-index: 6; display: none; touch-action: none; }
+.joy i { position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; margin: -23px 0 0 -23px; border-radius: 50%; background: rgba(241,230,207,0.22); border: 1px solid rgba(241,230,207,0.4); }
+@media (max-width: 640px) {
+  .search { top: calc(max(16px, env(safe-area-inset-top)) + 46px); left: 16px; right: 16px; width: auto; }
+  .room { bottom: auto; top: calc(max(16px, env(safe-area-inset-top)) + 100px); }
+  .room b { font-size: 1rem; }
+}
+@media (pointer: coarse) { .joy { display: block; } .hint { display: none; } .room { bottom: calc(max(18px, env(safe-area-inset-bottom)) + 4px); } }
+/* livro aberto: a atividade */
+.panel { position: fixed; z-index: 10; top: 0; right: 0; height: 100%; width: min(480px, 100vw); background: var(--paper); color: var(--paper-ink); box-shadow: -20px 0 60px rgba(0,0,0,0.55); transform: translateX(105%); transition: transform 0.55s cubic-bezier(.2,.8,.2,1); display: flex; flex-direction: column; }
+.panel.open { transform: none; }
+.panel header { padding: 22px 24px 14px; border-bottom: 1px solid rgba(42,33,26,0.14); position: relative; }
+.panel .kick { font: 500 0.62rem/1.3 var(--f-label); letter-spacing: 0.16em; text-transform: uppercase; color: #8A6A2E; }
+.panel h2 { margin: 6px 40px 0 0; font: 600 1.55rem/1.15 var(--f-display); }
+.panel .close { position: absolute; top: 18px; right: 16px; width: 36px; height: 36px; border-radius: 50%; border: 1px solid rgba(42,33,26,0.22); background: none; cursor: pointer; font: 500 18px/1 var(--f-label); }
+.panel .body { padding: 18px 24px 28px; overflow: auto; flex: 1; }
+.panel .body img { width: 100%; border-radius: 8px; display: block; margin: 0 0 16px; background: #ddd2bb; }
+.panel .body p { font: 500 1.08rem/1.55 var(--f-book); margin: 0 0 14px; }
+.panel h3 { font: 600 0.62rem/1.3 var(--f-label); letter-spacing: 0.16em; text-transform: uppercase; color: #8A6A2E; margin: 18px 0 8px; }
+.panel ul.k { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.panel ul.k li { font: 500 0.98rem/1.4 var(--f-book); padding-left: 52px; position: relative; }
+.panel ul.k li b { position: absolute; left: 0; top: 1px; font: 600 0.7rem/1.6 var(--f-label); background: #2A211A; color: var(--paper); padding: 0 6px; border-radius: 4px; }
+.panel .links { display: flex; flex-wrap: wrap; gap: 8px; }
+.panel .links a { font: 500 0.72rem/1 var(--f-label); letter-spacing: 0.06em; color: var(--paper); background: var(--red); padding: 9px 12px; border-radius: 999px; text-decoration: none; }
+.fade { position: fixed; inset: 0; background: #07080c; z-index: 20; transition: opacity 1.4s; pointer-events: none; display: grid; place-items: center; }
+.fade.gone { opacity: 0; }
+.fade p { font: 500 0.66rem/1 var(--f-label); letter-spacing: 0.22em; text-transform: uppercase; color: var(--ink-3); }
+.noscript { position: fixed; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; }
+</style>
+</head>
+<body>
+<canvas id="lib" aria-label="Biblioteca infinita em 3D. Use as setas ou W A S D para andar e arraste para olhar."></canvas>
+<div class="hud brand"><a href="/" title="Voltar ao vale"><span class="seal">ラテケ</span><span><b>Biblioteca Infinita</b><small>Fernando Rateke · Portfólio 2026</small></span></a></div>
+<div class="hud search" role="search">
+  <input id="busca" type="search" placeholder="Procurar nas estantes" autocomplete="off" aria-label="Procurar uma atividade nas estantes" aria-controls="resultados">
+  <ul id="resultados" class="results" hidden></ul>
+</div>
+<div class="hud room" aria-live="polite"><small id="salaN">Sala 0</small><b id="salaT">Entrada</b></div>
+<div class="hud hint" id="dica">Arraste para olhar · W A S D ou setas para andar · Shift corre<br>Os livros que brilham são as atividades: clique neles.</div>
+<div class="hud back"><a href="/">Voltar ao vale</a></div>
+<div class="joy" id="joy" aria-hidden="true"><i></i></div>
+<aside class="panel" id="painel" aria-hidden="true" aria-labelledby="pTitulo">
+  <header><div class="kick" id="pKick"></div><h2 id="pTitulo"></h2><button class="close" id="pFechar" type="button" aria-label="Fechar o livro">×</button></header>
+  <div class="body" id="pCorpo"></div>
+</aside>
+<div class="fade" id="fade"><p>Abrindo as estantes</p></div>
+<noscript><div class="noscript">A biblioteca precisa de JavaScript e WebGL. A versão em texto do portfólio está em <a href="/">fernando rateke · portfólio</a>.</div></noscript>
+<script src="/vale/three.min.js"></script>
+<script src="biblioteca.js"></script>
+</body>
+</html>

@@ -9,6 +9,8 @@ const nextConfig: NextConfig = {
         { source: "/vale", destination: "/vale/index.html" },
         // moderação das emas: página estática; a senha é conferida nas rotas /api/admin
         { source: "/admin", destination: "/admin/index.html" },
+        // a Biblioteca Infinita: página própria, com as atividades nas estantes
+        { source: "/biblioteca", destination: "/biblioteca/index.html" },
       ],
       afterFiles: [],
       fallback: [],

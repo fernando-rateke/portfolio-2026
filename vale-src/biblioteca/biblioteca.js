@@ -165,7 +165,7 @@
 
   /* objetos (GLB): textura + as mesmas luzes e névoa */
   const PROP_VS = `varying vec3 vW; varying vec3 vN; varying vec2 vUv; void main(){ vUv = uv; vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; vN = normalize(mat3(modelMatrix) * normal); gl_Position = projectionMatrix * viewMatrix * w; }`;
-  const PROP_FS = `${COMMON} uniform sampler2D map; uniform float uHasMap, uEmit, uHot, uCut; uniform vec3 uTint, uEmitC; varying vec3 vW; varying vec3 vN; varying vec2 vUv;
+  const PROP_FS = `${COMMON} uniform sampler2D map; uniform float uHasMap, uEmit, uHot, uCut, uAlpha; uniform vec3 uTint, uEmitC; varying vec3 vW; varying vec3 vN; varying vec2 vUv;
     void main(){
       vec4 tx = uHasMap > 0.5 ? texture2D(map, vUv) : vec4(1.0);
       if (tx.a < uCut) discard;
@@ -174,7 +174,9 @@
       vec3 lit = band(lights(vW, n));
       vec3 V = normalize(cameraPosition - vW); float rim = pow(1.0 - max(dot(n, V), 0.0), 3.0);
       vec3 col = c * lit * (1.0 + uHot * 0.16) + c * uEmitC * uEmit + rim * scat * 0.05 + vec3(1.0, 0.8, 0.45) * rim * uHot * 0.7;
-      gl_FragColor = vec4(fogIt(col, vW), 1.0);
+      float al = uAlpha;
+      if (uAlpha < 0.99) { col = c * lit * 0.35 + vec3(1.0, 0.85, 0.6) * rim * 0.35; al = uAlpha * 0.45 + rim * 0.4; } // vidro: quase transparente, brilha nas bordas
+      gl_FragColor = vec4(fogIt(col, vW), al);
     }`;
   const propMats = new Map();
   function propize(root, o = {}) {
@@ -186,9 +188,10 @@
         if (src.map) src.map.encoding = T.LinearEncoding;
         mm = new T.ShaderMaterial({
           uniforms: Object.assign({ map: { value: src.map || null }, uHasMap: { value: src.map ? 1 : 0 }, uTint: { value: new T.Color(o.tint || "#ffffff").multiply(src.color || new T.Color(1, 1, 1)) },
-            uEmit: { value: o.emit || 0 }, uEmitC: { value: new T.Color(o.emitC || "#ffb060") }, uHot: { value: 0 }, uCut: { value: src.alphaTest || (src.transparent && src.map ? 0.45 : 0) } }, U),
+            uEmit: { value: o.emit || 0 }, uEmitC: { value: new T.Color(o.emitC || "#ffb060") }, uHot: { value: 0 }, uCut: { value: src.alphaTest || (src.transparent && src.map ? 0.45 : 0) }, uAlpha: { value: src.transparent && !src.map ? Math.max(0.12, src.opacity) : 1 } }, U),
           vertexShader: PROP_VS, fragmentShader: PROP_FS, side: T.DoubleSide,
         });
+        if (src.transparent && !src.map) { mm.transparent = true; mm.depthWrite = false; }
         mm.extensions = { derivatives: true };
         propMats.set(key, mm);
       }
@@ -514,7 +517,6 @@
   // a mesa de trabalho é maior que o modelo original: comprida e funda, para caber tudo em cima
   prop("mesa", (m) => {
     place(m.clone(true), { at: V3(DESKX, 0, 0), h: DESKY, ry: Math.PI / 2, stretch: [1.5, 1, 1.45] });
-    place(m.clone(true), { at: V3(XW + 6.6, 0, HZ - 1.2), h: DESKY });
     place(m.clone(true), { at: V3(XW + 5.3, 0, -3.9), h: 0.68, ry: 0.5, stretch: [0.62, 1, 0.9] }); // mesinha do gramofone
     place(m, { at: V3(FIM * D - 4.2, 0, -2.6), h: DESKY, ry: 0.5 });
   }, 2);
@@ -541,19 +543,64 @@
     clickable(g, "mundos", null, ["Globo", "Ir até os mundos"]);
   }, 2);
   prop("gramofone", (m) => clickable(place(m, { at: V3(XW + 5.3, 0.68, -3.9), h: 0.85, ry: 0.5 + Math.PI }), "musica", null, ["Gramofone", "Tocar ou pausar a música"]), 3);
-  prop("piano", (m) => place(m, { at: V3(XW + 3.0, 0, -5.4), h: 1.32, ry: -0.81 }), 3);
+  prop("piano", (m) => { const g = place(m, { at: V3(XW + 3.0, 0, -5.4), h: 1.32, ry: -0.81 }); prop("disco", (d) => place(d, { at: on(g, XW + 2.85, -5.55), size: 0.55, ry: -0.81 }), 5); }, 3);
   prop("velas", (m) => { place(m.clone(true), { at: V3(XW + 0.55, 2.62, 1.3), size: 0.32, emit: 0.5 }); place(m, { at: V3(XW + 0.55, 2.62, -1.3), size: 0.32, emit: 0.5 }); }, 3);
-  prop("relogio", (m) => place(m, { at: V3(XE - 1.0, 0, -3.2), h: 2.3, ry: -Math.PI / 2 }), 4);
+  prop("relogio", (m) => place(m, { at: V3(XE - 0.6, 0, -2.5), h: 2.3, ry: -Math.PI / 2 }), 4);
   prop("espelho", (m) => place(m, { at: V3(XW + 1.0, 0, HZ - 1.4), h: 2.1, ry: Math.PI / 2 + 0.5, tint: "#9aa6ad" }), 6);
   prop("janela", (m) => place(m, { at: V3(XW + 0.12, H + 0.5, 0), h: 4.0, ry: Math.PI / 2, emit: 0.25, emitC: "#8FA6CC" }), 5);
   prop("cortinas", (m) => place(m, { at: V3(XW + 0.4, H + 0.2, 0), h: 4.6, ry: Math.PI / 2, tint: "#7A2A24" }), 6);
   prop("arandela", (m) => { for (const [x, y, z, ry] of sconces) place(m.clone(true), { at: V3(x, y - 0.25, z), h: 0.45, ry, emit: 0.35 }); }, 4);
-  // a mesa de alquimia, encostada na estante do sul
-  prop("pocoes", (m) => place(m, { at: V3(XW + 6.2, DESKY, HZ - 1.25), size: 0.7, ry: Math.PI }), 7);
-  prop("tubos", (m) => place(m, { at: V3(XW + 7.05, DESKY, HZ - 1.3), size: 0.36, ry: Math.PI }), 7);
-  prop("calice", (m) => place(m, { at: V3(XW + 5.6, DESKY, HZ - 1.15), h: 0.24 }), 7);
-  prop("moedas", (m) => place(m, { at: V3(XW + 6.7, DESKY + 0.005, HZ - 0.95), size: 0.3 }), 8);
-  prop("castical", (m) => place(m, { at: V3(XW + 7.35, DESKY, HZ - 1.0), h: 0.3, emit: 0.3 }), 8);
+  /* tudo apoiado de verdade: mede o tampo de cada móvel antes de pôr algo em cima */
+  const rcDown = new T.Raycaster();
+  function topOf(g, x, z) { g.updateMatrixWorld(true); rcDown.set(V3(x, 30, z), V3(0, -1, 0)); const h = rcDown.intersectObject(g, true).find((i) => i.object.visible); return h ? h.point.y : 0; }
+  const on = (g, x, z) => V3(x, topOf(g, x, z), z);
+  // perto da lareira: candelabros, ferramentas e a cômoda com livros
+  prop("candelabro", (m) => { for (const z of [-1.85, 1.85]) { place(m.clone(true), { at: V3(XW + 0.85, 0, z), h: 1.84, emit: 0.18 }); addLight(XW + 0.9, 1.95, z, "#FFB060", 0.7, 0.14); } }, 3);
+  prop("utensilios", (m) => {
+    place(m.clone(true), { at: V3(XW + 1.05, 0, -1.25), h: 0.95, drop: (o) => o.name !== "pCylinder162" });     // o suporte de ferramentas da lareira
+    { const c = place(m.clone(true), { at: V3(XW + 4.3, 2.35, -4.9), h: 1.2, drop: (o) => o.name !== "Chandelier", emit: 0.2 }); // lustre de ferro pendurado sobre o piano
+      const ch = new T.Mesh(new T.CylinderGeometry(0.012, 0.012, 30, 4), structMat); ch.position.set(XW + 4.3, 2.35 + 1.1 + 15, -4.9); scene.add(ch); }
+    addLight(XW + 4.3, 2.6, -4.9, "#FFB868", 1.1, 0.12);
+    prop("mesa-longa", (t) => {  // a bancada comprida do sul, com potes, frascos e poções
+      const g = place(t, { at: V3(XW + 12.5, 0, HZ - 1.05), h: 0.78, ry: Math.PI / 2 });
+      place(m, { at: on(g, XW + 12.5, HZ - 1.0), size: 1.05, drop: (o) => /pCube748|pCylinder162|Chandelier|pCube746|pCylinder144/.test(o.name), ry: Math.PI });
+      prop("tubos", (k) => place(k, { at: on(g, XW + 11.85, HZ - 1.1), size: 0.36, ry: Math.PI }), 4);
+      prop("pocao-caveira", (k) => place(k, { at: on(g, XW + 13.2, HZ - 1.05), size: 0.42, ry: Math.PI + 0.4 }), 4);
+      prop("garrafa-hera", (k) => place(k, { at: on(g, XW + 11.55, HZ - 0.85), h: 0.3, ry: 0.6 }), 4);
+      prop("frasco", (k) => place(k, { at: on(g, XW + 13.5, HZ - 1.25), h: 0.2 }), 4);
+    }, 4);
+  }, 3);
+  prop("comoda", (c) => {
+    const g = place(c, { at: V3(XW + 0.5, 0, -3.2), h: 0.86, ry: Math.PI / 2 });
+    prop("livros-vela", (k) => place(k, { at: on(g, XW + 0.5, -3.35), size: 0.34, ry: 1.2, emit: 0.1 }), 4);
+    prop("livro-couro", (k) => clickable(place(k, { at: on(g, XW + 0.55, -2.95), size: 0.3, ry: 1.9 }), "sobre", null, ["Livro de couro", "Sobre esta biblioteca"]), 4);
+    addLight(XW + 0.9, 1.35, -3.35, "#FFB060", 0.45, 0.15);
+  }, 3);
+  // a mesa do alquimista, inteira (velas, caveira, livros e barril), encostada no sul
+  prop("mesa-alquimista", (m) => { place(m, { at: V3(XW + 7.5, 0, HZ - 1.3), h: 1.84, ry: Math.PI / 2 }); addLight(XW + 7.5, 1.9, HZ - 1.6, "#FFB868", 0.9, 0.14); }, 4);
+  // cadeira de espaldar alto puxada da mesa de trabalho; caneca em cima da mesa
+  prop("cadeira", (m) => place(m, { at: V3(DESKX + 0.98, 0, -0.95), h: 1.25, ry: faceTo(DESKX + 0.98, -0.95, DESKX, -0.2) }), 3);
+  prop("caneca", (m) => place(m, { at: onDesk(0.16, 0.98), h: 0.11, ry: 2.4 }), 3);
+  // discos de vinil em cima do piano
+  // mesas de leitura com cadeiras, dos dois lados do tapete, cada uma com sua lanterna
+  prop("mesa-leitura", (m) => { for (const z of [-5.7, 5.7]) { place(m.clone(true), { at: V3(XW + 17.5, 0, z), h: 1.05, ry: z > 0 ? Math.PI : 0 }); addLight(XW + 17.5, 2.7, z, "#FFB25A", 1.7, 0.05); } }, 4);
+  prop("lustre", (m) => { for (const z of [-5.7, 5.7]) { const g = place(m.clone(true), { at: V3(XW + 17.5, 2.55, z), h: 1.35, emit: 0.25 }); const c = new T.Mesh(new T.CylinderGeometry(0.015, 0.015, 30, 4), structMat); c.position.y = 16.3; g.add(c); } }, 5);
+  // entrada: balcão do bibliotecário, estantes e um armário curvo, a vitrine com as poções
+  prop("estantes-livros", (m) => place(m, { at: V3(XE - 0.95, 0, 6.25), h: 2.62, ry: -Math.PI / 2 }), 5);
+  prop("armario", (m) => place(m, { at: V3(XE - 0.65, 0, -6.4), h: 1.81, ry: -Math.PI / 2 }), 5);
+  prop("balcao", (m) => {
+    const g = place(m, { at: V3(XE - 6.4, 0, 6.3), h: 2.1, ry: Math.PI });
+    prop("castical", (k) => { const y = topOf(g, XE - 6.4, 5.4); place(k, { at: V3(XE - 7.3, y, 5.4), h: 0.3, emit: 0.3 }); addLight(XE - 7.3, y + 0.45, 5.4, "#FFB060", 0.6, 0.15); }, 5);
+    prop("moedas", (k) => place(k, { at: on(g, XE - 6.0, 5.45), size: 0.3 }), 6);
+    prop("calice", (k) => place(k, { at: on(g, XE - 5.5, 5.4), h: 0.24 }), 6);
+  }, 5);
+  prop("vitrine", (m) => {
+    const g = place(m, { at: V3(XE - 4.4, 0, -6.6), h: 2.2, ry: -0.3 });
+    g.updateMatrixWorld(true); rcDown.set(V3(XE - 4.4, 30, -6.6), V3(0, -1, 0));
+    const floor = rcDown.intersectObject(g, true).map((i) => i.point.y).filter((y) => y < 1.2).sort((a, b) => b - a)[0] || 0.3; // o fundo da vitrine, não o vidro de cima
+    prop("pocoes", (k) => place(k, { at: V3(XE - 4.4, floor + 0.02, -6.6), size: 0.95, ry: 0.3, emit: 0.35, emitC: "#B0E0FF" }), 6);
+    addLight(XE - 4.4, 1.6, -6.0, "#CFE6FF", 1.1, 0.02);
+  }, 5);
 
   /* as fendas: uma para cada mundo, rasgando as estantes do térreo */
   const WORLDS = [
@@ -958,6 +1005,7 @@
 
   /* ---------------- o controle pelo celular fala por aqui ---------------- */
   window.biblioteca = {
+    view: (p, t) => { flyTo({ pos: V3(...p), tgt: V3(...t) }); },
     go, back, marks: () => marks.filter((k) => k.shown).map((k) => ({ t: k.m.t, id: k.m.id, edge: !!k.edge, x: Math.round(k.sx), y: Math.round(k.sy) })),
     places: () => places.map((p, i) => ({ i, id: p.id, t: p.t, g: p.g, sub: p.sub || "" })),
     look, pointer: (nx, ny) => { ptr.set(nx, ny); hover(ptr); return !!hotC; }, click: (nx, ny) => clickAt(new T.Vector2(nx, ny)),

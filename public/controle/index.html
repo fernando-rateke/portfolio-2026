@@ -43,6 +43,7 @@ button:active { background: rgba(217,164,65,0.18); }
 .row { display: grid; gap: 8px; }
 .row.main { grid-template-columns: 1fr 1.2fr 1fr; }
 .row.main button { padding: 16px 6px; font: 600 1rem/1 var(--f-display); }
+button:disabled { opacity: 0.35; }
 .row.tools { grid-template-columns: repeat(5, 1fr); }
 .row.tools button { padding: 11px 2px; font: 500 0.56rem/1.2 var(--f-label); letter-spacing: 0.08em; text-transform: uppercase; }
 .row.tools button.on { border-color: var(--gold); color: var(--gold); }
@@ -51,10 +52,11 @@ button:active { background: rgba(217,164,65,0.18); }
 .sheet header { display: flex; justify-content: space-between; align-items: center; }
 .sheet h2 { margin: 0; font: 600 1.25rem/1.2 var(--f-display); }
 .sheet .list { overflow: auto; display: grid; gap: 6px; }
-.sheet .list button { text-align: left; padding: 12px; display: grid; grid-template-columns: 30px 1fr; gap: 4px; }
+.sheet .list button { text-align: left; padding: 12px; display: grid; gap: 3px; }
+.sheet .list h3 { margin: 12px 2px 0; font: 500 0.58rem/1.3 var(--f-label); letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); }
+.sheet .list h3:first-child { margin-top: 0; }
 .sheet .list button.cur { border-color: var(--gold); }
-.sheet .list i { font: 500 0.66rem var(--f-label); color: var(--gold); font-style: normal; }
-.sheet .list b { font: 600 1.05rem/1.2 var(--f-book); } .sheet .list span { grid-column: 2; font: 500 0.56rem/1.2 var(--f-label); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
+.sheet .list b { font: 600 1.05rem/1.2 var(--f-book); } .sheet .list span { font: 500 0.56rem/1.2 var(--f-label); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
 .sheet .opts { display: flex; gap: 8px; flex-wrap: wrap; } .sheet .opts button { padding: 10px 14px; font: 500 0.7rem var(--f-label); }
 .sheet .opts button.on { border-color: var(--gold); color: var(--gold); }
 .gate { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; text-align: center; padding: 24px; background: var(--bg); }
@@ -87,9 +89,9 @@ button:active { background: rgba(217,164,65,0.18); }
   <div class="help">arraste: cursor · toque: clicar · segure: lanterna<br>dois dedos: olhar ou rolar · pinça: ampliar</div>
 </div>
 <div class="row main">
-  <button id="bPrev" type="button" aria-label="Lugar anterior">‹ Anterior</button>
-  <button id="bList" type="button">Lugares</button>
-  <button id="bNext" type="button" aria-label="Próximo lugar">Próximo ›</button>
+  <button id="bBack" type="button" aria-label="Voltar ao lugar anterior" disabled>‹ Voltar</button>
+  <button id="bList" type="button">Mapa</button>
+  <button id="bEntry" type="button" aria-label="Ir para a entrada">Entrada</button>
 </div>
 <div class="row tools">
   <button id="bClose" type="button">Fechar</button>
@@ -99,7 +101,7 @@ button:active { background: rgba(217,164,65,0.18); }
   <button id="bMore" type="button">Mais</button>
 </div>
 <div class="sheet" id="sheet" role="dialog" aria-labelledby="sheetT">
-  <header><h2 id="sheetT">Lugares</h2><button id="sheetX" type="button" style="padding:8px 14px">Fechar</button></header>
+  <header><h2 id="sheetT">Mapa</h2><button id="sheetX" type="button" style="padding:8px 14px">Fechar</button></header>
   <div class="list" id="list"></div>
 </div>
 <div class="sheet" id="more" role="dialog" aria-labelledby="moreT">
@@ -120,6 +122,7 @@ button:active { background: rgba(217,164,65,0.18); }
   let ch = null, bc = null, paired = false, state = null, notes = {}, speed = 1.25;
   const loadScript = (src) => new Promise((res, rej) => { const el = document.createElement("script"); el.src = src; el.onload = res; el.onerror = rej; document.head.appendChild(el); });
   const send = (m) => { m.code = code; m.phone = phone; try { if (ch) ch.send({ type: "broadcast", event: "m", payload: m }); if (bc) bc.postMessage(m); } catch (e) { /* sem canal */ } };
+  const esc = (x) => String(x || "").replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
   function status(kind, text) { $("dot").className = "dot" + (kind ? " " + kind : ""); if (text) $("wK").textContent = text; }
   async function connect() {
     if (!code) { $("gateT").textContent = "Qual é o código?"; $("gateP").textContent = "Ele aparece embaixo do QR code, na tela do computador."; $("gateCode").hidden = false; return; }
@@ -147,18 +150,20 @@ button:active { background: rgba(217,164,65,0.18); }
   }
   function render() {
     if (!state) return;
-    $("wK").textContent = `${state.place + 1} de ${state.places.length} · ${state.k}${state.views > 1 ? ` · vista ${state.view + 1}/${state.views}` : ""}`;
-    $("wT").textContent = state.title; status("ok");
+    $("wK").textContent = state.g || "";
+    $("wT").textContent = state.title + (state.sub ? " · " + state.sub : ""); status("ok");
+    $("bBack").disabled = !(state.back || state.panel);
     $("bMusic").classList.toggle("on", !!state.music);
     const n = notes[state.id];
     $("nBody").innerHTML = n && n.length ? "<ul>" + n.map((x) => `<li>${String(x).replace(/[&<]/g, (c) => (c === "&" ? "&amp;" : "&lt;"))}</li>`).join("") + "</ul>" : `<p class="empty">Sem anotações para este lugar.</p>`;
-    $("list").innerHTML = state.places.map((p) => `<button type="button" data-i="${p.i}" class="${p.i === state.place ? "cur" : ""}"><i>${String(p.i + 1).padStart(2, "0")}</i><b>${p.t}</b><span>${p.k}</span></button>`).join("");
+    let g0 = null;
+    $("list").innerHTML = state.places.map((p) => { const head = p.g !== g0 ? `<h3>${esc(p.g)}</h3>` : ""; g0 = p.g; return head + `<button type="button" data-i="${p.i}" class="${p.i === state.place ? "cur" : ""}"><b>${esc(p.t)}</b>${p.sub ? `<span>${esc(p.sub)}</span>` : ""}</button>`; }).join("");
   }
   fetch("/biblioteca/notas.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : {})).then((j) => { notes = j || {}; render(); }).catch(() => {});
 
   /* botões */
   const tap = (id, fn) => $(id).addEventListener("click", () => { vib(8); fn(); });
-  tap("bPrev", () => send({ t: "prev" })); tap("bNext", () => send({ t: "next" }));
+  tap("bBack", () => send({ t: "back" })); tap("bEntry", () => send({ t: "home" }));
   tap("bList", () => $("sheet").classList.add("on")); tap("sheetX", () => $("sheet").classList.remove("on"));
   $("list").addEventListener("click", (e) => { const b = e.target.closest("button[data-i]"); if (!b) return; vib(8); send({ t: "go", i: +b.dataset.i }); $("sheet").classList.remove("on"); });
   tap("bClose", () => { send({ t: "close" }); zoomOn = false; $("bZoom").classList.remove("on"); });

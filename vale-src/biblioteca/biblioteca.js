@@ -533,7 +533,7 @@
     });
     plaque(CERT, "Certificados", "Feiras e Iniciação Científica", "#C8A04A");
     plaque(FIM, "Sala de Leitura", "A Estante dos Visitantes", "#C22026");
-    buildPlaces(); renderIndex(); go(placeIdx, true);
+    buildPlaces(); buildMarkers(); renderIndex(); go(placeIdx, true);
   }
   function plaque(room, name, sub, color) {
     const c = document.createElement("canvas"); c.width = 640; c.height = 160; const g = c.getContext("2d");
@@ -602,17 +602,27 @@
   }
 
   /* ---------------- os lugares ---------------- */
-  let places = [], placeIdx = 0, viewIdx = 0;
+  let places = [], placeIdx = 0;
   const wallView = (room, wall, dist = 3.0) => { const sd = SIDES[wall], cx = room * D + A * sd.c, cz = A * sd.s; return { pos: V3(cx - sd.c * dist, EYE, cz - sd.s * dist), tgt: V3(cx, 1.62, cz) }; };
+  let extraMarks = [], marks = [];
   function buildPlaces() {
+    const wallAnchor = (room, wall) => { const sd = SIDES[wall]; return V3(room * D + (A - 0.6) * sd.c, 3.15, (A - 0.6) * sd.s); };
+    const P = (o) => Object.assign({ area: o.room != null ? o.room : -1 }, o);
     places = [
-      { id: "salao", k: "Entrada", t: "O Grande Salão", views: [{ pos: V3(XE - 2.4, 2.05, 0.2), tgt: V3(XW + 12, 3.0, 0) }] },
-      { id: "mesa", k: "A mesa de trabalho", t: "Escrever, ligar, procurar", views: [{ pos: V3(DESKX + 2.2, 1.85, 0.9), tgt: V3(DESKX, 0.95, 0) }] },
-      { id: "mundos", k: "As fendas", t: "Os mundos", views: [{ pos: V3(XW + 15, 3.4, 5.2), tgt: V3(XW + 15, 2.0, -HZ) }, { pos: V3(XW + 15, 3.4, -5.2), tgt: V3(XW + 15, 2.0, HZ) }] },
-      ...subjects.map((s) => ({ id: "sala" + s.room, k: `Sala ${s.room}`, t: s.name, room: s.room, views: s.acts.length > 4 ? [wallView(s.room, 1), wallView(s.room, 5)] : [wallView(s.room, 1)] })),
-      { id: "certificados", k: `Sala ${CERT}`, t: "Certificados", room: CERT, views: [{ pos: V3(CERT * D - 4.9, 2.1, 0.4), tgt: V3(CERT * D + 2.5, 1.2, 0) }] },
-      { id: "fim", k: `Sala ${FIM} · o fim`, t: "Sala de Leitura", room: FIM, views: [{ pos: V3(FIM * D - 4.9, 1.85, 0.5), tgt: V3(FIM * D + A + 8, 1.7, 0) }, wallView(FIM, 1, 2.8)] },
+      P({ id: "salao", g: "O Grande Salão", t: "Entrada", pose: { pos: V3(XE - 2.4, 2.05, 0.2), tgt: V3(XW + 12, 3.0, 0) }, anchor: V3(XW + 21, 2.4, 0) }),
+      P({ id: "mesa", g: "O Grande Salão", t: "A mesa de trabalho", pose: { pos: V3(DESKX + 2.2, 1.85, 0.9), tgt: V3(DESKX, 0.95, 0) }, anchor: V3(DESKX, 1.75, 0) }),
+      P({ id: "mundos-n", g: "O Grande Salão", t: "Os mundos", sub: "fendas do norte", pose: { pos: V3(XW + 15, 3.4, 5.2), tgt: V3(XW + 15, 2.0, -HZ) }, anchor: V3(XW + 15, 5.0, -HZ + 1.2) }),
+      P({ id: "mundos-s", g: "O Grande Salão", t: "Os mundos", sub: "fendas do sul", pose: { pos: V3(XW + 15, 3.4, -5.2), tgt: V3(XW + 15, 2.0, HZ) }, anchor: V3(XW + 15, 5.0, HZ - 1.2) }),
+      ...subjects.flatMap((sj) => [
+        P({ id: "sala" + sj.room, g: "Salas das matérias", t: sj.name, sub: `sala ${sj.room}`, room: sj.room, pose: wallView(sj.room, 1), anchor: wallAnchor(sj.room, 1) }),
+        ...(sj.acts.length > 4 ? [P({ id: "sala" + sj.room + "b", g: "Salas das matérias", t: sj.name, sub: "a outra estante", room: sj.room, pose: wallView(sj.room, 5), anchor: wallAnchor(sj.room, 5), minor: true })] : []),
+      ]),
+      P({ id: "certificados", g: "Mais adiante", t: "Certificados", sub: `sala ${CERT}`, room: CERT, pose: { pos: V3(CERT * D - 4.9, 2.1, 0.4), tgt: V3(CERT * D + 2.5, 1.2, 0) }, anchor: V3(CERT * D, 3.2, 0) }),
+      P({ id: "fim", g: "Mais adiante", t: "Sala de Leitura", sub: "o fim", room: FIM, pose: { pos: V3(FIM * D - 4.9, 1.85, 0.5), tgt: V3(FIM * D + A + 8, 1.7, 0) }, anchor: V3(FIM * D, 3.2, 0) }),
+      P({ id: "estante", g: "Mais adiante", t: "Estante dos Visitantes", sub: "deixe um livro", room: FIM, pose: wallView(FIM, 1, 2.8), anchor: wallAnchor(FIM, 1), minor: true }),
     ];
+    // atalhos que não são lugares: a porta do salão leva à primeira sala
+    extraMarks = subjects.length ? [{ id: "porta", t: "As salas das matérias", sub: "pela porta", area: -1, anchor: V3(XE - 0.4, 4.35, 0), to: "sala1" }] : [];
   }
   buildPlaces();
 
@@ -652,26 +662,82 @@
 
   /* ---------------- navegação ---------------- */
   const cur = () => places[placeIdx];
-  function go(i, instant = false, v = 0) {
+  const hist = [];
+  function go(i, instant = false, fromBack = false) {
+    if (typeof i === "string") i = places.findIndex((p) => p.id === i);
+    if (i < 0 || i >= places.length) return;
     closePanel(); closeIndex(); focus = null;
-    placeIdx = (i + places.length) % places.length; viewIdx = v;
-    const view = cur().views[viewIdx];
-    if (instant) { cam.pos.copy(view.pos); cam.tgt.copy(view.tgt); } else flyTo(view);
-    $("aquiN").textContent = `${placeIdx + 1} de ${places.length}${cur().views.length > 1 ? ` · vista ${viewIdx + 1}/${cur().views.length}` : ""}`;
-    $("aquiT").textContent = cur().t; renderIndex(); hint(); if (!instant) $("hero").classList.add("off");
+    if (!fromBack && !instant && i !== placeIdx) { hist.push(placeIdx); if (hist.length > 30) hist.shift(); }
+    placeIdx = i; const pose = cur().pose;
+    if (instant) { cam.pos.copy(pose.pos); cam.tgt.copy(pose.tgt); } else flyTo(pose);
+    $("aquiK").textContent = cur().g; $("aquiT").textContent = cur().t + (cur().sub ? " · " + cur().sub : "");
+    $("voltar").hidden = !hist.length;
+    renderIndex(); hint(); if (!instant) $("hero").classList.add("off");
   }
-  function next() { if (viewIdx < cur().views.length - 1) go(placeIdx, false, viewIdx + 1); else go(placeIdx + 1); }
-  function prev() { if (viewIdx > 0) go(placeIdx, false, viewIdx - 1); else { const p = (placeIdx - 1 + places.length) % places.length; go(p, false, places[p].views.length - 1); } }
-  $("prox").addEventListener("click", next); $("ant").addEventListener("click", prev);
+  function back() { if (panel.classList.contains("open")) { closePanel(); return; } const i = hist.pop(); if (i != null) go(i, false, true); $("voltar").hidden = !hist.length; }
+  $("voltar").addEventListener("click", back);
   function renderIndex() {
-    $("listaLugares").innerHTML = places.map((p, i) => `<li><button type="button" data-i="${i}" ${i === placeIdx ? 'aria-current="true"' : ""}><i>${String(i + 1).padStart(2, "0")}</i><b>${esc(p.t)}</b><span>${esc(p.k)}</span></button></li>`).join("");
+    const groups = []; places.forEach((p, i) => { let g = groups.find((x) => x.g === p.g); if (!g) groups.push(g = { g: p.g, items: [] }); g.items.push([p, i]); });
+    $("listaLugares").innerHTML = groups.map((g) => `<li class="grp">${esc(g.g)}</li>` + g.items.map(([p, i]) => `<li><button type="button" data-i="${i}" ${i === placeIdx ? 'aria-current="true"' : ""}><b>${esc(p.t)}</b><span>${esc(p.sub || "")}</span></button></li>`).join("")).join("");
   }
   const idx = $("indice");
   const openIndex = () => { idx.classList.add("open"); idx.setAttribute("aria-hidden", "false"); };
   const closeIndex = () => { idx.classList.remove("open"); idx.setAttribute("aria-hidden", "true"); };
-  $("abrirIndice").addEventListener("click", openIndex); $("aqui").addEventListener("click", openIndex); $("fecharIndice").addEventListener("click", closeIndex);
-  $("aqui").addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openIndex(); } });
+  $("abrirIndice").addEventListener("click", openIndex); $("fecharIndice").addEventListener("click", closeIndex);
+  $("aqui").addEventListener("click", openIndex); $("aqui").addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openIndex(); } });
   $("listaLugares").addEventListener("click", (e) => { const b = e.target.closest("button[data-i]"); if (b) go(+b.dataset.i); });
+
+  /* marcadores no espaço: etiquetas sobre os lugares; clicar leva até lá */
+  function buildMarkers() {
+    const box = $("marcas"); box.innerHTML = ""; marks = [];
+    for (const m of places.map((p, i) => ({ ...p, to: i })).concat(extraMarks)) {
+      const b = document.createElement("button"); b.type = "button"; b.className = "mk" + (m.minor ? " minor" : "");
+      b.innerHTML = `<i></i><span><b>${esc(m.t)}</b>${m.sub ? `<small>${esc(m.sub)}</small>` : ""}</span>`;
+      b.addEventListener("click", (e) => { e.stopPropagation(); go(m.to); });
+      box.appendChild(b); marks.push({ el: b, m, shown: false });
+    }
+  }
+  const mv = new T.Vector3(), mc = new T.Vector3();
+  function updateMarkers() {
+    const ca = areaOf(cam.pos), W = innerWidth, Hh = innerHeight, small = W < 640, edges = [];
+    for (const k of marks) {
+      const m = k.m, here = typeof m.to === "number" && m.to === placeIdx;
+      const near = m.area === ca || (ca >= 0 && m.area >= 0 && Math.abs(m.area - ca) <= 1) || (ca === -1 && m.area <= 1) || (ca <= 1 && m.area === -1);
+      const dist = camera.position.distanceTo(m.anchor);
+      let vis = !fly && !here && near && dist < 34 && dist > 1.2 && !(ca >= 0 && m.area === -1 && m.id !== "salao"), edge = false, x = 0, y = 0;
+      if (vis) {
+        mc.copy(m.anchor).applyMatrix4(camera.matrixWorldInverse); mv.copy(m.anchor).project(camera);
+        const inFront = mc.z < -0.2, onScreen = inFront && Math.abs(mv.x) < 0.94 && Math.abs(mv.y) < 0.86;
+        if (onScreen) { x = mv.x; y = mv.y; }
+        else if (m.minor && m.area !== ca || ca === -1 && m.area >= 0) vis = false; // na borda, só o que importa
+        else {
+          edge = true; let dx = mc.x, dy = mc.y * 0.35; if (!inFront && Math.abs(dx) < 0.01) dx = 1;
+          const sx = (small ? 0.80 : 0.88) / Math.max(1e-4, Math.abs(dx)), sy = 0.62 / Math.max(1e-4, Math.abs(dy)), sc = Math.min(sx, sy);
+          x = dx * sc; y = Math.max(-0.62, Math.min(0.62, dy * sc));
+          if (!inFront) { x = Math.sign(dx) * (small ? 0.80 : 0.88); y = Math.max(-0.5, Math.min(0.5, mc.y * 0.1)); } // atrás: vai para o lado mais perto
+        }
+      }
+      k.sx = (x * 0.5 + 0.5) * W; k.sy = (-y * 0.5 + 0.5) * Hh;
+      if (vis && edge) edges.push(k);
+      else if (vis) {
+        k.el.style.transform = `translate(${k.sx}px, ${k.sy}px) translate(-50%, -100%)`;
+        k.el.style.opacity = String(Math.max(0.4, 1 - dist / 38));
+      }
+      if (vis && edge) k.el.style.opacity = "0.92";
+      if (edge !== k.edge) { k.edge = edge; k.el.classList.toggle("edge", edge); }
+      if (vis !== k.shown) { k.shown = vis; k.el.classList.toggle("on", vis); k.el.tabIndex = vis ? 0 : -1; if (!vis) k.el.style.opacity = "0"; }
+    }
+    for (const side of [-1, 1]) {
+      const g = edges.filter((k) => Math.sign(k.sx - W / 2 || 1) === side).sort((p, q) => p.sy - q.sy);
+      for (let j = 1; j < g.length; j++) if (g[j].sy - g[j - 1].sy < 50) g[j].sy = g[j - 1].sy + 50;
+      const over = g.length ? g[g.length - 1].sy - (Hh - 120) : 0; if (over > 0) g.forEach((k) => (k.sy -= over));
+      const fixed = marks.filter((k) => k.shown && !k.edge).map((k) => ({ x: k.sx, y: k.sy - 22, w: (k.el.offsetWidth || 160) / 2 + 8 }));
+      for (const k of g) { k.el.classList.toggle("left", side < 0); const w = k.el.offsetWidth || 160, xx = Math.min(W - 14 - w / 2, Math.max(14 + w / 2, k.sx));
+        for (let n = 0; n < 6 && fixed.some((f) => Math.abs(f.x - xx) < f.w + w / 2 && Math.abs(f.y - k.sy) < 46); n++) k.sy += 46;
+        k.el.style.transform = `translate(${xx}px, ${k.sy}px) translate(-50%, -50%)`; }
+    }
+  }
+
   let hinted = false; function hint() { if (hinted) return; hinted = true; setTimeout(() => $("dica").classList.add("off"), 6000); }
 
   /* ---------------- painel, avisos e o recado ---------------- */
@@ -681,7 +747,7 @@
     openThing = thing || null; $("pKick").textContent = kick; $("pTitulo").textContent = title; $("pCorpo").innerHTML = html;
     panel.classList.add("open"); panel.setAttribute("aria-hidden", "false");
   }
-  function closePanel() { if (!panel.classList.contains("open")) return; panel.classList.remove("open"); panel.setAttribute("aria-hidden", "true"); openThing = null; books.concat(visitorBooks).forEach((b) => (b.open = false)); if (focus) { focus = null; flyTo(cur().views[viewIdx]); } }
+  function closePanel() { if (!panel.classList.contains("open")) return; panel.classList.remove("open"); panel.setAttribute("aria-hidden", "true"); openThing = null; books.concat(visitorBooks).forEach((b) => (b.open = false)); if (focus) { focus = null; flyTo(cur().pose); } }
   $("pFechar").addEventListener("click", closePanel);
   let toastT = 0;
   function toast(k, t, s) { $("avisoK").textContent = k; $("avisoT").textContent = t; $("avisoS").textContent = s || ""; const el = $("aviso"); el.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove("on"), 3600); }
@@ -707,7 +773,7 @@
         const mine = { id: d.ema && d.ema.id, nome: body.nome, recado: body.recado, cor: body.cor, criado_em: new Date().toISOString(), meu: true };
         try { const arr = JSON.parse(localStorage.getItem("biblioteca-meus") || "[]"); arr.unshift(mine); localStorage.setItem("biblioteca-meus", JSON.stringify(arr.slice(0, 6))); } catch (er) { /* sem storage */ }
         loadVisitors(); closePanel(); toast("Estante dos Visitantes", "Seu livro está na estante", d.moderado ? "Os outros visitantes vão vê-lo assim que for aprovado." : "");
-        const fi = places.findIndex((p) => p.id === "fim"); if (fi >= 0) go(fi, false, 1);
+        go("estante");
       }).catch(() => { $("fNota").textContent = "Sem conexão com a estante agora."; });
     });
   }
@@ -723,10 +789,10 @@
       case "recado": formRecado(); break;
       case "busca": $("busca").focus(); break;
       case "indice": openIndex(); break;
-      case "mundos": go(places.findIndex((p) => p.id === "mundos")); break;
+      case "mundos": go("mundos-n"); break;
       case "musica": toggleMusic(); break;
       case "contato": showPanel("Contato", "Fernando Rateke", `<p>Estudante do Ensino Médio integrado ao Técnico em Análise e Desenvolvimento de Sistemas, no SESI SENAI, em Florianópolis.</p><div class="links"><a href="mailto:fernando_rateke-n@estudante.sesisenai.org.br">E-mail</a><a href="https://github.com/fernando-rateke" target="_blank" rel="noopener">GitHub</a></div>`); break;
-      case "sobre": showPanel("O Grande Salão", "Fernando Rateke · Portfólio 2026", `<p><i>A jornada é o que dá forma ao mundo.</i></p><p>Esta biblioteca não tem fim. As fendas nas estantes levam aos mundos; a porta de madeira leva às salas das matérias, aos certificados e, no fim, à Sala de Leitura, onde fica a Estante dos Visitantes.</p><p>Use as setas ou os botões embaixo para ir de um lugar ao outro.</p>`); break;
+      case "sobre": showPanel("O Grande Salão", "Fernando Rateke · Portfólio 2026", `<p><i>A jornada é o que dá forma ao mundo.</i></p><p>Esta biblioteca não tem fim. As fendas nas estantes levam aos mundos; a porta de madeira leva às salas das matérias, aos certificados e, no fim, à Sala de Leitura, onde fica a Estante dos Visitantes.</p><p>Clique nas etiquetas douradas para ir até um lugar, ou abra o Mapa e escolha para onde ir.</p>`); break;
       case "cert": showPanel("Certificado", c.data.cf.t, `<p>${esc(c.data.cf.s)}</p><p class="note">${esc(c.data.cf.p)}</p>`); focusOn(c.data.pos, c.data.nx, c.data.nz, 1.4); break;
       case "visitante": c.data.open = true; showPanel(`Estante dos Visitantes · ${new Date(c.data.visitor.criado_em || Date.now()).toLocaleDateString("pt-BR")}`, c.data.visitor.nome || "Visitante", `<p>${esc(c.data.visitor.recado)}</p>` + (c.data.visitor.meu ? `<p class="note">Este é o seu. Ele aparece para todos depois de aprovado.</p>` : "")); focusOn(c.data.g.position, c.data.nx, c.data.nz, 1.35); break;
     }
@@ -742,14 +808,13 @@
     res.innerHTML = found.length ? found.slice(0, 10).map((b) => `<li><button type="button" data-id="${b.id}"><b>${esc(b.a.t)}</b><span>${esc(b.sub.name)} · sala ${b.room}</span></button></li>`).join("") : `<li class="none">Nenhum livro com isso nas estantes.</li>`;
     res.hidden = false;
   });
-  res.addEventListener("click", (e) => { const bt = e.target.closest("button[data-id]"); if (!bt) return; const b = books.find((o) => o.id === bt.dataset.id); if (!b) return; res.hidden = true; busca.blur(); const pi = places.findIndex((p) => p.room === b.room); if (pi >= 0) { placeIdx = pi; viewIdx = b.wall === 5 && places[pi].views.length > 1 ? 1 : 0; $("aquiT").textContent = cur().t; renderIndex(); } openBook(b); });
+  res.addEventListener("click", (e) => { const bt = e.target.closest("button[data-id]"); if (!bt) return; const b = books.find((o) => o.id === bt.dataset.id); if (!b) return; res.hidden = true; busca.blur(); const pi = places.findIndex((p) => p.id === "sala" + b.room + (b.wall === 5 ? "b" : "")); if (pi >= 0) { if (pi !== placeIdx) hist.push(placeIdx); placeIdx = pi; $("aquiK").textContent = cur().g; $("aquiT").textContent = cur().t + (cur().sub ? " · " + cur().sub : ""); $("voltar").hidden = !hist.length; renderIndex(); } openBook(b); });
   busca.addEventListener("keydown", (e) => { if (e.key === "Enter") { const f = res.querySelector("button[data-id]"); if (f) f.click(); } });
 
-  /* ---------------- entradas: setas, arrastar para olhar, clicar ---------------- */
+  /* ---------------- entradas: teclado, arrastar para olhar, clicar ---------------- */
   addEventListener("keydown", (e) => {
     if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) { if (e.key === "Escape") e.target.blur(); return; }
-    if (e.key === "ArrowRight" || e.key === "PageDown") { e.preventDefault(); next(); }
-    else if (e.key === "ArrowLeft" || e.key === "PageUp") { e.preventDefault(); prev(); }
+    if (e.key === "Backspace") { e.preventDefault(); back(); }
     else if (e.key === "Escape") { closePanel(); closeIndex(); }
     else if (e.key === "/") { e.preventDefault(); busca.focus(); }
     else if (e.key.toLowerCase() === "m") openIndex();
@@ -771,12 +836,12 @@
 
   /* ---------------- o controle pelo celular fala por aqui ---------------- */
   window.biblioteca = {
-    next, prev, go: (id) => { const i = typeof id === "number" ? id : places.findIndex((p) => p.id === id); if (i >= 0) go(i); },
-    places: () => places.map((p, i) => ({ i, id: p.id, t: p.t, k: p.k, views: p.views.length })),
+    go, back, marks: () => marks.filter((k) => k.shown).map((k) => ({ t: k.m.t, id: k.m.id, edge: !!k.edge, x: Math.round(k.sx), y: Math.round(k.sy) })),
+    places: () => places.map((p, i) => ({ i, id: p.id, t: p.t, g: p.g, sub: p.sub || "" })),
     look, pointer: (nx, ny) => { ptr.set(nx, ny); hover(ptr); return !!hotC; }, click: (nx, ny) => clickAt(new T.Vector2(nx, ny)),
     close: () => { closePanel(); closeIndex(); }, books: () => books.map((b) => ({ id: b.id, t: b.a.t, room: b.room })),
     openBook: (id) => { const b = books.find((o) => o.id === id); if (b) openBook(b); },
-    state: () => ({ place: placeIdx, view: viewIdx, id: cur().id, flying: !!fly, panel: panel.classList.contains("open") }),
+    state: () => ({ place: placeIdx, id: cur().id, flying: !!fly, panel: panel.classList.contains("open") }),
     time: (v) => { if (v != null) clockT = v; return clockT; },
   };
 
@@ -848,7 +913,7 @@
     }
     function sendState() {
       if (!phone) return;
-      const st = { t: "state", phone, place: placeIdx, view: viewIdx, views: cur().views.length, id: cur().id, title: cur().t, k: cur().k, panel: panel.classList.contains("open"), music: !!(music && !music.paused), places: places.map((p, i) => ({ i, id: p.id, t: p.t, k: p.k })) };
+      const st = { t: "state", phone, place: placeIdx, id: cur().id, title: cur().t, sub: cur().sub || "", g: cur().g, back: hist.length > 0, panel: panel.classList.contains("open"), music: !!(music && !music.paused), places: places.map((p, i) => ({ i, id: p.id, t: p.t, g: p.g, sub: p.sub || "" })) };
       const js = JSON.stringify(st); if (js === lastState) return; lastState = js; send(st);
     }
     setInterval(() => { if (phone) { sendState(); if (performance.now() - lastSeen > 20000) chip.querySelector("span").textContent = "Controle sem sinal"; else chip.querySelector("span").textContent = "Controle conectado"; } }, 400);
@@ -866,8 +931,7 @@
         case "click": clickHere(); break;
         case "look": look(m.dx, m.dy); break;
         case "scroll": scroll(m.dy); break;
-        case "next": next(); break;
-        case "prev": prev(); break;
+        case "back": back(); break;
         case "go": go(m.i); break;
         case "close": closePanel(); closeIndex(); light.classList.remove("on"); zoomT = 1; break;
         case "zoom": zoom(!!m.on); break;
@@ -932,7 +996,7 @@
     camera.lookAt(la);
     if (Math.abs(zoomT - zoomK) > 0.001) { zoomK += (zoomT - zoomK) * Math.min(1, dt * 4); camera.fov = baseFov * zoomK; camera.updateProjectionMatrix(); }
     placeRooms(Math.max(0, Math.round(cam.pos.x / D)));
-    updateLights(t);
+    updateLights(t); updateMarkers();
     // poeira acompanha a câmera
     const P = dust.geometry.attributes.position.array;
     for (let i = 0; i < DUST; i++) { let x = P[i * 3], y = P[i * 3 + 1], z = P[i * 3 + 2]; y += dt * (0.04 + ds[i] * 0.07); x += Math.sin(t * 0.3 + i) * dt * 0.06; const cx = cam.pos.x, cz = cam.pos.z, cy = cam.pos.y;
@@ -960,7 +1024,7 @@
     try { addActivityBooks(list || []); } catch (e) { console.warn("livros", e); }
     loadVisitors();
   });
-  renderIndex(); go(0, true);
+  buildMarkers(); renderIndex(); go(0, true);
   requestAnimationFrame(frame);
   setTimeout(() => $("fade").classList.add("gone"), 500);
 })();

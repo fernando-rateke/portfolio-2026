@@ -1,16 +1,88 @@
 {
-  "salao": ["Apresente-se: nome, turma 3B, Ensino Médio com o Técnico em Desenvolvimento de Sistemas.", "A ideia: uma biblioteca sem fim que guarda tudo o que eu fiz.", "As fendas levam aos mundos; a porta leva às matérias."],
-  "mesa": ["Cada objeto da mesa faz algo: a lupa procura, o mapa mostra os lugares, a máquina de escrever deixa um recado."],
-  "mundos": ["Cada fenda é uma parte pedida pela banca, num universo diferente.", "Escolha a ordem: quem sou, matérias, técnica, 1º e 2º ano, certificados, futuro, agradecimentos."],
-  "sala1": ["Ciências da Natureza: contexto, aprendizagens, competências e importância das duas atividades."],
-  "sala2": ["Ciências Humanas: contexto, aprendizagens, competências e importância das duas atividades."],
-  "sala3": ["Linguagens: contexto, aprendizagens, competências e importância das duas atividades."],
-  "sala4": ["Matemática: contexto, aprendizagens, competências e importância das duas atividades."],
-  "sala5": ["Técnico (Modelagem de Sistemas): por que escolhi e o que aprendi."],
-  "sala6": ["Técnico (Desenvolvimento de Sistemas): o AcousticBuild, minha parte e o que aprendi."],
-  "sala7": ["Técnico (Programação de Aplicativos)."],
-  "sala8": ["Técnico (IoT): as práticas com o circuito e a lógica de controle."],
-  "sala9": ["Técnico (Banco de Dados)."],
-  "certificados": ["Infomatrix 2025, DUAL 2025 e 2026, FEBRACE 2026, FEBIC 2026 (2º lugar) e a Iniciação Científica."],
-  "fim": ["Agradeça a quem fez parte da jornada.", "Convide a plateia a deixar um recado na Estante dos Visitantes."]
+  "salao": [
+    "Apresente-se: nome, turma 3B, Ensino Médio com o Técnico em Desenvolvimento de Sistemas.",
+    "A ideia: uma biblioteca sem fim que guarda tudo o que eu fiz.",
+    "As fendas levam aos mundos; a porta leva às matérias."
+  ],
+  "salaob": [
+    "Apresente-se: nome, turma 3B, Ensino Médio com o Técnico em Desenvolvimento de Sistemas.",
+    "A ideia: uma biblioteca sem fim que guarda tudo o que eu fiz.",
+    "As fendas levam aos mundos; a porta leva às matérias."
+  ],
+  "mesa": [
+    "Cada objeto da mesa faz algo: a lupa procura, o mapa mostra os lugares, a máquina de escrever deixa um recado."
+  ],
+  "mundos-n": [
+    "Cada fenda é uma parte pedida pela banca, num universo diferente.",
+    "Escolha a ordem: quem sou, matérias, técnica, 1º e 2º ano, certificados, futuro, agradecimentos."
+  ],
+  "mundos-s": [
+    "Cada fenda é uma parte pedida pela banca, num universo diferente.",
+    "Escolha a ordem: quem sou, matérias, técnica, 1º e 2º ano, certificados, futuro, agradecimentos."
+  ],
+  "sala1": [
+    "Ciências da Natureza: contexto, aprendizagens, competências e importância das duas atividades."
+  ],
+  "sala1b": [
+    "Ciências da Natureza: contexto, aprendizagens, competências e importância das duas atividades."
+  ],
+  "sala2": [
+    "Ciências Humanas: contexto, aprendizagens, competências e importância das duas atividades."
+  ],
+  "sala2b": [
+    "Ciências Humanas: contexto, aprendizagens, competências e importância das duas atividades."
+  ],
+  "sala3": [
+    "Linguagens: contexto, aprendizagens, competências e importância das duas atividades."
+  ],
+  "sala3b": [
+    "Linguagens: contexto, aprendizagens, competências e importância das duas atividades."
+  ],
+  "sala4": [
+    "Matemática: contexto, aprendizagens, competências e importância das duas atividades."
+  ],
+  "sala4b": [
+    "Matemática: contexto, aprendizagens, competências e importância das duas atividades."
+  ],
+  "sala5": [
+    "Técnico (Modelagem de Sistemas): por que escolhi e o que aprendi."
+  ],
+  "sala5b": [
+    "Técnico (Modelagem de Sistemas): por que escolhi e o que aprendi."
+  ],
+  "sala6": [
+    "Técnico (Desenvolvimento de Sistemas): o AcousticBuild, minha parte e o que aprendi."
+  ],
+  "sala6b": [
+    "Técnico (Desenvolvimento de Sistemas): o AcousticBuild, minha parte e o que aprendi."
+  ],
+  "sala7": [
+    "Técnico (Programação de Aplicativos)."
+  ],
+  "sala7b": [
+    "Técnico (Programação de Aplicativos)."
+  ],
+  "sala8": [
+    "Técnico (IoT): as práticas com o circuito e a lógica de controle."
+  ],
+  "sala8b": [
+    "Técnico (IoT): as práticas com o circuito e a lógica de controle."
+  ],
+  "sala9": [
+    "Técnico (Banco de Dados)."
+  ],
+  "sala9b": [
+    "Técnico (Banco de Dados)."
+  ],
+  "certificados": [
+    "Infomatrix 2025, DUAL 2025 e 2026, FEBRACE 2026, FEBIC 2026 (2º lugar) e a Iniciação Científica."
+  ],
+  "fim": [
+    "Agradeça a quem fez parte da jornada.",
+    "Convide a plateia a deixar um recado na Estante dos Visitantes."
+  ],
+  "estante": [
+    "A Estante dos Visitantes: quem passou deixou um livro aqui.",
+    "Pelo QR no fim, quem está assistindo pode deixar um recado também."
+  ]
 }

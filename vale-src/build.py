@@ -70,4 +70,8 @@ subprocess.run([TERSER, os.path.join(lib_src, "biblioteca.js"), "--compress", "p
 mg = re.search(r'<script type="application/json" id="grimorios">(.*?)</script>', html, re.S)
 atividades = json.loads(mg.group(1)) if mg else []
 json.dump([{"id": s.get("id"), "name": s["name"], "cat": s.get("cat"), "desc": s.get("desc", ""), "acts": s["acts"]} for s in atividades], open(os.path.join(lib_out, "atividades.json"), "w"), ensure_ascii=False)
-print("ok:", out, "+", lib_out)
+shutil.copy(os.path.join(lib_src, "notas.json"), os.path.join(lib_out, "notas.json"))
+# o controle pelo celular (página própria em /controle)
+ctl_out = os.path.join(repo, "public", "controle"); os.makedirs(ctl_out, exist_ok=True)
+shutil.copy(os.path.join(here, "controle", "index.html"), os.path.join(ctl_out, "index.html"))
+print("ok:", out, "+", lib_out, "+", ctl_out)

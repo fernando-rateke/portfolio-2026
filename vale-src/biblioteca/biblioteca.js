@@ -201,7 +201,7 @@
   function prop(file, cb, prio = 5) { if (!loader) return; queue.push({ file, cb, prio }); queue.sort((a, b) => a.prio - b.prio); pump(); }
   function pump() {
     if (busy || !queue.length) return; busy = true; const { file, cb } = queue.shift();
-    loader.load("modelos/" + file + ".glb", (g) => { try { cb(g.scene); } catch (e) { console.warn("objeto", file, e); } busy = false; pump(); }, undefined, () => { busy = false; pump(); });
+    loader.load("/biblioteca/modelos/" + file + ".glb", (g) => { try { cb(g.scene); } catch (e) { console.warn("objeto", file, e); } busy = false; pump(); }, undefined, () => { busy = false; pump(); });
   }
   // coloca um objeto: escala pela maior medida (ou altura), apoia no chão, centraliza
   function place(root, { at, h, size, ry = 0, rx = 0, tint, emit, emitC, parent = scene, axis = "y" }) {
@@ -658,7 +658,7 @@
     const view = cur().views[viewIdx];
     if (instant) { cam.pos.copy(view.pos); cam.tgt.copy(view.tgt); } else flyTo(view);
     $("aquiN").textContent = `${placeIdx + 1} de ${places.length}${cur().views.length > 1 ? ` · vista ${viewIdx + 1}/${cur().views.length}` : ""}`;
-    $("aquiT").textContent = cur().t; renderIndex(); hint();
+    $("aquiT").textContent = cur().t; renderIndex(); hint(); if (!instant) $("hero").classList.add("off");
   }
   function next() { if (viewIdx < cur().views.length - 1) go(placeIdx, false, viewIdx + 1); else go(placeIdx + 1); }
   function prev() { if (viewIdx > 0) go(placeIdx, false, viewIdx - 1); else { const p = (placeIdx - 1 + places.length) % places.length; go(p, false, places[p].views.length - 1); } }
@@ -780,6 +780,110 @@
     time: (v) => { if (v != null) clockT = v; return clockT; },
   };
 
+  /* ---------------- modo apresentação: o controle pelo celular ---------------- */
+  // O computador mostra um QR; o primeiro celular que entra vira o controle. A conversa passa por um canal
+  // em tempo real do Supabase (chave pública, nada é gravado); sem ele, por BroadcastChannel (mesmo navegador).
+  let zoomT = 1, zoomK = 1;
+  const Remote = (() => {
+    const veu = $("veu"), cursorEl = $("cursor"), spot = $("lanterna"), light = $("lightbox"), chip = $("ctl");
+    let code = null, phone = null, ch = null, bc = null, lastSeen = 0, lastState = "", on = false;
+    const pos = { x: innerWidth / 2, y: innerHeight / 2 };
+    const loadScript = (src) => new Promise((res, rej) => { const el = document.createElement("script"); el.src = src; el.onload = res; el.onerror = rej; document.head.appendChild(el); });
+    const send = (m) => { m.code = code; try { if (ch) ch.send({ type: "broadcast", event: "m", payload: m }); if (bc) bc.postMessage(m); } catch (e) { /* sem canal */ } };
+    async function connect() {
+      if (ch || bc) return;
+      let cfg = null; try { const r = await fetch("/api/config", { cache: "no-store" }); if (r.ok) cfg = await r.json(); } catch (e) { /* sem rota */ }
+      if (cfg && cfg.ok) {
+        try {
+          if (!window.supabase) await loadScript("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js");
+          const sb = window.supabase.createClient(cfg.url, cfg.key, { auth: { persistSession: false } });
+          ch = sb.channel("controle-" + code, { config: { broadcast: { self: false } } });
+          ch.on("broadcast", { event: "m" }, ({ payload }) => onMsg(payload)).subscribe();
+        } catch (e) { ch = null; }
+      }
+      if (!ch && "BroadcastChannel" in window) { bc = new BroadcastChannel("controle-" + code); bc.onmessage = (e) => onMsg(e.data); }
+    }
+    async function open() {
+      if (!code) code = Array.from(crypto.getRandomValues(new Uint8Array(6)), (b) => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[b % 32]).join("");
+      $("veuCode").textContent = code; veu.classList.remove("lift"); veu.classList.add("on"); veu.setAttribute("aria-hidden", "false");
+      const url = location.origin + "/controle#" + code;
+      try { if (!window.qrcode) await loadScript("https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"); const q = window.qrcode(0, "M"); q.addData(url); q.make(); $("qr").innerHTML = q.createImgTag(6, 0, "QR code do controle"); }
+      catch (e) { $("qr").innerHTML = `<div class="alt">Sem QR agora. No celular, abra<br><b>${esc(location.host)}/controle</b><br>e digite o código abaixo.</div>`; }
+      $("qr").dataset.url = url;
+      await connect();
+    }
+    function close() { if (phone) { veu.classList.add("lift"); } else { veu.classList.remove("on"); } veu.setAttribute("aria-hidden", "true"); }
+    function paired() {
+      on = true; veu.classList.add("lift"); veu.setAttribute("aria-hidden", "true"); document.body.classList.add("apresentando");
+      cursorEl.classList.add("on"); chip.hidden = false; moveTo(innerWidth / 2, innerHeight / 2); lastState = ""; sendState(); closeIndex();
+      $("hero").classList.add("off");
+    }
+    function unpair() { phone = null; on = false; document.body.classList.remove("apresentando"); cursorEl.classList.remove("on"); spot.classList.remove("on"); chip.hidden = true; }
+    function moveTo(x, y) {
+      pos.x = Math.max(0, Math.min(innerWidth - 1, x)); pos.y = Math.max(0, Math.min(innerHeight - 1, y));
+      cursorEl.style.transform = `translate(${pos.x}px, ${pos.y}px)`; spot.style.setProperty("--x", pos.x + "px"); spot.style.setProperty("--y", pos.y + "px");
+      const el = document.elementFromPoint(pos.x, pos.y); let hot = false;
+      if (el === canvas) { ptr.set(pos.x / innerWidth * 2 - 1, -(pos.y / innerHeight) * 2 + 1); hover(ptr); hot = !!hotC; }
+      else if (el && el.closest && el.closest("button, a, input, textarea, [role=button]")) hot = true;
+      cursorEl.classList.toggle("hot", hot);
+    }
+    function clickHere() {
+      cursorEl.classList.remove("tap"); void cursorEl.offsetWidth; cursorEl.classList.add("tap");
+      if (light.classList.contains("on")) { light.classList.remove("on"); return; }
+      const el = document.elementFromPoint(pos.x, pos.y);
+      if (!el || el === canvas) { clickAt(new T.Vector2(pos.x / innerWidth * 2 - 1, -(pos.y / innerHeight) * 2 + 1)); return; }
+      const t = el.closest("button, a, input, textarea, [role=button], li") || el;
+      if (/INPUT|TEXTAREA/.test(t.tagName)) t.focus(); else t.click();
+    }
+    function zoom(onZ) {
+      const img = panel.classList.contains("open") && $("pCorpo").querySelector("img");
+      if (onZ && img) { $("lightImg").src = img.src; light.classList.add("on"); return; }
+      if (!onZ) light.classList.remove("on");
+      zoomT = onZ ? 0.45 : 1;
+    }
+    function scroll(dy) {
+      if (panel.classList.contains("open")) $("pCorpo").scrollBy(0, dy);
+      else if (idx.classList.contains("open")) idx.scrollBy(0, dy);
+      else look(0, dy * 0.6);
+    }
+    function sendState() {
+      if (!phone) return;
+      const st = { t: "state", phone, place: placeIdx, view: viewIdx, views: cur().views.length, id: cur().id, title: cur().t, k: cur().k, panel: panel.classList.contains("open"), music: !!(music && !music.paused), places: places.map((p, i) => ({ i, id: p.id, t: p.t, k: p.k })) };
+      const js = JSON.stringify(st); if (js === lastState) return; lastState = js; send(st);
+    }
+    setInterval(() => { if (phone) { sendState(); if (performance.now() - lastSeen > 20000) chip.querySelector("span").textContent = "Controle sem sinal"; else chip.querySelector("span").textContent = "Controle conectado"; } }, 400);
+    setInterval(() => { if (phone) { lastState = ""; sendState(); } }, 5000); // reenvia de vez em quando, caso algo se perca
+    function onMsg(m) {
+      if (!m || m.code !== code) return;
+      if (m.t === "hello") {
+        if (!phone || phone === m.phone || performance.now() - lastSeen > 20000) { phone = m.phone; lastSeen = performance.now(); paired(); send({ t: "paired", phone }); }
+        else send({ t: "busy", phone: m.phone });
+        return;
+      }
+      if (m.phone !== phone) return; lastSeen = performance.now();
+      switch (m.t) {
+        case "move": moveTo(pos.x + m.dx * innerWidth, pos.y + m.dy * innerWidth); break;
+        case "click": clickHere(); break;
+        case "look": look(m.dx, m.dy); break;
+        case "scroll": scroll(m.dy); break;
+        case "next": next(); break;
+        case "prev": prev(); break;
+        case "go": go(m.i); break;
+        case "close": closePanel(); closeIndex(); light.classList.remove("on"); zoomT = 1; break;
+        case "zoom": zoom(!!m.on); break;
+        case "spot": spot.classList.toggle("on", !!m.on); break;
+        case "music": toggleMusic(); break;
+        case "home": go(0); break;
+        case "bye": unpair(); break;
+      }
+      sendState();
+    }
+    $("apresentar").addEventListener("click", open); $("veuFechar").addEventListener("click", close);
+    addEventListener("keydown", (e) => { if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return; if (e.key.toLowerCase() === "p") { if (veu.classList.contains("on") && !veu.classList.contains("lift")) close(); else open(); } else if (e.key === "Escape" && veu.classList.contains("on") && !phone) close(); });
+    return { open, close, state: () => ({ code, phone, on, pos: { ...pos } }) };
+  })();
+  window.biblioteca.remote = Remote;
+
   /* ---------------- acabamento de imagem ---------------- */
   const rt = new T.WebGLRenderTarget(2, 2, { depthBuffer: true });
   const post = new T.Mesh(new T.PlaneGeometry(2, 2), new T.ShaderMaterial({
@@ -804,7 +908,8 @@
   const postScene = new T.Scene(); postScene.add(post); const postCam = new T.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
   /* ---------------- laço ---------------- */
-  function resize() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); rt.setSize(Math.floor(w * DPR), Math.floor(h * DPR)); post.material.uniforms.uRes.value.set(w * DPR, h * DPR); camera.aspect = w / h; camera.fov = w / h < 0.8 ? 72 : 58; camera.updateProjectionMatrix(); }
+  let baseFov = 58;
+  function resize() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); rt.setSize(Math.floor(w * DPR), Math.floor(h * DPR)); post.material.uniforms.uRes.value.set(w * DPR, h * DPR); camera.aspect = w / h; baseFov = w / h < 0.8 ? 72 : 58; camera.fov = baseFov * zoomK; camera.updateProjectionMatrix(); }
   addEventListener("resize", resize); resize();
   const clock = new T.Clock(); let clockT = 0; const tmp = new T.Vector3(), la = new T.Vector3();
   function frame() {
@@ -825,6 +930,7 @@
     const yaw = Math.atan2(dir.z, dir.x) + cam.yaw, pitch = Math.asin(Math.max(-0.99, Math.min(0.99, dir.y))) + cam.pitch;
     la.set(cam.pos.x + Math.cos(yaw) * Math.cos(pitch) * dist, cam.pos.y + Math.sin(pitch) * dist, cam.pos.z + Math.sin(yaw) * Math.cos(pitch) * dist);
     camera.lookAt(la);
+    if (Math.abs(zoomT - zoomK) > 0.001) { zoomK += (zoomT - zoomK) * Math.min(1, dt * 4); camera.fov = baseFov * zoomK; camera.updateProjectionMatrix(); }
     placeRooms(Math.max(0, Math.round(cam.pos.x / D)));
     updateLights(t);
     // poeira acompanha a câmera
@@ -850,7 +956,7 @@
 
   /* ---------------- abertura ---------------- */
   const fontsReady = document.fonts ? document.fonts.ready.catch(() => null) : Promise.resolve();
-  fetch("atividades.json").then((r) => (r.ok ? r.json() : [])).catch(() => []).then((list) => fontsReady.then(() => list)).then((list) => {
+  fetch("/biblioteca/atividades.json").then((r) => (r.ok ? r.json() : [])).catch(() => []).then((list) => fontsReady.then(() => list)).then((list) => {
     try { addActivityBooks(list || []); } catch (e) { console.warn("livros", e); }
     loadVisitors();
   });

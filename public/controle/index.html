@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b0806">
+<meta name="robots" content="noindex">
+<title>Controle · Rateke</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@600;800&family=Geist+Mono:wght@400;500&family=Cormorant+Garamond:wght@500;600&display=swap">
+<style>
+:root { --bg: #0b0806; --ink: #F1E6CF; --ink-2: #BBA986; --ink-3: #7E715C; --gold: #D9A441; --red: #C22026; --line: rgba(241,230,207,0.14); --card: rgba(255,240,210,0.05);
+  --f-display: "Shippori Mincho", Georgia, serif; --f-label: "Geist Mono", ui-monospace, monospace; --f-book: "Cormorant Garamond", Georgia, serif; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); overflow: hidden; overscroll-behavior: none; -webkit-user-select: none; user-select: none; }
+body { font-family: var(--f-book); display: flex; flex-direction: column; height: 100dvh; padding: max(10px, env(safe-area-inset-top)) 12px max(10px, env(safe-area-inset-bottom)); gap: 10px; }
+button { font: inherit; color: inherit; border: 1px solid var(--line); background: var(--card); border-radius: 14px; cursor: pointer; touch-action: manipulation; }
+button:active { background: rgba(217,164,65,0.18); }
+.top { display: flex; align-items: center; gap: 10px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: #C9A24A; box-shadow: 0 0 10px #C9A24A; flex: none; }
+.dot.ok { background: #5BD18A; box-shadow: 0 0 10px #5BD18A; }
+.dot.bad { background: var(--red); box-shadow: 0 0 10px var(--red); }
+.where { flex: 1; min-width: 0; }
+.where small { display: block; font: 500 0.6rem/1.3 var(--f-label); letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.where b { display: block; font: 600 1.15rem/1.2 var(--f-display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.timer { flex: none; min-width: 92px; padding: 8px 10px; text-align: center; }
+.timer b { display: block; font: 500 1.35rem/1 var(--f-label); letter-spacing: 0.04em; }
+.timer small { display: block; font: 500 0.52rem/1.3 var(--f-label); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); margin-top: 3px; }
+.timer.warn b { color: var(--gold); } .timer.late b { color: #FF6B5E; }
+.bar { height: 3px; border-radius: 3px; background: var(--line); overflow: hidden; margin-top: -4px; }
+.bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--gold), #FF6B5E); transition: width 1s linear; }
+.notes { border: 1px solid var(--line); border-radius: 14px; background: var(--card); padding: 10px 12px; max-height: 22vh; overflow: auto; }
+.notes summary { font: 500 0.6rem/1.3 var(--f-label); letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); cursor: pointer; list-style: none; }
+.notes ul { margin: 8px 0 0; padding-left: 18px; } .notes li { font: 500 1.02rem/1.38 var(--f-book); margin: 0 0 4px; }
+.notes .empty { font: 500 0.9rem var(--f-book); color: var(--ink-3); margin: 6px 0 0; }
+.pad { flex: 1; min-height: 0; position: relative; border-radius: 20px; border: 1px solid var(--line); background: radial-gradient(ellipse at 50% 40%, rgba(217,164,65,0.07), rgba(255,240,210,0.02) 70%); touch-action: none; overflow: hidden; }
+.pad .help { position: absolute; inset: auto 0 12px; text-align: center; font: 500 0.6rem/1.6 var(--f-label); letter-spacing: 0.06em; color: var(--ink-3); pointer-events: none; }
+.pad .touch { position: absolute; width: 54px; height: 54px; margin: -27px 0 0 -27px; border-radius: 50%; border: 1px solid rgba(255,210,140,0.5); background: rgba(255,200,120,0.1); pointer-events: none; opacity: 0; transition: opacity 0.2s; }
+.pad.hold { background: radial-gradient(circle at var(--hx, 50%) var(--hy, 50%), rgba(255,220,150,0.25), rgba(0,0,0,0.3) 60%); }
+.pad .mode { position: absolute; top: 10px; left: 12px; font: 500 0.56rem/1 var(--f-label); letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); pointer-events: none; }
+.row { display: grid; gap: 8px; }
+.row.main { grid-template-columns: 1fr 1.2fr 1fr; }
+.row.main button { padding: 16px 6px; font: 600 1rem/1 var(--f-display); }
+.row.tools { grid-template-columns: repeat(5, 1fr); }
+.row.tools button { padding: 11px 2px; font: 500 0.56rem/1.2 var(--f-label); letter-spacing: 0.08em; text-transform: uppercase; }
+.row.tools button.on { border-color: var(--gold); color: var(--gold); }
+.sheet { position: fixed; inset: 0; z-index: 10; background: rgba(8,6,4,0.97); padding: max(14px, env(safe-area-inset-top)) 14px 14px; display: none; flex-direction: column; gap: 10px; }
+.sheet.on { display: flex; }
+.sheet header { display: flex; justify-content: space-between; align-items: center; }
+.sheet h2 { margin: 0; font: 600 1.25rem/1.2 var(--f-display); }
+.sheet .list { overflow: auto; display: grid; gap: 6px; }
+.sheet .list button { text-align: left; padding: 12px; display: grid; grid-template-columns: 30px 1fr; gap: 4px; }
+.sheet .list button.cur { border-color: var(--gold); }
+.sheet .list i { font: 500 0.66rem var(--f-label); color: var(--gold); font-style: normal; }
+.sheet .list b { font: 600 1.05rem/1.2 var(--f-book); } .sheet .list span { grid-column: 2; font: 500 0.56rem/1.2 var(--f-label); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
+.sheet .opts { display: flex; gap: 8px; flex-wrap: wrap; } .sheet .opts button { padding: 10px 14px; font: 500 0.7rem var(--f-label); }
+.sheet .opts button.on { border-color: var(--gold); color: var(--gold); }
+.gate { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; text-align: center; padding: 24px; background: var(--bg); }
+.gate[hidden] { display: none; }
+.gate .seal { width: 54px; height: 54px; border-radius: 10px; background: var(--red); color: #fff; display: grid; place-items: center; font: 800 13px/1 var(--f-display); writing-mode: vertical-rl; text-orientation: upright; margin: 0 auto 16px; }
+.gate b { display: block; font: 600 1.4rem/1.25 var(--f-display); } .gate p { font: 500 1.05rem/1.45 var(--f-book); color: var(--ink-2); max-width: 300px; margin: 10px auto; }
+.gate input { font: 500 1.2rem var(--f-label); letter-spacing: 0.3em; text-align: center; text-transform: uppercase; width: 200px; padding: 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); color: var(--ink); margin-top: 8px; }
+.gate .go { margin-top: 12px; padding: 12px 22px; background: var(--red); border-color: var(--red); font: 500 0.75rem var(--f-label); letter-spacing: 0.12em; text-transform: uppercase; }
+</style>
+</head>
+<body>
+<div class="gate" id="gate">
+  <div>
+    <div class="seal">ラテケ</div>
+    <b id="gateT">Conectando ao portfólio</b>
+    <p id="gateP">Abra a biblioteca no computador, aperte Apresentar e escaneie o QR code.</p>
+    <div id="gateCode" hidden><input id="codeIn" maxlength="6" autocomplete="off" placeholder="CÓDIGO" aria-label="Código que aparece na tela"><br><button class="go" id="codeGo" type="button">Conectar</button></div>
+  </div>
+</div>
+<div class="top">
+  <span class="dot" id="dot" aria-hidden="true"></span>
+  <div class="where"><small id="wK">Conectando</small><b id="wT">…</b></div>
+  <button class="timer" id="timer" type="button" aria-label="Cronômetro: toque para começar ou pausar, segure para zerar"><b id="tT">00:00</b><small id="tS">toque para começar</small></button>
+</div>
+<div class="bar"><i id="tBar"></i></div>
+<details class="notes" id="notes" open><summary>Anotações</summary><div id="nBody"><p class="empty">Sem anotações para este lugar.</p></div></details>
+<div class="pad" id="pad" aria-label="Touchpad: arraste para mover o cursor, toque para clicar">
+  <span class="mode" id="padMode">Cursor</span>
+  <div class="touch" id="touchDot"></div>
+  <div class="help">arraste: cursor · toque: clicar · segure: lanterna<br>dois dedos: olhar ou rolar · pinça: ampliar</div>
+</div>
+<div class="row main">
+  <button id="bPrev" type="button" aria-label="Lugar anterior">‹ Anterior</button>
+  <button id="bList" type="button">Lugares</button>
+  <button id="bNext" type="button" aria-label="Próximo lugar">Próximo ›</button>
+</div>
+<div class="row tools">
+  <button id="bClose" type="button">Fechar</button>
+  <button id="bZoom" type="button">Ampliar</button>
+  <button id="bSpot" type="button">Lanterna</button>
+  <button id="bMusic" type="button">Música</button>
+  <button id="bMore" type="button">Mais</button>
+</div>
+<div class="sheet" id="sheet" role="dialog" aria-labelledby="sheetT">
+  <header><h2 id="sheetT">Lugares</h2><button id="sheetX" type="button" style="padding:8px 14px">Fechar</button></header>
+  <div class="list" id="list"></div>
+</div>
+<div class="sheet" id="more" role="dialog" aria-labelledby="moreT">
+  <header><h2 id="moreT">Mais</h2><button id="moreX" type="button" style="padding:8px 14px">Fechar</button></header>
+  <p style="margin:0;font:500 0.6rem var(--f-label);letter-spacing:.16em;text-transform:uppercase;color:var(--ink-2)">Tempo da apresentação</p>
+  <div class="opts" id="targets"><button type="button" data-m="10">10 min</button><button type="button" data-m="13" class="on">13 min</button><button type="button" data-m="15">15 min</button></div>
+  <p style="margin:8px 0 0;font:500 0.6rem var(--f-label);letter-spacing:.16em;text-transform:uppercase;color:var(--ink-2)">Velocidade do cursor</p>
+  <div class="opts" id="speeds"><button type="button" data-s="0.8">Lenta</button><button type="button" data-s="1.25" class="on">Normal</button><button type="button" data-s="1.8">Rápida</button></div>
+  <div class="opts" style="margin-top:8px"><button type="button" id="bHome">Voltar à entrada</button><button type="button" id="bReset">Zerar cronômetro</button><button type="button" id="bBye">Desconectar</button></div>
+</div>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const vib = (p) => { try { navigator.vibrate && navigator.vibrate(p); } catch (e) { /* sem vibração */ } };
+  let code = (location.hash || "").replace("#", "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
+  let phone = null; try { phone = sessionStorage.getItem("controle-id"); } catch (e) { /* sem storage */ }
+  if (!phone) { phone = Math.random().toString(36).slice(2, 10); try { sessionStorage.setItem("controle-id", phone); } catch (e) { /* nada */ } }
+  let ch = null, bc = null, paired = false, state = null, notes = {}, speed = 1.25;
+  const loadScript = (src) => new Promise((res, rej) => { const el = document.createElement("script"); el.src = src; el.onload = res; el.onerror = rej; document.head.appendChild(el); });
+  const send = (m) => { m.code = code; m.phone = phone; try { if (ch) ch.send({ type: "broadcast", event: "m", payload: m }); if (bc) bc.postMessage(m); } catch (e) { /* sem canal */ } };
+  function status(kind, text) { $("dot").className = "dot" + (kind ? " " + kind : ""); if (text) $("wK").textContent = text; }
+  async function connect() {
+    if (!code) { $("gateT").textContent = "Qual é o código?"; $("gateP").textContent = "Ele aparece embaixo do QR code, na tela do computador."; $("gateCode").hidden = false; return; }
+    $("gateCode").hidden = true; $("gateT").textContent = "Conectando ao portfólio"; $("gateP").textContent = "Código " + code;
+    let cfg = null; try { const r = await fetch("/api/config", { cache: "no-store" }); if (r.ok) cfg = await r.json(); } catch (e) { /* sem rota */ }
+    if (cfg && cfg.ok) {
+      try {
+        if (!window.supabase) await loadScript("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js");
+        const sb = window.supabase.createClient(cfg.url, cfg.key, { auth: { persistSession: false } });
+        ch = sb.channel("controle-" + code, { config: { broadcast: { self: false } } });
+        ch.on("broadcast", { event: "m" }, ({ payload }) => onMsg(payload)).subscribe((s) => { if (s === "SUBSCRIBED") hello(); });
+      } catch (e) { ch = null; }
+    }
+    if (!ch && "BroadcastChannel" in window) { bc = new BroadcastChannel("controle-" + code); bc.onmessage = (e) => onMsg(e.data); hello(); }
+    if (!ch && !bc) { $("gateT").textContent = "Este navegador não consegue conectar"; return; }
+    setInterval(() => { if (!paired) hello(); else send({ t: "ping" }); }, paired ? 3000 : 2000);
+  }
+  function hello() { send({ t: "hello" }); }
+  $("codeGo").addEventListener("click", () => { code = $("codeIn").value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6); if (code.length === 6) { location.hash = code; connect(); } });
+  function onMsg(m) {
+    if (!m || m.code !== code || m.phone !== phone) return;
+    if (m.t === "paired") { paired = true; $("gate").hidden = true; status("ok", "Conectado"); vib(30); }
+    else if (m.t === "busy") { $("gate").hidden = false; $("gateT").textContent = "Outro celular já está controlando"; $("gateP").textContent = "Só um celular controla por vez. Se o outro desconectar, este entra sozinho."; status("bad"); }
+    else if (m.t === "state") { paired = true; $("gate").hidden = true; state = m; render(); }
+  }
+  function render() {
+    if (!state) return;
+    $("wK").textContent = `${state.place + 1} de ${state.places.length} · ${state.k}${state.views > 1 ? ` · vista ${state.view + 1}/${state.views}` : ""}`;
+    $("wT").textContent = state.title; status("ok");
+    $("bMusic").classList.toggle("on", !!state.music);
+    const n = notes[state.id];
+    $("nBody").innerHTML = n && n.length ? "<ul>" + n.map((x) => `<li>${String(x).replace(/[&<]/g, (c) => (c === "&" ? "&amp;" : "&lt;"))}</li>`).join("") + "</ul>" : `<p class="empty">Sem anotações para este lugar.</p>`;
+    $("list").innerHTML = state.places.map((p) => `<button type="button" data-i="${p.i}" class="${p.i === state.place ? "cur" : ""}"><i>${String(p.i + 1).padStart(2, "0")}</i><b>${p.t}</b><span>${p.k}</span></button>`).join("");
+  }
+  fetch("/biblioteca/notas.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : {})).then((j) => { notes = j || {}; render(); }).catch(() => {});
+
+  /* botões */
+  const tap = (id, fn) => $(id).addEventListener("click", () => { vib(8); fn(); });
+  tap("bPrev", () => send({ t: "prev" })); tap("bNext", () => send({ t: "next" }));
+  tap("bList", () => $("sheet").classList.add("on")); tap("sheetX", () => $("sheet").classList.remove("on"));
+  $("list").addEventListener("click", (e) => { const b = e.target.closest("button[data-i]"); if (!b) return; vib(8); send({ t: "go", i: +b.dataset.i }); $("sheet").classList.remove("on"); });
+  tap("bClose", () => { send({ t: "close" }); zoomOn = false; $("bZoom").classList.remove("on"); });
+  let zoomOn = false; tap("bZoom", () => { zoomOn = !zoomOn; $("bZoom").classList.toggle("on", zoomOn); send({ t: "zoom", on: zoomOn }); });
+  let spotOn = false; const setSpot = (v) => { spotOn = v; $("bSpot").classList.toggle("on", v); send({ t: "spot", on: v }); };
+  tap("bSpot", () => setSpot(!spotOn));
+  tap("bMusic", () => send({ t: "music" }));
+  tap("bMore", () => $("more").classList.add("on")); tap("moreX", () => $("more").classList.remove("on"));
+  tap("bHome", () => { send({ t: "home" }); $("more").classList.remove("on"); });
+  tap("bBye", () => { send({ t: "bye" }); paired = false; $("gate").hidden = false; $("gateT").textContent = "Desconectado"; $("gateP").textContent = "Recarregue esta página para conectar de novo."; $("more").classList.remove("on"); });
+  $("speeds").addEventListener("click", (e) => { const b = e.target.closest("button[data-s]"); if (!b) return; speed = +b.dataset.s; [...$("speeds").children].forEach((x) => x.classList.toggle("on", x === b)); });
+
+  /* cronômetro: avisos discretos por vibração 2 minutos antes, na meta e 2 minutos depois */
+  let target = 13 * 60, run = false, acc = 0, t0 = 0, warned = {};
+  $("targets").addEventListener("click", (e) => { const b = e.target.closest("button[data-m]"); if (!b) return; target = +b.dataset.m * 60; [...$("targets").children].forEach((x) => x.classList.toggle("on", x === b)); warned = {}; });
+  const el = () => acc + (run ? (Date.now() - t0) / 1000 : 0);
+  let holdT = null;
+  $("timer").addEventListener("pointerdown", () => { holdT = setTimeout(() => { holdT = null; acc = 0; run = false; warned = {}; vib([20, 60, 20]); tick(); }, 700); });
+  $("timer").addEventListener("pointerup", () => { if (!holdT) return; clearTimeout(holdT); holdT = null; if (run) { acc = el(); run = false; } else { t0 = Date.now(); run = true; } vib(10); tick(); });
+  tap("bReset", () => { acc = 0; run = false; warned = {}; tick(); });
+  function tick() {
+    const s = el(), m = Math.floor(s / 60), r = Math.floor(s % 60);
+    $("tT").textContent = `${String(m).padStart(2, "0")}:${String(r).padStart(2, "0")}`;
+    $("tS").textContent = run ? `meta ${target / 60} min` : s > 0 ? "pausado" : "toque para começar";
+    $("tBar").style.width = Math.min(100, s / target * 100) + "%";
+    const T = $("timer"); T.classList.toggle("warn", s > target - 120 && s <= target); T.classList.toggle("late", s > target);
+    if (run) { if (s > target - 120 && !warned.a) { warned.a = 1; vib(120); } if (s > target && !warned.b) { warned.b = 1; vib([200, 120, 200]); } if (s > target + 120 && !warned.c) { warned.c = 1; vib([300, 150, 300, 150, 300]); } }
+  }
+  setInterval(tick, 500); tick();
+
+  /* touchpad */
+  const pad = $("pad"), dotT = $("touchDot"); const touches = new Map(); let acc2 = { dx: 0, dy: 0 }, look = { dx: 0, dy: 0 }, scroll = 0;
+  let start = null, moved = 0, long = null, holding = false, pinch0 = 0, two = false;
+  const rect = () => pad.getBoundingClientRect();
+  function showDot(x, y, on) { const r = rect(); dotT.style.left = (x - r.left) + "px"; dotT.style.top = (y - r.top) + "px"; dotT.style.opacity = on ? 1 : 0; pad.style.setProperty("--hx", (x - r.left) + "px"); pad.style.setProperty("--hy", (y - r.top) + "px"); }
+  pad.addEventListener("pointerdown", (e) => {
+    pad.setPointerCapture(e.pointerId); touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (touches.size === 1) {
+      start = { x: e.clientX, y: e.clientY, t: performance.now() }; moved = 0; two = false; showDot(e.clientX, e.clientY, true);
+      clearTimeout(long); long = setTimeout(() => { if (moved < 10 && touches.size === 1) { holding = true; pad.classList.add("hold"); $("padMode").textContent = "Lanterna"; send({ t: "spot", on: true }); vib(25); } }, 480);
+    } else if (touches.size === 2) { two = true; clearTimeout(long); const [a, b] = [...touches.values()]; pinch0 = Math.hypot(a.x - b.x, a.y - b.y); $("padMode").textContent = "Olhar"; }
+  });
+  pad.addEventListener("pointermove", (e) => {
+    const p = touches.get(e.pointerId); if (!p) return;
+    const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY;
+    if (touches.size === 1 && !two) { moved += Math.abs(dx) + Math.abs(dy); const w = rect().width; acc2.dx += dx / w * speed; acc2.dy += dy / w * speed; showDot(e.clientX, e.clientY, true); }
+    else if (touches.size === 2) {
+      look.dx += dx / 2; look.dy += dy / 2; scroll += dy / 2 * 2.2;
+      const [a, b] = [...touches.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y);
+      if (pinch0 && d / pinch0 > 1.35 && !zoomOn) { zoomOn = true; $("bZoom").classList.add("on"); send({ t: "zoom", on: true }); vib(15); pinch0 = d; }
+      else if (pinch0 && d / pinch0 < 0.72 && zoomOn) { zoomOn = false; $("bZoom").classList.remove("on"); send({ t: "zoom", on: false }); vib(15); pinch0 = d; }
+    }
+  });
+  const up = (e) => {
+    if (!touches.has(e.pointerId)) return; touches.delete(e.pointerId);
+    if (touches.size === 0) {
+      clearTimeout(long); showDot(0, 0, false);
+      if (holding) { holding = false; pad.classList.remove("hold"); send({ t: "spot", on: spotOn }); }
+      else if (!two && start && moved < 10 && performance.now() - start.t < 320) { send({ t: "click" }); vib(12); }
+      two = false; $("padMode").textContent = "Cursor";
+    }
+  };
+  pad.addEventListener("pointerup", up); pad.addEventListener("pointercancel", up);
+  // manda o movimento acumulado ~40 vezes por segundo
+  setInterval(() => {
+    if (Math.abs(acc2.dx) + Math.abs(acc2.dy) > 0.0004) { send({ t: "move", dx: +acc2.dx.toFixed(4), dy: +acc2.dy.toFixed(4) }); acc2.dx = acc2.dy = 0; }
+    if (Math.abs(look.dx) + Math.abs(look.dy) > 0.5) {
+      if (state && state.panel) { send({ t: "scroll", dy: Math.round(scroll) }); } else send({ t: "look", dx: Math.round(look.dx * 2), dy: Math.round(look.dy * 2) });
+      look.dx = look.dy = 0; scroll = 0;
+    }
+  }, 25);
+  addEventListener("contextmenu", (e) => e.preventDefault());
+  connect();
+})();
+</script>
+</body>
+</html>

@@ -5,12 +5,15 @@ const nextConfig: NextConfig = {
     return {
       // A experiência do Vale (página estática em public/vale) é a página inicial
       beforeFiles: [
-        { source: "/", destination: "/vale/index.html" },
+        // a capa agora é a Biblioteca Infinita; o vale continua em /vale
+        { source: "/", destination: "/biblioteca/index.html" },
         { source: "/vale", destination: "/vale/index.html" },
         // moderação das emas: página estática; a senha é conferida nas rotas /api/admin
         { source: "/admin", destination: "/admin/index.html" },
         // a Biblioteca Infinita: página própria, com as atividades nas estantes
         { source: "/biblioteca", destination: "/biblioteca/index.html" },
+        // o controle pelo celular do modo apresentação
+        { source: "/controle", destination: "/controle/index.html" },
       ],
       afterFiles: [],
       fallback: [],
@@ -23,6 +26,7 @@ const nextConfig: NextConfig = {
     const cache = [{ key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" }];
     return [
       { source: "/vale/three.min.js", headers: cache },
+      { source: "/biblioteca/modelos/:file*", headers: cache },
       { source: "/vale/:dir(audio|nos|perfil|grim|trem|modelos)/:file*", headers: cache },
     ];
   },

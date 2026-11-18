@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Biblioteca Infinita · Rateke</title>
+<meta property="og:title" content="Rateke · Portfólio 2026">
+<meta property="og:description" content="A jornada é o que dá forma ao mundo.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="/og.png">
 <meta name="description" content="A biblioteca infinita do portfólio de Fernando Rateke: um salão de estantes sem fim, as salas das matérias, os certificados e as portas para os mundos.">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -100,6 +104,38 @@ body.flying .hud.fade-on-fly { opacity: 0.35; }
 .fade { position: fixed; inset: 0; background: #050403; z-index: 20; transition: opacity 1.8s; pointer-events: none; display: grid; place-items: center; }
 .fade.gone { opacity: 0; }
 .fade p { font: 500 0.62rem/1 var(--f-label); letter-spacing: 0.24em; text-transform: uppercase; color: var(--ink-3); }
+
+.hero { position: fixed; z-index: 4; left: 50%; top: 18%; transform: translateX(-50%); text-align: center; pointer-events: none; transition: opacity 1.6s; text-shadow: 0 2px 24px rgba(0,0,0,0.9); }
+.hero small { display: block; font: 500 0.62rem/1.4 var(--f-label); letter-spacing: 0.24em; text-transform: uppercase; color: var(--ink-2); margin-bottom: 10px; }
+.hero b { font: 600 clamp(1.6rem, 4vw, 3rem)/1.12 var(--f-display); color: var(--ink); }
+.hero.off { opacity: 0; }
+.veu { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; background: radial-gradient(ellipse at 50% 40%, rgba(20,14,10,0.92), rgba(2,1,1,0.98)); opacity: 0; pointer-events: none; transition: opacity 0.9s, clip-path 1.4s cubic-bezier(.7,0,.2,1); clip-path: inset(0 0 100% 0); }
+.veu.on { opacity: 1; pointer-events: auto; clip-path: inset(0 0 0 0); }
+.veu.lift { clip-path: inset(0 0 100% 0); opacity: 1; }
+.veu-in { text-align: center; display: grid; gap: 12px; justify-items: center; padding: 24px; }
+.veu small { font: 500 0.62rem/1.3 var(--f-label); letter-spacing: 0.24em; text-transform: uppercase; color: var(--gold); }
+.veu b { font: 600 clamp(1.4rem, 3vw, 2.2rem)/1.15 var(--f-display); }
+.veu .qr { background: #F3EAD6; padding: 14px; border-radius: 12px; line-height: 0; box-shadow: 0 0 60px rgba(217,164,65,0.25); }
+.veu .qr img, .veu .qr canvas { width: min(260px, 56vw); height: auto; image-rendering: pixelated; }
+.veu .code { font: 500 0.8rem/1 var(--f-label); color: var(--ink-2); letter-spacing: 0.12em; margin: 0; }
+.veu .code span { color: var(--ink); letter-spacing: 0.3em; }
+.veu .note { font: 500 1rem/1.4 var(--f-book); color: var(--ink-2); max-width: 380px; margin: 0; }
+.cursor { position: fixed; z-index: 25; left: 0; top: 0; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%; pointer-events: none; opacity: 0; transition: opacity 0.4s, width 0.2s, height 0.2s, margin 0.2s; background: radial-gradient(circle, rgba(255,236,190,0.95) 0 22%, rgba(255,190,90,0.55) 36%, rgba(255,170,60,0) 70%); box-shadow: 0 0 22px 6px rgba(255,180,80,0.35); }
+.cursor.on { opacity: 1; }
+.cursor.hot { width: 38px; height: 38px; margin: -19px 0 0 -19px; }
+.cursor.tap { animation: tap 0.35s; }
+@keyframes tap { 50% { transform: scale(0.6); } }
+.lanterna { position: fixed; inset: 0; z-index: 24; pointer-events: none; opacity: 0; transition: opacity 0.5s; background: radial-gradient(circle 160px at var(--x, 50%) var(--y, 50%), rgba(0,0,0,0) 0 60%, rgba(0,0,0,0.82) 100%); }
+.lanterna.on { opacity: 1; }
+.lightbox { position: fixed; inset: 0; z-index: 26; background: rgba(4,3,2,0.92); display: grid; place-items: center; opacity: 0; pointer-events: none; transition: opacity 0.4s; }
+.lightbox.on { opacity: 1; pointer-events: auto; }
+.lightbox img { max-width: 92vw; max-height: 88vh; border-radius: 8px; box-shadow: 0 20px 80px #000; transition: transform 0.3s; }
+.ctl { position: fixed; z-index: 6; top: calc(max(16px, env(safe-area-inset-top)) + 46px); right: 16px; display: flex; gap: 8px; align-items: center; padding: 7px 12px; border-radius: 999px; background: var(--glass); border: 1px solid var(--line); font: 500 0.6rem/1 var(--f-label); letter-spacing: 0.12em; text-transform: uppercase; }
+.ctl[hidden] { display: none; }
+.veu .qr .alt { line-height: 1.4; font: 500 0.9rem var(--f-label); color: #2A211A; padding: 18px 10px; max-width: 260px; word-break: break-all; }
+.ctl i { width: 8px; height: 8px; border-radius: 50%; background: #5BD18A; box-shadow: 0 0 8px #5BD18A; }
+body.apresentando .nav, body.apresentando .left-bottom, body.apresentando .right-bottom, body.apresentando .top-right { opacity: 0.0; pointer-events: none; }
+body.apresentando canvas#lib { cursor: none; }
 @media (max-width: 640px) {
   .top-right { left: 16px; right: 16px; top: calc(max(16px, env(safe-area-inset-top)) + 46px); }
   .search { width: 100%; }
@@ -112,8 +148,9 @@ body.flying .hud.fade-on-fly { opacity: 0.35; }
 </head>
 <body>
 <canvas id="lib" tabindex="0" aria-label="Biblioteca infinita em 3D. Use as setas para ir de um lugar ao outro e arraste para olhar em volta."></canvas>
-<div class="hud brand fade-on-fly"><a href="/" title="Voltar ao vale"><span class="seal">ラテケ</span><span><b>Biblioteca Infinita</b><small>Fernando Rateke · Portfólio 2026</small></span></a></div>
+<div class="hud brand fade-on-fly"><a href="/" title="Início"><span class="seal">ラテケ</span><span><b>Biblioteca Infinita</b><small>Fernando Rateke · Portfólio 2026</small></span></a></div>
 <div class="hud top-right fade-on-fly">
+  <button class="pill" id="apresentar" type="button" title="Controlar pelo celular (tecla P)">Apresentar</button>
   <div class="search" role="search">
     <input id="busca" type="search" placeholder="Procurar nas estantes" autocomplete="off" aria-label="Procurar uma atividade nas estantes" aria-controls="resultados">
     <ul id="resultados" class="results" hidden></ul>
@@ -125,7 +162,7 @@ body.flying .hud.fade-on-fly { opacity: 0.35; }
   <button class="arrow" id="prox" type="button" aria-label="Próximo lugar">›</button>
 </div>
 <div class="hud left-bottom fade-on-fly"><button class="pill" id="abrirIndice" type="button">Lugares</button></div>
-<div class="hud right-bottom fade-on-fly"><a class="pill" href="/">Voltar ao vale</a></div>
+<div class="hud right-bottom fade-on-fly"><a class="pill" href="/vale">Ir ao vale</a></div>
 <div class="hint" id="dica">Setas ou os botões embaixo para ir de um lugar ao outro · arraste para olhar em volta<br>Clique nos livros que brilham, nas fendas e nos objetos da mesa</div>
 <nav class="index" id="indice" aria-label="Lugares da biblioteca" aria-hidden="true">
   <button class="pill x" id="fecharIndice" type="button" aria-label="Fechar">Fechar</button>
@@ -137,10 +174,26 @@ body.flying .hud.fade-on-fly { opacity: 0.35; }
   <div class="body" id="pCorpo"></div>
 </aside>
 <div class="toast" id="aviso" role="status" aria-live="polite"><small id="avisoK"></small><b id="avisoT"></b><span id="avisoS"></span></div>
+<div class="hero" id="hero" aria-hidden="true"><small>Fernando Rateke · Portfólio 2026</small><b>A jornada é o que<br>dá forma ao mundo.</b></div>
+<!-- modo apresentação: o véu com o QR, o cursor e a lanterna do controle pelo celular -->
+<div class="veu" id="veu" aria-hidden="true" role="dialog" aria-labelledby="veuT">
+  <div class="veu-in">
+    <small>Modo apresentação</small>
+    <b id="veuT">Escaneie com o celular</b>
+    <div class="qr" id="qr"></div>
+    <p class="code">código <span id="veuCode">------</span></p>
+    <p class="note" id="veuNota">O primeiro celular que entrar vira o controle. Os outros não conseguem mexer em nada.</p>
+    <button class="pill" id="veuFechar" type="button">Fechar</button>
+  </div>
+</div>
+<div class="cursor" id="cursor" aria-hidden="true"></div>
+<div class="lanterna" id="lanterna" aria-hidden="true"></div>
+<div class="lightbox" id="lightbox" aria-hidden="true"><img id="lightImg" alt=""></div>
+<div class="ctl" id="ctl" aria-live="polite" hidden><i></i><span>Controle conectado</span></div>
 <div class="fade" id="fade"><p>Abrindo as estantes</p></div>
-<noscript><div style="position:fixed;inset:0;display:grid;place-items:center;padding:24px;text-align:center">A biblioteca precisa de JavaScript e WebGL. A versão em texto do portfólio está em <a href="/">fernando rateke · portfólio</a>.</div></noscript>
+<noscript><div style="position:fixed;inset:0;display:grid;place-items:center;padding:24px;text-align:center">A biblioteca precisa de JavaScript e WebGL. A versão em texto do portfólio está em <a href="/vale">fernando rateke · portfólio</a>.</div></noscript>
 <script src="/vale/three.min.js"></script>
 <script src="/vale/gltf.js"></script>
-<script src="biblioteca.js"></script>
+<script src="/biblioteca/biblioteca.js"></script>
 </body>
 </html>

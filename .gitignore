@@ -17,3 +17,4 @@ next-env.d.ts
 # sistema / logs
 .DS_Store
 npm-debug.log*
+.venv-usd/

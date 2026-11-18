@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -m venv .venv-usd)",
+      "Bash(.venv-usd/bin/pip install usd-core *)",
+      "Bash(.venv-usd/bin/pip install usd-core)",
+      "Bash(.venv-usd/bin/python *)"
+    ]
+  }
+}

@@ -850,16 +850,53 @@
     fold(p, done);
   }
 
+  /* ---------------- os mundos: cada fenda abre uma cena própria, baixada só quando a pessoa entra ---------------- */
+  const WORLD_FILE = { 5: "fios" };
+  let world = null, worldOf = null; const worldLoads = {};
+  function loadWorld(id) {
+    if (window.MUNDOS && window.MUNDOS[id]) return Promise.resolve(window.MUNDOS[id]);
+    return worldLoads[id] || (worldLoads[id] = new Promise((ok, no) => { const el = document.createElement("script"); el.src = "/biblioteca/mundos/" + id + ".js"; el.onload = () => (window.MUNDOS && window.MUNDOS[id] ? ok(window.MUNDOS[id]) : no()); el.onerror = no; document.head.appendChild(el); }));
+  }
+  const worldCtx = () => ({ T, base: "/biblioteca/mundos/", reduce, small, glowTex, esc, showPanel, closePanel, toast, aspect: () => innerWidth / innerHeight, subjects: () => subjects });
+  const riftFront = (w) => w.pos.clone().addScaledVector(V3(w.nx, 0, w.nz), 1.6).setY(w.room.c.y + 1.75);
+  function enterWorld(w) {
+    const id = WORLD_FILE[w.k];
+    if (!id) { toast(w.s, w.t, "Este mundo ainda está sendo construído. A fenda já está aberta, falta o outro lado."); return; }
+    if (world || (fly && !fly.hold)) return;
+    closePanel(true); const ld = loadWorld(id);
+    glide([cam.pos.clone(), riftFront(w)], w.pos.clone(), () => {
+      veil.style.setProperty("--wc", w.c); veil.classList.add("on", "mundo"); document.body.classList.add("flying");
+      Promise.all([ld, new Promise((r) => setTimeout(r, reduce ? 0 : 750))]).then(([make]) => {
+        try { world = make(worldCtx()); } catch (e) { console.warn("mundo", e); world = null; }
+        if (world) { worldOf = w; world.resize(innerWidth, innerHeight); document.body.classList.add("no-mundo"); }
+        document.body.classList.remove("flying"); veil.classList.remove("on"); setTimeout(() => veil.classList.remove("mundo"), 700); label();
+      }).catch(() => { veil.classList.remove("on", "mundo"); document.body.classList.remove("flying"); toast(w.s, w.t, "Não deu para abrir este mundo agora."); });
+    }, 1.6);
+  }
+  function exitWorld(then) {
+    if (!world) { if (then) then(); return; }
+    closePanel(true); veil.style.setProperty("--wc", worldOf.c); veil.classList.add("on", "mundo");
+    setTimeout(() => {
+      try { world.dispose(); } catch (e) { /* nada */ }
+      const w = worldOf; world = null; worldOf = null; document.body.classList.remove("no-mundo"); hotC = null; rotulo.classList.remove("on");
+      cam.pos.copy(riftFront(w)); cam.tgt.copy(w.pos); cam.yaw = cam.pitch = cam.yawT = cam.pitchT = 0; lookReady = false; latKey = "";
+      veil.classList.remove("on"); setTimeout(() => veil.classList.remove("mundo"), 700); label();
+      if (then) then(); else glide([cam.pos.clone(), cur().pose.pos], cur().pose.tgt, null, 2.0);
+    }, reduce ? 0 : 650);
+  }
+
   /* ---------------- navegação ---------------- */
   const cur = () => places[placeIdx];
   const hist = []; let quietT = 0;
   function label() {
-    $("aquiK").textContent = cur().g; $("aquiT").textContent = cur().t; $("voltar").hidden = !hist.length;
+    if (world) { $("aquiK").textContent = "Mundo · " + (worldOf ? worldOf.s : ""); $("aquiT").textContent = world.name; $("voltar").hidden = false; }
+    else { $("aquiK").textContent = cur().g; $("aquiT").textContent = cur().t; $("voltar").hidden = !hist.length; }
     const nav = $("nav"); nav.classList.remove("quiet"); clearTimeout(quietT); quietT = setTimeout(() => nav.classList.add("quiet"), 4200);
   }
   function go(i, instant = false, fromBack = false, done) {
     if (typeof i === "string") i = places.findIndex((p) => p.id === i);
     if (i < 0 || i >= places.length) return;
+    if (world) { closeIndex(); exitWorld(() => go(i, instant, fromBack, done)); return; }
     closePanel(true); closeIndex(); focus = null; hotC = null; canvas.classList.remove("hot"); rotulo.classList.remove("on");
     const from = cur(), to = places[i];
     if (!fromBack && !instant && i !== placeIdx) { hist.push(placeIdx); if (hist.length > 30) hist.shift(); }
@@ -868,7 +905,7 @@
     else if (fly) fold(to, done); else travel(from.room, to, done);
     label(); renderIndex(); hint();
   }
-  function back() { if (panel.classList.contains("open")) { closePanel(); return; } const i = hist.pop(); if (i != null) go(i, false, true); $("voltar").hidden = !hist.length; }
+  function back() { if (panel.classList.contains("open")) { closePanel(); return; } if (world) { if (!world.back()) exitWorld(); return; } const i = hist.pop(); if (i != null) go(i, false, true); $("voltar").hidden = !hist.length; }
   $("voltar").addEventListener("click", back);
   function renderIndex() {
     const groups = []; places.forEach((p, i) => { let g = groups.find((x) => x.g === p.g); if (!g) groups.push(g = { g: p.g, items: [] }); g.items.push([p, i]); });
@@ -889,18 +926,24 @@
     openThing = thing || null; $("pKick").textContent = kick; $("pTitulo").textContent = title; $("pCorpo").innerHTML = html;
     panel.classList.add("open"); panel.setAttribute("aria-hidden", "false");
   }
-  function closePanel(silent) { if (!panel.classList.contains("open")) return; panel.classList.remove("open"); panel.setAttribute("aria-hidden", "true"); openThing = null; books.concat(visitorBooks).forEach((b) => (b.open = false)); if (focus) { focus = null; if (!silent) glide([cam.pos.clone(), cur().pose.pos], cur().pose.tgt, null, 1.8); } }
+  function closePanel(silent) { if (!panel.classList.contains("open")) return; panel.classList.remove("open"); panel.setAttribute("aria-hidden", "true"); openThing = null; if (world && !silent && !panelStack) world.back(); books.concat(visitorBooks).forEach((b) => (b.open = false)); if (focus) { focus = null; if (!silent) glide([cam.pos.clone(), cur().pose.pos], cur().pose.tgt, null, 1.8); } }
   $("pFechar").addEventListener("click", () => closePanel());
-  $("pCorpo").addEventListener("click", (e) => { const a = e.target.closest("[data-go]"); if (a) { e.preventDefault(); go(a.dataset.go); } });
+  $("pCorpo").addEventListener("click", (e) => {
+    const a = e.target.closest("[data-go], [data-ativ], [data-sala]"); if (!a) return; e.preventDefault();
+    if (a.dataset.go) go(a.dataset.go);
+    else if (a.dataset.ativ) { const [name, i] = a.dataset.ativ.split("|"); const b = books.find((x) => x.sub.name === name && x.sub.acts.indexOf(x.a) === +i); if (b) showBook(b); }
+    else if (a.dataset.sala) { const sj = subjects.find((x) => x.name === a.dataset.sala); if (sj) showPanel(sj.cat === "curso-tecnico" ? "Curso técnico" : "Ensino médio", sj.name, `<p>${esc(sj.desc || "")}</p><div class="links">${sj.acts.map((x, i) => `<a href="#" data-ativ="${esc(sj.name)}|${i}">${esc(x.t)}</a>`).join("")}</div>`); }
+  });
   let toastT = 0;
   function toast(k, t, s) { $("avisoK").textContent = k; $("avisoT").textContent = t; $("avisoS").textContent = s || ""; const el = $("aviso"); el.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove("on"), 3600); }
-  function openBook(b) {
+  function openBook(b) { showBook(b); focusOn(b.g.position, b.nx, b.nz, 1.35); }
+  let panelStack = false;
+  function showBook(b) {
     books.forEach((o) => (o.open = o === b));
     const k = (b.a.k || []).map(([code, txt]) => `<li><b>${esc(code)}</b>${esc(txt)}</li>`).join("");
     const l = (b.a.l || []).map(([txt, url]) => `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(txt)}</a>`).join("");
     const img = b.a.img ? `<img src="${esc(/^https?:/.test(b.a.img) ? b.a.img : "/vale/" + b.a.img)}" alt="" loading="lazy">` : "";
     showPanel(`${b.sub.name} · ${b.a.s || ""}`, b.a.t, img + `<p>${esc(b.a.r)}</p>` + (k ? `<h3>Competências</h3><ul class="k">${k}</ul>` : "") + (l ? `<h3>Ver</h3><div class="links">${l}</div>` : ""), b);
-    focusOn(b.g.position, b.nx, b.nz, 1.35);
   }
   function focusOn(p, nx, nz, dist) { focus = { pos: V3(p.x + nx * dist, p.y + 0.14, p.z + nz * dist), tgt: V3(p.x, p.y + 0.15, p.z) }; glide([cam.pos.clone(), focus.pos], focus.tgt, null, 1.8); }
   function formRecado() {
@@ -928,7 +971,8 @@
   function activate(c) {
     switch (c.kind) {
       case "livro": openBook(c.data); break;
-      case "mundo": toast(c.data.s, c.data.t, "Este mundo ainda está sendo construído. A fenda já está aberta, falta o outro lado."); break;
+      case "mundo": enterWorld(c.data); break;
+      case "w": c.go(); break;
       case "recado": formRecado(); break;
       case "busca": openIndex(); setTimeout(() => busca.focus(), 350); break;
       case "indice": openIndex(); break;
@@ -973,15 +1017,15 @@
   });
   canvas.addEventListener("pointerup", (e) => { if (!drag || drag.id !== e.pointerId) return; canvas.classList.remove("drag"); if (drag.moved < 7) { ptr.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1); clickAt(ptr); } drag = null; });
   canvas.addEventListener("pointercancel", () => { drag = null; canvas.classList.remove("drag"); });
-  function look(dx, dy) { if (fly) return; cam.yawT -= dx * 0.0032; cam.pitchT = Math.max(-0.3, Math.min(0.3, cam.pitchT - dy * 0.003)); }
+  function look(dx, dy) { if (world) { world.look(dx, dy); return; } if (fly) return; cam.yawT -= dx * 0.0032; cam.pitchT = Math.max(-0.3, Math.min(0.3, cam.pitchT - dy * 0.003)); }
   const rc = new T.Raycaster();
-  function pick(p) { rc.setFromCamera(p, camera); const h = rc.intersectObjects(clickables, false)[0]; return h && h.distance < 30 ? h.object.userData.click : null; }
+  function pick(p) { if (world) { const it = world.pick(p); return it ? { kind: "w", label: it.label, go: it.go } : null; } rc.setFromCamera(p, camera); const h = rc.intersectObjects(clickables, false)[0]; return h && h.distance < 30 ? h.object.userData.click : null; }
   const rotulo = $("rotulo");
   function labelOf(c) {
     if (c.label) return c.label;
     const d = c.data || {};
     if (c.kind === "livro") return [d.a && d.a.t || "Atividade", "Abrir"];
-    if (c.kind === "mundo") return [d.t, d.s + " · em construção"];
+    if (c.kind === "mundo") return [d.t, d.s + (WORLD_FILE[d.k] ? " · entrar" : " · em construção")];
     if (c.kind === "porta") return [d.to.t, FACE[d.m].ramp ? (FACE[d.m].up ? "subir a rampa" : "descer a rampa") : "seguir pelo corredor"];
     if (c.kind === "cert") return ["Certificado", d.cf && d.cf.t || "Ver de perto"];
     if (c.kind === "visitante") return [d.visitor && d.visitor.nome || "Visitante", "Ler o recado"];
@@ -999,13 +1043,14 @@
 
   /* ---------------- o controle pelo celular fala por aqui ---------------- */
   window.biblioteca = {
+    enter: (k) => { const w = rifts.find((x) => x.k === k); if (w) enterWorld(w); }, leave: () => exitWorld(),
     go, back, places: () => places.map((p, i) => ({ i, id: p.id, t: p.t, g: p.g, sub: p.sub || "" })),
     view: (p, t) => glide([cam.pos.clone(), V3(...p)], V3(...t)),
     doors: () => doors.filter((d) => d.r === cur().room).map((d) => { const v = d.mesh.position.clone().project(camera); return { to: d.to.id, x: Math.round((v.x * 0.5 + 0.5) * innerWidth), y: Math.round((-v.y * 0.5 + 0.5) * innerHeight), front: v.z < 1 && Math.abs(v.x) < 1 && Math.abs(v.y) < 1 }; }),
     look, pointer: (nx, ny) => { ptr.set(nx, ny); hover(ptr); return !!hotC; }, click: (nx, ny) => clickAt(new T.Vector2(nx, ny)),
     close: () => { closePanel(); closeIndex(); }, books: () => books.map((b) => ({ id: b.id, t: b.a.t, room: b.room.id })),
     openBook: (id) => { const b = books.find((o) => o.id === id); if (b) openBook(b); },
-    state: () => ({ place: placeIdx, id: cur().id, flying: !!fly, u: fly && fly.u != null ? fly.u : null, panel: panel.classList.contains("open") }),
+    state: () => ({ place: placeIdx, id: cur().id, world: world ? world.name : null, flying: !!fly, u: fly && fly.u != null ? fly.u : null, panel: panel.classList.contains("open") }),
     time: (v) => { if (v != null) clockT = v; return clockT; },
   };
 
@@ -1136,11 +1181,12 @@
 
   /* ---------------- laço ---------------- */
   let baseFov = 62;
-  function resize() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); rt.setSize(Math.floor(w * DPR), Math.floor(h * DPR)); post.material.uniforms.uRes.value.set(w * DPR, h * DPR); camera.aspect = w / h; baseFov = w / h < 0.8 ? 78 : 62; camera.fov = baseFov * zoomK; camera.updateProjectionMatrix(); }
+  function resize() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); rt.setSize(Math.floor(w * DPR), Math.floor(h * DPR)); post.material.uniforms.uRes.value.set(w * DPR, h * DPR); camera.aspect = w / h; baseFov = w / h < 0.8 ? 78 : 62; camera.fov = baseFov * zoomK; camera.updateProjectionMatrix(); if (world) world.resize(w, h); }
   addEventListener("resize", resize); resize();
   const clock = new T.Clock(); let clockT = 0; const tmp = new T.Vector3(), tmp2 = new T.Vector3(), la = new T.Vector3(), dirv = new T.Vector3();
   function frame() {
     const dt = Math.min(0.05, clock.getDelta()); clockT += dt; const t = clockT; U.uTime.value = t;
+    if (world) { world.update(dt, t); world.render(renderer); requestAnimationFrame(frame); return; }
     if (fly && !fly.hold) {
       fly.u = Math.min(1, fly.u + dt / fly.dur); const e = smoother(fly.u);
       if (fly.curve) { fly.curve.getPointAt(e, cam.pos); fly.curve.getPointAt(Math.min(1, e + 3.5 / Math.max(fly.len, 0.01)), la); } else la.copy(cam.pos).add(fly.d0);

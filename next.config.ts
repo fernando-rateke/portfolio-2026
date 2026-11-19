@@ -27,6 +27,7 @@ const nextConfig: NextConfig = {
     return [
       { source: "/vale/three.min.js", headers: cache },
       { source: "/biblioteca/modelos/:file*", headers: cache },
+      { source: "/biblioteca/mundos/:dir/:file*", headers: cache },
       { source: "/vale/:dir(audio|nos|perfil|grim|trem|modelos)/:file*", headers: cache },
     ];
   },

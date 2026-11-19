@@ -71,6 +71,12 @@ mg = re.search(r'<script type="application/json" id="grimorios">(.*?)</script>',
 atividades = json.loads(mg.group(1)) if mg else []
 json.dump([{"id": s.get("id"), "name": s["name"], "cat": s.get("cat"), "desc": s.get("desc", ""), "acts": s["acts"]} for s in atividades], open(os.path.join(lib_out, "atividades.json"), "w"), ensure_ascii=False)
 shutil.copy(os.path.join(lib_src, "notas.json"), os.path.join(lib_out, "notas.json"))
+# os mundos que abrem pelas fendas: um arquivo por mundo, baixado só quando a pessoa entra
+mun_src, mun_out = os.path.join(lib_src, "mundos"), os.path.join(lib_out, "mundos")
+os.makedirs(mun_out, exist_ok=True)
+for f in sorted(os.listdir(mun_src)) if os.path.isdir(mun_src) else []:
+    if f.endswith(".js"):
+        subprocess.run([TERSER, os.path.join(mun_src, f), "--compress", "passes=2", "--mangle", "--ecma", "2020", "--comments", "false", "-o", os.path.join(mun_out, f)], check=True)
 # o controle pelo celular (página própria em /controle)
 ctl_out = os.path.join(repo, "public", "controle"); os.makedirs(ctl_out, exist_ok=True)
 shutil.copy(os.path.join(here, "controle", "index.html"), os.path.join(ctl_out, "index.html"))

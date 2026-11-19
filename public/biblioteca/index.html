@@ -63,6 +63,8 @@ body.flying .hud.fade-on-fly { opacity: 0.35; }
 .idx-foot { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 6px; padding-top: 14px; border-top: 1px solid var(--line); }
 .dobra { position: fixed; inset: 0; z-index: 15; pointer-events: none; opacity: 0; transition: opacity 0.65s ease-in-out; background: radial-gradient(circle at 50% 50%, rgba(255, 222, 160, 0.22), rgba(6, 4, 3, 0.97) 62%); }
 .dobra.on { opacity: 1; }
+.dobra.mundo { background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--wc, #9db4d8) 60%, transparent), rgba(3, 3, 4, 0.98) 66%); transition-duration: 0.7s; }
+body.no-mundo .hint { display: none; }
 .marcas { position: fixed; inset: 0; z-index: 3; pointer-events: none; overflow: hidden; }
 .mk { position: absolute; left: 0; top: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; border: 0; background: none; padding: 0; color: var(--ink); cursor: pointer; opacity: 0; visibility: hidden; transition: opacity 0.35s, visibility 0.35s; will-change: transform; }
 .mk.on { visibility: visible; pointer-events: auto; }

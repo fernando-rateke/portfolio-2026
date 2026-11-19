@@ -63,6 +63,12 @@ body.flying .hud.fade-on-fly { opacity: 0.35; }
 .idx-foot { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 6px; padding-top: 14px; border-top: 1px solid var(--line); }
 .dobra { position: fixed; inset: 0; z-index: 15; pointer-events: none; opacity: 0; transition: opacity 0.65s ease-in-out; background: radial-gradient(circle at 50% 50%, rgba(255, 222, 160, 0.22), rgba(6, 4, 3, 0.97) 62%); }
 .dobra.on { opacity: 1; }
+.creditos { position: fixed; z-index: 6; left: 50%; bottom: max(36px, calc(env(safe-area-inset-bottom) + 24px)); transform: translateX(-50%); margin: 0; max-width: 90vw; text-align: center; font: italic 500 1.05rem/1.4 var(--f-book); color: rgba(241, 230, 207, 0.85); text-shadow: 0 2px 14px #000; opacity: 0; transition: opacity 0.9s; pointer-events: none; }
+.creditos.on { opacity: 1; }
+.queda-nome { position: fixed; z-index: 6; left: 50%; top: 46%; transform: translate(-50%, -50%); margin: 0; font: 600 clamp(1.6rem, 4vw, 3rem)/1 var(--f-display); color: rgba(255, 240, 215, 0.0); letter-spacing: 0.04em; text-shadow: 0 0 30px rgba(255, 200, 120, 0.6); pointer-events: none; }
+.queda-nome.on { animation: lembra 1.6s ease-out; }
+@keyframes lembra { 0% { color: rgba(255, 240, 215, 0); transform: translate(-50%, -40%) scale(0.96); } 25% { color: rgba(255, 240, 215, 0.85); } 100% { color: rgba(255, 240, 215, 0); transform: translate(-50%, -62%) scale(1.04); } }
+body.fim .hud, body.fim .som, body.fim .hint { opacity: 0; pointer-events: none; }
 .entrar { position: fixed; z-index: 6; left: 50%; bottom: max(64px, calc(env(safe-area-inset-bottom) + 48px)); transform: translate(-50%, 12px); display: grid; justify-items: center; gap: 4px; padding: 14px 30px 12px; border-radius: 999px; border: 1px solid rgba(217, 164, 65, 0.6); background: rgba(16, 11, 7, 0.55); color: var(--ink); backdrop-filter: blur(8px); cursor: pointer; opacity: 0; pointer-events: none; transition: opacity 0.8s, transform 0.8s; }
 .entrar.on { opacity: 1; pointer-events: auto; transform: translate(-50%, 0); animation: chama 2.6s ease-in-out infinite; }
 .entrar span { font: 600 1.15rem/1 var(--f-display); letter-spacing: 0.04em; }
@@ -260,6 +266,8 @@ body.apresentando canvas#lib { cursor: none; }
   <div class="idx-foot"><button class="pill" id="apresentar" type="button" title="Controlar pelo celular (tecla P)">Apresentar pelo celular</button><a class="pill" href="/vale">Ir ao vale</a></div>
 </nav>
 <div class="dobra" id="dobra" aria-hidden="true"></div>
+<p class="creditos" id="creditos" aria-live="polite"></p>
+<p class="queda-nome" id="quedaNome" aria-hidden="true"></p>
 <button class="entrar" id="entrar" type="button"><span>Entrar</span><small>toque na porta</small></button>
 <aside class="panel" id="painel" aria-hidden="true" aria-labelledby="pTitulo">
   <header><div class="kick" id="pKick"></div><h2 id="pTitulo"></h2><button class="close" id="pFechar" type="button" aria-label="Fechar">×</button></header>

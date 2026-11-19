@@ -36,7 +36,7 @@
 
   const NL = 16;
   const U = {
-    uTime: { value: 0 },
+    uTime: { value: 0 }, uWave: { value: 1e5 }, // abaixo de uWave a torre está apagada (o final)
     uFog: { value: new T.Color("#0b0806") }, uFogD: { value: small ? 0.04 : 0.036 },
     uAmb: { value: new T.Vector3(0.085, 0.07, 0.056) },
     uLP: { value: Array.from({ length: NL }, () => new T.Vector3(0, -999, 0)) },
@@ -45,7 +45,7 @@
 
   /* luz e névoa comuns a tudo */
   const COMMON = `
-    uniform float uTime, uFogD; uniform vec3 uFog, uAmb;
+    uniform float uTime, uFogD, uWave; uniform vec3 uFog, uAmb;
     uniform vec3 uLP[${NL}]; uniform vec3 uLC[${NL}];
     float h1(float n){ return fract(sin(n) * 43758.5453123); }
     float h2(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123); }
@@ -91,7 +91,7 @@
     varying vec3 vW; varying vec3 vN; varying vec3 vC; varying float vK; varying vec3 vO;
     void main(){
       vec3 n = normalize(vN); vec3 c = vC;
-      if (vK > 2.5) { gl_FragColor = vec4(fogIt(c * 1.7, vW), 1.0); return; }
+      if (vK > 2.5) { gl_FragColor = vec4(fogIt(c * 1.7 * (vW.y > uWave ? 1.0 : 0.05), vW), 1.0); return; }
       if (vK > 0.5 && vK < 1.5) {
         float pz = vW.z / 0.24; float row = floor(pz); float px = (vW.x + h1(row) * 3.0) / 1.9;
         float seam = smoothstep(0.0, 0.05, fract(pz)) * smoothstep(0.0, 0.02, fract(px));
@@ -166,7 +166,7 @@
       vec3 c = tx.rgb * uTint;
       vec3 lit = band(lights(vW, n));
       vec3 V = normalize(cameraPosition - vW); float rim = pow(1.0 - max(dot(n, V), 0.0), 3.0);
-      vec3 col = c * lit * (1.0 + uHot * 0.16) + c * uEmitC * uEmit + rim * scat * 0.05 + vec3(1.0, 0.8, 0.45) * rim * uHot * 0.7;
+      vec3 col = c * lit * (1.0 + uHot * 0.16) + c * uEmitC * uEmit * (vW.y > uWave ? 1.0 : 0.04) + rim * scat * 0.05 + vec3(1.0, 0.8, 0.45) * rim * uHot * 0.7;
       float al = uAlpha;
       if (uAlpha < 0.99) { col = c * lit * 0.35 + vec3(1.0, 0.85, 0.6) * rim * 0.35; al = uAlpha * 0.45 + rim * 0.4; } // vidro: quase transparente, brilha nas bordas
       gl_FragColor = vec4(fogIt(col, vW), al);
@@ -377,7 +377,7 @@
   const lightTmp = [];
   function updateLights(t) {
     lightTmp.length = 0; const cp = camera.position;
-    for (const L of LIGHTS) { if (L.flick) L.i = L.i0 * (1 - L.flick + L.flick * (0.6 + 0.4 * Math.sin(t * 11 + L.ph) * Math.sin(t * 7.3 + L.ph * 2))); L.s = L.i / (1 + L.p.distanceToSquared(cp) * 0.02); lightTmp.push(L); }
+    for (const L of LIGHTS) { if (L.flick) L.i = L.i0 * (1 - L.flick + L.flick * (0.6 + 0.4 * Math.sin(t * 11 + L.ph) * Math.sin(t * 7.3 + L.ph * 2))); else L.i = L.i0; if (L.p.y < U.uWave.value) L.i *= 0.03; L.s = L.i / (1 + L.p.distanceToSquared(cp) * 0.02); lightTmp.push(L); }
     for (const L of lampList) { const d2 = L.p.distanceToSquared(cp); if (d2 > 1300) continue; L.i = L.i0 * (0.95 + 0.05 * Math.sin(t * 6 + L.ph)); L.s = L.i / (1 + d2 * 0.02); lightTmp.push(L); }
     lightTmp.sort((a, b) => b.s - a.s);
     for (let k = 0; k < NL; k++) {
@@ -493,7 +493,7 @@
       float a = smoothstep(w, w * 0.15, abs(x)) * smoothstep(1.0, 0.2, p.y + (n - 0.5) * 0.55) * smoothstep(0.0, 0.08, p.y);
       vec3 col = mix(vec3(0.85, 0.16, 0.02), vec3(1.0, 0.58, 0.14), smoothstep(0.1, 0.55, a));
       col = mix(col, vec3(1.0, 0.9, 0.62), smoothstep(0.7, 1.0, a));
-      gl_FragColor = vec4(col * a * 1.5, a);
+      a *= vW.y > uWave ? 1.0 : 0.0; gl_FragColor = vec4(col * a * 1.5, a);
     }`;
 
   // o Escritório, no térreo: a lareira no nicho de trás, as poltronas, a mesa, o gramofone, a cômoda, o piano
@@ -843,6 +843,7 @@
   const visitorBooks = [];
   const VCOL = { madeira: "#6B4A2E", vermelho: "#8E2A24", azul: "#2E4A7A", verde: "#2F5A3A" };
   function addVisitors(list) {
+    lanList = list.slice(0, 40); if (fin.stage === "infinito") buildLanterns();
     visitorBooks.forEach((b) => scene.remove(b.g)); visitorBooks.length = 0;
     const fake = { u: V3(1, 0, 0), tv: V3(0, 0, 1), y: TOPY, d: 0 };
     list.slice(0, 18).forEach((e, k) => {
@@ -974,15 +975,16 @@
     if (i < 0 || i >= places.length) return;
     if (world) { closeIndex(); exitWorld(() => go(i, instant, fromBack, done)); return; }
     if (endIntro()) { fly = null; instant = instant || false; }
+    if (fin.stage && fin.stage !== "clarear") restoreAll(); teleOn = false; constel.on = false;
     closePanel(true); closeIndex(); focus = null; hotC = null; canvas.classList.remove("hot"); rotulo.classList.remove("on");
     const from = cur(), to = places[i];
     if (!fromBack && !instant && i !== placeIdx) { hist.push(placeIdx); if (hist.length > 30) hist.shift(); }
-    placeIdx = i;
+    placeIdx = i; visited.add(to.f);
     if (instant) { cam.pos.copy(to.pose.pos); cam.tgt.copy(to.pose.tgt); lookReady = false; if (done) done(); }
     else if (fly) fold(to, done); else travel(from, to, done);
     label(); renderIndex(); hint();
   }
-  function back() { if (closeLivro()) return; if (panel.classList.contains("open")) { closePanel(); return; } if (world) { if (!world.back()) exitWorld(); return; } const i = hist.pop(); if (i != null) go(i, false, true); $("voltar").hidden = !hist.length; }
+  function back() { if (closeLivro()) return; if (teleOn) { teleOn = false; constel.on = false; glide([cam.pos.clone(), cur().pose.pos], cur().pose.tgt, null, 1.8); return; } if (fin.stage) return; if (panel.classList.contains("open")) { closePanel(); return; } if (world) { if (!world.back()) exitWorld(); return; } const i = hist.pop(); if (i != null) go(i, false, true); $("voltar").hidden = !hist.length; }
   $("voltar").addEventListener("click", back);
   function renderIndex() {
     const groups = []; places.forEach((p, i) => { let g = groups.find((x) => x.g === p.g); if (!g) groups.push(g = { g: p.g, items: [] }); g.items.push([p, i]); });
@@ -996,7 +998,6 @@
   $("listaLugares").addEventListener("click", (e) => { const b = e.target.closest("button[data-i]"); if (b) go(+b.dataset.i); });
   let hinted = false; function hint() { if (hinted) return; hinted = true; setTimeout(() => $("dica").classList.add("off"), 7000); }
 
-  function finale() { toast("O topo", "O fim", "A sequência final está sendo construída."); }
 
   /* ---------------- painel, avisos e o recado ---------------- */
   const panel = $("painel"); let openThing = null;
@@ -1069,7 +1070,7 @@
         const mine = { id: d.ema && d.ema.id, nome: body.nome, recado: body.recado, cor: body.cor, criado_em: new Date().toISOString(), meu: true };
         try { const arr = JSON.parse(localStorage.getItem("biblioteca-meus") || "[]"); arr.unshift(mine); localStorage.setItem("biblioteca-meus", JSON.stringify(arr.slice(0, 6))); } catch (er) { /* sem storage */ }
         loadVisitors(); closePanel(); toast("Estante dos Visitantes", "Seu livro está na estante", d.moderado ? "Os outros visitantes vão vê-lo assim que for aprovado." : "");
-        go("fim");
+        if (!fin.stage) go("topo");
       }).catch(() => { $("fNota").textContent = "Sem conexão com a estante agora."; });
     });
   }
@@ -1099,6 +1100,8 @@
       case "w": c.go(); break;
       case "fim": finale(); break;
       case "pocao": brew(c.data); break;
+      case "andar": { const i = places.findIndex((q) => q.f === c.data.f); if (i >= 0) go(i); break; }
+      case "telescopio": lookTele(); break;
       case "recado": formRecado(); break;
       case "busca": openIndex(); setTimeout(() => busca.focus(), 350); break;
       case "indice": openIndex(); break;
@@ -1147,12 +1150,16 @@
   canvas.addEventListener("pointercancel", () => { drag = null; canvas.classList.remove("drag"); });
   function look(dx, dy) { if (world) { world.look(dx, dy); return; } if (fly) return; cam.yawT -= dx * 0.0032; cam.pitchT = Math.max(-0.3, Math.min(0.3, cam.pitchT - dy * 0.003)); }
   const rc = new T.Raycaster();
-  function pick(p) { if (world) { const it = world.pick(p); return it ? { kind: "w", label: it.label, go: it.go } : null; } rc.setFromCamera(p, camera); const h = rc.intersectObjects(clickables, false)[0]; return h && h.distance < 30 ? h.object.userData.click : null; }
+  function pick(p) {
+    if (fin.stage === "infinito") { rc.setFromCamera(p, camera); const h = rc.intersectObjects([qrPlate].concat(lanterns.map((l) => l.m)), false)[0]; if (!h) return null; if (h.object === qrPlate) return { kind: "qr", label: ["Deixe um recado", "escrever o seu"] }; const l = lanterns.find((x) => x.m === h.object); return l ? { kind: "lan", data: l, label: [l.e ? l.e.nome || "Visitante" : "Uma lanterna", l.e ? "ler o recado" : ""] } : null; }
+    if (fin.stage) return null;
+    if (world) { const it = world.pick(p); return it ? { kind: "w", label: it.label, go: it.go } : null; } rc.setFromCamera(p, camera); const hs = rc.intersectObjects(clickables, false); const sh = hs.find((x) => x.object === seal); const h = sh || hs[0]; return h && h.distance < 30 ? h.object.userData.click : null; } // o selo tem prioridade sobre o que passa na frente dele
   const rotulo = $("rotulo");
   function labelOf(c) {
     if (c.label) return c.label;
     const d = c.data || {};
     if (c.kind === "livro") return [d.a && d.a.t || "Atividade", "Abrir"];
+    if (c.kind === "andar") return [FLOORS[d.f].t, visited.has(d.f) ? "já passou por aqui" : "ainda não visitado"];
     if (c.kind === "mundo") return [d.t, d.s + (WORLD_FILE[d.k] ? " · entrar" : " · em construção")];
     if (c.kind === "cert") return ["Certificado", d.cf && d.cf.t || "Ver de perto"];
     if (c.kind === "visitante") return [d.visitor && d.visitor.nome || "Visitante", "Ler o recado"];
@@ -1166,7 +1173,7 @@
     if (c) { const x = (p.x * 0.5 + 0.5) * innerWidth, y = (-p.y * 0.5 + 0.5) * innerHeight, w = rotulo.offsetWidth;
       rotulo.style.transform = `translate(${Math.min(innerWidth - w - 10, x + 18)}px, ${Math.max(10, y - 46)}px)`; }
   }
-  function clickAt(p) { if (intro.on) { enter(); return; } const c = pick(p); if (c) activate(c); }
+  function clickAt(p) { if (intro.on) { enter(); return; } if (fin.stage === "infinito") { finClick(p); return; } if (fin.stage) return; const c = pick(p); if (c) activate(c); }
 
   /* ---------------- o controle pelo celular fala por aqui ---------------- */
   window.biblioteca = {
@@ -1177,7 +1184,7 @@
     look, pointer: (nx, ny) => { ptr.set(nx, ny); hover(ptr); return !!hotC; }, click: (nx, ny) => clickAt(new T.Vector2(nx, ny)),
     close: () => { closePanel(); closeIndex(); }, books: () => books.map((b) => ({ id: b.id, t: b.a.t, room: b.room.id })), livro: () => livro.classList.contains("on"),
     openBook: (id) => { const b = books.find((o) => o.id === id); if (b) openBook(b); },
-    state: () => ({ place: placeIdx, id: cur().id, world: world ? world.name : null, flying: !!fly, u: fly && fly.u != null ? fly.u : null, panel: panel.classList.contains("open") }),
+    state: () => ({ place: placeIdx, id: cur().id, fim: fin.stage, fimT: +fin.t.toFixed(2), voltas, intro: intro.on, world: world ? world.name : null, flying: !!fly, u: fly && fly.u != null ? fly.u : null, panel: panel.classList.contains("open") }),
     time: (v) => { if (v != null) clockT = v; return clockT; },
   };
 
@@ -1249,7 +1256,7 @@
     }
     function sendState() {
       if (!phone) return;
-      const st = { t: "state", phone, place: placeIdx, id: cur().id, title: cur().t, sub: cur().sub || "", g: cur().g, back: hist.length > 0, panel: panel.classList.contains("open"), music: !!(music && !music.paused), places: places.map((p, i) => ({ i, id: p.id, t: p.t, g: p.g, sub: p.sub || "" })) };
+      const st = { t: "state", phone, fin: fin.stage || (cur().id === "topo" ? "topo" : ""), place: placeIdx, id: cur().id, title: cur().t, sub: cur().sub || "", g: cur().g, back: hist.length > 0, panel: panel.classList.contains("open"), music: !!(music && !music.paused), places: places.map((p, i) => ({ i, id: p.id, t: p.t, g: p.g, sub: p.sub || "" })) };
       const js = JSON.stringify(st); if (js === lastState) return; lastState = js; send(st);
     }
     setInterval(() => { if (phone) { sendState(); if (performance.now() - lastSeen > 20000) chip.querySelector("span").textContent = "Controle sem sinal"; else chip.querySelector("span").textContent = "Controle conectado"; } }, 400);
@@ -1268,6 +1275,7 @@
         case "look": look(m.dx, m.dy); break;
         case "scroll": scroll(m.dy); break;
         case "back": back(); break;
+        case "fim": if (fin.stage === "infinito") startFall(); else if (!fin.stage && cur().id === "topo") finale(); break;
         case "go": go(m.i); break;
         case "close": closePanel(); closeIndex(); light.classList.remove("on"); zoomT = 1; break;
         case "zoom": zoom(!!m.on); break;
@@ -1287,12 +1295,14 @@
   /* ---------------- acabamento de imagem ---------------- */
   const rt = new T.WebGLRenderTarget(2, 2, { depthBuffer: true });
   const post = new T.Mesh(new T.PlaneGeometry(2, 2), new T.ShaderMaterial({
-    uniforms: { tDiff: { value: rt.texture }, uRes: { value: new T.Vector2(1, 1) }, uTime: U.uTime }, depthTest: false, depthWrite: false,
+    uniforms: { tDiff: { value: rt.texture }, uRes: { value: new T.Vector2(1, 1) }, uTime: U.uTime, uStreak: { value: 0 }, uFlash: { value: new T.Vector3() }, uBlack: { value: 0 } }, depthTest: false, depthWrite: false,
     vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`,
     fragmentShader: `uniform sampler2D tDiff; uniform vec2 uRes; uniform float uTime; varying vec2 vUv;
       float hh(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+      uniform float uStreak, uBlack; uniform vec3 uFlash;
       void main(){
         vec3 c = texture2D(tDiff, vUv).rgb; vec2 px = 1.0 / uRes;
+        if (uStreak > 0.001) { vec2 dc = (vUv - 0.5) * uStreak * 0.09; vec3 acc = c; for (int i = 1; i < 8; i++) acc += texture2D(tDiff, vUv - dc * float(i) / 7.0).rgb; c = acc / 8.0; } // o rastro da queda
         ${small ? "" : `vec3 b = vec3(0.0);
         for (int i = 0; i < 12; i++) { float a = float(i) * 0.5236; vec2 o = vec2(cos(a), sin(a));
           b += max(texture2D(tDiff, vUv + o * px * 7.0).rgb - 0.55, 0.0) + max(texture2D(tDiff, vUv + o * px * 18.0).rgb - 0.6, 0.0) * 0.7; }
@@ -1302,6 +1312,7 @@
         c = c * 1.06 + vec3(0.012, 0.008, 0.004);
         vec2 q = vUv - 0.5; float vig = smoothstep(0.85, 0.2, length(q * vec2(1.0, 0.85)) * 1.25); c *= mix(0.32, 1.0, vig);
         c += (hh(vUv * uRes + fract(uTime * 7.0) * 100.0) - 0.5) * 0.04;
+        c += uFlash * (1.0 - vig * 0.6); c *= 1.0 - uBlack;
         gl_FragColor = vec4(c, 1.0);
       }`,
   }));
@@ -1386,6 +1397,7 @@
       for (let i = 0; i < n; i++) { const q = (t * (0.16 + w.ss[i] * 0.2) * (1 + w.hot) + w.ss[i]) % 1, ang = w.ss[i] * 40 + q * 7, rr = (1 - q) * (PW * 0.8); P[i * 3] = Math.cos(ang) * rr; P[i * 3 + 1] = (PJ + PW / 2) * 0.5 + Math.sin(ang) * rr * 1.15; P[i * 3 + 2] = 0.12 + (1 - q) * 0.9; }
       w.sparks.geometry.attributes.position.needsUpdate = true;
     }
+    finUpdate(dt, t);
     renderer.setRenderTarget(rt); renderer.render(scene, camera); renderer.setRenderTarget(null); renderer.render(postScene, postCam);
     requestAnimationFrame(frame);
   }
@@ -1397,7 +1409,7 @@
   function endIntro() { if (!intro.on) return false; intro.on = false; doorOpen.to = 1; $("entrar").classList.remove("on"); document.body.classList.remove("intro"); return true; }
   function enter() {
     if (!endIntro()) return;
-    placeIdx = 0; hist.length = 0;
+    placeIdx = 0; hist.length = 0; visited.add(0); if (music && !music.paused) fadeTo(0.5, 2000);
     if (reduce) { doorOpen.v = 1; cam.pos.copy(places[0].pose.pos); cam.tgt.copy(places[0].pose.tgt); lookReady = false; label(); renderIndex(); return; }
     fly = { hold: true };
     setTimeout(() => { fly = null; glide([cam.pos.clone(), AL(PA, 0, 1.85, OUT + 1.8), AL(PA, 0, 1.9, PA.d - 0.6), AL(PA, 0, 1.95, -1.4), places[0].pose.pos], places[0].pose.tgt, null, 4.6, 3.0); }, 1050);
@@ -1406,6 +1418,231 @@
   $("entrar").addEventListener("click", (e) => { e.stopPropagation(); enter(); });
   addEventListener("keydown", (e) => { if (intro.on && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); enter(); } });
 
+
+  /* ================= o topo e o final ================= */
+
+  /* sons feitos na hora pelo navegador (a música continua sendo o arquivo enviado, intacto) */
+  const SFX = (() => {
+    let ac = null, out = null, nb = null, wind = null;
+    const A = () => { if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); out = ac.createGain(); out.gain.value = 0.8; out.connect(ac.destination); } catch (e) { ac = null; } } if (ac && ac.state === "suspended") ac.resume(); return ac; };
+    const noise = () => { if (!nb) { nb = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate); const d = nb.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; } const s = ac.createBufferSource(); s.buffer = nb; s.loop = true; return s; };
+    const env = (g, t0, a, peak, d) => { g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(peak, t0 + a); g.gain.exponentialRampToValueAtTime(0.0001, t0 + a + d); };
+    const tone = (f, type, a, peak, d, f2) => { if (!A()) return; const t0 = ac.currentTime, o = ac.createOscillator(), g = ac.createGain(); o.type = type; o.frequency.setValueAtTime(f, t0); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t0 + a + d); o.connect(g).connect(out); env(g, t0, a, peak, d); o.start(t0); o.stop(t0 + a + d + 0.05); };
+    const burst = (type, freq, q, a, peak, d, f2) => { if (!A()) return; const t0 = ac.currentTime, s = noise(), f = ac.createBiquadFilter(), g = ac.createGain(); f.type = type; f.frequency.setValueAtTime(freq, t0); if (f2) f.frequency.exponentialRampToValueAtTime(f2, t0 + a + d); f.Q.value = q; s.connect(f).connect(g).connect(out); env(g, t0, a, peak, d); s.start(t0); s.stop(t0 + a + d + 0.05); };
+    return {
+      puff: () => burst("lowpass", 900, 0.7, 0.01, 0.14, 0.32, 300),
+      crack: () => { burst("highpass", 3200, 0.8, 0.003, 0.2, 0.18); tone(1500, "sine", 0.005, 0.05, 0.5, 220); },
+      close: () => { tone(600, "sine", 0.01, 0.05, 0.4, 90); burst("bandpass", 1800, 2, 0.005, 0.06, 0.25); },
+      chord: () => { [110, 164.8, 220, 277.2].forEach((f, i) => tone(f, "sine", 0.6 + i * 0.1, 0.05, 4.5)); },
+      bell: () => { tone(880, "sine", 0.005, 0.05, 2.8); tone(1318.5, "sine", 0.005, 0.025, 2.2); },
+      whoosh: () => burst("bandpass", 380, 1.2, 0.05, 0.16, 0.45, 1700),
+      thud: () => { tone(62, "sine", 0.008, 0.55, 1.3, 28); burst("lowpass", 220, 0.8, 0.005, 0.3, 0.6); },
+      creak: () => { if (!A()) return; const t0 = ac.currentTime, o = ac.createOscillator(), f = ac.createBiquadFilter(), g = ac.createGain(), l = ac.createOscillator(), lg = ac.createGain(); o.type = "sawtooth"; o.frequency.value = 85; l.frequency.value = 7; lg.gain.value = 22; l.connect(lg).connect(o.frequency); f.type = "bandpass"; f.frequency.value = 650; f.Q.value = 4; o.connect(f).connect(g).connect(out); env(g, t0, 0.15, 0.06, 1.4); o.start(t0); l.start(t0); o.stop(t0 + 1.7); l.stop(t0 + 1.7); },
+      owl: () => { setTimeout(() => tone(420, "sine", 0.05, 0.04, 0.35, 380), 400); setTimeout(() => tone(400, "sine", 0.05, 0.035, 0.5, 360), 950); },
+      wind: (v) => { if (!A()) return; if (!wind) { const s = noise(), f = ac.createBiquadFilter(), g = ac.createGain(); f.type = "bandpass"; f.Q.value = 0.6; g.gain.value = 0; s.connect(f).connect(g).connect(out); s.start(); wind = { s, f, g }; } const t0 = ac.currentTime; wind.g.gain.setTargetAtTime(Math.max(0, v) * 0.3, t0, 0.2); wind.f.frequency.setTargetAtTime(260 + Math.max(0, v) * 1500, t0, 0.2); },
+    };
+  })();
+
+  /* ---------------- o topo: acima das nuvens ---------------- */
+  const FCOL = ["#FFC27A", "#C0303A", "#45B079", "#5CC8D8", "#A8D0F0", "#F0DEA8", "#FFFFFF"];
+  // o mar de nuvens em volta da torre, iluminado pela lua
+  const clouds = new T.Mesh(new T.RingGeometry(RO + 2, 185, 96, 1), new T.ShaderMaterial({ uniforms: { uTime: U.uTime }, transparent: true, depthWrite: false, fog: false,
+    vertexShader: "varying vec3 vP; void main(){ vP = (modelMatrix * vec4(position, 1.0)).xyz; gl_Position = projectionMatrix * viewMatrix * vec4(vP, 1.0); }",
+    fragmentShader: `uniform float uTime; varying vec3 vP;
+      float h(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+      float n(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(h(i), h(i + vec2(1, 0)), f.x), mix(h(i + vec2(0, 1)), h(i + vec2(1, 1)), f.x), f.y); }
+      void main(){ vec2 p = vP.xz * 0.035 + vec2(uTime * 0.012, uTime * 0.006); float v = n(p) * 0.5 + n(p * 2.1) * 0.3 + n(p * 4.3) * 0.2;
+        float d = length(vP.xz); float a = smoothstep(0.38, 0.75, v) * smoothstep(185.0, 90.0, d) * smoothstep(RO_ + 2.0, RO_ + 9.0, d);
+        vec3 c = mix(vec3(0.08, 0.1, 0.17), vec3(0.42, 0.46, 0.6), smoothstep(0.5, 0.95, v));
+        gl_FragColor = vec4(c, a * 0.92); }`.replace(/RO_/g, RO.toFixed(1)) }));
+  clouds.rotation.x = -Math.PI / 2; clouds.position.y = TOPY - 6.5; clouds.renderOrder = 1; scene.add(clouds);
+  // a lua, grande e baixa
+  const MOONDIR = V3(Math.cos(200 * Math.PI / 180), 0.2, Math.sin(200 * Math.PI / 180)).normalize();
+  const moon = new T.Mesh(new T.CircleGeometry(9, 48), new T.ShaderMaterial({ fog: false, depthWrite: false, uniforms: {}, vertexShader: "varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
+    fragmentShader: `varying vec2 vUv; float h(vec2 p){ return fract(sin(dot(p, vec2(12.9, 78.2))) * 43758.5); }
+      void main(){ vec2 p = vUv - 0.5; float r = length(p) * 2.0; float cr = 0.0; for (int i = 0; i < 9; i++) { vec2 c = vec2(h(vec2(float(i), 1.0)), h(vec2(float(i), 2.0))) - 0.5; cr += smoothstep(0.12, 0.0, length(p - c * 0.7)) * 0.18; }
+        vec3 col = vec3(0.92, 0.9, 0.84) * (1.0 - cr) * (0.82 + 0.18 * smoothstep(1.0, 0.0, r)); gl_FragColor = vec4(col, smoothstep(1.0, 0.96, r)); }`, transparent: true }));
+  moon.position.copy(MOONDIR).multiplyScalar(150).add(V3(0, TOPY, 0)); moon.lookAt(0, TOPY, 0); scene.add(moon);
+  { const mh = new T.Sprite(new T.SpriteMaterial({ map: glowTex, color: 0xb8c6e8, transparent: true, opacity: 0.5, depthWrite: false, blending: T.AdditiveBlending, fog: false })); mh.scale.set(70, 70, 1); mh.position.copy(moon.position); scene.add(mh); }
+  // a esfera armilar em volta do selo: anéis de latão girando, cada um num eixo
+  const armil = new T.Group(); armil.position.copy(seal.position); scene.add(armil);
+  const rings = [1.25, 1.5, 1.78].map((r, i) => { const g = new T.Group(); const m = new T.Mesh(new T.TorusGeometry(r, 0.022, 8, 96), new T.MeshBasicMaterial({ color: "#C9A867" })); g.add(m); for (let k = 0; k < 2 + i; k++) { const b = new T.Mesh(new T.SphereGeometry(0.06 + 0.02 * i, 12, 8), new T.MeshBasicMaterial({ color: ["#FFD9A0", "#A8C8FF", "#FFB0A0"][i] })); const a = k / (2 + i) * Math.PI * 2; b.position.set(Math.cos(a) * r, Math.sin(a) * r, 0); g.add(b); } propize(g, { emit: 0.35, emitC: "#FFD9A0" }); armil.add(g); return g; });
+  // as sete esferas dos andares, orbitando o selo; as visitadas brilham
+  const visited = new Set();
+  const orbs = FLOORS.map((fl, k) => {
+    const m = new T.Mesh(new T.SphereGeometry(0.17, 16, 12), new T.MeshBasicMaterial({ color: FCOL[k] })); scene.add(m);
+    const h = new T.Sprite(new T.SpriteMaterial({ map: glowTex, color: new T.Color(FCOL[k]), transparent: true, opacity: 0.6, depthWrite: false, blending: T.AdditiveBlending })); h.scale.set(1.1, 1.1, 1); m.add(h);
+    const o = { m, h, f: k, hot: 0 }; clickable(m, "andar", o); return o;
+  });
+  // o telescópio de latão no parapeito, e a constelação que ele mostra
+  const TELA = landA(NFLOORS - 1) + Math.PI * 0.95, TELP = polarY(TELA, RO - 1.3, TOPY);
+  const tele = new T.Group(); { const brass = new T.MeshBasicMaterial({ color: "#A8823E" }), wood = new T.MeshBasicMaterial({ color: "#3A251A" });
+    for (let k = 0; k < 3; k++) { const a = k / 3 * Math.PI * 2, leg = new T.Mesh(new T.CylinderGeometry(0.025, 0.03, 1.35, 6), wood); leg.position.set(Math.cos(a) * 0.28, 0.62, Math.sin(a) * 0.28); leg.rotation.set(Math.sin(a) * 0.22, 0, -Math.cos(a) * 0.22); tele.add(leg); }
+    const tube = new T.Group(); const t1 = new T.Mesh(new T.CylinderGeometry(0.09, 0.07, 1.5, 16), brass); t1.rotation.z = Math.PI / 2; tube.add(t1); const t2 = new T.Mesh(new T.CylinderGeometry(0.11, 0.11, 0.08, 16), brass); t2.rotation.z = Math.PI / 2; t2.position.x = 0.76; tube.add(t2);
+    tube.position.y = 1.35; tube.rotation.z = 0.6; tele.add(tube); propize(tele, { emit: 0.12, emitC: "#FFD9A0" }); }
+  tele.position.copy(TELP); tele.rotation.y = -TELA + Math.PI; scene.add(tele); clickable(tele, "telescopio", null, ["O telescópio", "Olhar o céu"]);
+  const CONSTD = V3(-Math.cos(TELA) * 0.45, 0.89, -Math.sin(TELA) * 0.45).normalize();
+  const constel = (() => { const c = document.createElement("canvas"); c.width = 96; c.height = 256; const g = c.getContext("2d"); g.fillStyle = "#000"; g.fillRect(0, 0, 96, 256); g.fillStyle = "#fff"; g.textAlign = "center"; g.font = "800 72px 'Shippori Mincho', serif"; ["ラ", "テ", "ケ"].forEach((ch, i) => g.fillText(ch, 48, 72 + i * 80));
+    const d = g.getImageData(0, 0, 96, 256).data, pts = []; for (let y = 0; y < 256; y += 5) for (let x = 0; x < 96; x += 5) if (d[(y * 96 + x) * 4] > 140 && Math.random() < 0.55) pts.push([x / 96 - 0.5, 0.5 - y / 256]);
+    const geo = new T.BufferGeometry(), P = new Float32Array(pts.length * 3), side = V3().crossVectors(CONSTD, V3(0, 1, 0)).normalize(), up = V3().crossVectors(side, CONSTD).normalize(), ctr = CONSTD.clone().multiplyScalar(80).add(V3(0, TOPY, 0));
+    pts.forEach(([x, y], i) => { const p = ctr.clone().addScaledVector(side, x * 28).addScaledVector(up, y * 64); P.set([p.x, p.y, p.z], i * 3); }); geo.setAttribute("position", new T.BufferAttribute(P, 3)); geo.setDrawRange(0, 0);
+    const m = new T.Points(geo, new T.PointsMaterial({ map: glowTex, color: 0xcfe0ff, size: 1.4, transparent: true, opacity: 0.95, depthWrite: false, blending: T.AdditiveBlending, fog: false })); m.frustumCulled = false; scene.add(m); return { m, n: pts.length, v: 0, on: false }; })();
+  let teleOn = false;
+  function lookTele() { teleOn = true; constel.on = true; closePanel(true); glide([cam.pos.clone(), tele.position.clone().add(V3(0, 1.62, 0)).addScaledVector(CONSTD.clone().setY(0).normalize(), -0.4)], tele.position.clone().add(V3(0, 1.62, 0)).addScaledVector(CONSTD, 40), null, 2.0); toast("O telescópio", "Uma constelação", "Lá em cima, as estrelas escrevem o selo."); }
+  // estrelas cadentes, de vez em quando
+  const meteor = new T.Mesh(new T.PlaneGeometry(14, 0.16), new T.MeshBasicMaterial({ map: (() => { const c = document.createElement("canvas"); c.width = 256; c.height = 8; const g = c.getContext("2d"); const gr = g.createLinearGradient(0, 0, 256, 0); gr.addColorStop(0, "rgba(255,255,255,0)"); gr.addColorStop(0.85, "rgba(220,235,255,0.9)"); gr.addColorStop(1, "rgba(255,255,255,1)"); g.fillStyle = gr; g.fillRect(0, 0, 256, 8); return new T.CanvasTexture(c); })(), transparent: true, depthWrite: false, blending: T.AdditiveBlending, fog: false }));
+  meteor.visible = false; scene.add(meteor); const met = { t: 4 + Math.random() * 6, run: -1, a: V3(), b: V3() };
+  // uma estrela nova bem em cima da torre a cada volta completa (guardado só neste navegador)
+  let voltas = 0; try { voltas = +localStorage.getItem("biblioteca-voltas") || 0; } catch (e) { /* sem storage */ }
+  const loopStars = [];
+  function addLoopStar(i) { const s = new T.Sprite(new T.SpriteMaterial({ map: glowTex, color: 0xdfe8ff, transparent: true, opacity: 0.95, depthWrite: false, blending: T.AdditiveBlending, fog: false })); const a = i * 2.4, r = 6 + i * 3.5; s.position.set(Math.cos(a) * r, TOPY + 150, Math.sin(a) * r); s.scale.set(5, 5, 1); scene.add(s); loopStars.push(s); }
+  for (let i = 0; i < Math.min(30, voltas); i++) addLoopStar(i);
+
+  /* ---------------- o final ---------------- */
+  const fin = { stage: null, t: 0, ask: 0, wf: NFLOORS, shown: -1 };
+  const NOW = () => performance.now();
+  function finale() {
+    if (fin.stage) return;
+    if (NOW() - fin.ask > 5000) { fin.ask = NOW(); SFX.bell(); toast("O topo", "Terminar a visita?", "Toque no selo de novo para terminar."); return; }
+    fin.ask = 0; startFinale();
+  }
+  function startFinale() {
+    closeLivro(); closePanel(true); closeIndex(); teleOn = false; constel.on = false;
+    fin.stage = "apagar"; fin.t = 0; fin.wf = -NBELOW - 1; document.body.classList.add("fim"); hotC = null; rotulo.classList.remove("on");
+    SFX.crack(); SFX.chord(); if (music && !music.paused) fadeTo(0.28, 2500);
+  }
+  // as lanternas da tela infinita: um recado em cada (no máximo 40)
+  const lanG = new T.Group(); lanG.visible = false; scene.add(lanG); const lanterns = []; let lanList = [];
+  function wrap(g, text, w) { const words = String(text || "").split(/\s+/), out = []; let line = ""; for (const wd of words) { const t = line ? line + " " + wd : wd; if (g.measureText(t).width > w && line) { out.push(line); line = wd; } else line = t; } if (line) out.push(line); return out; }
+  function lanternTex(e) {
+    const c = document.createElement("canvas"); c.width = 256; c.height = 320; const g = c.getContext("2d");
+    const gr = g.createRadialGradient(128, 160, 20, 128, 160, 170); gr.addColorStop(0, "rgba(255,226,170,1)"); gr.addColorStop(0.7, "rgba(240,150,70,0.95)"); gr.addColorStop(1, "rgba(160,60,20,0.9)");
+    g.fillStyle = gr; g.beginPath(); g.moveTo(40, 34); g.quadraticCurveTo(10, 160, 40, 286); g.lineTo(216, 286); g.quadraticCurveTo(246, 160, 216, 34); g.closePath(); g.fill();
+    g.strokeStyle = "rgba(120,50,20,0.35)"; g.lineWidth = 2; for (let k = 1; k < 6; k++) { const y = 34 + k * 42; g.beginPath(); g.moveTo(22, y); g.lineTo(234, y); g.stroke(); }
+    g.fillStyle = "#4a2410"; g.fillRect(36, 22, 184, 14); g.fillRect(36, 284, 184, 14);
+    if (e) { g.fillStyle = "#3a1a08"; g.textAlign = "center"; g.font = "700 24px 'Cormorant Garamond', serif"; g.fillText((e.nome || "Visitante").slice(0, 18), 128, 76); g.font = "500 18px 'Cormorant Garamond', serif"; wrap(g, e.recado, 170).slice(0, 7).forEach((l, i) => g.fillText(l, 128, 108 + i * 24)); }
+    const t = new T.CanvasTexture(c); return t;
+  }
+  function buildLanterns() {
+    lanterns.forEach((l) => { lanG.remove(l.m); l.m.material.map.dispose(); l.m.material.dispose(); }); lanterns.length = 0;
+    const list = lanList.length ? lanList.slice(0, 40) : new Array(12).fill(null);
+    list.forEach((e, i) => {
+      const m = new T.Mesh(new T.PlaneGeometry(1.15, 1.44), new T.MeshBasicMaterial({ map: lanternTex(e), transparent: true, depthWrite: false, fog: false }));
+      const glow = new T.Sprite(new T.SpriteMaterial({ map: glowTex, color: 0xffa050, transparent: true, opacity: 0.55, depthWrite: false, blending: T.AdditiveBlending, fog: false })); glow.scale.set(3.4, 3.4, 1); m.add(glow);
+      lanG.add(m); lanterns.push({ m, e, a: Math.random() * Math.PI * 2, r: 7 + Math.random() * 16, y: -6 + Math.random() * 30, sp: 0.35 + Math.random() * 0.4, ph: Math.random() * 6, hot: 0 });
+    });
+  }
+  // a placa do QR: estrelas se juntam e formam a placa com o código para deixar um recado
+  const qrUrl = () => location.origin + "/biblioteca#recado";
+  const qrCanvas = document.createElement("canvas"); qrCanvas.width = 512; qrCanvas.height = 640; const qrTex = new T.CanvasTexture(qrCanvas);
+  function drawQR() {
+    const g = qrCanvas.getContext("2d"); g.clearRect(0, 0, 512, 640);
+    const gr = g.createRadialGradient(256, 300, 60, 256, 300, 380); gr.addColorStop(0, "rgba(255,246,226,1)"); gr.addColorStop(1, "rgba(236,214,170,1)");
+    g.fillStyle = gr; g.beginPath(); g.roundRect ? g.roundRect(16, 16, 480, 608, 28) : g.rect(16, 16, 480, 608); g.fill();
+    g.strokeStyle = "#B88A40"; g.lineWidth = 5; g.stroke();
+    g.fillStyle = "#3A2412"; g.textAlign = "center"; g.font = "600 40px 'Shippori Mincho', serif"; g.fillText("Deixe um recado", 256, 86);
+    g.font = "500 17px 'Geist Mono', monospace"; g.fillStyle = "#7A5A30"; g.fillText("aponte a câmera do celular", 256, 118);
+    const draw = () => { try { const q = window.qrcode(0, "M"); q.addData(qrUrl()); q.make(); const n = q.getModuleCount(), S = 340, cs = S / n, x0 = 256 - S / 2, y0 = 148; g.fillStyle = "#fff"; g.fillRect(x0 - 14, y0 - 14, S + 28, S + 28); g.fillStyle = "#1A120A"; for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) g.fillRect(x0 + c * cs, y0 + r * cs, cs + 0.5, cs + 0.5); } catch (e) { g.font = "500 20px 'Geist Mono', monospace"; g.fillStyle = "#3A2412"; g.fillText(location.host + "/biblioteca#recado", 256, 320); } qrTex.needsUpdate = true; };
+    g.font = "500 16px 'Geist Mono', monospace"; g.fillStyle = "#7A5A30"; g.fillText(location.host + "/biblioteca#recado", 256, 540);
+    g.font = "italic 600 22px 'Cormorant Garamond', serif"; g.fillStyle = "#5A3A20"; g.fillText("Fernando Rateke · Portfólio 2026", 256, 588);
+    if (window.qrcode) draw(); else { const el = document.createElement("script"); el.src = "https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"; el.onload = draw; el.onerror = draw; document.head.appendChild(el); }
+    qrTex.needsUpdate = true;
+  }
+  const qrPlate = new T.Mesh(new T.PlaneGeometry(2.0, 2.5), new T.MeshBasicMaterial({ map: qrTex, transparent: true, opacity: 0, depthWrite: false, fog: false })); qrPlate.visible = false; qrPlate.renderOrder = 6; scene.add(qrPlate);
+  const qrGlow = new T.Sprite(new T.SpriteMaterial({ map: glowTex, color: 0xffd9a0, transparent: true, opacity: 0, depthWrite: false, blending: T.AdditiveBlending, fog: false })); qrGlow.scale.set(5.5, 6.5, 1); qrPlate.add(qrGlow); qrGlow.position.z = -0.05;
+  const NQS = 420, qsGeo = new T.BufferGeometry(), qsP = new Float32Array(NQS * 3), qsFrom = [], qsTo = [];
+  for (let i = 0; i < NQS; i++) { const u = Math.random(), v = Math.random(); qsTo.push(V3((u - 0.5) * 2.0, (v - 0.5) * 2.5, 0)); const d = V3(Math.random() - 0.5, Math.random() * 0.8 + 0.1, Math.random() - 0.5).normalize().multiplyScalar(40 + Math.random() * 30); qsFrom.push(d); }
+  qsGeo.setAttribute("position", new T.BufferAttribute(qsP, 3)); const qStars = new T.Points(qsGeo, new T.PointsMaterial({ map: glowTex, color: 0xfff0d0, size: 0.16, transparent: true, opacity: 0, depthWrite: false, blending: T.AdditiveBlending, fog: false })); qStars.frustumCulled = false; qStars.visible = false; scene.add(qStars);
+  // páginas soltas no vão: só aparecem na queda, e parecem subir porque a câmera cai mais rápido
+  const pages = []; { const mat = new T.MeshBasicMaterial({ color: "#E8DCC0", side: T.DoubleSide }); for (let i = 0; i < 46; i++) { const m = new T.Mesh(new T.PlaneGeometry(0.24, 0.32), mat); const a = Math.random() * Math.PI * 2, r = 0.8 + Math.random() * 2.6; m.position.set(Math.cos(a) * r, -NBELOW * FH + Math.random() * (TOPY + NBELOW * FH + 10), Math.sin(a) * r); m.visible = false; scene.add(m); pages.push({ m, ph: Math.random() * 6 }); } }
+  const credEl = $("creditos"), nomeEl = $("quedaNome");
+  const CREDITOS = ["Fernando Rateke · Portfólio 2026", "Música: Dawn of the Doors", "Modelos 3D: dos autores dos pacotes usados, adaptados para a torre", "Obrigado por subir até aqui"];
+  let credI = 0, credT = 0;
+  function startInfinite() {
+    fin.stage = "infinito"; fin.t = 0; lanG.visible = true; buildLanterns(); drawQR(); qrPlate.visible = true; qStars.visible = true; SFX.wind(0.12);
+    credEl.classList.add("on"); credI = 0; credT = 0; credEl.textContent = CREDITOS[0];
+  }
+  function startFall() {
+    if (fin.stage !== "infinito") return;
+    fin.stage = "queda"; fin.t = 0; fin.shown = NFLOORS; U.uWave.value = -1e5; lanG.visible = false; qrPlate.visible = false; qStars.visible = false; credEl.classList.remove("on");
+    pages.forEach((p) => (p.m.visible = true)); fin.y0 = cam.pos.y; { const hp = halos.geometry.attributes.position.array; TLAMPS.forEach((q, i) => hp.set([q.x, q.y, q.z], i * 3)); halos.geometry.attributes.position.needsUpdate = true; } if (music && !music.paused) fadeTo(0.12, 3000); SFX.whoosh();
+  }
+  function restoreAll() {
+    U.uWave.value = 1e5; portals.forEach((w) => w.g.scale.setScalar(1)); flyers.forEach((b) => (b.back = 0)); pages.forEach((p) => (p.m.visible = false));
+    lanG.visible = false; qrPlate.visible = false; qStars.visible = false; credEl.classList.remove("on"); nomeEl.classList.remove("on");
+    camera.up.set(0, 1, 0); post.material.uniforms.uStreak.value = 0; post.material.uniforms.uFlash.value.set(0, 0, 0); camera.fov = baseFov * zoomK; camera.updateProjectionMatrix();
+    { const hp = halos.geometry.attributes.position.array; TLAMPS.forEach((p, i) => hp.set([p.x, p.y, p.z], i * 3)); halos.geometry.attributes.position.needsUpdate = true; }
+    visited.clear(); document.body.classList.remove("fim"); fin.stage = null; hotC = null; SFX.wind(0);
+  }
+  function wake() { // a volta: no escuro, a porta range; a imagem volta do lado de fora
+    voltas++; try { localStorage.setItem("biblioteca-voltas", String(voltas)); } catch (e) { /* sem storage */ }
+    if (loopStars.length < 30) addLoopStar(loopStars.length);
+    restoreAll(); hist.length = 0; placeIdx = 0; showIntro(); fin.stage = "clarear"; fin.t = 0; SFX.creak(); SFX.owl(); if (music && !music.paused) fadeTo(0.32, 2500);
+  }
+  function finClick(p) { // na tela infinita: lanterna lê, a placa abre o recado, o resto recomeça
+    rc.setFromCamera(p, camera);
+    const h = rc.intersectObjects([qrPlate].concat(lanterns.map((l) => l.m)), false)[0];
+    if (h && h.object === qrPlate) { formRecado(); return; }
+    if (h) { const l = lanterns.find((x) => x.m === h.object); if (l && l.e) { toast("Recado", l.e.nome || "Visitante", l.e.recado || ""); return; } }
+    startFall();
+  }
+  function finUpdate(dt, t) {
+    // o topo vive mesmo fora do final
+    armil.position.copy(seal.position); rings[0].rotation.set(t * 0.21, t * 0.13, 0); rings[1].rotation.set(Math.PI / 2 + t * 0.09, 0, t * 0.17); rings[2].rotation.set(0.6, t * 0.07, Math.PI / 3 + t * 0.11);
+    orbs.forEach((o, k) => { const a = t * 0.18 + k / orbs.length * Math.PI * 2, hv = hotC && hotC.data === o ? 1 : 0; o.hot += (hv - o.hot) * Math.min(1, dt * 6); o.m.position.set(Math.cos(a) * 3.9, TOPY + 3.5 + Math.sin(t * 0.7 + k) * 0.15, Math.sin(a) * 3.9); const lit = visited.has(k) ? 1 : 0.22; o.h.material.opacity = (0.25 + 0.6 * lit) * (1 + o.hot * 0.6); o.m.scale.setScalar(1 + o.hot * 0.35 + lit * 0.15); });
+    if (constel.on) constel.v = Math.min(constel.n, constel.v + dt * constel.n / 4); else constel.v = Math.max(0, constel.v - dt * constel.n / 1.5); constel.m.geometry.setDrawRange(0, Math.floor(constel.v));
+    met.t -= dt; if (met.t <= 0 && met.run < 0 && camera.position.y > TOPY - 4) { met.run = 0; met.t = 5 + Math.random() * 8; const a = Math.random() * Math.PI * 2; met.a.set(Math.cos(a) * 120, TOPY + 60 + Math.random() * 50, Math.sin(a) * 120); met.b.copy(met.a).add(V3(Math.cos(a + 1.9) * 70, -30, Math.sin(a + 1.9) * 70)); meteor.visible = true; }
+    if (met.run >= 0) { met.run += dt / 0.9; meteor.position.lerpVectors(met.a, met.b, met.run); meteor.lookAt(camera.position); const d = V3().subVectors(met.b, met.a).project(camera); meteor.material.opacity = Math.sin(Math.min(1, met.run) * Math.PI); if (met.run >= 1) { met.run = -1; meteor.visible = false; } }
+    loopStars.forEach((s, i) => (s.material.opacity = 0.7 + 0.3 * Math.sin(t * 1.3 + i)));
+    if (!fin.stage) return;
+    fin.t += dt;
+    const PU = post.material.uniforms;
+    if (fin.stage === "apagar") {
+      // a onda de escuro sobe pelo vão, andar por andar; os portais fecham, os livros voltam para as estantes
+      const h = -NBELOW * FH + (TOPY + 1 + NBELOW * FH) * sstep(0, 5, fin.t); U.uWave.value = h;
+      const f = Math.floor((h - 3) / FH); if (f > fin.wf) { fin.wf = f; if (f >= 0 && f < NFLOORS) SFX.puff(); }
+      for (const w of portals) { const k = Math.max(0, Math.min(1, (h - w.al.y - 1.5) / 3)); if (k > 0 && w.g.scale.x > 0.999 && !w.closing) { w.closing = 1; SFX.close(); } w.g.scale.setScalar(Math.max(0.001, 1 - k)); if (k <= 0) w.closing = 0; }
+      for (const b of flyers) { if (b.g.position.y < h) b.back = Math.min(1, (b.back || 0) + dt * 0.9); }
+      { const hp = halos.geometry.attributes.position.array; TLAMPS.forEach((p, i) => { if (p.y < h) hp[i * 3 + 1] = -999; }); halos.geometry.attributes.position.needsUpdate = true; }
+      sealHalo.material.opacity = 0.7 + 0.3 * Math.sin(t * 6); seal.scale.setScalar(1 + 0.05 * Math.sin(t * 9));
+      if (fin.t > 5.2) { fin.stage = "subir"; fin.t = 0; seal.scale.setScalar(1);
+        glide([cam.pos.clone(), V3(5, TOPY + 6, 5), V3(3, TOPY + 11, 3)], V3(0, TOPY - 14, 0), () => { glide([cam.pos.clone(), V3(0.5, TOPY + 12, 0.5)], V3(0, TOPY + 34, 22), () => startInfinite(), 3.2); }, 3.2); }
+    }
+    if (fin.stage === "infinito") {
+      // o céu desliza devagar; as lanternas sobem; as estrelas viram a placa do QR
+      const d = V3().subVectors(cam.tgt, cam.pos); d.applyAxisAngle(V3(0, 1, 0), dt * 0.025); cam.tgt.copy(cam.pos).add(d);
+      camera.getWorldDirection(tmp2); const up = V3(0, 1, 0).applyQuaternion(camera.quaternion);
+      for (const l of lanterns) { const hv = hotC && hotC.data === l ? 1 : 0; l.hot += (hv - l.hot) * Math.min(1, dt * 5); l.y += l.sp * dt * (1 - l.hot); if (l.y > 24) { l.y = -6; l.a = Math.random() * Math.PI * 2; } l.m.position.set(cam.pos.x + Math.cos(l.a) * l.r, cam.pos.y + l.y + Math.sin(t * 0.6 + l.ph) * 0.2, cam.pos.z + Math.sin(l.a) * l.r); l.m.lookAt(camera.position); l.m.scale.setScalar(1 + l.hot * 0.5); }
+      const ctr = camera.position.clone().addScaledVector(tmp2, 6).addScaledVector(up, 0.15); qrPlate.position.copy(ctr); qrPlate.quaternion.copy(camera.quaternion);
+      const pg = sstep(0.4, 4.5, fin.t), P = qsGeo.attributes.position.array;
+      for (let i = 0; i < NQS; i++) { const tp = qsTo[i].clone().applyQuaternion(camera.quaternion).add(ctr), fp = qsFrom[i].clone().add(camera.position), e = pg * pg * (3 - 2 * pg); P[i * 3] = fp.x + (tp.x - fp.x) * e; P[i * 3 + 1] = fp.y + (tp.y - fp.y) * e; P[i * 3 + 2] = fp.z + (tp.z - fp.z) * e; }
+      qsGeo.attributes.position.needsUpdate = true; qStars.material.opacity = Math.min(1, fin.t * 0.8) * (1 - sstep(4.2, 5.6, fin.t));
+      qrPlate.material.opacity = sstep(3.8, 5.4, fin.t); qrGlow.material.opacity = 0.35 * sstep(3.8, 5.4, fin.t);
+      credT += dt; if (credT > 6) { credT = 0; credI = (credI + 1) % CREDITOS.length; credEl.classList.remove("on"); setTimeout(() => { credEl.textContent = CREDITOS[credI]; if (fin.stage === "infinito") credEl.classList.add("on"); }, 900); }
+    }
+    if (fin.stage === "queda") {
+      // a queda, de costas, olhando para cima: a abertura do topo encolhendo lá em cima
+      const TF = 13, u = Math.min(1, fin.t / TF), yEnd = -NBELOW * FH - 6, dip = fin.t < 0.7 ? Math.sin(fin.t / 0.7 * Math.PI) * 0.6 : 0;
+      const y = fin.y0 - (fin.y0 - yEnd) * Math.pow(u, 2.15) - dip, prevY = cam.pos.y, sp = Math.max(0, (prevY - y) / Math.max(dt, 1e-3));
+      const r = 2.3, ang = fin.t * 0.22, sh = Math.min(0.06, sp * 0.0016);
+      cam.pos.set(Math.cos(ang) * r + (Math.random() - 0.5) * sh, y, Math.sin(ang) * r + (Math.random() - 0.5) * sh);
+      const roll = fin.t * 0.32 + Math.sin(fin.t * 1.3) * 0.15; camera.up.set(Math.cos(roll), 0.0001, Math.sin(roll));
+      camera.position.copy(cam.pos); camera.lookAt(cam.pos.x * 0.6, cam.pos.y + 20, cam.pos.z * 0.6);
+      camera.fov = baseFov + Math.min(30, sp * 0.85); camera.updateProjectionMatrix();
+      PU.uStreak.value = Math.min(1, sp / 26); SFX.wind(Math.min(1, sp / 28));
+      const f = Math.floor((y - 2) / FH); if (f < fin.shown && f >= 0 && f < NFLOORS) { fin.shown = f; nomeEl.textContent = FLOORS[f].t; nomeEl.classList.remove("on"); void nomeEl.offsetWidth; nomeEl.classList.add("on"); const c = new T.Color(FCOL[f]); PU.uFlash.value.set(c.r, c.g, c.b).multiplyScalar(0.16); SFX.whoosh(); }
+      PU.uFlash.value.multiplyScalar(Math.max(0, 1 - dt * 2.5));
+      for (const pg of pages) { pg.m.rotation.set(t * 1.3 + pg.ph, t * 0.9 + pg.ph, Math.sin(t * 2 + pg.ph)); }
+      PU.uBlack.value = sstep(0.8, 1.0, u);
+      if (u >= 1) { fin.stage = "preto"; fin.t = 0; SFX.thud(); SFX.wind(0); PU.uStreak.value = 0; nomeEl.classList.remove("on"); }
+    }
+    if (fin.stage === "preto") { PU.uBlack.value = 1; if (fin.t > 1.5) wake(); }
+    if (fin.stage === "clarear") { PU.uBlack.value = 1 - sstep(0, 2.4, fin.t); if (fin.t > 2.4) { PU.uBlack.value = 0; fin.stage = null; } }
+    // livros voltando para as estantes durante a onda
+    for (const b of flyers) if (b.back > 0) { const a = Math.atan2(b.g.position.z, b.g.position.x); b.g.position.lerp(V3(Math.cos(a) * (RO - 0.5), b.g.position.y, Math.sin(a) * (RO - 0.5)), b.back); b.g.scale.setScalar(1.6 * (1 - b.back)); }
+    { const P = candles.flames.geometry.attributes.position.array; for (let i = 0; i < candles.length; i++) if (candles[i].y < U.uWave.value) P[i * 3 + 1] = -999; candles.flames.geometry.attributes.position.needsUpdate = true; }
+  }
+
   /* ---------------- abertura ---------------- */
   const fontsReady = document.fonts ? document.fonts.ready.catch(() => null) : Promise.resolve();
   fetch("/biblioteca/atividades.json").then((r) => (r.ok ? r.json() : [])).catch(() => []).then((list) => fontsReady.then(() => list)).then((list) => {
@@ -1413,6 +1650,7 @@
     loadVisitors();
   });
   renderIndex(); go(0, true); showIntro();
+  if (location.hash === "#recado") setTimeout(() => formRecado(), 600);
   requestAnimationFrame(frame);
   setTimeout(() => $("fade").classList.add("gone"), 500);
 })();

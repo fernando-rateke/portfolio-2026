@@ -149,6 +149,7 @@ button:disabled { opacity: 0.35; }
     else if (m.t === "state") { paired = true; $("gate").hidden = true; state = m; render(); }
   }
   function render() {
+    if (state) { const lb = state.fin === "infinito" ? "Recomeçar" : state.fin === "topo" ? "Terminar" : state.fin ? "…" : "Entrada"; const be = $("bEntry"); if (be.textContent !== lb) be.textContent = lb; }
     if (!state) return;
     $("wK").textContent = state.g || "";
     $("wT").textContent = state.title + (state.sub ? " · " + state.sub : ""); status("ok");
@@ -163,7 +164,8 @@ button:disabled { opacity: 0.35; }
 
   /* botões */
   const tap = (id, fn) => $(id).addEventListener("click", () => { vib(8); fn(); });
-  tap("bBack", () => send({ t: "back" })); tap("bEntry", () => send({ t: "home" }));
+  // no topo o botão do meio vira Terminar; na tela do fim, Recomeçar
+  tap("bBack", () => send({ t: "back" })); tap("bEntry", () => send(state && (state.fin === "topo" || state.fin === "infinito") ? { t: "fim" } : { t: "home" }));
   tap("bList", () => $("sheet").classList.add("on")); tap("sheetX", () => $("sheet").classList.remove("on"));
   $("list").addEventListener("click", (e) => { const b = e.target.closest("button[data-i]"); if (!b) return; vib(8); send({ t: "go", i: +b.dataset.i }); $("sheet").classList.remove("on"); });
   tap("bClose", () => { send({ t: "close" }); zoomOn = false; $("bZoom").classList.remove("on"); });

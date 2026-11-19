@@ -54,7 +54,7 @@
     add(new T.BoxGeometry(0.62, 0.03, 0.2), keep(new T.MeshStandardMaterial({ color: "#c9c3b4", roughness: 0.6 })), 0, 0.79, -RZ + 1.0, 0.04);
 
     /* ---------------- luz ---------------- */
-    scene.add(new T.AmbientLight("#2a3c58", 1.05));
+    scene.add(new T.AmbientLight("#2a3c58", 1.35));
     const moon = new T.DirectionalLight("#5a74b0", 0.6); moon.position.set(8, 4, -1); scene.add(moon);
     const bulb = new T.PointLight("#ff8a4a", 0.25, 6, 2); bulb.position.set(RX + 1, 1.2, 0); scene.add(bulb);
 
@@ -133,7 +133,11 @@
     /* ---------------- os fios: saem dos monitores, correm pelo chão e sobem pelas paredes ---------------- */
     const cableMat = keep(new T.MeshStandardMaterial({ color: "#0c0d10", roughness: 0.45, metalness: 0.2 }));
     const cableMat2 = keep(new T.MeshStandardMaterial({ color: "#2a1414", roughness: 0.5 }));
-    function tube(pts, r, mat) { const curve = new T.CatmullRomCurve3(pts, false, "centripetal"); const m = new T.Mesh(keep(new T.TubeGeometry(curve, Math.max(24, pts.length * 14), r, 5, false)), mat); scene.add(m); }
+    const LIVE_FS = `uniform float uT, uLen, uSeed, uSp; uniform vec3 uC; varying vec2 vUv; void main(){ float p = fract(vUv.x * uLen * 0.6 - uT * uSp + uSeed); float pulse = smoothstep(0.0, 0.03, p) * smoothstep(0.14, 0.03, p); vec3 c = vec3(0.025, 0.03, 0.035) + uC * pulse * 2.4 + uC * 0.05; gl_FragColor = vec4(c, 1.0); }`;
+    const lives = [];
+    function tube(pts, r, mat, live) { const curve = new T.CatmullRomCurve3(pts, false, "centripetal"); let m2 = mat;
+      if (live) { m2 = keep(new T.ShaderMaterial({ uniforms: { uT: { value: 0 }, uLen: { value: curve.getLength() }, uSeed: { value: rnd() }, uSp: { value: 0.6 + rnd() * 1.2 }, uC: { value: new T.Color(live) } }, vertexShader: "varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }", fragmentShader: LIVE_FS })); lives.push(m2); }
+      const m = new T.Mesh(keep(new T.TubeGeometry(curve, Math.max(24, pts.length * 14), r, 5, false)), m2); scene.add(m); }
     function cables() {
       const srcs = monitors.concat(statics.length ? [] : []).map((m) => m.g.position.clone().add(V3(0, 0.15, -0.12)));
       for (let i = 0; i < 46; i++) {
@@ -143,12 +147,62 @@
         const n = 2 + Math.floor(rnd() * 3); for (let k = 0; k < n; k++) { p = V3(Math.max(-RX + 0.2, Math.min(RX - 0.2, p.x + (rnd() - 0.5) * 3.2)), 0.015 + rnd() * 0.02, Math.max(-RZ + 0.2, Math.min(RZ - 0.3, p.z + (rnd() - 0.2) * 2.4))); pts.push(p); }
         const wall = rnd(); // sobe pela parede mais perto ou some no rodapé
         if (wall < 0.55) { const toX = Math.abs(p.x) > Math.abs(p.z) * 1.2; const q = toX ? V3(Math.sign(p.x) * (RX - 0.04), 0.03, p.z) : V3(p.x, 0.03, -RZ + 0.04); pts.push(q, q.clone().setY(0.9 + rnd() * 1.4), q.clone().setY(RHt - 0.03).add(toX ? V3(0, 0, (rnd() - 0.5) * 0.8) : V3((rnd() - 0.5) * 0.8, 0, 0))); }
-        tube(pts, 0.008 + rnd() * 0.016, rnd() < 0.12 ? cableMat2 : cableMat);
+        const lv = rnd(); tube(pts, 0.008 + rnd() * 0.016, rnd() < 0.12 ? cableMat2 : cableMat, lv < 0.22 ? "#5ce8f8" : lv < 0.3 ? "#ff3a4a" : null);
       }
       // fios pendurados no teto, fazendo barriga
       for (let i = 0; i < 16; i++) { const a = V3((rnd() - 0.5) * 2 * RX * 0.9, RHt - 0.02, (rnd() - 0.5) * 2 * RZ * 0.9), b = V3(a.x + (rnd() - 0.5) * 3, RHt - 0.02, a.z + (rnd() - 0.5) * 3), m = a.clone().lerp(b, 0.5).setY(RHt - 0.4 - rnd() * 0.7); tube([a, a.clone().lerp(m, 0.5).setY(RHt - 0.25 - rnd() * 0.2), m, b.clone().lerp(m, 0.5).setY(RHt - 0.25 - rnd() * 0.2), b], 0.01 + rnd() * 0.012, cableMat); }
     }
 
+    /* ---------------- as torres do Navi: gabinetes empilhados, luzes piscando e ventoinhas girando ---------------- */
+    const metal = keep(new T.MeshStandardMaterial({ color: "#3a3e44", roughness: 0.55, metalness: 0.5 })), metalD = keep(new T.MeshStandardMaterial({ color: "#1c1e22", roughness: 0.6, metalness: 0.4 }));
+    const LED_FS = `uniform float uT, uSeed; varying vec2 vUv; float h(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+      void main(){ vec2 g = vUv * vec2(6.0, 14.0), id = floor(g), f = fract(g) - 0.5; float s = h(id + uSeed); float on = step(0.45, h(id + floor(uT * (1.0 + s * 5.0)) * 0.37 + uSeed));
+        vec3 c = s < 0.6 ? vec3(0.3, 1.0, 0.5) : s < 0.85 ? vec3(1.0, 0.7, 0.2) : vec3(1.0, 0.2, 0.25); float d = smoothstep(0.28, 0.12, length(f));
+        gl_FragColor = vec4(vec3(0.02) + c * d * on * 1.6, 1.0); }`;
+    const leds = [], fans = [];
+    function tower(x, z, ry, n) {
+      const g = new T.Group(); g.position.set(x, 0, z); g.rotation.y = ry; scene.add(g);
+      for (let k = 0; k < n; k++) { const y = k * 0.62; const b = new T.Mesh(keep(new T.BoxGeometry(0.5, 0.6, 0.55)), k % 2 ? metal : metalD); b.position.set(0, y + 0.3, 0); g.add(b);
+        const lm = keep(new T.ShaderMaterial({ uniforms: { uT: { value: 0 }, uSeed: { value: rnd() * 50 } }, vertexShader: "varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }", fragmentShader: LED_FS })); leds.push(lm);
+        const lp = new T.Mesh(keep(new T.PlaneGeometry(0.16, 0.42)), lm); lp.position.set(-0.13, y + 0.3, 0.277); g.add(lp);
+        const fan = new T.Group(); fan.position.set(0.1, y + 0.3, 0.28); g.add(fan); const ring = new T.Mesh(keep(new T.TorusGeometry(0.11, 0.012, 6, 24)), metalD); fan.add(ring);
+        const blades = new T.Group(); fan.add(blades); for (let i = 0; i < 7; i++) { const bl = new T.Mesh(keep(new T.BoxGeometry(0.1, 0.035, 0.004)), keep(new T.MeshStandardMaterial({ color: "#0e1012", roughness: 0.4 }))); bl.position.set(Math.cos(i / 7 * 6.28) * 0.05, Math.sin(i / 7 * 6.28) * 0.05, 0.005); bl.rotation.z = i / 7 * 6.28 + 0.4; blades.add(bl); }
+        const fl = new T.PointLight("#5ce8f8", 0.12, 1.2, 2); fl.position.set(0.1, y + 0.3, 0.4); g.add(fl); fans.push({ blades, sp: 9 + rnd() * 14 }); }
+      return g;
+    }
+    tower(-RX + 0.35, -1.9, Math.PI / 2, 4); tower(-RX + 0.35, -1.3, Math.PI / 2, 3); tower(-RX + 0.35, 0.4, Math.PI / 2, 2); tower(RX - 0.4, -RZ + 0.45, -Math.PI / 4, 4); tower(RX - 0.35, 1.7, -Math.PI / 2, 3); tower(-3.0, -RZ + 0.35, 0, 3);
+    // os tubos de refrigeração: líquido azul correndo do Navi para o teto
+    const COOL_FS = `uniform float uT; varying vec2 vUv; void main(){ float f = fract(vUv.x * 6.0 - uT * 0.5); float b = smoothstep(0.0, 0.5, f) * smoothstep(1.0, 0.5, f); gl_FragColor = vec4((vec3(0.06, 0.28, 0.42) * (0.5 + b) + vec3(0.4, 0.7, 0.85) * pow(b, 6.0)) * 0.7, 0.4 + b * 0.25); }`;
+    const coolM = keep(new T.ShaderMaterial({ uniforms: { uT: { value: 0 } }, vertexShader: "varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }", fragmentShader: COOL_FS, transparent: true, depthWrite: false }));
+    for (const [a, b] of [[V3(-RX + 0.6, 2.3, -1.9), V3(-1.2, RHt - 0.05, -2.6)], [V3(-RX + 0.6, 1.6, -1.3), V3(-RX + 0.1, RHt - 0.05, 1.0)], [V3(RX - 0.7, 2.4, -RZ + 0.7), V3(1.4, RHt - 0.05, -1.8)]]) {
+      const m = a.clone().lerp(b, 0.5).add(V3(0, -0.5, 0.2)); scene.add(new T.Mesh(keep(new T.TubeGeometry(new T.CatmullRomCurve3([a, a.clone().add(V3(0.3, 0.2, 0)), m, b]), 40, 0.035, 8, false)), coolM)); }
+    // o futon no canto, com o ursinho de pelúcia em cima
+    { const sheet = keep(new T.MeshStandardMaterial({ color: "#8a8c94", roughness: 0.95 })); add(new T.BoxGeometry(1.0, 0.1, 2.0), sheet, -3.6, 0.05, 2.3); add(new T.BoxGeometry(0.6, 0.12, 0.35), keep(new T.MeshStandardMaterial({ color: "#a8a8b0", roughness: 1 })), -3.6, 0.14, 1.45);
+      const fur = keep(new T.MeshStandardMaterial({ color: "#b08060", roughness: 1 })), dark = keep(new T.MeshStandardMaterial({ color: "#0a0808" }));
+      const bear = new T.Group(); bear.position.set(-3.45, 0.1, 2.0); bear.rotation.y = 0.9; scene.add(bear);
+      const sp = (r, x, y, z, m = fur, sx = 1, sy = 1, sz = 1) => { const o = new T.Mesh(keep(new T.SphereGeometry(r, 16, 12)), m); o.position.set(x, y, z); o.scale.set(sx, sy, sz); bear.add(o); return o; };
+      sp(0.15, 0, 0.15, 0, fur, 1, 1.1, 0.9); sp(0.12, 0, 0.38, 0.02); sp(0.045, -0.09, 0.48, 0); sp(0.045, 0.09, 0.48, 0); sp(0.05, 0, 0.35, 0.11, fur, 1, 0.8, 0.8);
+      sp(0.014, -0.045, 0.41, 0.11, dark); sp(0.014, 0.045, 0.41, 0.11, dark); sp(0.016, 0, 0.36, 0.155, dark);
+      for (const sx of [-1, 1]) { sp(0.055, sx * 0.14, 0.17, 0.05); sp(0.06, sx * 0.08, 0.04, 0.12, fur, 1, 0.8, 1.2); } }
+    // frases que aparecem e somem no ar, perto do teto
+    const glyphs = [];
+    for (const [txt, x, y, z, ry] of [["PRESENT DAY", -1.6, 2.55, -1.2, 0.4], ["PRESENT TIME", 1.7, 2.45, -1.6, -0.5], ["Let's all love Lain", -2.6, 2.2, 0.8, 1.2], ["Close the world, Open the nExt", 0.4, 2.7, 0.2, 0], ["No matter where you are, everyone is always connected.", 2.6, 2.1, 0.9, -1.2]]) {
+      const c = document.createElement("canvas"); c.width = 1024; c.height = 128; const g = c.getContext("2d"); g.fillStyle = "#fff"; g.font = "500 54px 'Geist Mono', monospace"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(txt, 512, 64, 1000);
+      const m = new T.Mesh(keep(new T.PlaneGeometry(2.2, 0.275)), keep(new T.MeshBasicMaterial({ map: keep(new T.CanvasTexture(c)), color: "#9ff4ff", transparent: true, opacity: 0, depthWrite: false, blending: T.AdditiveBlending, fog: false })));
+      m.position.set(x, y, z); m.rotation.y = ry; scene.add(m); glyphs.push({ m, ph: rnd() * 20, y }); }
+
+    /* ---------------- ela: a Lain, em pé no meio dos fios ---------------- */
+    let lain = null;
+    load("lain.glb").then((gl) => {
+      if (!gl) return;
+      const root = gl.scene; root.traverse((o) => { if (o.isMesh) { o.frustumCulled = false; const mm = o.material; if (mm) { mm.roughness = 0.85; mm.metalness = 0; } } });
+      const box = new T.Box3().setFromObject(root), sz = box.getSize(new T.Vector3()), s = 1.5 / sz.y;
+      const g = new T.Group(); root.scale.setScalar(s); root.position.set(-(box.min.x + box.max.x) / 2 * s, -box.min.y * s, -(box.min.z + box.max.z) / 2 * s); g.add(root);
+      g.position.set(-1.55, 0, -0.95); g.lookAt(OVER.pos.x, 0, OVER.pos.z); scene.add(g);
+      const fill = new T.PointLight("#7fd8e8", 0.6, 3, 2); fill.position.set(-1.0, 1.6, -0.2); scene.add(fill);
+      if (gl.animations && gl.animations.length) { mixer = new T.AnimationMixer(root); const clip = gl.animations[0], fps = 24, fr = Math.round(clip.duration * fps); const sub = T.AnimationUtils.subclip(clip, "parada", Math.min(14, fr - 2), fr, fps); const act = mixer.clipAction(sub); act.play(); }
+      lain = g;
+    });
     let mixer = null;
 
     /* ---------------- o zumbido ---------------- */
@@ -164,6 +218,33 @@
       audio = { ac, out, stop: () => { try { out.gain.cancelScheduledValues(ac.currentTime); out.gain.setValueAtTime(out.gain.value, ac.currentTime); out.gain.linearRampToValueAtTime(0, ac.currentTime + 0.6); setTimeout(() => { oscs.concat([ns, lfo]).forEach((o) => { try { o.stop(); } catch (e) { /* já parou */ } }); ac.close(); }, 800); } catch (e) { /* sem som */ } } };
     } catch (e) { audio = null; }
 
+    /* ---------------- a imagem passa por um tubo: aberração, linhas, grão, sombras vermelhas pontilhadas e falhas ---------------- */
+    let prt = null; const postScene = new T.Scene(), postCam = new T.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    const txt = (() => { const c = document.createElement("canvas"); c.width = 1024; c.height = 576; const g = c.getContext("2d"); g.fillStyle = "#fff"; g.font = "700 64px 'Geist Mono', monospace"; g.textAlign = "center"; g.fillText("PRESENT DAY", 512, 260); g.fillText("PRESENT TIME", 512, 340); g.font = "500 22px 'Geist Mono', monospace"; g.fillText("HAHAHAHA", 512, 400); return keep(new T.CanvasTexture(c)); })();
+    const POST_FS = `uniform sampler2D tD, tTxt; uniform float uT, uG, uTx; uniform vec2 uRes; varying vec2 vU;
+      float h(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+      float vn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(h(i), h(i + vec2(1, 0)), f.x), mix(h(i + vec2(0, 1)), h(i + vec2(1, 1)), f.x), f.y); }
+      void main(){ vec2 c = vU - 0.5; float r2 = dot(c, c); vec2 uv = 0.5 + c * (1.0 + r2 * 0.07);
+        float band = floor(uv.y * 26.0); float gl = uG * step(0.7, h(vec2(band, floor(uT * 16.0)))); uv.x += (h(vec2(band * 1.3, floor(uT * 22.0))) - 0.5) * 0.09 * gl;
+        float ca = 0.0012 + r2 * 0.007 + gl * 0.008;
+        vec3 col = vec3(texture2D(tD, uv + vec2(ca, 0.0)).r, texture2D(tD, uv).g, texture2D(tD, uv - vec2(ca, 0.0)).b);
+        float lum = dot(col, vec3(0.3, 0.59, 0.11));
+        vec2 px = vU * uRes / 4.5; vec2 cell = fract(px) - 0.5; float dotm = smoothstep(0.34, 0.2, length(cell));
+        float blot = smoothstep(0.55, 0.8, vn(px / 34.0 + vec2(uT * 0.03, 0.0)) * 0.7 + vn(px / 11.0) * 0.3);
+        col = mix(col, vec3(0.62, 0.02, 0.06), dotm * smoothstep(0.07, 0.012, lum) * blot * 0.75);
+        col *= 0.9 + 0.1 * sin(vU.y * uRes.y * 1.7); col += (h(vU * uRes + fract(uT * 7.0) * 100.0) - 0.5) * 0.06;
+        col *= smoothstep(0.9, 0.3, length(c * vec2(1.0, 1.15)));
+        vec4 tx = texture2D(tTxt, vU); col = mix(col, vec3(1.0), tx.a * uTx * (0.85 + 0.15 * sin(uT * 60.0)));
+        col = mix(col, vec3(dot(col, vec3(0.33))), gl * 0.5);
+        gl_FragColor = vec4(col, 1.0); }`;
+    const postM = keep(new T.ShaderMaterial({ uniforms: { tD: { value: null }, tTxt: { value: txt }, uT: { value: 0 }, uG: { value: 0 }, uTx: { value: 0 }, uRes: { value: new T.Vector2(innerWidth, innerHeight) } }, vertexShader: "varying vec2 vU; void main(){ vU = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }", fragmentShader: POST_FS, depthTest: false, depthWrite: false }));
+    postScene.add(new T.Mesh(keep(new T.PlaneGeometry(2, 2)), postM));
+    let glitchT = 6, glitchOn = 0, txtOn = 0;
+    // de vez em quando, o modem disca e a linha chia
+    function modem() { if (!audio) return; const ac = audio.ac, t0 = ac.currentTime, g = ac.createGain(); g.gain.value = 0.0; g.connect(audio.out); g.gain.linearRampToValueAtTime(0.06, t0 + 0.05);
+      const seq = [[350, 0.35], [440, 0.35], [1375, 0.3], [2100, 0.4], [980, 0.15], [1650, 0.15], [1180, 0.2], [2250, 0.5]]; let t = t0;
+      for (const [f, d] of seq) { const o = ac.createOscillator(); o.type = "square"; o.frequency.setValueAtTime(f, t); if (f > 2000) o.frequency.linearRampToValueAtTime(f * 0.7, t + d); o.connect(g); o.start(t); o.stop(t + d); t += d; }
+      g.gain.setValueAtTime(0.06, t); g.gain.linearRampToValueAtTime(0, t + 0.3); }
     /* ---------------- câmera ---------------- */
     const OVER = { pos: V3(1.9, 1.62, 2.6), tgt: V3(-0.15, 1.05, -RZ + 0.3) };
     const cam = { pos: OVER.pos.clone(), tgt: OVER.tgt.clone(), yaw: 0, pitch: 0, yawT: 0, pitchT: 0 };
@@ -175,7 +256,7 @@
       focus = m; const d = 1.05 + m.hgt * 2.2, right = V3(m.n.z, 0, -m.n.x).multiplyScalar(innerWidth > 760 ? m.w * 0.55 : 0);
       to({ pos: m.c.clone().addScaledVector(m.n, d).add(V3(0, 0.05, 0)).add(right), tgt: m.c.clone().add(right) });
       if (m.main) ctx.showPanel("Área técnica", "O curso técnico", `<p>Ensino Médio integrado ao Técnico em Análise e Desenvolvimento de Sistemas, no SESI SENAI. Cada monitor deste quarto guarda uma matéria do curso.</p><div class="links">${subjects.map((s) => `<a href="#" data-sala="${ctx.esc(s.name)}">${ctx.esc(s.name)}</a>`).join("")}</div>`);
-      else if (m.sj) ctx.showPanel("Área técnica", m.sj.name, `<p>${ctx.esc(m.sj.desc || "")}</p><div class="links">${m.sj.acts.map((a, i) => `<a href="#" data-ativ="${ctx.esc(m.sj.name)}|${i}">${ctx.esc(a.t)}</a>`).join("")}</div>`);
+      else if (m.sj) setTimeout(() => { if (focus === m) (ctx.openAct ? ctx.openAct(m.sj.name, 0) : null); }, ctx.reduce ? 0 : 1500);
     }
 
     /* ---------------- o que o resto da biblioteca usa ---------------- */
@@ -194,14 +275,20 @@
         noiseT += dt; if (noiseT > 0.08) { noiseT = 0; statics.forEach((s) => s.nt.draw()); }
         for (const m of monitors) { m.hot += ((hot === m || focus === m ? 1 : 0) - m.hot) * Math.min(1, dt * 6); m.mat.uniforms.uT.value = t; m.mat.uniforms.uHot.value = m.hot; m.light.intensity = (m.main ? 1.1 : 0.55) * (0.92 + 0.08 * Math.sin(t * 23 + m.c.x * 5)) * (1 + m.hot * 0.6); }
         for (const s of statics) s.mat.uniforms.uT.value = t;
+        for (const l of lives) l.uniforms.uT.value = t; for (const l of leds) l.uniforms.uT.value = t; coolM.uniforms.uT.value = t;
+        for (const f of fans) f.blades.rotation.z -= dt * f.sp;
+        for (const gq of glyphs) { const v = Math.sin(t * 0.35 + gq.ph); gq.m.material.opacity = Math.max(0, v) * 0.35 * (0.7 + 0.3 * Math.sin(t * 40 + gq.ph)); gq.m.position.y = gq.y + Math.sin(t * 0.2 + gq.ph) * 0.06; }
+        glitchT -= dt; if (glitchT < 0) { glitchT = 6 + Math.random() * 9; glitchOn = 0.18 + Math.random() * 0.3; if (Math.random() < 0.45) txtOn = 1.4; if (Math.random() < 0.3) modem(); }
+        glitchOn = Math.max(0, glitchOn - dt); txtOn = Math.max(0, txtOn - dt);
+        postM.uniforms.uT.value = t; postM.uniforms.uG.value = ctx.reduce ? 0 : glitchOn > 0 ? 1 : 0; postM.uniforms.uTx.value = ctx.reduce ? 0 : Math.min(1, txtOn * 2) * (txtOn > 0 ? 1 : 0);
       },
-      render(renderer) { renderer.setRenderTarget(null); renderer.render(scene, camera); },
-      resize(w, h) { camera.aspect = w / h; camera.fov = w / h < 0.8 ? 74 : 58; camera.updateProjectionMatrix(); },
+      render(renderer) { if (!prt) prt = new T.WebGLRenderTarget(innerWidth * Math.min(devicePixelRatio || 1, 2), innerHeight * Math.min(devicePixelRatio || 1, 2)); renderer.setRenderTarget(prt); renderer.render(scene, camera); postM.uniforms.tD.value = prt.texture; renderer.setRenderTarget(null); renderer.render(postScene, postCam); },
+      resize(w, h) { camera.aspect = w / h; camera.fov = w / h < 0.8 ? 74 : 58; camera.updateProjectionMatrix(); const pr = Math.min(devicePixelRatio || 1, 2); if (prt) prt.setSize(w * pr, h * pr); postM.uniforms.uRes.value.set(w * pr, h * pr); },
       pick(ndc) { ray.setFromCamera(ndc, camera); const hits = ray.intersectObjects(monitors.map((m) => m.pl), false); const m = hits[0] && monitors.find((x) => x.pl === hits[0].object); hot = m || null; return m ? { label: m.main ? ["Área técnica", "o curso inteiro"] : [m.sj ? m.sj.name : "Sem sinal", m.sj ? "ver as atividades" : ""], go: () => openMon(m) } : null; },
       look(dx, dy) { if (glide) return; cam.yawT = Math.max(-0.9, Math.min(0.9, cam.yawT - dx * 0.003)); cam.pitchT = Math.max(-0.35, Math.min(0.35, cam.pitchT - dy * 0.003)); },
       back() { if (focus) { focus = null; to(OVER); return true; } return false; },
       places() { return [{ id: "geral", t: "O quarto" }].concat(monitors.filter((m) => m.sj).map((m, i) => ({ id: "m" + i, t: m.sj.name }))); },
-      dispose() { if (audio) audio.stop(); disposables.forEach((o) => o.dispose && o.dispose()); scene.traverse((o) => { if (o.isMesh && o.geometry) o.geometry.dispose(); }); },
+      dispose() { if (audio) audio.stop(); if (prt) prt.dispose(); disposables.forEach((o) => o.dispose && o.dispose()); scene.traverse((o) => { if (o.isMesh && o.geometry) o.geometry.dispose(); }); },
     };
   };
 })();

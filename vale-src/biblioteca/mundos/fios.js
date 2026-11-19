@@ -257,9 +257,11 @@
     /* ---------------- o que o resto da biblioteca usa ---------------- */
     const ray = new T.Raycaster();
     let blinkT = 0, noiseT = 0;
+    const fx = ctx.fantasy(scene, { center: V3(0, 1.6, -0.5), radius: 3.4, height: 1.2, colors: ["#5ce8f8", "#ff4a8a", "#b0f0ff"], count: 5, power: 0.6, dim: 0.85, motes: 200, moteSize: 0.01 });
     return {
       name: "Área técnica", sub: "o quarto dos fios",
       update(dt, t) {
+        fx.update(t);
         if (glide) { glide.u = Math.min(1, glide.u + dt / glide.dur); const e = smoother(glide.u); cam.pos.lerpVectors(glide.p0, glide.p1, e); cam.tgt.lerpVectors(glide.t0, glide.t1, e); if (glide.u >= 1) glide = null; }
         const k = 1 - Math.exp(-dt * 3.5); cam.yaw += (cam.yawT - cam.yaw) * k; cam.pitch += (cam.pitchT - cam.pitch) * k;
         const d = cam.tgt.clone().sub(cam.pos), r = d.length(), yw = Math.atan2(d.z, d.x) + cam.yaw, pt = Math.asin(Math.max(-0.99, Math.min(0.99, d.y / r))) + cam.pitch;

@@ -194,9 +194,11 @@
     setTimeout(() => { try { ctx.toast("Meu Amigo Totoro e Ponyo", "O ponto de ônibus", "Cada bolota plantada na grama guarda uma atividade. O velho ônibus passa de vez em quando."); } catch (e) { /* sem aviso */ } }, 900);
 
     const ray = new T.Raycaster(); let busT = 6;
+    const fx = ctx.fantasy(scene, { center: V3(0, 1.5, 0.5), radius: 7, height: 2, colors: ["#7affc8", "#c8ff7a", "#9ad8ff"], count: 7, power: 1.0, dim: 0.75, motes: 260, moteSize: 0.02 });
     return {
       name: "O ponto de ônibus", sub: "Ciências da Natureza",
       update(dt, t) {
+        fx.update(t);
         uT.value = t;
         if (glide) { glide.u = Math.min(1, glide.u + dt / glide.dur); const e = smoother(glide.u); cam.pos.lerpVectors(glide.p0, glide.p1, e); cam.tgt.lerpVectors(glide.t0, glide.t1, e); if (glide.u >= 1) glide = null; }
         const k = 1 - Math.exp(-dt * 3.5); cam.yaw += (cam.yawT - cam.yaw) * k; cam.pitch += (cam.pitchT - cam.pitch) * k;

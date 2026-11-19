@@ -110,9 +110,11 @@
     setTimeout(() => { try { ctx.toast("Frieren", "O campo de flores", "Cada tufo de flores que brilha mais forte guarda um agradecimento."); } catch (e) { /* sem aviso */ } }, 900);
 
     const ray = new T.Raycaster();
+    const fx = ctx.fantasy(scene, { center: V3(0, 1.6, -1), radius: 8, height: 2.2, colors: ["#9ec8ff", "#ffd890", "#c8a8ff"], count: 7, power: 1.2, dim: 0.7, motes: 320, moteSize: 0.025 });
     return {
       name: "O campo de flores", sub: "Agradecimentos",
       update(dt, t) {
+        fx.update(t);
         uT.value = t;
         if (glide) { glide.u = Math.min(1, glide.u + dt / glide.dur); const e = smoother(glide.u); cam.pos.lerpVectors(glide.p0, glide.p1, e); cam.tgt.lerpVectors(glide.t0, glide.t1, e); if (glide.u >= 1) glide = null; }
         const k = 1 - Math.exp(-dt * 3.5); cam.yaw += (cam.yawT - cam.yaw) * k; cam.pitch += (cam.pitchT - cam.pitch) * k;

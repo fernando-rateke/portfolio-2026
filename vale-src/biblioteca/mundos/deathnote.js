@@ -137,9 +137,11 @@
     setTimeout(() => { try { ctx.toast("Death Note", "O quarto do caderno", "Cada maçã da fruteira guarda uma atividade. O computador roda o Nós."); } catch (e) { /* sem aviso */ } }, 900);
 
     const ray = new T.Raycaster();
+    const fx = ctx.fantasy(scene, { center: V3(0.1, 1.5, -1.2), radius: 2.6, height: 1.2, colors: ["#b07aff", "#7affc8", "#ff6a8a"], count: 4, power: 0.6, dim: 0.75, motes: 160, moteSize: 0.01 });
     return {
       name: "O quarto do caderno", sub: "Linguagens",
       update(dt, t) {
+        fx.update(t);
         uT.value = t;
         if (glide) { glide.u = Math.min(1, glide.u + dt / glide.dur); const e = smoother(glide.u); cam.pos.lerpVectors(glide.p0, glide.p1, e); cam.tgt.lerpVectors(glide.t0, glide.t1, e); if (glide.u >= 1) glide = null; }
         const k = 1 - Math.exp(-dt * 3.5); cam.yaw += (cam.yawT - cam.yaw) * k; cam.pitch += (cam.pitchT - cam.pitch) * k;

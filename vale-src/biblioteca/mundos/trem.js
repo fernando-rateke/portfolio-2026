@@ -18,7 +18,7 @@
     function Builder() {
       const P = [], N = [], C = [], G = [];
       const nm = new T.Matrix3(), v = new T.Vector3(), tmp = new T.Color();
-      return {
+    return {
         add(geo, m, color, glow = 0) {
           const g = geo.index ? geo.toNonIndexed() : geo;
           if (!g.attributes.normal) g.computeVertexNormals();
@@ -364,12 +364,14 @@
     const sub = { name: "A jornada", acts: MEMS.map((m) => ({ t: m.t, s: m.tag, r: m.d, img: "trem/" + m.src.split("/").pop() })) };
     const look = { x: 0, y: 0, sx: 0, sy: 0 };
     build(); startSound();
+    const fx = ctx.fantasy(scene, { center: new T.Vector3(0, 1.7, -4), radius: 5, height: 1.4, colors: ["#ffc8e0", "#ffe090", "#a8d0ff"], count: 5, power: 0.6, dim: 0.8, motes: 220, moteSize: 0.018 });
     // o dragão branco passa de vez em quando, bem longe, mesmo sem o final
     { const dr = scene.userData.dragon; dr.next = 1e9; dr.g.visible = false; }
     const birds = new T.Group(); scene.add(birds); for (let k = 0; k < 9; k++) { const b = new T.Group(); for (const sd of [-1, 1]) { const w = new T.Mesh(new T.PlaneGeometry(2.2, 0.5), new T.MeshBasicMaterial({ color: 0xf4f0ea, side: T.DoubleSide })); w.position.x = sd * 1.1; b.add(w); } b.position.set(-Math.abs(k - 4) * 4, -Math.abs(k - 4) * 0.8, (k - 4) * 3); birds.add(b); } birds.visible = false; let birdT = 10;
     return {
       name: "O trem sobre a água", sub: "1º e 2º ano",
       update(dt, t) {
+        fx.update(t);
         time += dt; look.sx += (look.x - look.sx) * Math.min(1, dt * 2.5); look.sy += (look.y - look.sy) * Math.min(1, dt * 2.5);
         speed += (target - speed) * Math.min(1, dt * 1.2); travel += speed * dt;
         scene.userData.water.material.uniforms.uTravel.value = travel; scene.userData.water.material.uniforms.uTime.value = time;

@@ -189,9 +189,13 @@
     setTimeout(() => { try { ctx.toast("Evangelion", "Tokyo-3", "As atividades estão no banco, na máquina de bebidas e na passagem de nível. A cabine do elevador desce até a jaula e o portão leva à escola."); } catch (e) { /* sem aviso */ } }, 900);
 
     const ray = new T.Raycaster();
+    const fxH = ctx.fantasy(sceneH, { center: V3(0, 8, 6), radius: 9, height: 4, colors: ["#ff8a2a", "#ffd070", "#ff4a3a"], count: 5, power: 1.5, dim: 0.8, motes: 240, moteSize: 0.03 });
+    const fxS = ctx.fantasy(sceneS, { center: V3(-2, 3, 6), radius: 7, height: 2, colors: ["#ffd8a0", "#ffb0c8", "#a8d8ff"], count: 4, power: 0.8, dim: 0.85, motes: 220, moteSize: 0.02 });
+    const fx = ctx.fantasy(scene, { center: V3(0, 3.5, -2), radius: 11, height: 4, colors: ["#ffa040", "#5ae8d8", "#ff6a4a"], count: 7, power: 2.0, dim: 0.75, motes: 300, moteSize: 0.03 });
     return {
       name: "Tokyo-3", sub: "Matemática",
       update(dt, t) {
+        fx.update(t); fxH.update(t); fxS.update(t);
         uT.value = t;
         if (glide) { glide.u = Math.min(1, glide.u + dt / glide.dur); const e = smoother(glide.u); cam.pos.lerpVectors(glide.p0, glide.p1, e); cam.tgt.lerpVectors(glide.t0, glide.t1, e); if (glide.u >= 1) glide = null; }
         const k = 1 - Math.exp(-dt * 3.5); cam.yaw += (cam.yawT - cam.yaw) * k; cam.pitch += (cam.pitchT - cam.pitch) * k;

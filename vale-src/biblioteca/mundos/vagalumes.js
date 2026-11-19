@@ -407,9 +407,11 @@
     setTimeout(() => { try { ctx.toast("Túmulo dos Vaga-lumes", "O abrigo do lago", "Cada objeto marcado com um vaga-lume guarda uma atividade. O mosquiteiro, lá dentro, espera a noite."); } catch (e) { /* sem aviso */ } }, 900);
 
     const ray = new T.Raycaster();
+    const fx = ctx.fantasy(scene, { center: V3(1.5, 1.6, 0), radius: 7, height: 2, colors: ["#d8ffb0", "#a8e0ff", "#ffd8a0"], count: 5, power: 0, lights: false, dim: 1, motes: 160, moteSize: 0.016 });
     const api = {
       name: "O abrigo do lago", sub: "Ciências Humanas", scene,
       update(dt, t) {
+        fx.update(t);
         if (glide) { glide.u = Math.min(1, glide.u + dt / glide.dur); const e = smoother(glide.u); cam.pos.lerpVectors(glide.p0, glide.p1, e); cam.tgt.lerpVectors(glide.t0, glide.t1, e); if (glide.u >= 1) glide = null; }
         const k = 1 - Math.exp(-dt * 3.5); cam.yaw += (cam.yawT - cam.yaw) * k; cam.pitch += (cam.pitchT - cam.pitch) * k;
         const d = cam.tgt.clone().sub(cam.pos), r = d.length(), yw = Math.atan2(d.z, d.x) + cam.yaw, pt = Math.asin(Math.max(-0.99, Math.min(0.99, d.y / r))) + cam.pitch;

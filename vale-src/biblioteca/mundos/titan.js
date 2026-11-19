@@ -108,9 +108,11 @@
     setTimeout(() => { try { ctx.toast("Attack on Titan", "O alto da muralha", "Do outro lado está o que vem depois. Cada ponto da muralha guarda uma perspectiva."); } catch (e) { /* sem aviso */ } }, 900);
 
     const ray = new T.Raycaster();
+    const fx = ctx.fantasy(scene, { center: V3(3, WH + 2.2, -3), radius: 9, height: 3, colors: ["#ffd890", "#ff9ab8", "#9ad8ff"], count: 6, power: 1.2, dim: 0.75, motes: 260, moteSize: 0.03 });
     return {
       name: "O alto da muralha", sub: "Perspectivas para o futuro",
       update(dt, t) {
+        fx.update(t);
         uT.value = t;
         if (glide) { glide.u = Math.min(1, glide.u + dt / glide.dur); const e = smoother(glide.u); cam.pos.lerpVectors(glide.p0, glide.p1, e); cam.tgt.lerpVectors(glide.t0, glide.t1, e); if (glide.u >= 1) glide = null; }
         const k = 1 - Math.exp(-dt * 3.5); cam.yaw += (cam.yawT - cam.yaw) * k; cam.pitch += (cam.pitchT - cam.pitch) * k;

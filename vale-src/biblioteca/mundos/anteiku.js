@@ -153,9 +153,11 @@
     setTimeout(() => { try { ctx.toast("Tokyo Ghoul", "Anteiku", "Os livros em cima da mesa contam quem eu sou."); } catch (e) { /* sem aviso */ } }, 900);
 
     const ray = new T.Raycaster();
+    const fx = ctx.fantasy(scene, { center: V3(-0.6, 1.6, 1.4), radius: 3.6, height: 1.6, colors: ["#ffc870", "#c89aff", "#7ad8ff"], count: 6, power: 0.7, dim: 0.65, motes: 220, moteSize: 0.012 });
     return {
       name: "Anteiku", sub: "Quem sou",
       update(dt, t) {
+        fx.update(t);
         uT.value = t;
         if (glide) { glide.u = Math.min(1, glide.u + dt / glide.dur); const e = smoother(glide.u); cam.pos.lerpVectors(glide.p0, glide.p1, e); cam.tgt.lerpVectors(glide.t0, glide.t1, e); if (glide.u >= 1) glide = null; }
         const k = 1 - Math.exp(-dt * 3.5); cam.yaw += (cam.yawT - cam.yaw) * k; cam.pitch += (cam.pitchT - cam.pitch) * k;

@@ -1099,7 +1099,49 @@
     P.read = () => { arms.forEach((a, i) => { a.sh.rotation.x = -0.75; a.sh.rotation.z = (i ? -1 : 1) * 0.12; a.el.rotation.x = -1.25; }); head.rotation.x = 0.3; };
     return P;
   }
-  const worldCtx = () => ({ person: makePerson, T, base: "/biblioteca/mundos/", reduce, small, glowTex, esc, showPanel, closePanel, toast, aspect: () => innerWidth / innerHeight, subjects: () => subjects, textos: () => TEXTOS, perfil: () => ({ name: "Quem sou", acts: PERFIL.map((x) => Object.assign({ k: [], l: [] }, x, { r: x.r.replace(/\\n/g, "\n") })) }), openPages: (sub, i) => { if (sub && sub.acts[i]) showBook({ a: sub.acts[i], sub }); }, openAct: (name, i) => { const sub = subjects.find((x) => x.name === name); if (!sub || !sub.acts[i]) return; const b = books.find((x) => x.sub === sub && x.a === sub.acts[i]) || { a: sub.acts[i], sub }; showBook(b); } });
+  // luzes de fantasia para os mundos: fogos-fátuos que vagam (com luz de verdade), poeira encantada e luz principal mais discreta
+  function makeFantasy(scene, o = {}) {
+    const c = o.center || new T.Vector3(0, 1.5, 0), R = o.radius || 4, H = o.height || 2, cols = o.colors || ["#6ae0ff", "#b48aff", "#ffd27a"], dim = o.dim == null ? 0.7 : o.dim;
+    scene.traverse((l) => { if (l.isHemisphereLight || l.isAmbientLight) l.intensity *= dim; else if (l.isDirectionalLight) l.intensity *= 0.5 + dim * 0.5; });
+    const group = new T.Group(); scene.add(group);
+    const wisps = [];
+    for (let k = 0; k < (o.count || 5); k++) {
+      const col = new T.Color(cols[k % cols.length]);
+      const core = new T.Sprite(new T.SpriteMaterial({ map: glowTex, color: col.clone().lerp(new T.Color("#ffffff"), 0.5), transparent: true, depthWrite: false, blending: T.AdditiveBlending, fog: false })); core.scale.setScalar(R * 0.035 + 0.1);
+      const halo = new T.Sprite(new T.SpriteMaterial({ map: glowTex, color: col, transparent: true, opacity: 0.5, depthWrite: false, blending: T.AdditiveBlending, fog: false }));
+      const light = o.lights === false ? null : new T.PointLight(col, o.power || 1.0, R * 0.9, 2);
+      const NT = 12, tg = new T.BufferGeometry(), tp = new Float32Array(NT * 3); tg.setAttribute("position", new T.BufferAttribute(tp, 3));
+      const trail = new T.Points(tg, new T.PointsMaterial({ map: glowTex, color: col, size: R * 0.012 + 0.04, transparent: true, opacity: 0.55, depthWrite: false, blending: T.AdditiveBlending, fog: false })); trail.frustumCulled = false;
+      group.add(core, halo, trail); if (light) group.add(light);
+      wisps.push({ core, halo, light, trail, tp, hist: [], r: R * (0.35 + Math.random() * 0.65), a0: Math.random() * 6.28, sp: (0.06 + Math.random() * 0.08) * (Math.random() < 0.5 ? -1 : 1), y0: (Math.random() - 0.3) * H, ph: Math.random() * 10 });
+    }
+    const NM = small ? (o.motes || 260) >> 1 : (o.motes || 260), mg = new T.BufferGeometry(), mp = new Float32Array(NM * 3), ms = new Float32Array(NM * 2);
+    for (let i = 0; i < NM; i++) { const a = Math.random() * 6.28, r = Math.sqrt(Math.random()) * R * 1.2; mp.set([c.x + Math.cos(a) * r, c.y - H * 0.6 + Math.random() * H * 1.6, c.z + Math.sin(a) * r], i * 3); ms.set([Math.random(), Math.random()], i * 2); }
+    mg.setAttribute("position", new T.BufferAttribute(mp, 3)); mg.setAttribute("aS", new T.BufferAttribute(ms, 2));
+    const cv3 = cols.slice(0, 3).map((x) => new T.Color(x)); while (cv3.length < 3) cv3.push(cv3[0]);
+    const motes = new T.Points(mg, new T.ShaderMaterial({ uniforms: { uT: { value: 0 }, map: { value: glowTex }, uPx: { value: innerHeight * Math.min(devicePixelRatio || 1, 2) }, uS: { value: o.moteSize || 0.02 }, uH: { value: H * 1.6 }, uC0: { value: cv3[0] }, uC1: { value: cv3[1] }, uC2: { value: cv3[2] } }, transparent: true, depthWrite: false, blending: T.AdditiveBlending,
+      vertexShader: `attribute vec2 aS; uniform float uT, uPx, uS, uH; uniform vec3 uC0, uC1, uC2; varying vec3 vC; varying float vA;
+        void main(){ vec3 p = position; float up = mod(uT * (0.05 + aS.x * 0.08), 1.0); p.y += up * uH * 0.5; p.x += sin(uT * 0.3 + aS.y * 20.0) * 0.3; p.z += cos(uT * 0.25 + aS.x * 17.0) * 0.3;
+          vC = aS.y < 0.4 ? uC0 : aS.y < 0.75 ? uC1 : uC2; float tw = 0.5 + 0.5 * sin(uT * (1.5 + aS.x * 3.0) + aS.y * 40.0); vA = tw * smoothstep(0.0, 0.15, up) * smoothstep(1.0, 0.8, up);
+          vec4 mv = modelViewMatrix * vec4(p, 1.0); gl_PointSize = uPx * uS * (0.6 + aS.x) / max(0.3, -mv.z) * (0.5 + tw); gl_Position = projectionMatrix * mv; }`,
+      fragmentShader: "uniform sampler2D map; varying vec3 vC; varying float vA; void main(){ float a = texture2D(map, gl_PointCoord).a; gl_FragColor = vec4(vC * a * vA, a * vA); }" }));
+    motes.frustumCulled = false; group.add(motes);
+    return {
+      group,
+      update(t) {
+        motes.material.uniforms.uT.value = t;
+        for (const w of wisps) {
+          const a = w.a0 + t * w.sp, wob = Math.sin(t * 0.7 + w.ph) * R * 0.08, y = c.y + w.y0 + Math.sin(t * 0.9 + w.ph) * H * 0.2;
+          const x = c.x + Math.cos(a) * (w.r + wob), z = c.z + Math.sin(a) * (w.r + wob), pulse = 0.75 + 0.25 * Math.sin(t * 2.3 + w.ph * 3);
+          w.core.position.set(x, y, z); w.halo.position.set(x, y, z); w.halo.scale.setScalar((R * 0.18 + 0.4) * (0.85 + 0.3 * pulse)); w.halo.material.opacity = 0.45 * pulse;
+          if (w.light) { w.light.position.set(x, y, z); w.light.intensity = (o.power || 1.0) * pulse; }
+          w.hist.unshift(x, y, z); if (w.hist.length > w.tp.length) w.hist.length = w.tp.length; for (let i = 0; i < w.tp.length; i++) w.tp[i] = w.hist[i] != null ? w.hist[i] : w.hist[i % 3];
+          w.trail.geometry.attributes.position.needsUpdate = true;
+        }
+      },
+    };
+  }
+  const worldCtx = () => ({ fantasy: makeFantasy, person: makePerson, T, base: "/biblioteca/mundos/", reduce, small, glowTex, esc, showPanel, closePanel, toast, aspect: () => innerWidth / innerHeight, subjects: () => subjects, textos: () => TEXTOS, perfil: () => ({ name: "Quem sou", acts: PERFIL.map((x) => Object.assign({ k: [], l: [] }, x, { r: x.r.replace(/\\n/g, "\n") })) }), openPages: (sub, i) => { if (sub && sub.acts[i]) showBook({ a: sub.acts[i], sub }); }, openAct: (name, i) => { const sub = subjects.find((x) => x.name === name); if (!sub || !sub.acts[i]) return; const b = books.find((x) => x.sub === sub && x.a === sub.acts[i]) || { a: sub.acts[i], sub }; showBook(b); } });
   const riftFront = (w) => w.pos.clone().addScaledVector(V3(w.nx, 0, w.nz), 1.6).setY(w.room.c.y + 1.75);
   function enterWorld(w) {
     const id = WORLD_FILE[w.k];

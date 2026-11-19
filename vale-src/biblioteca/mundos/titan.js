@@ -81,7 +81,7 @@
     const tx = ctx.textos ? ctx.textos() : { futuro: [] };
     const list = tx.futuro && tx.futuro.length ? tx.futuro : [{ t: "Perspectivas para o futuro", s: "em breve", r: "Este texto ainda vai ser escrito." }];
     const sub = { name: "Perspectivas para o futuro", acts: list.map((a) => Object.assign({ k: [], l: [] }, a)) };
-    const SPOTS = [{ at: FLAG.clone().add(V3(0.6, 2.5, 0)), name: "a bandeira" }, { at: V3(6, WH + 1.1, 3.2), name: "o canhão" }, { at: V3(2.4, WH + 0.9, 0.3), name: "o soldado na beirada" }, { at: V3(16, WH + 1.1, 3.2), name: "o segundo canhão" }, { at: V3(26, WH + 1.1, 3.2), name: "o terceiro canhão" }];
+    const SPOTS = [{ at: V3(2.4, WH + 0.9, 0.3), name: "o soldado na beirada" }, { at: V3(6, WH + 1.1, 3.2), name: "o canhão" }, { at: FLAG.clone().add(V3(0.6, 2.5, 0)), name: "a bandeira" }, { at: V3(16, WH + 1.1, 3.2), name: "o segundo canhão" }, { at: V3(26, WH + 1.1, 3.2), name: "o terceiro canhão" }];
     const items = sub.acts.slice(0, SPOTS.length).map((a, i) => { const s = SPOTS[i]; const hit = add(new T.SphereGeometry(1.1, 8, 6), K(new T.MeshBasicMaterial()), s.at.x, s.at.y, s.at.z); hit.visible = false;
       const mk = new T.Sprite(K(new T.SpriteMaterial({ map: ctx.glowTex, color: 0xffd090, transparent: true, opacity: 0.6, depthWrite: false, blending: T.AdditiveBlending }))); mk.scale.setScalar(0.8); mk.position.copy(s.at).add(V3(0, 1.2, 0)); scene.add(mk); return { a, i, hit, mk, s, hot: 0 }; });
 

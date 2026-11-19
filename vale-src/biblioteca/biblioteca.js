@@ -258,7 +258,7 @@
   // aberta em nichos (um para cada parte); no vão, uma escada em espiral que flutua e sobe meia volta por andar
   const ALC = [ // nichos: andar, ângulo (graus), fundo, o que tem
     { id: "lareira", f: 0, a: 90, d: 2.6, kind: "lareira" },
-    { id: "porta", f: 0, a: 270, d: 1.4, kind: "porta" },
+    { id: "porta", f: 0, a: 270, d: 1.4, kind: "porta" }, { id: "alquimia", f: 0, a: 180, d: 4.2, kind: "alquimia" },
     { id: "quemsou", f: 1, a: 210, world: 0 }, { id: "trem", f: 1, a: 330, world: 6 },
     { id: "linguagens", f: 2, a: 45, world: 1, subj: "Área de Linguagens" }, { id: "matematica", f: 2, a: 135, world: 2, subj: "Área de Matemática" },
     { id: "natureza", f: 2, a: 225, world: 3, subj: "Ciências da Natureza" }, { id: "humanas", f: 2, a: 315, world: 4, subj: "Ciências Humanas" },
@@ -317,7 +317,8 @@
       // paredes dos lados (estantes) e do fundo
       for (const sg of [-1, 1]) { const a = AL(al, sg * hw, 0, -0.9), b = AL(al, sg * hw, 0, d); const len = a.distanceTo(b), tx = (b.x - a.x) / len, tz = (b.z - a.z) / len; W.wall(a.x, a.z, tx, tz, -sg * al.tv.x, -sg * al.tv.z, len, y0, y0 + AH, 0, 70 + al.a * 0.01 + sg, AH - 0.5, y0); }
       { const a = AL(al, -hw, 0, d), b = AL(al, hw, 0, d), len = a.distanceTo(b), tx = (b.x - a.x) / len, tz = (b.z - a.z) / len;
-        if (al.world != null || al.kind === "lareira" || al.kind === "porta") S.add(new T.PlaneGeometry(len, AH), M((a.x + b.x) / 2, y0 + AH / 2, (a.z + b.z) / 2, Math.atan2(-al.u.x, -al.u.z)), "#3E342E", 0);
+        if (al.kind === "porta") { /* atrás da porta não tem parede: lá fora fica a fachada */ }
+        else if (al.world != null || al.kind === "lareira") S.add(new T.PlaneGeometry(len, AH), M((a.x + b.x) / 2, y0 + AH / 2, (a.z + b.z) / 2, Math.atan2(-al.u.x, -al.u.z)), "#3E342E", 0);
         else W.wall(a.x, a.z, tx, tz, -al.u.x, -al.u.z, len, y0, y0 + AH, 0, 80 + al.a * 0.01, AH - 0.5, y0); }
       // a boca do nicho: pilastras, lintel com friso dourado e o painel até o teto
       const ry = Math.atan2(al.tv.x, al.tv.z) - Math.PI / 2;
@@ -634,6 +635,111 @@
   });
   const rifts = portals; // os mundos usam este nome
 
+
+  /* ---------------- do lado de fora: a fachada de pedra, o caminho e as lanternas da porta ---------------- */
+  const stoneTex = (() => { const c = document.createElement("canvas"); c.width = 512; c.height = 512; const g = c.getContext("2d"); g.fillStyle = "#2a2522"; g.fillRect(0, 0, 512, 512);
+    let s = 11; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
+    for (let y = 0, row = 0; y < 512; y += 42, row++) for (let x = -((row % 2) * 40); x < 512; x += 80) { const v = 70 + r() * 40; g.fillStyle = `rgb(${v},${v * 0.9},${v * 0.82})`; g.fillRect(x + 2, y + 2, 76, 38); for (let k = 0; k < 18; k++) { g.fillStyle = `rgba(0,0,0,${(r() * 0.12).toFixed(2)})`; g.fillRect(x + r() * 70, y + r() * 34, 4 + r() * 10, 2 + r() * 5); } }
+    const t = new T.CanvasTexture(c); t.wrapS = t.wrapT = T.RepeatWrapping; return t; })();
+  const OUT = PA.d + 0.02, DOOR_W = 1.56, DOOR_H = 4.4;
+  { const fac = new T.Group(); const mk = (w, h, x, y) => { const tex = stoneTex.clone(); tex.needsUpdate = true; tex.repeat.set(w / 3.2, h / 3.2); const m = new T.Mesh(new T.PlaneGeometry(w, h), new T.MeshBasicMaterial({ map: tex, color: "#c9b8a6" })); m.position.set(x, y, 0); fac.add(m); };
+    mk(13, 14, -DOOR_W - 6.5, 7); mk(13, 14, DOOR_W + 6.5, 7); mk(DOOR_W * 2, 14 - DOOR_H, 0, DOOR_H + (14 - DOOR_H) / 2);
+    const archS = Builder(); const NV = 11; for (let k = 0; k < NV; k++) { const a0 = k / NV * Math.PI, a1 = (k + 1) / NV * Math.PI, am = (a0 + a1) / 2, rr = DOOR_W + 0.3; archS.add(new T.BoxGeometry(2 * rr * Math.sin((a1 - a0) / 2) + 0.03, 0.6, 0.5), M(rr * Math.cos(am), DOOR_H - 0.6 + rr * 0.55 * Math.sin(am), 0.25, 0, 1, 1, 1, 0, am + Math.PI / 2), k === 5 ? GOLD : "#6E625A", 0); }
+    for (const sg of [-1, 1]) archS.add(new T.BoxGeometry(0.6, DOOR_H - 0.6, 0.5), M(sg * (DOOR_W + 0.3), (DOOR_H - 0.6) / 2, 0.25), "#6E625A", 0);
+    fac.add(new T.Mesh(archS.build(), structMat));
+    propize(fac); fac.position.copy(AL(PA, 0, 0, OUT)); fac.rotation.y = lookIn(fac.position) + Math.PI; scene.add(fac);
+    const path = new T.Mesh(new T.PlaneGeometry(3.2, 14), new T.MeshBasicMaterial({ map: (() => { const t = stoneTex.clone(); t.needsUpdate = true; t.repeat.set(1.2, 5); return t; })(), color: "#8a7c70" }));
+    path.rotation.x = -Math.PI / 2; propize(path); const pg = new T.Group(); pg.add(path); pg.position.copy(AL(PA, 0, 0.01, OUT + 7)); pg.rotation.y = lookIn(pg.position); scene.add(pg);
+    const grass = new T.Mesh(new T.PlaneGeometry(40, 30), new T.MeshBasicMaterial({ color: "#1d2418" })); grass.rotation.x = -Math.PI / 2; propize(grass); const gg = new T.Group(); gg.add(grass); gg.position.copy(AL(PA, 0, -0.01, OUT + 15)); gg.rotation.y = lookIn(gg.position); scene.add(gg);
+    for (const sg of [-1, 1]) { const p = AL(PA, sg * (DOOR_W + 1.25), 3.1, OUT + 0.35); const ln = new T.Mesh(new T.BoxGeometry(0.26, 0.42, 0.26), new T.MeshBasicMaterial({ color: "#FFC877" })); propize(ln, { emit: 1.2, emitC: "#FFB050" }); ln.position.copy(p); scene.add(ln);
+      const hs = new T.Sprite(new T.SpriteMaterial({ map: glowTex, color: 0xffb35c, transparent: true, opacity: 0.8, depthWrite: false, blending: T.AdditiveBlending })); hs.scale.set(1.6, 1.6, 1); hs.position.copy(p); scene.add(hs);
+      lightAt(AL(PA, sg * (DOOR_W + 1.25), 3.0, OUT + 0.8), "#FFB060", 1.3, 0.1); } }
+  addLight(AL(PA, 0, 3.2, -2.6).x, 3.2, AL(PA, 0, 3.2, -2.6).z, "#FFB868", 2.2, 0.04); // luz quente logo depois da porta
+  const doorOpen = { v: 0, to: 0 };
+  const doorBase = [doorL.rotation.y, doorR.rotation.y];
+
+  /* ---------------- a bancada de alquimia: as poções, o caldeirão borbulhando ---------------- */
+  const AQ = alc("alquimia"), potions = [], bubbleSrc = [];
+  prop("mesa-alquimista", (m) => { const p = AL(AQ, 0.3, 0, AQ.d - 0.95); place(m, { at: p, h: 1.84, ry: lookIn(p) + Math.PI / 2 }); }, 3);
+  const POT = [
+    { f: "pocoes", t: "Poções azuis", c: "#4FA8FF", size: 0.55 }, { f: "pocao-magica", t: "Poção mágica", c: "#FF6AD8", h: 0.36 },
+    { f: "pocao-caveira", t: "Poção da caveira", c: "#7CFF6A", size: 0.42 }, { f: "especiarias", t: "Frasco de especiarias", c: "#FFB04A", h: 0.36 },
+    { f: "garrafa-hera", t: "Garrafa de hera", c: "#6AFFB0", h: 0.42 }, { f: "frasco", t: "Frasco escuro", c: "#A06AFF", h: 0.24 }, { f: "tubos", t: "Tubos de ensaio", c: "#FF5A4A", size: 0.36 },
+  ];
+  prop("mesa-longa", (t) => {
+    const p = AL(AQ, -2.3, 0, AQ.d / 2 + 0.05), g = place(t, { at: p, h: 0.8, ry: lookIn(p) });
+    POT.forEach((o, i) => {
+      const z = 0.75 + i * (AQ.d - 1.4) / (POT.length - 1), q = AL(AQ, -2.3 + (i % 2 ? 0.12 : -0.12), 0, z);
+      prop(o.f, (k) => { const y = topOf(g, q.x, q.z); const pg = place(k, { at: V3(q.x, y, q.z), size: o.size, h: o.h, ry: lookIn(q) + i, emit: 0.35, emitC: o.c }); const c = clickable(pg, "pocao", o, [o.t, "beber um gole"]); potions.push(c); bubbleSrc.push({ p: V3(q.x, y + (o.h || o.size || 0.3) * 0.9, q.z), c: new T.Color(o.c) }); }, 3);
+    });
+    lightAt(AL(AQ, -1.8, 1.6, AQ.d / 2), "#B07AFF", 1.2, 0.08);
+  }, 3);
+  // o caldeirão: ferro torneado, três pés, um líquido que se mexe e solta vapor
+  const CAUL = AL(AQ, 1.75, 0, AQ.d - 2.05);
+  { const prof = [[0.0, 0.18], [0.32, 0.2], [0.52, 0.34], [0.6, 0.55], [0.57, 0.78], [0.5, 0.88], [0.55, 0.93], [0.5, 0.95]].map(([r, y]) => new T.Vector2(r, y));
+    const pot = new T.Mesh(new T.LatheGeometry(prof, 36), new T.MeshBasicMaterial({ color: "#232020" })); const g = new T.Group(); g.add(pot);
+    for (let k = 0; k < 3; k++) { const a = k / 3 * Math.PI * 2, leg = new T.Mesh(new T.CylinderGeometry(0.04, 0.06, 0.26, 6), new T.MeshBasicMaterial({ color: "#1a1818" })); leg.position.set(Math.cos(a) * 0.38, 0.13, Math.sin(a) * 0.38); g.add(leg); }
+    propize(g); g.position.copy(CAUL); scene.add(g);
+    const liq = new T.Mesh(new T.CircleGeometry(0.48, 40), new T.ShaderMaterial({ uniforms: Object.assign({ uC: { value: new T.Color("#5CFF8A") } }, U), vertexShader: PROP_VS,
+      fragmentShader: `${COMMON} uniform vec3 uC; varying vec3 vW; varying vec3 vN; varying vec2 vUv;
+        void main(){ vec2 p = vUv - 0.5; float r = length(p), a = atan(p.y, p.x);
+          float n = vnoise(vec3(p * 9.0 + vec2(sin(uTime * 0.7), cos(uTime * 0.6)), uTime * 0.8)) * 0.6 + vnoise(vec3(cos(a * 3.0 + uTime) * r * 6.0, sin(a * 3.0 + uTime) * r * 6.0, uTime)) * 0.4;
+          float bub = smoothstep(0.82, 0.9, vnoise(vec3(p * 22.0, uTime * 2.2)));
+          vec3 col = uC * (0.45 + 0.9 * n) + vec3(0.9, 1.0, 0.9) * bub * 0.8;
+          gl_FragColor = vec4(col * (1.0 - smoothstep(0.42, 0.5, r) * 0.6), 1.0); }` }));
+    liq.rotation.x = -Math.PI / 2; liq.position.copy(CAUL).add(V3(0, 0.84, 0)); scene.add(liq);
+    const cg = new T.Sprite(new T.SpriteMaterial({ map: glowTex, color: 0x5cff8a, transparent: true, opacity: 0.5, depthWrite: false, blending: T.AdditiveBlending })); cg.scale.set(2.2, 1.6, 1); cg.position.copy(CAUL).add(V3(0, 1.1, 0)); scene.add(cg);
+    lightAt(CAUL.clone().add(V3(0, 1.3, 0)), "#5CFF8A", 1.6, 0.12);
+    clickable(pot, "pocao", { t: "O caldeirão", c: "#5CFF8A" }, ["O caldeirão", "mexer"]); }
+  { const al = AQ; sign(AL(al, 0, AH + 0.92, -1.02), lookIn(AL(al, 0, 0, -1.02)), "Alquimia", "As poções", "#7CFF6A", 2.6, 0.6); }
+  // bolhas e vapor: sobem do caldeirão e das poções, cada uma na cor dela
+  const NBUB = 160, bub = new T.BufferGeometry(), bubP = new Float32Array(NBUB * 3), bubC = new Float32Array(NBUB * 3), bubS = new Float32Array(NBUB).map(() => Math.random());
+  bub.setAttribute("position", new T.BufferAttribute(bubP, 3)); bub.setAttribute("color", new T.BufferAttribute(bubC, 3));
+  const bubbles = new T.Points(bub, new T.PointsMaterial({ map: glowTex, size: 0.07, vertexColors: true, transparent: true, opacity: 0.85, depthWrite: false, blending: T.AdditiveBlending })); bubbles.frustumCulled = false; scene.add(bubbles);
+  // a poção muda a cor da torre por alguns segundos
+  const AMB0 = U.uAmb.value.clone(), FOG0 = U.uFog.value.clone(); let brewC = null, brewT = 0;
+  function brew(o) { brewC = new T.Color(o.c); brewT = 7; toast("Alquimia", o.t, o.t === "O caldeirão" ? "O caldeirão borbulhou e a torre ficou verde." : "Um gole, e a torre inteira mudou de cor."); }
+
+  /* ---------------- livros que voam pelo vão, batendo as capas ---------------- */
+  const flyers = [];
+  { const cols = ["#7A2A24", "#2E4A7A", "#2F5A3A", "#6B4A2E", "#5A3A7A", "#8C6A3A"];
+    for (let f = 0; f < NFLOORS; f++) for (let k = 0; k < 3; k++) {
+      const g = new T.Group(), c = cols[(f * 3 + k) % cols.length], cover = new T.MeshBasicMaterial({ color: c }), pages = new T.MeshBasicMaterial({ color: "#E8DCC0" });
+      const L = new T.Group(), R = new T.Group();
+      const cl = new T.Mesh(new T.BoxGeometry(0.2, 0.012, 0.28), cover); cl.position.x = -0.1; L.add(cl); const pl = new T.Mesh(new T.BoxGeometry(0.18, 0.03, 0.26), pages); pl.position.set(-0.095, 0.02, 0); L.add(pl);
+      const cr = new T.Mesh(new T.BoxGeometry(0.2, 0.012, 0.28), cover); cr.position.x = 0.1; R.add(cr); const pr = new T.Mesh(new T.BoxGeometry(0.18, 0.03, 0.26), pages); pr.position.set(0.095, 0.02, 0); R.add(pr);
+      g.add(L, R); propize(g, { emit: 0.15, emitC: "#FFD9A0" }); g.scale.setScalar(1.6); scene.add(g);
+      flyers.push({ g, L, R, f, r: 1.2 + Math.random() * 1.7, h: 3.2 + Math.random() * 3.6, sp: (0.18 + Math.random() * 0.2) * (Math.random() < 0.5 ? 1 : -1), ph: Math.random() * 6.28, fl: 5 + Math.random() * 3 });
+    } }
+
+  /* ---------------- velas flutuando sobre o anel ---------------- */
+  const candles = [];
+  { const body = new T.MeshBasicMaterial({ color: "#EFE3C8" }), geo = new T.CylinderGeometry(0.035, 0.04, 0.24, 8);
+    for (let f = 0; f < NFLOORS; f++) for (let k = 0; k < 11; k++) {
+      const a = Math.random() * Math.PI * 2, r = 7.3 + Math.random() * 5.6, y = f * FH + 4.2 + Math.random() * 1.8;
+      const m = new T.Mesh(geo, body); propize(m, { emit: 0.5, emitC: "#FFD9A0" }); m.position.set(r * Math.cos(a), y, r * Math.sin(a)); scene.add(m);
+      candles.push({ m, y, ph: Math.random() * 6.28 });
+    }
+    const n = candles.length, fg = new T.BufferGeometry(); fg.setAttribute("position", new T.BufferAttribute(new Float32Array(n * 3), 3));
+    candles.flames = new T.Points(fg, new T.PointsMaterial({ map: glowTex, color: 0xffbf66, size: 0.28, transparent: true, opacity: 0.95, depthWrite: false, blending: T.AdditiveBlending })); candles.flames.frustumCulled = false; scene.add(candles.flames); }
+
+  /* ---------------- círculos de runas no chão, na boca de cada nicho: acendem quando a câmera chega ---------------- */
+  const RUNEC_FS = `uniform sampler2D map; uniform float uTime, uOn; uniform vec3 uRC; varying vec2 vUv;
+    void main(){ vec2 p = vUv - 0.5; float r = length(p) * 2.0, a = atan(p.y, p.x);
+      float ring = smoothstep(0.03, 0.0, abs(r - 0.96)) + smoothstep(0.02, 0.0, abs(r - 0.62)) + smoothstep(0.015, 0.0, abs(r - 0.3));
+      float glyph = 0.0; if (r > 0.68 && r < 0.92) glyph = texture2D(map, vec2(a / 6.2832 * 3.0 + uTime * 0.02, (r - 0.68) / 0.24)).r;
+      float spokes = smoothstep(0.03, 0.0, abs(sin(a * 3.0 + uTime * 0.1)) * r) * step(0.3, r) * step(r, 0.62);
+      float star = 0.0; for (int i = 0; i < 6; i++) { float t = float(i) * 1.0472 + uTime * 0.05; vec2 d = vec2(cos(t), sin(t)); star += smoothstep(0.012, 0.0, abs(dot(p * 2.0, vec2(-d.y, d.x))) ) * step(r, 0.62) * step(0.3, r) * 0.3; }
+      float v = (ring + glyph + spokes + star) * step(r, 1.0);
+      float lvl = 0.12 + uOn * (0.75 + 0.25 * sin(uTime * 2.0));
+      gl_FragColor = vec4(uRC * v * lvl * 1.6, v * lvl); }`;
+  const runeCircles = [];
+  ALC.filter((al) => al.kind !== "porta").forEach((al) => {
+    const col = al.world != null ? WORLDS[al.world].c : al.kind === "alquimia" ? "#7CFF6A" : "#FFC27A";
+    const m = new T.Mesh(new T.PlaneGeometry(3.4, 3.4), new T.ShaderMaterial({ uniforms: { map: { value: runeTex }, uTime: U.uTime, uOn: { value: 0 }, uRC: { value: new T.Color(col) } }, vertexShader: "varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }", fragmentShader: RUNEC_FS, transparent: true, depthWrite: false, blending: T.AdditiveBlending }));
+    m.rotation.x = -Math.PI / 2; m.position.copy(AL(al, 0, 0.02, 0.6)); scene.add(m); runeCircles.push({ m, al, on: 0 });
+  });
+
   /* ---------------- as atividades: livros que flutuam na frente do portal de cada nicho ---------------- */
   const COLORS = ["#2E7D5B", "#9C4A2F", "#7A3E8E", "#2E5E9C", "#3A8C8C", "#B07A2A", "#A8435A", "#4E8A3A", "#5A5AA8", "#8C6A3A"];
   const books = []; let subjects = [];
@@ -684,7 +790,7 @@
       if (al.world == null) sign(AL(al, 0, AH + 0.92, -1.02), lookIn(AL(al, 0, 0, -1.02)), sub.name, sub.cat === "curso-tecnico" ? "Curso técnico" : "Ensino médio", color, 2.6, 0.6);
       shelfRow(al, sub.acts, (a, ai, x, y, z) => { const b = bookAt(al, x, y, z, a.t, color); Object.assign(b, { a, sub, id: `${si}-${ai}` }); books.push(b); clickable(b.body, "livro", b); return b; });
     });
-    buildPlaces(); renderIndex(); if (!hist.length && !fly) go(placeIdx, true); else label();
+    buildPlaces(); renderIndex(); if (!hist.length && !fly && !intro.on) go(placeIdx, true); else if (!intro.on) label();
   }
   // o nicho do Quem sou: os textos do perfil viram livros também
   const PERFIL = [
@@ -765,6 +871,7 @@
     const A = (id, t, sub) => { const al = alc(id); P.push({ id, g: F(al.f), t, sub: sub || "", f: al.f, room: al, pose: alcPose(al) }); };
     P.push({ id: "entrada", g: F(0), t: "A entrada", sub: "o vão da torre", f: 0, room: PA, pose: { pos: AL(PA, 0, 2.0, -2.2), tgt: polarY(PA.r + Math.PI, 3.0, 4.2) } });
     P.push({ id: "escritorio", g: F(0), t: "O Escritório", sub: "a lareira, a mesa e o piano", f: 0, room: LA, pose: { pos: polarY(LA.r, 8.6, 2.15), tgt: AL(LA, 0, 1.35, LA.d) } });
+    P.push({ id: "alquimia", g: F(0), t: "A bancada de alquimia", sub: "as poções", f: 0, room: alc("alquimia"), pose: { pos: AL(alc("alquimia"), 0.1, 2.15, -1.9), tgt: AL(alc("alquimia"), -0.2, 1.05, alc("alquimia").d - 0.6) } });
     P.push({ id: "mesa", g: F(0), t: "A mesa de trabalho", sub: "o recado, a busca e o contato", f: 0, room: LA, pose: { pos: deskG.localToWorld(V3(1.85, 1.62, 0.62)), tgt: deskG.localToWorld(V3(-0.35, 0.92, -0.05)) } });
     A("quemsou", "Quem sou", "interesses e valores"); A("trem", "1º e 2º ano", "o que veio antes");
     for (const id of ["linguagens", "matematica", "natureza", "humanas"]) A(id, alc(id).subj);
@@ -866,6 +973,7 @@
     if (typeof i === "string") i = places.findIndex((p) => p.id === i);
     if (i < 0 || i >= places.length) return;
     if (world) { closeIndex(); exitWorld(() => go(i, instant, fromBack, done)); return; }
+    if (endIntro()) { fly = null; instant = instant || false; }
     closePanel(true); closeIndex(); focus = null; hotC = null; canvas.classList.remove("hot"); rotulo.classList.remove("on");
     const from = cur(), to = places[i];
     if (!fromBack && !instant && i !== placeIdx) { hist.push(placeIdx); if (hist.length > 30) hist.shift(); }
@@ -990,6 +1098,7 @@
       case "mundo": enterWorld(c.data); break;
       case "w": c.go(); break;
       case "fim": finale(); break;
+      case "pocao": brew(c.data); break;
       case "recado": formRecado(); break;
       case "busca": openIndex(); setTimeout(() => busca.focus(), 350); break;
       case "indice": openIndex(); break;
@@ -1057,7 +1166,7 @@
     if (c) { const x = (p.x * 0.5 + 0.5) * innerWidth, y = (-p.y * 0.5 + 0.5) * innerHeight, w = rotulo.offsetWidth;
       rotulo.style.transform = `translate(${Math.min(innerWidth - w - 10, x + 18)}px, ${Math.max(10, y - 46)}px)`; }
   }
-  function clickAt(p) { const c = pick(p); if (c) activate(c); }
+  function clickAt(p) { if (intro.on) { enter(); return; } const c = pick(p); if (c) activate(c); }
 
   /* ---------------- o controle pelo celular fala por aqui ---------------- */
   window.biblioteca = {
@@ -1253,6 +1362,21 @@
     for (let k = 0; k < visitorBooks.length; k++) { const b = visitorBooks[k], n = visitorBooks.length, a = t * 0.12 + k / n * Math.PI * 2, hv = hotC && hotC.data === b ? 1 : 0; b.out += (hv - b.out) * Math.min(1, dt * 6);
       b.g.position.set(Math.cos(a) * 2.7, TOPY + 1.7 + Math.sin(t * 0.8 + k) * 0.18 + b.out * 0.15, Math.sin(a) * 2.7); b.g.rotation.y = faceTo(b.g.position.x, b.g.position.z, camera.position.x, camera.position.z); b.mats.forEach((m) => (m.uniforms.uHot.value = b.out)); }
     seal.rotation.y = t * 0.45; seal.position.y = TOPY + 2.1 + Math.sin(t * 0.9) * 0.08; sealHalo.position.copy(seal.position); sealHalo.material.opacity = 0.45 + 0.15 * Math.sin(t * 1.4) + (hotC && hotC.kind === "fim" ? 0.3 : 0);
+    // livros voando pelo vão
+    for (const b of flyers) { const a = b.ph + t * b.sp, y = b.f * FH + b.h + Math.sin(t * 0.6 + b.ph) * 0.4; b.g.position.set(Math.cos(a) * b.r, y, Math.sin(a) * b.r); b.g.rotation.set(0.25 * Math.sin(t + b.ph), -a + (b.sp > 0 ? 0 : Math.PI), 0.2 * Math.sin(t * 0.8 + b.ph)); const fl = 0.35 + 0.55 * (0.5 + 0.5 * Math.sin(t * b.fl + b.ph)); b.L.rotation.z = fl; b.R.rotation.z = -fl; }
+    // velas flutuando
+    { const P = candles.flames.geometry.attributes.position.array; for (let i = 0; i < candles.length; i++) { const c = candles[i]; c.m.position.y = c.y + Math.sin(t * 0.7 + c.ph) * 0.08; P[i * 3] = c.m.position.x; P[i * 3 + 1] = c.m.position.y + 0.17 + Math.sin(t * 13 + c.ph) * 0.006; P[i * 3 + 2] = c.m.position.z; } candles.flames.geometry.attributes.position.needsUpdate = true; candles.flames.material.size = 0.26 + 0.03 * Math.sin(t * 17); }
+    // runas: acendem perto da câmera
+    for (const rc of runeCircles) { const near = camera.position.distanceTo(rc.m.position) < 9 && Math.abs(camera.position.y - rc.al.y - 1.8) < 3 ? 1 : 0; rc.on += (near - rc.on) * Math.min(1, dt * 2); rc.m.material.uniforms.uOn.value = rc.on; rc.m.rotation.z = t * 0.05; }
+    // bolhas e vapor da alquimia
+    if (bubbleSrc.length && camera.position.distanceTo(CAUL) < 22) { const P = bubbles.geometry.attributes.position.array, C = bubbles.geometry.attributes.color.array, srcs = [{ p: CAUL.clone().add(V3(0, 0.85, 0)), c: new T.Color("#5CFF8A"), w: 0.4 }].concat(bubbleSrc);
+      for (let i = 0; i < NBUB; i++) { const sI = i % srcs.length, sr = srcs[sI], q = (t * (0.25 + bubS[i] * 0.35) + bubS[i]) % 1, w = sr.w || 0.05; P[i * 3] = sr.p.x + Math.sin(bubS[i] * 40 + t) * w * (0.4 + q); P[i * 3 + 1] = sr.p.y + q * (sI === 0 ? 1.4 : 0.6); P[i * 3 + 2] = sr.p.z + Math.cos(bubS[i] * 33 + t) * w * (0.4 + q); C[i * 3] = sr.c.r * (1 - q); C[i * 3 + 1] = sr.c.g * (1 - q); C[i * 3 + 2] = sr.c.b * (1 - q); }
+      bubbles.geometry.attributes.position.needsUpdate = true; bubbles.geometry.attributes.color.needsUpdate = true; }
+    // a poção bebida tinge a torre, e depois volta
+    if (brewT > 0) brewT = Math.max(0, brewT - dt);
+    { const k = brewC ? Math.min(1, brewT / 1.2) * Math.min(1, (7 - brewT) / 0.8) : 0; U.uAmb.value.copy(AMB0); U.uFog.value.copy(FOG0); if (k > 0) { U.uAmb.value.add(V3(brewC.r, brewC.g, brewC.b).multiplyScalar(0.3 * k)); U.uFog.value.lerp(new T.Color(brewC.r * 0.32, brewC.g * 0.32, brewC.b * 0.32), k * 0.85); } }
+    // a porta
+    doorOpen.v += (doorOpen.to - doorOpen.v) * Math.min(1, dt * 1.6); doorL.rotation.y = doorBase[0] + doorOpen.v * 1.45; doorR.rotation.y = doorBase[1] - doorOpen.v * 1.45;
     // os portais: o redemoinho, as runas e as faíscas sendo sugadas
     for (const w of portals) {
       if (camera.position.distanceTo(w.pos) > 34) continue;
@@ -1266,13 +1390,29 @@
     requestAnimationFrame(frame);
   }
 
+  /* ---------------- a chegada: do lado de fora, a porta fechada; um toque abre e a câmera entra ---------------- */
+  const OUTSIDE = { pos: AL(PA, 0, 1.75, OUT + 6.4), tgt: AL(PA, 0, 2.35, OUT - 0.5) };
+  const intro = { on: false };
+  function showIntro() { intro.on = true; document.body.classList.add("intro"); doorOpen.to = 0; doorOpen.v = 0; cam.pos.copy(OUTSIDE.pos); cam.tgt.copy(OUTSIDE.tgt); cam.yaw = cam.pitch = cam.yawT = cam.pitchT = 0; lookReady = false; fly = null; $("entrar").classList.add("on"); }
+  function endIntro() { if (!intro.on) return false; intro.on = false; doorOpen.to = 1; $("entrar").classList.remove("on"); document.body.classList.remove("intro"); return true; }
+  function enter() {
+    if (!endIntro()) return;
+    placeIdx = 0; hist.length = 0;
+    if (reduce) { doorOpen.v = 1; cam.pos.copy(places[0].pose.pos); cam.tgt.copy(places[0].pose.tgt); lookReady = false; label(); renderIndex(); return; }
+    fly = { hold: true };
+    setTimeout(() => { fly = null; glide([cam.pos.clone(), AL(PA, 0, 1.85, OUT + 1.8), AL(PA, 0, 1.9, PA.d - 0.6), AL(PA, 0, 1.95, -1.4), places[0].pose.pos], places[0].pose.tgt, null, 4.6, 3.0); }, 1050);
+    setTimeout(() => { label(); renderIndex(); hint(); }, 1400);
+  }
+  $("entrar").addEventListener("click", (e) => { e.stopPropagation(); enter(); });
+  addEventListener("keydown", (e) => { if (intro.on && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); enter(); } });
+
   /* ---------------- abertura ---------------- */
   const fontsReady = document.fonts ? document.fonts.ready.catch(() => null) : Promise.resolve();
   fetch("/biblioteca/atividades.json").then((r) => (r.ok ? r.json() : [])).catch(() => []).then((list) => fontsReady.then(() => list)).then((list) => {
     try { addActivityBooks(list || []); } catch (e) { console.warn("livros", e); }
     loadVisitors();
   });
-  renderIndex(); go(0, true);
+  renderIndex(); go(0, true); showIntro();
   requestAnimationFrame(frame);
   setTimeout(() => $("fade").classList.add("gone"), 500);
 })();

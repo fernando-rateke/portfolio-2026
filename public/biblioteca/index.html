@@ -63,6 +63,12 @@ body.flying .hud.fade-on-fly { opacity: 0.35; }
 .idx-foot { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 6px; padding-top: 14px; border-top: 1px solid var(--line); }
 .dobra { position: fixed; inset: 0; z-index: 15; pointer-events: none; opacity: 0; transition: opacity 0.65s ease-in-out; background: radial-gradient(circle at 50% 50%, rgba(255, 222, 160, 0.22), rgba(6, 4, 3, 0.97) 62%); }
 .dobra.on { opacity: 1; }
+.entrar { position: fixed; z-index: 6; left: 50%; bottom: max(64px, calc(env(safe-area-inset-bottom) + 48px)); transform: translate(-50%, 12px); display: grid; justify-items: center; gap: 4px; padding: 14px 30px 12px; border-radius: 999px; border: 1px solid rgba(217, 164, 65, 0.6); background: rgba(16, 11, 7, 0.55); color: var(--ink); backdrop-filter: blur(8px); cursor: pointer; opacity: 0; pointer-events: none; transition: opacity 0.8s, transform 0.8s; }
+.entrar.on { opacity: 1; pointer-events: auto; transform: translate(-50%, 0); animation: chama 2.6s ease-in-out infinite; }
+.entrar span { font: 600 1.15rem/1 var(--f-display); letter-spacing: 0.04em; }
+.entrar small { font: 500 0.56rem/1 var(--f-label); letter-spacing: 0.22em; text-transform: uppercase; color: var(--ink-2); }
+@keyframes chama { 50% { box-shadow: 0 0 34px rgba(255, 180, 90, 0.35); border-color: rgba(255, 196, 110, 0.9); } }
+body.intro .nav, body.intro .left-bottom, body.intro .hint { opacity: 0; pointer-events: none; }
 /* o livro aberto */
 .livro { position: fixed; inset: 0; z-index: 14; display: grid; place-items: center; padding: 18px; background: radial-gradient(ellipse at 50% 55%, rgba(30, 18, 8, 0.55), rgba(4, 3, 2, 0.88)); opacity: 0; pointer-events: none; transition: opacity 0.45s; }
 .livro.on { opacity: 1; pointer-events: auto; }
@@ -254,6 +260,7 @@ body.apresentando canvas#lib { cursor: none; }
   <div class="idx-foot"><button class="pill" id="apresentar" type="button" title="Controlar pelo celular (tecla P)">Apresentar pelo celular</button><a class="pill" href="/vale">Ir ao vale</a></div>
 </nav>
 <div class="dobra" id="dobra" aria-hidden="true"></div>
+<button class="entrar" id="entrar" type="button"><span>Entrar</span><small>toque na porta</small></button>
 <aside class="panel" id="painel" aria-hidden="true" aria-labelledby="pTitulo">
   <header><div class="kick" id="pKick"></div><h2 id="pTitulo"></h2><button class="close" id="pFechar" type="button" aria-label="Fechar">×</button></header>
   <div class="body" id="pCorpo"></div>

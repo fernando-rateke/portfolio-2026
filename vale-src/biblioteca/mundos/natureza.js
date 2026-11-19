@@ -109,8 +109,8 @@
       if (o.glow && o.glow[src.name] != null) { mm.emissive = new T.Color(o.glowC || "#7aff9a"); mm.emissiveIntensity = o.glow[src.name]; } x.material = mm; }); return m; };
     // o Totoro esperando com o guarda-chuva preto
     const toto = new T.Group(); toto.position.set(-0.25, 0, -2.5); toto.rotation.y = 0.15; scene.add(toto);
-    const umb = new T.Group(); umb.position.set(0.55, 2.55, 0.15); umb.rotation.z = -0.18; toto.add(umb);
-    { const um = K(new T.MeshLambertMaterial({ color: "#121214", side: T.DoubleSide })); const can = new T.Mesh(K(new T.ConeGeometry(0.95, 0.42, 16, 1, true)), um); can.position.y = 0.5; umb.add(can); const st = new T.Mesh(K(new T.CylinderGeometry(0.015, 0.015, 1.3, 6)), iron); st.position.y = -0.1; umb.add(st); }
+    const umb = new T.Group(); umb.position.set(0.78, 2.15, 0.42); umb.rotation.z = -0.12; toto.add(umb);
+    { const um = K(new T.MeshLambertMaterial({ color: "#121214", side: T.DoubleSide })); const can = new T.Mesh(K(new T.ConeGeometry(0.95, 0.42, 16, 1, true)), um); can.position.y = 0.5; umb.add(can); const st = new T.Mesh(K(new T.CylinderGeometry(0.016, 0.016, 1.7, 6)), iron); st.position.y = -0.3; umb.add(st); const hd = new T.Mesh(K(new T.TorusGeometry(0.05, 0.014, 6, 12, Math.PI)), iron); hd.position.set(0.05, -1.15, 0); hd.rotation.z = Math.PI; umb.add(hd); }
     load("totoro.glb").then((m) => { if (!m) return; prep(m, { line: "#2a2e36" }); fit(m, 2.6); toto.add(m); });
     // a fuligem, nas raízes da cânfora
     const soots = [];
@@ -208,8 +208,8 @@
         for (const b of bub) { const q = (t * 0.35 + b.ph) % 1; b.b.position.set(bucket.position.x + Math.sin(q * 9 + b.ph * 6) * 0.08, 0.6 + q * 1.4, bucket.position.z + Math.cos(q * 7) * 0.06); b.b.material.opacity = 0.5 * (1 - q); }
         // o Gatobus
         if (busReady) { busT += dt; const c = busT % 46; let x = null, face = -Math.PI / 2, run = true;
-          if (c < 7) x = 40 + (STOP.x + 6.5 - 40) * smoother(c / 7); else if (c < 19) { x = STOP.x + 6.5; run = false; } else if (c < 27) { x = STOP.x + 6.5 + (-40 - STOP.x - 6.5) * smoother((c - 19) / 8); }
-          bus.visible = x !== null; if (bus.visible) { bus.position.set(x, run ? Math.abs(Math.sin(t * 9)) * 0.3 : 0, roadZ(x) - 0.2); bus.rotation.set(0, face, run ? Math.sin(t * 9) * 0.04 : 0); bus.scale.set(1, run ? 1 : 1 + Math.sin(t * 1.6) * 0.012, 1); }
+          if (c < 7) x = 40 + (STOP.x + 3.6 - 40) * smoother(c / 7); else if (c < 19) { x = STOP.x + 3.6; run = false; } else if (c < 27) { x = STOP.x + 3.6 + (-40 - STOP.x - 3.6) * smoother((c - 19) / 8); }
+          bus.visible = x !== null; if (bus.visible) { bus.position.set(x, run ? Math.abs(Math.sin(t * 9)) * 0.3 : 0, roadZ(x) - 0.45); bus.rotation.set(0, face, run ? Math.sin(t * 9) * 0.04 : 0); bus.scale.set(1, run ? 1 : 1 + Math.sin(t * 1.6) * 0.012, 1); }
           busEyes.forEach((e, i) => (e.material.opacity = 0.85 + Math.sin(t * 7 + i) * 0.08)); }
         // as mudas
         for (const s of seeds) { s.hot += ((hot === s || focus === s ? 1 : 0) - s.hot) * Math.min(1, dt * 6); s.grow += (s.want - s.grow) * Math.min(1, dt * 2.2); s.sprout.scale.setScalar(s.grow); s.sprout.rotation.y = Math.sin(t * 0.8 + s.ph) * 0.2; s.glow.material.opacity = 0.45 + 0.2 * Math.sin(t * 2 + s.ph) + s.hot * 0.4; s.glow.position.y = 0.3 + s.grow * 0.6; }

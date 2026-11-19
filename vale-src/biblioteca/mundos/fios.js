@@ -199,7 +199,7 @@
       const box = new T.Box3().setFromObject(root), sz = box.getSize(new T.Vector3()), s = 1.5 / sz.y;
       const g = new T.Group(); root.scale.setScalar(s); root.position.set(-(box.min.x + box.max.x) / 2 * s, -box.min.y * s, -(box.min.z + box.max.z) / 2 * s); g.add(root);
       g.position.set(-1.55, 0, -0.95); g.lookAt(OVER.pos.x, 0, OVER.pos.z); scene.add(g);
-      const fill = new T.PointLight("#7fd8e8", 0.6, 3, 2); fill.position.set(-1.0, 1.6, -0.2); scene.add(fill);
+      const fill = new T.PointLight("#9fe0ec", 1.5, 4, 2); fill.position.set(-0.9, 1.7, 0.1); scene.add(fill); const rim = new T.PointLight("#ff6a7a", 0.5, 3, 2); rim.position.set(-2.2, 1.9, -1.8); scene.add(rim);
       if (gl.animations && gl.animations.length) { mixer = new T.AnimationMixer(root); const clip = gl.animations[0], fps = 24, fr = Math.round(clip.duration * fps); const sub = T.AnimationUtils.subclip(clip, "parada", Math.min(14, fr - 2), fr, fps); const act = mixer.clipAction(sub); act.play(); }
       lain = g;
     });

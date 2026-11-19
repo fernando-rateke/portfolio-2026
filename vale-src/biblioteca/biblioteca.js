@@ -38,7 +38,7 @@
   const U = {
     uTime: { value: 0 }, uWave: { value: -1e5 }, // abaixo de uWave a torre está apagada (só no final; normalmente fica lá embaixo, tudo aceso)
     uFog: { value: new T.Color("#0b0806") }, uFogD: { value: small ? 0.04 : 0.036 },
-    uAmb: { value: new T.Vector3(0.17, 0.14, 0.11) },
+    uAmb: { value: new T.Vector3(0.085, 0.075, 0.095) },
     uLP: { value: Array.from({ length: NL }, () => new T.Vector3(0, -999, 0)) },
     uLC: { value: Array.from({ length: NL }, () => new T.Vector3()) },
   };
@@ -62,7 +62,7 @@
         acc += uLC[i] * ndl / (1.0 + dd * 0.16);
         scat += uLC[i] / (1.0 + dd * 0.045);
       }
-      { float r = length(w.xz); acc += vec3(0.30, 0.36, 0.50) * 0.2 * exp(-r * 0.2) * (0.5 + 0.5 * n.y * n.y); } // a luz fria que desce pelo vão
+      { float r = length(w.xz); acc += vec3(0.26, 0.34, 0.62) * 0.26 * exp(-r * 0.2) * (0.5 + 0.5 * n.y * n.y); } // a luz fria que desce pelo vão
       return acc;
     }
     vec3 band(vec3 l){ return mix(l, floor(l * 7.0 + 0.5) / 7.0, 0.18); }
@@ -421,9 +421,9 @@
   const lookIn = (p) => faceTo(p.x, p.z, 0, 0); // +z local virado para o vão
   TLAMPS.forEach((p) => addLight(p.x, p.y, p.z, "#FFB868", 1.1, 0.06));
   // um lustre pendurado no meio do vão em cada andar, e a luz quente dele
-  for (let f = 0; f < NFLOORS - 1; f++) addLight(0, f * FH + 5.4, 0, "#FFB25A", 6.0, 0.03);
+  for (let f = 0; f < NFLOORS - 1; f++) addLight(0, f * FH + 5.4, 0, "#FFB25A", 3.4, 0.03);
   // luz de preenchimento quente em volta do anel de cada andar (sem ela o térreo da entrada ficava quase preto)
-  for (let f = 0; f < NFLOORS; f++) for (let k = 0; k < 8; k++) { const a = (k + 0.5) / 8 * Math.PI * 2; addLight(Math.cos(a) * 11, f * FH + 4.6, Math.sin(a) * 11, "#FFB868", 1.9, 0.02); }
+  for (let f = 0; f < NFLOORS; f++) for (let k = 0; k < 8; k++) { const a = (k + 0.5) / 8 * Math.PI * 2; addLight(Math.cos(a) * 11, f * FH + 4.6, Math.sin(a) * 11, k % 2 ? "#7A6AD8" : "#4AA8B8", 0.75, 0.02); }
   addLight(0, 2.2, -9.5, "#FFC27A", 2.6, 0.03); addLight(-4, 2.4, -4, "#FFC27A", 1.8, 0.03); addLight(4, 2.4, -4, "#FFC27A", 1.8, 0.03); // a entrada e o pé da escada
   prop("lustre", (m) => { for (let f = 0; f < NFLOORS - 2; f++) { const g = place(m.clone(true), { at: V3(0, f * FH + 4.4, 0), h: 2.6, emit: 0.35 }); const ch = new T.Mesh(new T.CylinderGeometry(0.02, 0.02, FH - 2.6, 4), structMat); ch.position.y = 2.6 + (FH - 2.6) / 2; g.add(ch); } }, 2);
   // placas: o nome de cada nicho em cima da boca, e o de cada andar ao lado da escada
@@ -933,6 +933,7 @@
   }
 
   const certItems = [];
+  const certGlows = [];
   prop("redoma", (m) => {
     const al = alc("certificados");
     CERTS.forEach((cf, k) => {
@@ -940,7 +941,9 @@
       const g = place(m.clone(true), { at: p, h: 1.6, ry: lookIn(p) });
       const card = new T.Mesh(new T.PlaneGeometry(0.3, 0.4), new T.MeshBasicMaterial({ map: certTexture(cf) }));
       card.position.copy(p).setY(al.y + 1.38); card.rotation.y = lookIn(p); scene.add(card);
-      lightAt(AL(al, x, 1.95, z - 0.4), "#FFD08A", 0.45, 0.02);
+      const mc = ["#6ae0ff", "#b48aff", "#7affc8"][k % 3]; lightAt(AL(al, x, 1.5, z - 0.3), mc, 0.9, 0.08);
+      { const gl = new T.Sprite(new T.SpriteMaterial({ map: glowTex, color: new T.Color(mc), transparent: true, opacity: 0.8, depthWrite: false, blending: T.AdditiveBlending })); gl.scale.setScalar(1.9); gl.position.copy(p).setY(al.y + 1.25).add(V3(-al.u.x * 0.45, 0, -al.u.z * 0.45)); gl.renderOrder = 6; gl.material.depthTest = false; scene.add(gl);
+      for (let q = 0; q < 6; q++) { const sp = new T.Sprite(new T.SpriteMaterial({ map: glowTex, color: new T.Color(mc), transparent: true, opacity: 0.8, depthWrite: false, blending: T.AdditiveBlending })); sp.scale.setScalar(0.12); scene.add(sp); certGlows.push({ s: sp, spark: true, base: p.clone().setY(al.y + 1.0), ph: Math.random() * 6, r: 0.18 + Math.random() * 0.12 }); } certGlows.push({ s: gl, ph: k * 1.3 }); }
       const it = { cf, g, card, pos: p.clone().setY(al.y + 1.4), nx: -al.u.x, nz: -al.u.z }; certItems.push(it); clickable(g, "cert", it); clickable(card, "cert", it);
     });
   }, 6);
@@ -1468,18 +1471,65 @@
         if (uStreak > 0.001) { vec2 dc = (vUv - 0.5) * uStreak * 0.09; vec3 acc = c; for (int i = 1; i < 8; i++) acc += texture2D(tDiff, vUv - dc * float(i) / 7.0).rgb; c = acc / 8.0; } // o rastro da queda
         ${small ? "" : `vec3 b = vec3(0.0);
         for (int i = 0; i < 12; i++) { float a = float(i) * 0.5236; vec2 o = vec2(cos(a), sin(a));
-          b += max(texture2D(tDiff, vUv + o * px * 7.0).rgb - 0.55, 0.0) + max(texture2D(tDiff, vUv + o * px * 18.0).rgb - 0.6, 0.0) * 0.7; }
-        c += b * 0.075;`}
+          b += max(texture2D(tDiff, vUv + o * px * 7.0).rgb - 0.42, 0.0) + max(texture2D(tDiff, vUv + o * px * 18.0).rgb - 0.48, 0.0) * 0.8; }
+        c += b * 0.11;`}
         c = pow(max(c, 0.0), vec3(0.97, 1.0, 1.07)) * vec3(1.04, 1.0, 0.93);
         float l = dot(c, vec3(0.3, 0.59, 0.11)); c = mix(vec3(l), c, 0.9);
-        c = c * 1.2 + vec3(0.016, 0.011, 0.006);
-        vec2 q = vUv - 0.5; float vig = smoothstep(0.85, 0.2, length(q * vec2(1.0, 0.85)) * 1.25); c *= mix(0.55, 1.0, vig);
+        c = c * 1.08 + vec3(0.008, 0.007, 0.014);
+        vec2 q = vUv - 0.5; float vig = smoothstep(0.85, 0.2, length(q * vec2(1.0, 0.85)) * 1.25); c *= mix(0.38, 1.0, vig);
         c += (hh(vUv * uRes + fract(uTime * 7.0) * 100.0) - 0.5) * 0.04;
         c += uFlash * (1.0 - vig * 0.6); c *= 1.0 - uBlack;
         gl_FragColor = vec4(c, 1.0);
       }`,
   }));
   const postScene = new T.Scene(); postScene.add(post); const postCam = new T.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+  /* ---------------- luzes de fantasia: fogos-fátuos que vagam pelos andares, o feixe de luar no vão e a poeira encantada ---------------- */
+  const WISP_C = ["#6ae0ff", "#b48aff", "#7affc8", "#ffb0e0", "#ffd27a"];
+  const wisps = [];
+  for (let f = 0; f < NFLOORS; f++) for (let k = 0; k < (small ? 3 : 5); k++) {
+    const col = WISP_C[(f * 2 + k) % WISP_C.length], L = addLight(0, f * FH + 2, 0, col, 2.2, 0);
+    const core = new T.Sprite(new T.SpriteMaterial({ map: glowTex, color: new T.Color(col).lerp(new T.Color("#ffffff"), 0.5), transparent: true, opacity: 0.95, depthWrite: false, blending: T.AdditiveBlending })); core.scale.setScalar(0.3);
+    const halo = new T.Sprite(new T.SpriteMaterial({ map: glowTex, color: new T.Color(col), transparent: true, opacity: 0.5, depthWrite: false, blending: T.AdditiveBlending })); halo.scale.setScalar(1.3);
+    scene.add(core, halo);
+    // um rastro de faíscas atrás de cada fogo-fátuo
+    const NT = 14, tg = new T.BufferGeometry(), tp = new Float32Array(NT * 3); tg.setAttribute("position", new T.BufferAttribute(tp, 3));
+    const trail = new T.Points(tg, new T.PointsMaterial({ map: glowTex, color: new T.Color(col), size: 0.16, transparent: true, opacity: 0.55, depthWrite: false, blending: T.AdditiveBlending })); trail.frustumCulled = false; scene.add(trail);
+    wisps.push({ f, L, core, halo, trail, tp, hist: [], r: RI + 1.2 + Math.random() * (RO - RI - 3.2), a0: Math.random() * Math.PI * 2, sp: (0.05 + Math.random() * 0.06) * (Math.random() < 0.5 ? -1 : 1), y0: 1.6 + Math.random() * 3.2, ph: Math.random() * 10 });
+  }
+  // o feixe de luar que desce pelo vão da torre, com poeira dentro
+  const shaft = new T.Mesh(new T.CylinderGeometry(RI * 0.62, RI * 0.9, TOPY + FH, 40, 1, true), new T.ShaderMaterial({ uniforms: { uTime: U.uTime, uWave: U.uWave }, transparent: true, depthWrite: false, blending: T.AdditiveBlending, side: T.DoubleSide,
+    vertexShader: "varying vec3 vW; varying vec3 vN; void main(){ vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; vN = normalize(mat3(modelMatrix) * normal); gl_Position = projectionMatrix * viewMatrix * w; }",
+    fragmentShader: `uniform float uTime, uWave; varying vec3 vW; varying vec3 vN; float h(vec3 p){ return fract(sin(dot(p, vec3(17.1, 113.3, 57.7))) * 43758.5453); }
+      float n(vec3 p){ vec3 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(mix(h(i), h(i + vec3(1,0,0)), f.x), mix(h(i + vec3(0,1,0)), h(i + vec3(1,1,0)), f.x), f.y), mix(mix(h(i + vec3(0,0,1)), h(i + vec3(1,0,1)), f.x), mix(h(i + vec3(0,1,1)), h(i + vec3(1,1,1)), f.x), f.y), f.z); }
+      void main(){ vec3 V = normalize(cameraPosition - vW); float edge = pow(abs(dot(normalize(vN), V)), 1.6); float a = atan(vW.z, vW.x);
+        float rays = 0.55 + 0.45 * n(vec3(a * 5.0, vW.y * 0.06 - uTime * 0.05, uTime * 0.03)); float dust = n(vW * 0.7 + vec3(0.0, -uTime * 0.4, 0.0));
+        float k = edge * rays * (0.6 + 0.4 * dust) * 0.1 * (vW.y > uWave ? 1.0 : 0.0);
+        gl_FragColor = vec4(vec3(0.55, 0.7, 1.0) * k, k); }` }));
+  shaft.position.y = (TOPY + FH) / 2 - FH * 0.2; shaft.renderOrder = 4; scene.add(shaft);
+  // poeira encantada: pontinhos coloridos subindo devagar no vão e pelos corredores
+  const NM = small ? 500 : 1100, mg = new T.BufferGeometry(), mp = new Float32Array(NM * 3), ms = new Float32Array(NM * 2);
+  for (let i = 0; i < NM; i++) { const a = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * (RO - 1); mp.set([Math.cos(a) * r, Math.random() * (TOPY + 4), Math.sin(a) * r], i * 3); ms.set([Math.random(), Math.random()], i * 2); }
+  mg.setAttribute("position", new T.BufferAttribute(mp, 3)); mg.setAttribute("aS", new T.BufferAttribute(ms, 2));
+  const motes = new T.Points(mg, new T.ShaderMaterial({ uniforms: { uTime: U.uTime, uWave: U.uWave, map: { value: glowTex }, uPx: { value: innerHeight * DPR } }, transparent: true, depthWrite: false, blending: T.AdditiveBlending,
+    vertexShader: `attribute vec2 aS; uniform float uTime, uWave, uPx; varying vec3 vC; varying float vA;
+      void main(){ vec3 p = position; p.y += mod(uTime * (0.08 + aS.x * 0.12), 6.0); p.x += sin(uTime * 0.3 + aS.y * 20.0) * 0.4; p.z += cos(uTime * 0.25 + aS.x * 17.0) * 0.4;
+        vec3 c1 = vec3(0.45, 0.85, 1.0), c2 = vec3(0.75, 0.55, 1.0), c3 = vec3(1.0, 0.82, 0.45); vC = aS.y < 0.4 ? c1 : aS.y < 0.75 ? c2 : c3;
+        float tw = 0.5 + 0.5 * sin(uTime * (1.5 + aS.x * 3.0) + aS.y * 40.0); vA = tw * (p.y > uWave ? 1.0 : 0.0);
+        vec4 mv = modelViewMatrix * vec4(p, 1.0); gl_PointSize = uPx * (0.012 + aS.x * 0.012) / max(0.5, -mv.z) * (0.5 + tw); gl_Position = projectionMatrix * mv; }`,
+    fragmentShader: "uniform sampler2D map; varying vec3 vC; varying float vA; void main(){ float a = texture2D(map, gl_PointCoord).a; gl_FragColor = vec4(vC * a * vA * 0.9, a * vA); }" }));
+  motes.frustumCulled = false; scene.add(motes);
+  function fantasyUpdate(t) {
+    for (const w of wisps) {
+      const a = w.a0 + t * w.sp, wob = Math.sin(t * 0.7 + w.ph) * 0.8, y = w.f * FH + w.y0 + Math.sin(t * 0.9 + w.ph) * 0.6;
+      const x = Math.cos(a) * (w.r + wob), z = Math.sin(a) * (w.r + wob);
+      w.L.p.set(x, y, z); w.core.position.set(x, y, z); w.halo.position.set(x, y, z);
+      const pulse = 0.75 + 0.25 * Math.sin(t * 2.3 + w.ph * 3); w.L.i0 = 2.2 * pulse; w.halo.material.opacity = 0.45 * pulse; w.halo.scale.setScalar(1.8 + 0.5 * pulse);
+      const on = y > U.uWave.value; w.core.visible = w.halo.visible = w.trail.visible = on;
+      w.hist.unshift(x, y, z); if (w.hist.length > w.tp.length) w.hist.length = w.tp.length; for (let i = 0; i < w.tp.length; i++) w.tp[i] = w.hist[i] != null ? w.hist[i] : w.hist[i % 3];
+      w.trail.geometry.attributes.position.needsUpdate = true;
+    }
+  }
 
   /* ---------------- laço ---------------- */
   let baseFov = 62;
@@ -1508,7 +1558,7 @@
     if (!lookReady) { lookS.copy(la); lookReady = true; } else lookS.lerp(la, 1 - Math.exp(-dt * 9));
     camera.lookAt(lookS);
     if (Math.abs(zoomT - zoomK) > 0.001) { zoomK += (zoomT - zoomK) * Math.min(1, dt * 3); camera.fov = baseFov * zoomK; camera.updateProjectionMatrix(); }
-    updateLights(t);
+    fantasyUpdate(t); for (const c of certGlows) { if (c.spark) { const q = (t * 0.25 + c.ph) % 1; c.s.position.set(c.base.x + Math.cos(t * 0.8 + c.ph * 5) * c.r, c.base.y + q * 1.3, c.base.z + Math.sin(t * 0.8 + c.ph * 5) * c.r); c.s.material.opacity = Math.sin(q * Math.PI) * 0.9; } else c.s.material.opacity = 0.7 + 0.2 * Math.sin(t * 1.7 + c.ph); } updateLights(t);
     // poeira acompanha a câmera
     const P = dust.geometry.attributes.position.array;
     for (let i = 0; i < DUST; i++) { let x = P[i * 3], y = P[i * 3 + 1], z = P[i * 3 + 2]; y += dt * (0.04 + ds[i] * 0.07); x += Math.sin(t * 0.3 + i) * dt * 0.06; const cx = cam.pos.x, cz = cam.pos.z, cy = cam.pos.y;

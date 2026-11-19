@@ -1,7 +1,7 @@
 /* Mundo do 1º e 2º ano: o trem sobre a água, trazido do vale. Um vagão de madeira corre sobre um mar raso ao
    entardecer; pela janela passam postes, ilhotas, uma estação e as lembranças da jornada em molduras sobre a água.
-   O Sem-Rosto vai sentado no banco da frente, as sombras de passageiros também, e o dragão branco cruza o céu
-   de vez em quando. Clicar numa lembrança desacelera o trem e abre a página dela. */
+   Um senhor de chapéu lê o jornal no banco da janela (personagem original), uma sombra de passageiro vai no fundo,
+   e um bando de garças cruza o céu de vez em quando. Clicar numa lembrança desacelera o trem e abre a página. */
 (() => {
   window.MUNDOS = window.MUNDOS || {};
   window.MUNDOS.trem = (ctx) => {
@@ -248,19 +248,11 @@
       const s2 = new T.Mesh(new T.SphereGeometry(0.17, 16, 12), sm); s2.position.y = 1.0; shadow.add(s2);
       const s3 = new T.Mesh(new T.CapsuleGeometry(0.09, 0.35, 4, 8), sm); s3.position.set(0, 0.0, 0.3); s3.rotation.x = Math.PI / 2; shadow.add(s3);
 
-      // o Sem-Rosto, sentado quieto no banco da frente, e mais uma sombra de passageiro
+      // um passageiro de verdade, de chapéu e casaco, lendo o jornal no banco da janela (personagem original), e mais uma sombra
       {
-        const nf = new T.Group(); nf.position.set(1.55, 0.6, -1.02); nf.rotation.y = -0.45; nf.scale.setScalar(0.85); scene.add(nf);
-        const blackM = new T.MeshBasicMaterial({ color: 0x050407, transparent: true, opacity: 0.82, depthWrite: false });
-        const body = new T.Mesh(new T.CapsuleGeometry(0.3, 1.0, 8, 16), blackM); body.position.y = 0.72; body.scale.set(1, 1, 0.8); nf.add(body);
-        const mc = document.createElement("canvas"); mc.width = 128; mc.height = 160; const g = mc.getContext("2d");
-        g.fillStyle = "#f2efe8"; g.beginPath(); g.ellipse(64, 80, 56, 76, 0, 0, 7); g.fill();
-        g.fillStyle = "#1a1418"; for (const sx of [-1, 1]) { g.beginPath(); g.ellipse(64 + sx * 22, 66, 9, 5, 0, 0, 7); g.fill(); }
-        g.fillStyle = "#6a5a8a"; for (const sx of [-1, 1]) { g.beginPath(); g.moveTo(64 + sx * 22, 46); g.lineTo(64 + sx * 18, 30); g.lineTo(64 + sx * 26, 30); g.fill(); g.beginPath(); g.moveTo(64 + sx * 22, 84); g.lineTo(64 + sx * 18, 104); g.lineTo(64 + sx * 26, 104); g.fill(); }
-        g.fillStyle = "#2a1a1e"; g.fillRect(52, 120, 24, 4);
-        const maskT = new T.CanvasTexture(mc);
-        const mask = new T.Mesh(new T.SphereGeometry(0.2, 20, 14, Math.PI / 2 - 0.9, 1.8, 0.3, 2.4), new T.MeshBasicMaterial({ map: maskT, side: T.DoubleSide }));
-        mask.position.set(0, 1.42, 0.12); mask.scale.set(1, 1.25, 0.6); nf.add(mask);
+        const pp = ctx.person({ h: 1.7, skin: "#e8c8a8", hair: "#8a8a86", top: "#5a4a3a", bottom: "#3a342e", longSleeves: true, hat: "#3a3028" });
+        pp.sit(); pp.read(); pp.g.position.set(1.7, 0.56 - pp.hipY, -1.0); pp.g.rotation.y = 0.35; scene.add(pp.g);
+        const np = new T.Mesh(new T.PlaneGeometry(0.42, 0.32), new T.MeshBasicMaterial({ color: 0xe8e0cc, side: T.DoubleSide })); np.position.set(0, 1.0, 0.36); np.rotation.x = -0.5; pp.g.add(np);
         const sh2 = new T.Group(); sh2.position.set(5.6, 0.56, 1.0); sh2.rotation.y = Math.PI; scene.add(sh2);
         const smB = new T.MeshBasicMaterial({ color: 0x0b0a12, transparent: true, opacity: 0.55, depthWrite: false });
         const b1 = new T.Mesh(new T.CapsuleGeometry(0.2, 0.46, 6, 12), smB); b1.position.y = 0.42; sh2.add(b1); const b2 = new T.Mesh(new T.SphereGeometry(0.16, 16, 12), smB); b2.position.y = 0.95; sh2.add(b2);
@@ -373,7 +365,8 @@
     const look = { x: 0, y: 0, sx: 0, sy: 0 };
     build(); startSound();
     // o dragão branco passa de vez em quando, bem longe, mesmo sem o final
-    { const dr = scene.userData.dragon; dr.next = 14; }
+    { const dr = scene.userData.dragon; dr.next = 1e9; dr.g.visible = false; }
+    const birds = new T.Group(); scene.add(birds); for (let k = 0; k < 9; k++) { const b = new T.Group(); for (const sd of [-1, 1]) { const w = new T.Mesh(new T.PlaneGeometry(2.2, 0.5), new T.MeshBasicMaterial({ color: 0xf4f0ea, side: T.DoubleSide })); w.position.x = sd * 1.1; b.add(w); } b.position.set(-Math.abs(k - 4) * 4, -Math.abs(k - 4) * 0.8, (k - 4) * 3); birds.add(b); } birds.visible = false; let birdT = 10;
     return {
       name: "O trem sobre a água", sub: "1º e 2º ano",
       update(dt, t) {
@@ -382,6 +375,7 @@
         scene.userData.water.material.uniforms.uTravel.value = travel; scene.userData.water.material.uniforms.uTime.value = time;
         movers.forEach((o) => { o.m.position.x = wrap(o.base - travel * (o.par || 1)); if (o.photo) o.m.position.y = 1.6 + Math.sin(time * 0.8 + o.i) * 0.06; });
         scene.userData.wire.position.x = -(travel % (L / 14));
+        birdT -= dt; if (birdT < 0 && !birds.visible) { birds.visible = true; birds.userData.u = 0; } if (birds.visible) { const u = (birds.userData.u += dt / 22); birds.position.set(-140 + u * 280, 34 + Math.sin(u * 3) * 4, -150); birds.children.forEach((b, i) => b.children.forEach((w, j) => (w.rotation.z = (j ? -1 : 1) * Math.sin(time * 5 + i) * 0.35))); if (u > 1) { birds.visible = false; birdT = 30 + Math.random() * 25; } }
         const dr = scene.userData.dragon;
         if (dr.t < 0) { dr.next -= dt; if (dr.next <= 0) { dr.t = 0; dr.g.visible = true; } }
         else { dr.t += dt; const at = (u) => new T.Vector3(-120 + u * 18, 30 + Math.sin(u * 1.7) * 5, -170 + Math.sin(u * 0.6) * 16);

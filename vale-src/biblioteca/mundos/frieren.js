@@ -1,7 +1,7 @@
-/* Mundo dos Agradecimentos: Frieren. Um campo de flores azuis da lua (as sōgetsusō) aberto numa noite de chuva
-   de meteoros, como a que eles viam a cada cinquenta anos. No alto do morro, a estátua do herói Himmel com a
-   espada; no meio das flores, a Frieren de costas, olhando o céu. Cada agradecimento é um tufo de flores que
-   brilha mais forte. Personagens e cenário desenhados aqui. */
+/* Mundo dos Agradecimentos, no clima de Frieren. Um campo de flores azuis da lua aberto numa noite de chuva de
+   meteoros. No alto do morro, a estátua de um cavaleiro antigo coberta de musgo; no meio das flores, uma maga
+   élfica viajante de costas, olhando o céu, com o cajado de cristal âmbar (personagens originais). Cada
+   agradecimento é um tufo de flores que brilha mais forte. Tudo desenhado aqui. */
 (() => {
   window.MUNDOS = window.MUNDOS || {};
   window.MUNDOS.frieren = (ctx) => {
@@ -46,38 +46,31 @@
     // luzinhas subindo do campo
     const motes = []; for (let i = 0; i < 60; i++) { const s = new T.Sprite(K(new T.SpriteMaterial({ map: ctx.glowTex, color: 0xa8d0ff, transparent: true, opacity: 0.5, depthWrite: false, blending: T.AdditiveBlending }))); s.scale.setScalar(0.12); scene.add(s); motes.push({ s, x: (rnd() - 0.5) * 16, z: -8 + rnd() * 12, ph: rnd() }); }
 
-    /* ---------------- a estátua do Himmel no alto do morro ---------------- */
+    /* ---------------- no alto do morro, a estátua de um cavaleiro antigo (original) ---------------- */
     const statue = new T.Group(); const SX = -1, SZ = -9; statue.position.set(SX, H(SX, SZ), SZ); statue.rotation.y = 0.25; scene.add(statue);
     { const stone = toon("#8a90a0"), dark = toon("#5a6070");
-      add(new T.BoxGeometry(1.6, 1.0, 1.6), dark, 0, 0.5, 0, 0, 0, 0, statue); add(new T.BoxGeometry(1.3, 0.25, 1.3), stone, 0, 1.12, 0, 0, 0, 0, statue);
-      const body = ol(add(new T.CapsuleGeometry(0.28, 0.9, 6, 12), stone, 0, 2.05, 0, 0, 0, 0, statue)); void body;
-      for (const s of [-1, 1]) { ol(add(new T.CapsuleGeometry(0.1, 0.8, 5, 10), stone, s * 0.13, 1.55, 0, 0, 0, 0, statue)); ol(add(new T.CapsuleGeometry(0.08, 0.55, 5, 10), stone, s * 0.36, 2.3, 0.12, -0.5, 0, s * 0.25, statue)); }
-      const cape = add(new T.CylinderGeometry(0.3, 0.6, 1.4, 16, 1, true, Math.PI * 0.2, Math.PI * 1.6), stone, 0, 2.1, -0.05, 0, Math.PI, 0, statue); cape.material.side = T.DoubleSide;
-      ol(add(new T.SphereGeometry(0.2, 18, 14), stone, 0, 2.88, 0.02, 0, 0, 0, statue)); for (let i = 0; i < 8; i++) add(new T.ConeGeometry(0.05, 0.16, 5), stone, Math.cos(i) * 0.14, 2.98, Math.sin(i) * 0.12 - 0.04, 0, 0.6, 0, statue);
-      // a espada fincada na frente, com as duas mãos no cabo
-      add(new T.BoxGeometry(0.07, 1.25, 0.02), toon("#b8c0d0"), 0, 1.85, 0.42, 0, 0, 0, statue); add(new T.BoxGeometry(0.38, 0.06, 0.06), stone, 0, 2.47, 0.42, 0, 0, 0, statue); add(new T.CylinderGeometry(0.03, 0.03, 0.22, 8), dark, 0, 2.6, 0.42, 0, 0, 0, statue); }
+      add(new T.CylinderGeometry(0.9, 1.0, 1.0, 8), dark, 0, 0.5, 0, 0, 0, 0, statue); add(new T.CylinderGeometry(0.75, 0.8, 0.22, 8), stone, 0, 1.1, 0, 0, 0, 0, statue);
+      ol(add(new T.CylinderGeometry(0.34, 0.42, 1.1, 10), stone, 0, 1.85, 0, 0, 0, 0, statue)); ol(add(new T.SphereGeometry(0.42, 14, 10), stone, 0, 2.45, 0, 0, 0, 0, statue)).scale.set(1, 0.8, 0.85);
+      for (const s2 of [-1, 1]) ol(add(new T.SphereGeometry(0.22, 12, 10), stone, s2 * 0.46, 2.55, 0, 0, 0, 0, statue));
+      // elmo fechado com crista, e um escudo redondo apoiado no chão
+      ol(add(new T.CylinderGeometry(0.2, 0.22, 0.38, 12), stone, 0, 3.0, 0, 0, 0, 0, statue)); add(new T.BoxGeometry(0.06, 0.3, 0.42), dark, 0, 3.28, 0, 0, 0, 0, statue); add(new T.BoxGeometry(0.26, 0.03, 0.02), dark, 0, 3.02, 0.21, 0, 0, 0, statue);
+      ol(add(new T.CylinderGeometry(0.5, 0.5, 0.08, 20), stone, 0.55, 1.75, 0.35, Math.PI / 2, -0.4, 0.1, statue)); add(new T.SphereGeometry(0.1, 10, 8), dark, 0.58, 1.75, 0.42, 0, 0, 0, statue);
+      add(new T.BoxGeometry(0.07, 1.2, 0.02), toon("#b8c0d0"), -0.42, 1.9, 0.35, 0, 0, 0.08, statue); add(new T.BoxGeometry(0.3, 0.05, 0.05), stone, -0.47, 2.45, 0.35, 0, 0, 0.08, statue);
+      // musgo e flores crescendo na base
+      for (let i = 0; i < 10; i++) { const a = i * 0.63; add(new T.SphereGeometry(0.12 + rnd() * 0.08, 8, 6), toon("#3a6a4a"), Math.cos(a) * 0.95, 0.15 + rnd() * 0.3, Math.sin(a) * 0.95, 0, 0, 0, statue); } }
     const statueLight = new T.PointLight("#a8c0ff", 1.2, 7, 2); statueLight.position.set(SX + 0.5, H(SX, SZ) + 3.5, SZ + 2); scene.add(statueLight);
 
-    /* ---------------- a Frieren, no meio das flores, olhando o céu ---------------- */
+    /* ---------------- uma maga élfica viajante, no meio das flores, olhando o céu (personagem original) ---------------- */
     const fr = new T.Group(); const FX = 0.9, FZ = 1.2; fr.position.set(FX, H(FX, FZ), FZ); fr.rotation.y = Math.PI + 0.45; scene.add(fr);
-    { const white = toon("#f2f0ea"), gold = toon("#c8a050"), black = toon("#22222a"), skin = toon("#f6e0d0"), hair = toon("#e8ecf4"), boot = toon("#6a4a32");
-      for (const s of [-1, 1]) { ol(add(new T.CapsuleGeometry(0.045, 0.55, 5, 10), black, s * 0.07, 0.35, 0, 0, 0, 0, fr)); ol(add(new T.CapsuleGeometry(0.055, 0.14, 5, 10), boot, s * 0.07, 0.1, 0.02, 0, 0, 0, fr)); }
-      ol(add(new T.CylinderGeometry(0.12, 0.2, 0.32, 18), white, 0, 0.72, 0, 0, 0, 0, fr)); // saia
-      ol(add(new T.CapsuleGeometry(0.12, 0.28, 6, 12), white, 0, 1.0, 0, 0, 0, 0, fr)); add(new T.TorusGeometry(0.12, 0.015, 6, 20), gold, 0, 0.88, 0, 0, Math.PI / 2, 0, fr);
-      // a capa branca comprida com a barra dourada
-      const cape = ol(add(new T.CylinderGeometry(0.15, 0.3, 0.92, 24, 1, true), toon("#f4f2ec", { side: T.DoubleSide }), 0, 0.73, -0.02, 0, 0, 0, fr)); void cape;
-      add(new T.TorusGeometry(0.3, 0.016, 6, 28), gold, 0, 0.28, -0.02, 0, Math.PI / 2, 0, fr);
-      for (const s of [-1, 1]) { ol(add(new T.CapsuleGeometry(0.035, 0.36, 5, 10), white, s * 0.16, 0.98, 0.02, 0, 0, s * 0.2, fr)); add(new T.SphereGeometry(0.035, 10, 8), skin, s * 0.2, 0.78, 0.03, 0, 0, 0, fr); }
-      // o cajado
-      add(new T.CylinderGeometry(0.014, 0.014, 1.5, 8), toon("#e8e0d0"), 0.24, 0.8, 0.06, 0, 0, -0.08, fr); add(new T.TorusGeometry(0.06, 0.012, 6, 16), gold, 0.18, 1.58, 0.06, 0, 0, 0, fr); add(new T.SphereGeometry(0.04, 12, 8), K(new T.MeshBasicMaterial({ color: "#e83a4a" })), 0.18, 1.58, 0.06, 0, 0, 0, fr);
-      const head = new T.Group(); head.position.set(0, 1.32, 0); head.rotation.x = -0.35; fr.add(head);
-      ol(add(new T.SphereGeometry(0.11, 22, 16), skin, 0, 0, 0, 0, 0, 0, head));
-      ol(add(new T.SphereGeometry(0.118, 22, 16, 0, Math.PI * 2, 0, Math.PI * 0.62), hair, 0, 0.01, -0.005, 0, 0, 0, head));
-      ol(add(new T.SphereGeometry(0.12, 22, 16, Math.PI * 0.85, Math.PI * 1.3, 0, Math.PI * 0.75), hair, 0, 0, 0, 0, 0, 0, head));
-      for (const s of [-1, 1]) { ol(add(new T.ConeGeometry(0.025, 0.12, 6), skin, s * 0.13, 0.0, 0, 0, 0, -s * 1.35, head)); // as orelhas de elfa
-        const tail = new T.Group(); tail.position.set(s * 0.09, 0.07, -0.06); head.add(tail); add(new T.SphereGeometry(0.03, 10, 8), toon("#e83a4a"), 0, 0, 0, 0, 0, 0, tail);
-        ol(add(new T.CapsuleGeometry(0.045, 0.65, 6, 10), hair, s * 0.02, -0.38, -0.03, 0.08, 0, s * 0.05, tail)); fr.userData["tail" + s] = tail; }
-      fr.userData.head = head; }
+    { const mage = ctx.person({ h: 1.55, skin: "#f4dcc8", hair: "#2a3a5a", hairStyle: "coque", top: "#4a6a5a", bottom: "#3a2e2a", longSleeves: true, cloak: "#7a4a2a", ears: true, shoes: "#4a3424" });
+      fr.add(mage.g); mage.head.rotation.x = -0.4;
+      // o cajado de madeira torta com um cristal âmbar e uma fita
+      const staff = new T.Group(); staff.position.set(0.26, 0, 0.06); fr.add(staff);
+      add(new T.CylinderGeometry(0.016, 0.022, 1.7, 8), toon("#6a4a2a"), 0, 0.85, 0, 0, 0, 0.04, staff); const cr = add(new T.OctahedronGeometry(0.07, 0), K(new T.MeshBasicMaterial({ color: "#ffc860" })), 0.03, 1.78, 0, 0, 0, 0, staff); cr.scale.set(0.8, 1.4, 0.8);
+      const cg = new T.Sprite(K(new T.SpriteMaterial({ map: ctx.glowTex, color: 0xffc860, transparent: true, opacity: 0.7, depthWrite: false, blending: T.AdditiveBlending }))); cg.scale.setScalar(0.45); cg.position.set(0.03, 1.78, 0); staff.add(cg);
+      add(new T.PlaneGeometry(0.05, 0.3), toon("#c83a4a", { side: T.DoubleSide }), 0.05, 1.55, 0, 0, 0, 0.2, staff);
+      mage.arms[1].sh.rotation.x = -0.3; mage.arms[1].sh.rotation.z = -0.25; mage.arms[1].el.rotation.x = -0.5;
+      fr.userData.head = mage.head; fr.userData.staff = staff; }
 
     /* ---------------- os agradecimentos: tufos de flores que brilham ---------------- */
     const tx = ctx.textos ? ctx.textos() : { agradecimentos: [] };
@@ -122,7 +115,7 @@
         for (const m of meteors) { m.t += dt; if (m.t > m.dur) { m.t = -rnd() * 4; m.a = -0.6 - rnd() * 0.5; m.p = V3(-40 + rnd() * 120, 60 + rnd() * 50, -120 - rnd() * 60); m.len = 10 + rnd() * 18; }
           if (m.t < 0 || !m.p) { m.m.material.uniforms.uA.value = 0; continue; } const u = m.t / m.dur, dir = V3(Math.cos(m.a), Math.sin(m.a), 0); m.m.position.copy(m.p).addScaledVector(dir, u * 40); m.m.scale.set(m.len, 2, 1); m.m.rotation.set(0, 0, m.a + Math.PI); m.m.lookAt(camera.position); m.m.rotateZ(m.a + Math.PI); m.m.material.uniforms.uA.value = Math.sin(u * Math.PI); }
         for (const mo of motes) { const q = (t * 0.05 + mo.ph) % 1; mo.s.position.set(mo.x + Math.sin(t * 0.3 + mo.ph * 9) * 0.4, H(mo.x, mo.z) + 0.2 + q * 3, mo.z); mo.s.material.opacity = 0.6 * Math.sin(q * Math.PI); }
-        if (fr.userData.head) { fr.userData.head.rotation.y = Math.sin(t * 0.2) * 0.15; for (const s of [-1, 1]) fr.userData["tail" + s].rotation.z = Math.sin(t * 1.1 + s) * 0.06; }
+        if (fr.userData.head) { fr.userData.head.rotation.y = Math.sin(t * 0.2) * 0.15; fr.userData.staff.rotation.z = Math.sin(t * 0.6) * 0.02; }
         for (const tf of tufts) { tf.hot += ((hot === tf || focus === tf ? 1 : 0) - tf.hot) * Math.min(1, dt * 6); tf.halo.material.opacity = 0.35 + 0.15 * Math.sin(t * 1.6 + tf.i) + tf.hot * 0.45; tf.halo.scale.setScalar(1.3 + tf.hot * 0.5); }
       },
       render(renderer) { renderer.setRenderTarget(null); renderer.render(scene, camera); },

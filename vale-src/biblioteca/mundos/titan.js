@@ -1,6 +1,6 @@
 /* Mundo das Perspectivas para o futuro: Attack on Titan. O alto da muralha ao pôr do sol: o caminho de pedra
-   com os canhões nos trilhos, a bandeira com as Asas da Liberdade batendo no vento, um soldado da Tropa de
-   Exploração sentado na beirada, de costas, olhando para fora. Lá embaixo, os campos, a floresta, o rio, os
+   com os canhões nos trilhos, uma bandeira com um emblema original batendo no vento, um viajante de capa
+   sentado na beirada (personagem original), de costas, olhando para fora. Lá embaixo, os campos, a floresta, o rio, os
    titãs andando devagar, e no fim do horizonte o mar brilhando, o lugar que eles sonhavam ver. Cada
    perspectiva fica num ponto da muralha. Tudo desenhado aqui. */
 (() => {
@@ -57,20 +57,22 @@
     for (const x of [6, 16, 26]) { const g = new T.Group(); g.position.set(x, WH + 0.2, 3.2); scene.add(g); add(new T.BoxGeometry(3.4, 0.12, 0.5), std("#5a4a3a"), 0, 0.06, 0, Math.PI / 2, 0, 0, g);
       add(new T.BoxGeometry(1.2, 0.5, 1.4), std("#5a4030"), 0, 0.4, 0, 0, 0, 0, g); for (const s of [-1, 1]) add(new T.CylinderGeometry(0.35, 0.35, 0.12, 14), std("#3a3028"), s * 0.65, 0.35, 0, 0, 0, Math.PI / 2, g);
       add(new T.CylinderGeometry(0.22, 0.3, 2.2, 14), std("#2a2a2e", { metalness: 0.7, roughness: 0.4 }), 0, 0.85, -0.7, 0, Math.PI / 2 - 0.1, 0, g); cannons.push(g); }
-    // a bandeira com as Asas da Liberdade
-    const flagTex = (() => { const c = document.createElement("canvas"); c.width = 256; c.height = 256; const g = c.getContext("2d"); g.fillStyle = "#2a4a3a"; g.fillRect(0, 0, 256, 256); g.translate(128, 128);
-      const wing = (col, flip) => { g.save(); g.scale(flip ? -1 : 1, 1); g.fillStyle = col; g.beginPath(); g.moveTo(4, 70); g.bezierCurveTo(30, 40, 50, -10, 30, -80); g.bezierCurveTo(70, -40, 96, 10, 100, 60); for (let k = 0; k < 4; k++) { g.lineTo(84 - k * 18, 40 + k * 8); g.lineTo(80 - k * 18, 68 - k * 2); } g.closePath(); g.fill(); g.restore(); };
-      wing("#f2f0ea", false); wing("#2a4a9a", true); return K(new T.CanvasTexture(c)); })();
+    // a bandeira, com um emblema original
+    const flagTex = (() => { const c = document.createElement("canvas"); c.width = 256; c.height = 256; const g = c.getContext("2d"); g.fillStyle = "#3a2a4a"; g.fillRect(0, 0, 256, 256); g.translate(128, 140);
+      // emblema original: um portão aberto com um sol nascendo entre as duas folhas
+      g.fillStyle = "#f2c25a"; g.beginPath(); g.arc(0, 10, 34, Math.PI, 0); g.fill(); for (let k = 0; k < 9; k++) { const a = Math.PI + k * Math.PI / 8; g.fillRect(Math.cos(a) * 44 - 3, 10 + Math.sin(a) * 44 - 3, 6, 6); }
+      g.fillStyle = "#e8e4da"; for (const sd of [-1, 1]) { g.beginPath(); g.moveTo(sd * 18, 60); g.lineTo(sd * 70, 40); g.lineTo(sd * 70, -60); g.lineTo(sd * 18, -40); g.closePath(); g.fill(); }
+      g.fillStyle = "#3a2a4a"; for (const sd of [-1, 1]) for (let k = 0; k < 3; k++) g.fillRect(sd * 44 - 2, -30 + k * 28, 4, 18); return K(new T.CanvasTexture(c)); })();
     const FLAG = V3(-5.0, WH + 0.2, 1.6);
     add(new T.CylinderGeometry(0.06, 0.08, 6, 8), std("#5a4a3a"), FLAG.x, FLAG.y + 3, FLAG.z);
     const flagGeo = K(new T.PlaneGeometry(2.4, 2.4, 16, 8)); const flag = add(flagGeo, std("#ffffff", { map: flagTex, side: T.DoubleSide, roughness: 0.9 }), FLAG.x + 1.2, FLAG.y + 4.7, FLAG.z, -0.6);
     const flagBase = flagGeo.attributes.position.array.slice();
-    // o soldado sentado na beirada, de costas, com a capa verde
+    // o viajante sentado na beirada, de costas, com a capa marrom
     const soldier = new T.Group(); soldier.position.set(2.4, WH + 0.32, 0.25); soldier.rotation.y = 0.2; scene.add(soldier);
-    { const cloak = std("#3a5a3a", { side: T.DoubleSide }), skin = std("#e8c8b0"), boots = std("#3a2a20"), white = std("#e8e4da"), metal = std("#8a8a90", { metalness: 0.8, roughness: 0.3 }), hair = std("#2a2220");
+    { const cloak = std("#5a4632", { side: T.DoubleSide }), skin = std("#e8c8b0"), boots = std("#3a2a20"), white = std("#e8e4da"), metal = std("#8a8a90", { metalness: 0.8, roughness: 0.3 }), hair = std("#2a2220");
       add(new T.CapsuleGeometry(0.17, 0.4, 6, 12), white, 0, 0.35, 0, 0, 0, 0, soldier);
       for (const s of [-1, 1]) { add(new T.CapsuleGeometry(0.075, 0.38, 5, 10), white, s * 0.1, 0.02, -0.22, Math.PI / 2, 0, 0, soldier); add(new T.CapsuleGeometry(0.07, 0.36, 5, 10), boots, s * 0.1, -0.3, -0.45, 0, 0, 0, soldier);
-        add(new T.CylinderGeometry(0.06, 0.06, 0.5, 10), metal, s * 0.3, 0.1, 0.05, Math.PI / 2 - 0.2, 0, 0, soldier); add(new T.BoxGeometry(0.12, 0.12, 0.25), metal, s * 0.3, 0.2, -0.1, 0, 0, 0, soldier); }
+        add(new T.BoxGeometry(0.14, 0.18, 0.1), std("#6a4a2a"), s * 0.22, 0.25, 0.02, 0, 0, 0, soldier); }
       add(new T.SphereGeometry(0.12, 16, 12), skin, 0, 0.85, -0.02, 0, 0, 0, soldier); add(new T.SphereGeometry(0.125, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.6), hair, 0, 0.87, 0.01, 0, 0, 0, soldier);
       const cl = add(new T.PlaneGeometry(0.7, 0.85, 6, 6), cloak, 0, 0.42, 0.2, 0, 0.15, 0, soldier); soldier.userData.cloak = cl; soldier.userData.cloakBase = cl.geometry.attributes.position.array.slice();
       const em = new T.Mesh(K(new T.PlaneGeometry(0.34, 0.34)), K(new T.MeshStandardMaterial({ map: flagTex, transparent: true, side: T.DoubleSide }))); em.position.set(0, 0.48, 0.36); em.rotation.x = 0.1; soldier.add(em); }
@@ -81,7 +83,7 @@
     const tx = ctx.textos ? ctx.textos() : { futuro: [] };
     const list = tx.futuro && tx.futuro.length ? tx.futuro : [{ t: "Perspectivas para o futuro", s: "em breve", r: "Este texto ainda vai ser escrito." }];
     const sub = { name: "Perspectivas para o futuro", acts: list.map((a) => Object.assign({ k: [], l: [] }, a)) };
-    const SPOTS = [{ at: V3(2.4, WH + 0.9, 0.3), name: "o soldado na beirada" }, { at: V3(6, WH + 1.1, 3.2), name: "o canhão" }, { at: FLAG.clone().add(V3(0.6, 2.5, 0)), name: "a bandeira" }, { at: V3(16, WH + 1.1, 3.2), name: "o segundo canhão" }, { at: V3(26, WH + 1.1, 3.2), name: "o terceiro canhão" }];
+    const SPOTS = [{ at: V3(2.4, WH + 0.9, 0.3), name: "o viajante na beirada" }, { at: V3(6, WH + 1.1, 3.2), name: "o canhão" }, { at: FLAG.clone().add(V3(0.6, 2.5, 0)), name: "a bandeira" }, { at: V3(16, WH + 1.1, 3.2), name: "o segundo canhão" }, { at: V3(26, WH + 1.1, 3.2), name: "o terceiro canhão" }];
     const items = sub.acts.slice(0, SPOTS.length).map((a, i) => { const s = SPOTS[i]; const hit = add(new T.SphereGeometry(1.1, 8, 6), K(new T.MeshBasicMaterial()), s.at.x, s.at.y, s.at.z); hit.visible = false;
       const mk = new T.Sprite(K(new T.SpriteMaterial({ map: ctx.glowTex, color: 0xffd090, transparent: true, opacity: 0.6, depthWrite: false, blending: T.AdditiveBlending }))); mk.scale.setScalar(0.8); mk.position.copy(s.at).add(V3(0, 1.2, 0)); scene.add(mk); return { a, i, hit, mk, s, hot: 0 }; });
 

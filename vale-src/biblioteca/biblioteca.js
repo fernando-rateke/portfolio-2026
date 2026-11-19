@@ -666,7 +666,7 @@
     3: { m: 5, a: "#9ef0e0", b: "#45b079", add: 1, n: 80, s: 0.14, v: 0.6 },   // bolhas subindo
     4: { m: 0, a: "#c8ff6a", b: "#ffe08a", add: 1, n: 90, s: 0.08, v: 0.15 },  // vaga-lumes
     5: { m: 4, a: "#5ce8f8", b: "#ffffff", add: 1, n: 110, s: 0.07, v: 0.05 }, // pixels
-    6: { m: 6, a: "#0a0808", b: "#ffffff", add: 0, n: 40, s: 0.17, v: 0.1 },   // fuligem
+    6: { m: 6, a: "#0a0808", b: "#2a2420", add: 0, n: 40, s: 0.15, v: 0.1 },   // pó escuro
     7: { m: 1, a: "#cfe6ff", b: "#ffffff", add: 1, n: 80, s: 0.12, v: -0.35 },
     8: { m: 7, a: "#e8e2da", b: "#d8955a", add: 0, n: 50, s: 0.5, v: 0.7 },    // vapor
     9: { m: 1, a: "#9ec8ff", b: "#fff4d0", add: 1, n: 90, s: 0.12, v: -0.3 },  // pétalas
@@ -693,7 +693,7 @@
       else if (vM == 3.0) { vec2 h = abs(r); float hx = max(h.x * 0.866 + h.y * 0.5, h.y); a = smoothstep(0.06, 0.0, abs(hx - 0.38)); }
       else if (vM == 4.0) { a = step(max(abs(q.x), abs(q.y)), 0.34); }
       else if (vM == 5.0) { a = smoothstep(0.05, 0.0, abs(d - 0.42)) * 0.9 + smoothstep(0.12, 0.0, length(q - vec2(-0.16, 0.16))) * 0.8 + smoothstep(0.42, 0.2, d) * 0.08; }
-      else if (vM == 6.0) { float fz = 0.36 + 0.07 * sin(atan(q.y, q.x) * 13.0 + vR * 3.0); a = smoothstep(fz, fz - 0.07, d); vec2 e1 = q - vec2(-0.1, 0.04), e2 = q - vec2(0.1, 0.04); float eye = max(smoothstep(0.08, 0.06, length(e1)), smoothstep(0.08, 0.06, length(e2))); float pup = max(smoothstep(0.035, 0.02, length(e1)), smoothstep(0.035, 0.02, length(e2))); col = mix(col, vec3(1.0), eye); col = mix(col, vec3(0.0), pup); }
+      else if (vM == 6.0) { float fz = 0.36 + 0.07 * sin(atan(q.y, q.x) * 13.0 + vR * 3.0); a = smoothstep(fz, fz - 0.07, d); }
       else { a = smoothstep(0.5, 0.05, d) * 0.45; }
       a *= vA; if (a < 0.01) discard;
       gl_FragColor = uAdd > 0.5 ? vec4(col * a * 1.6, 1.0) : vec4(col, a); }`;

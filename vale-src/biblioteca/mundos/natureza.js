@@ -1,9 +1,9 @@
-/* Mundo de Ciências da Natureza: Meu Amigo Totoro e Ponyo. O ponto de ônibus no meio da floresta, à noite, na
-   chuva: o Totoro espera com o guarda-chuva preto, a lâmpada do poste ilumina as gotas, a grande cânfora fica
-   atrás, a fuligem se esconde nas raízes e o Gatobus chega de vez em quando com os olhos acesos. Na beira da
-   estrada, um laguinho com o balde verde da Ponyo, e ela espiando lá de dentro. Cada atividade é uma bolota
-   plantada na grama: clicar nela faz a muda crescer, aproxima a câmera e abre o livro.
-   Os modelos do Totoro, do Gatobus, da fuligem e do balde vêm do vale; o resto é desenhado aqui. */
+/* Mundo de Ciências da Natureza, no clima de Meu Amigo Totoro e Ponyo. O ponto de ônibus no meio da floresta,
+   à noite, na chuva: o guardião da mata (um espírito de cervo coberto de musgo, com lanternas nos chifres)
+   espera debaixo da lâmpada do poste, a grande cânfora fica atrás com cogumelos acesos nas raízes, e um velho
+   ônibus de madeira passa de vez em quando com os faróis acesos. Na beira da estrada, um laguinho com um balde
+   verde soltando bolhas. Cada atividade é uma bolota plantada na grama: clicar nela faz a muda crescer,
+   aproxima a câmera e abre o livro. Personagens originais; o balde vem do vale; o resto é desenhado aqui. */
 (() => {
   window.MUNDOS = window.MUNDOS || {};
   window.MUNDOS.natureza = (ctx) => {
@@ -107,15 +107,27 @@
       const src = x.material; const mm = K(new T.MeshLambertMaterial({ map: src.map || null, color: src.color ? src.color.clone() : new T.Color(1, 1, 1), side: src.side, transparent: !!src.transparent && !src.map, opacity: src.opacity, vertexColors: !!x.geometry.attributes.color }));
       if (src.map) src.map.encoding = T.LinearEncoding;
       if (o.glow && o.glow[src.name] != null) { mm.emissive = new T.Color(o.glowC || "#7aff9a"); mm.emissiveIntensity = o.glow[src.name]; } x.material = mm; }); return m; };
-    // o Totoro esperando com o guarda-chuva preto
-    const toto = new T.Group(); toto.position.set(-0.25, 0, -2.5); toto.rotation.y = 0.15; scene.add(toto);
-    const umb = new T.Group(); umb.position.set(0.78, 2.15, 0.42); umb.rotation.z = -0.12; toto.add(umb);
-    { const um = K(new T.MeshLambertMaterial({ color: "#121214", side: T.DoubleSide })); const can = new T.Mesh(K(new T.ConeGeometry(0.95, 0.42, 16, 1, true)), um); can.position.y = 0.5; umb.add(can); const st = new T.Mesh(K(new T.CylinderGeometry(0.016, 0.016, 1.7, 6)), iron); st.position.y = -0.3; umb.add(st); const hd = new T.Mesh(K(new T.TorusGeometry(0.05, 0.014, 6, 12, Math.PI)), iron); hd.position.set(0.05, -1.15, 0); hd.rotation.z = Math.PI; umb.add(hd); }
-    load("totoro.glb").then((m) => { if (!m) return; prep(m, { line: "#2a2e36" }); fit(m, 2.6); toto.add(m); });
-    // a fuligem, nas raízes da cânfora
+    // o guardião da mata: um espírito alto de cervo, coberto de musgo, com lanternas penduradas nos chifres (personagem original)
+    const toto = new T.Group(); toto.position.set(-0.4, 0, -2.6); toto.rotation.y = 0.2; scene.add(toto);
+    const umb = new T.Group(); toto.add(umb);
+    { const moss = K(new T.MeshLambertMaterial({ color: "#3a5a3a" })), bark = K(new T.MeshLambertMaterial({ color: "#5a4a36" })), mask = K(new T.MeshLambertMaterial({ color: "#e8e2d2" }));
+      const P = (geo, m, x, y, z, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1) => { const o = new T.Mesh(K(geo), m); o.position.set(x, y, z); o.rotation.set(rx, ry, rz); o.scale.set(sx, sy, sz); toto.add(o); return o; };
+      P(new T.CapsuleGeometry(0.42, 0.9, 8, 16), moss, 0, 1.45, 0, 0.15, 0, 0, 1, 1, 0.8); // tronco musgoso
+      for (const sd of [-1, 1]) { P(new T.CapsuleGeometry(0.1, 1.0, 6, 10), bark, sd * 0.22, 0.55, 0.05); P(new T.CapsuleGeometry(0.07, 0.9, 6, 10), bark, sd * 0.5, 1.2, 0.15, -0.15, 0, sd * 0.12); }
+      P(new T.CapsuleGeometry(0.12, 0.45, 6, 10), moss, 0, 2.2, 0.2, 0.5, 0, 0); // pescoço
+      const head = P(new T.SphereGeometry(0.2, 18, 14), mask, 0, 2.48, 0.38, 0, 0, 0, 0.8, 0.9, 1.3); void head; // máscara de osso alongada
+      for (const sd of [-1, 1]) { const e = new T.Sprite(K(new T.SpriteMaterial({ map: ctx.glowTex, color: 0xbfff9a, transparent: true, opacity: 0.85, depthWrite: false, blending: T.AdditiveBlending }))); e.scale.setScalar(0.12); e.position.set(sd * 0.07, 2.52, 0.6); toto.add(e); }
+      // chifres galhados, com lanterninhas penduradas
+      for (const sd of [-1, 1]) { const pts = [V3(sd * 0.08, 2.62, 0.3), V3(sd * 0.3, 3.0, 0.2), V3(sd * 0.45, 3.35, 0.05), V3(sd * 0.65, 3.6, -0.05)]; const c = new T.CatmullRomCurve3(pts); toto.add(new T.Mesh(K(new T.TubeGeometry(c, 12, 0.03, 6)), bark));
+        for (const u of [0.45, 0.75]) { const p = c.getPointAt(u), q = p.clone().add(V3(sd * 0.25, 0.22, 0)); toto.add(new T.Mesh(K(new T.TubeGeometry(new T.CatmullRomCurve3([p, q]), 4, 0.018, 5)), bark));
+          const ln = new T.Mesh(K(new T.SphereGeometry(0.05, 10, 8)), K(new T.MeshBasicMaterial({ color: "#ffd890" }))); ln.position.copy(q).add(V3(0, -0.1, 0)); toto.add(ln); const lg = new T.Sprite(K(new T.SpriteMaterial({ map: ctx.glowTex, color: 0xffc870, transparent: true, opacity: 0.7, depthWrite: false, blending: T.AdditiveBlending }))); lg.scale.setScalar(0.4); lg.position.copy(ln.position); toto.add(lg); } }
+      const gl = new T.PointLight("#ffd08a", 0.8, 4, 2); gl.position.set(0, 3.2, 0.2); toto.add(gl); }
+    // cogumelos que brilham nas raízes da cânfora
     const soots = [];
-    load("fuligem.glb").then((src) => { if (!src) return; prep(src); src.traverse((o) => { if (o.name === "rock") o.visible = false; }); fit(src, 0.5);
-      for (let i = 0; i < 6; i++) { const g = new T.Group(); const m = src.clone(true); g.add(m); const a = 0.9 + i * 0.32, r = 2.9 + rnd() * 1.2; g.position.copy(TREE).add(V3(Math.cos(a) * r, 0, Math.sin(a) * r)); g.lookAt(OVERP.x, 0, OVERP.z); scene.add(g); soots.push({ g, ph: rnd() * 6, base: g.position.clone() }); } });
+    for (let i = 0; i < 14; i++) { const a = 0.7 + i * 0.22, r = 2.6 + rnd() * 1.6; const g = new T.Group(); g.position.copy(TREE).add(V3(Math.cos(a) * r, 0, Math.sin(a) * r)); scene.add(g);
+      const h = 0.12 + rnd() * 0.2; const st = new T.Mesh(K(new T.CylinderGeometry(0.02, 0.03, h, 8)), K(new T.MeshLambertMaterial({ color: "#d8d0c0" }))); st.position.y = h / 2; g.add(st);
+      const cap = new T.Mesh(K(new T.SphereGeometry(0.08 + rnd() * 0.05, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2)), K(new T.MeshBasicMaterial({ color: "#7affd8" }))); cap.position.y = h; g.add(cap);
+      const gs = new T.Sprite(K(new T.SpriteMaterial({ map: ctx.glowTex, color: 0x7affd8, transparent: true, opacity: 0.5, depthWrite: false, blending: T.AdditiveBlending }))); gs.scale.setScalar(0.5); gs.position.y = h; g.add(gs); soots.push({ g, ph: rnd() * 6, base: g.position.clone(), gs }); }
     // o laguinho na beira da estrada, com o balde da Ponyo
     const POND = V3(-3.6, 0, 3.4);
     const pond = add(new T.CircleGeometry(1.6, 40), K(new T.ShaderMaterial({ transparent: true, uniforms: { uT },
@@ -125,23 +137,17 @@
     const bucket = new T.Group(); bucket.position.set(POND.x + 1.25, 0.02, POND.z - 0.7); bucket.rotation.y = 0.6; scene.add(bucket);
     const bucketLight = new T.PointLight("#7aff9a", 0.9, 4, 2); bucketLight.position.set(POND.x + 1.25, 0.6, POND.z - 0.7); scene.add(bucketLight);
     load("balde.glb").then((m) => { if (!m) return; prep(m, { glow: { green_light: 1.2 } }); fit(m, 0.6); bucket.add(m); });
-    // a Ponyo espiando da borda do balde
-    const ponyo = new T.Group(); bucket.add(ponyo); ponyo.position.set(0, 0.56, 0.02);
-    { const fc = document.createElement("canvas"); fc.width = 256; fc.height = 128; const g = fc.getContext("2d"); g.fillStyle = "#f3c3a0"; g.fillRect(0, 0, 256, 128);
-      for (const s of [-1, 1]) { g.fillStyle = "#1a1012"; g.beginPath(); g.ellipse(64 + s * 14, 62, 6, 9, 0, 0, 7); g.fill(); g.fillStyle = "#fff"; g.beginPath(); g.arc(64 + s * 14 - 2, 58, 2.4, 0, 7); g.fill(); g.fillStyle = "rgba(240,110,110,0.45)"; g.beginPath(); g.ellipse(64 + s * 26, 76, 7, 4, 0, 0, 7); g.fill(); }
-      g.strokeStyle = "#8a3a2a"; g.lineWidth = 2; g.beginPath(); g.arc(64, 78, 6, 0.1 * Math.PI, 0.9 * Math.PI); g.stroke();
-      const face = new T.Mesh(K(new T.SphereGeometry(0.1, 24, 16)), K(new T.MeshLambertMaterial({ map: K(new T.CanvasTexture(fc)) }))); ponyo.add(face);
-      const hood = new T.Mesh(K(new T.SphereGeometry(0.115, 24, 16, Math.PI / 2 + 0.9, Math.PI * 2 - 1.8, 0, 2.2)), K(new T.MeshLambertMaterial({ color: "#e0402a", side: T.DoubleSide }))); ponyo.add(hood);
-      const body = new T.Mesh(K(new T.SphereGeometry(0.11, 16, 12)), K(new T.MeshLambertMaterial({ color: "#e0402a" }))); body.position.y = -0.12; body.scale.set(1, 0.9, 0.9); ponyo.add(body); }
     // bolhas subindo do balde
     const bub = []; for (let i = 0; i < 10; i++) { const b = new T.Mesh(K(new T.SphereGeometry(0.025 + rnd() * 0.02, 10, 8)), K(new T.MeshBasicMaterial({ color: "#bfffe0", transparent: true, opacity: 0.5 }))); scene.add(b); bub.push({ b, ph: rnd() }); }
-    // o Gatobus: chega pela estrada com os olhos acesos, espera no ponto e vai embora
-    const bus = new T.Group(); bus.visible = false; scene.add(bus); const busEyes = []; let busReady = false;
-    load("gatobus.glb").then((m) => { if (!m) return; prep(m, { line: "#3a2414" }); const box = new T.Box3().setFromObject(m), sz = box.getSize(V3());
-      const spots = [[0.13, 0.27], [0.37, 0.355]].map(([u, v]) => { let best = null; m.traverse((o) => { if (!o.isMesh) return; const P = o.geometry.attributes.position; for (let i = 0; i < P.count; i += 2) { const x = P.getX(i), y = P.getY(i), z = P.getZ(i); if (Math.abs((x - box.min.x) / sz.x - u) < 0.03 && Math.abs((y - box.min.y) / sz.y - v) < 0.03 && (!best || z > best.z)) best = V3(x, y, z); } }); return best; }).filter(Boolean);
-      const s = fit(m, 6.2, "z"); bus.add(m);
-      for (const p of spots) { const e = new T.Sprite(K(new T.SpriteMaterial({ map: ctx.glowTex, color: 0xffe07a, transparent: true, opacity: 0.9, depthWrite: false, blending: T.AdditiveBlending }))); e.scale.set(1.6, 1.6, 1); e.position.copy(p).multiplyScalar(s).add(m.position); e.position.z += 0.1; bus.add(e); busEyes.push(e); }
-      const hl = new T.SpotLight("#ffe07a", 3, 18, 0.5, 0.6, 1.4); hl.position.set(0, 1.5, 3); hl.target.position.set(0, 0, 10); bus.add(hl, hl.target); busReady = true; });
+    // o ônibus da roça: velho, de madeira, com os faróis acesos (original)
+    const bus = new T.Group(); bus.visible = false; scene.add(bus); const busEyes = []; let busReady = true;
+    { const body = K(new T.MeshLambertMaterial({ color: "#6a8a6a" })), cream = K(new T.MeshLambertMaterial({ color: "#e8dcc0" })), dark = K(new T.MeshLambertMaterial({ color: "#2a2a2a" })), win = K(new T.MeshBasicMaterial({ color: "#ffd8a0" }));
+      const P = (geo, m, x, y, z) => { const o = new T.Mesh(K(geo), m); o.position.set(x, y, z); bus.add(o); return o; };
+      P(new T.BoxGeometry(2.2, 1.5, 5.6), body, 0, 1.25, 0); P(new T.BoxGeometry(2.24, 0.5, 5.64), cream, 0, 0.75, 0); P(new T.BoxGeometry(2.1, 0.22, 5.5), cream, 0, 2.08, 0); P(new T.BoxGeometry(1.4, 0.18, 2.0), body, 0, 2.27, -0.6);
+      P(new T.BoxGeometry(2.0, 0.9, 1.0), body, 0, 0.95, 3.2); for (const z of [-1.8, -0.6, 0.6, 1.8]) for (const sx of [-1, 1]) P(new T.PlaneGeometry(0.8, 0.55), win, sx * 1.13, 1.55, z).rotation.y = sx * Math.PI / 2;
+      for (const [x, z] of [[-1, -1.8], [1, -1.8], [-1, 2.4], [1, 2.4]]) P(new T.CylinderGeometry(0.4, 0.4, 0.3, 14), dark, x, 0.4, z).rotation.z = Math.PI / 2;
+      for (const sx of [-0.65, 0.65]) { P(new T.SphereGeometry(0.14, 12, 8), win, sx, 0.95, 3.72); const e = new T.Sprite(K(new T.SpriteMaterial({ map: ctx.glowTex, color: 0xffe07a, transparent: true, opacity: 0.9, depthWrite: false, blending: T.AdditiveBlending }))); e.scale.set(1.4, 1.4, 1); e.position.set(sx, 0.95, 3.85); bus.add(e); busEyes.push(e); }
+      const hl = new T.SpotLight("#ffe07a", 3, 18, 0.5, 0.6, 1.4); hl.position.set(0, 1.0, 3.8); hl.target.position.set(0, 0, 12); bus.add(hl, hl.target); }
 
     /* ---------------- a chuva ---------------- */
     const RN = small ? 900 : 1800, rp = new Float32Array(RN * 6), rs = new Float32Array(RN);
@@ -185,7 +191,7 @@
     const smoother = (x) => x * x * x * (x * (x * 6 - 15) + 10);
     function to(pose, dur = 2.0) { if (ctx.reduce) { cam.pos.copy(pose.pos); cam.tgt.copy(pose.tgt); return; } glide = { p0: cam.pos.clone(), t0: cam.tgt.clone(), p1: pose.pos.clone(), t1: pose.tgt.clone(), u: 0, dur }; cam.yawT = cam.pitchT = 0; }
     function openSeed(s) { focus = s; s.want = 1; const p = s.g.position, dir = V3(OVERP.x - p.x, 0, OVERP.z - p.z).normalize(); to({ pos: p.clone().addScaledVector(dir, 2.0).add(V3(0, 1.1, 0)), tgt: p.clone().add(V3(0, 0.45, 0)) }); setTimeout(() => { if (focus === s) ctx.openAct(sub.name, s.i); }, ctx.reduce ? 0 : 1500); }
-    setTimeout(() => { try { ctx.toast("Meu Amigo Totoro e Ponyo", "O ponto de ônibus", "Cada bolota plantada na grama guarda uma atividade. O Gatobus passa de vez em quando."); } catch (e) { /* sem aviso */ } }, 900);
+    setTimeout(() => { try { ctx.toast("Meu Amigo Totoro e Ponyo", "O ponto de ônibus", "Cada bolota plantada na grama guarda uma atividade. O velho ônibus passa de vez em quando."); } catch (e) { /* sem aviso */ } }, 900);
 
     const ray = new T.Raycaster(); let busT = 6;
     return {
@@ -198,18 +204,18 @@
         camera.position.copy(cam.pos).add(V3(0, Math.sin(t * 0.45) * 0.012, 0)); camera.lookAt(cam.pos.x + Math.cos(yw) * Math.cos(pt), cam.pos.y + Math.sin(pt), cam.pos.z + Math.sin(yw) * Math.cos(pt));
         // chuva
         const P = rg.attributes.position.array; for (let i = 0; i < RN; i++) { let y = P[i * 6 + 1] - dt * (9 + rs[i] * 4); if (y < 0) { y += 9; } P[i * 6 + 1] = y; P[i * 6 + 4] = y - 0.45; } rg.attributes.position.needsUpdate = true;
-        // Totoro: respira, balança de leve, pisca o guarda-chuva com os pingos
-        toto.scale.set(1, 1 + Math.sin(t * 1.3) * 0.012, 1); umb.rotation.x = Math.sin(t * 0.7) * 0.03;
+        // o guardião respira e olha em volta
+        toto.scale.set(1, 1 + Math.sin(t * 1.3) * 0.01, 1); toto.rotation.y = 0.2 + Math.sin(t * 0.3) * 0.08;
         lampGlow.material.opacity = 0.7 + 0.06 * Math.sin(t * 17); lamp.intensity = 2.6 * (0.96 + 0.04 * Math.sin(t * 23));
-        // fuligem pulando no lugar
-        for (const s of soots) { s.g.position.y = Math.abs(Math.sin(t * 2.2 + s.ph)) * 0.12; s.g.position.x = s.base.x + Math.sin(t * 0.4 + s.ph) * 0.2; }
+        // os cogumelos pulsam
+        for (const s of soots) s.gs.material.opacity = 0.35 + 0.2 * Math.sin(t * 1.4 + s.ph);
         // Ponyo
-        ponyo.position.y = 0.52 + Math.max(0, Math.sin(t * 0.6)) * 0.08; ponyo.rotation.y = Math.sin(t * 0.8) * 0.4; bucketLight.intensity = 0.8 + 0.2 * Math.sin(t * 2.0);
+        bucketLight.intensity = 0.8 + 0.2 * Math.sin(t * 2.0);
         for (const b of bub) { const q = (t * 0.35 + b.ph) % 1; b.b.position.set(bucket.position.x + Math.sin(q * 9 + b.ph * 6) * 0.08, 0.6 + q * 1.4, bucket.position.z + Math.cos(q * 7) * 0.06); b.b.material.opacity = 0.5 * (1 - q); }
-        // o Gatobus
+        // o ônibus
         if (busReady) { busT += dt; const c = busT % 46; let x = null, face = -Math.PI / 2, run = true;
-          if (c < 7) x = 40 + (STOP.x + 3.6 - 40) * smoother(c / 7); else if (c < 19) { x = STOP.x + 3.6; run = false; } else if (c < 27) { x = STOP.x + 3.6 + (-40 - STOP.x - 3.6) * smoother((c - 19) / 8); }
-          bus.visible = x !== null; if (bus.visible) { bus.position.set(x, run ? Math.abs(Math.sin(t * 9)) * 0.3 : 0, roadZ(x) - 0.45); bus.rotation.set(0, face, run ? Math.sin(t * 9) * 0.04 : 0); bus.scale.set(1, run ? 1 : 1 + Math.sin(t * 1.6) * 0.012, 1); }
+          if (c < 7) x = 40 + (STOP.x + 6.0 - 40) * smoother(c / 7); else if (c < 19) { x = STOP.x + 6.0; run = false; } else if (c < 27) { x = STOP.x + 6.0 + (-40 - STOP.x - 6.0) * smoother((c - 19) / 8); }
+          bus.visible = x !== null; if (bus.visible) { bus.position.set(x, run ? Math.abs(Math.sin(t * 14)) * 0.03 : 0, roadZ(x) - 0.45); bus.rotation.set(0, face, run ? Math.sin(t * 9) * 0.01 : 0); }
           busEyes.forEach((e, i) => (e.material.opacity = 0.85 + Math.sin(t * 7 + i) * 0.08)); }
         // as mudas
         for (const s of seeds) { s.hot += ((hot === s || focus === s ? 1 : 0) - s.hot) * Math.min(1, dt * 6); s.grow += (s.want - s.grow) * Math.min(1, dt * 2.2); s.sprout.scale.setScalar(s.grow); s.sprout.rotation.y = Math.sin(t * 0.8 + s.ph) * 0.2; s.glow.material.opacity = 0.45 + 0.2 * Math.sin(t * 2 + s.ph) + s.hot * 0.4; s.glow.position.y = 0.3 + s.grow * 0.6; }

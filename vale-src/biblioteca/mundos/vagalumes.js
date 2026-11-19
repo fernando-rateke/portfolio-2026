@@ -1,7 +1,6 @@
-/* Mundo de Ciências Humanas: Túmulo dos Vaga-lumes. O abrigo cavado na encosta ao lado do lago, onde o Seita
-   e a Setsuko foram morar: as duas portas de madeira com telhado de zinco, a tina de lavar encostada no barranco,
+/* Mundo de Ciências Humanas: Túmulo dos Vaga-lumes. O abrigo cavado na encosta ao lado do lago, como o do filme: as duas portas de madeira com telhado de zinco, a tina de lavar encostada no barranco,
    o balde, a panela tombada, a tigela, o guarda-chuva de papel rasgado e o balanço pendurado na árvore.
-   A Setsuko balança e o Seita empurra. Cada objeto guarda uma atividade da matéria; clicar nele aproxima a
+   Uma menina balança e o irmão empurra (personagens originais). Cada objeto guarda uma atividade da matéria; clicar nele aproxima a
    câmera e abre o livro. O mosquiteiro, lá dentro do abrigo, faz a noite cair: os vaga-lumes acendem sobre o
    capim e na água, e o mosquiteiro brilha como no filme. Tudo é desenhado por código: terreno, árvores,
    capim, água com reflexo de verdade, personagens e sons (cigarras de dia, grilos e sapos à noite). */
@@ -313,62 +312,16 @@
     { const c = at(D0.xf - 1.9, D0.z + 2.3); for (let i = 0; i < 7; i++) { const a = i / 7 * 6.28; mesh(new T.DodecahedronGeometry(0.09 + rnd() * 0.04, 0), toon("#8a877e", { toon: 0.5 }), null, c.x + Math.cos(a) * 0.26, c.y + 0.05, c.z + Math.sin(a) * 0.26); }
       for (let i = 0; i < 3; i++) { const s = mesh(new T.CylinderGeometry(0.025, 0.03, 0.42, 6), toon("#2c241e", { toon: 0.5 }), null, c.x, c.y + 0.06, c.z); s.rotation.set(Math.PI / 2, 0, i * 1.1); } }
 
-    /* ---------------- a Setsuko e o Seita ---------------- */
-    function faceTex(skin, girl) {
-      return canvasTex(512, 256, (g) => { g.fillStyle = skin; g.fillRect(0, 0, 512, 256); const ey = girl ? 126 : 122, ex = girl ? 18 : 16;
-        for (const s of [-1, 1]) { const x = 128 + s * ex;
-          if (girl) { g.fillStyle = "rgba(236,120,118,0.38)"; g.beginPath(); g.ellipse(128 + s * 31, 150, 9, 5, 0, 0, 7); g.fill(); }
-          g.fillStyle = "#2b1a14"; g.beginPath(); g.ellipse(x, ey, girl ? 6.5 : 5, girl ? 10 : 7.5, 0, 0, 7); g.fill();
-          g.fillStyle = "#6b3a26"; g.beginPath(); g.ellipse(x, ey + 3, girl ? 4 : 3, girl ? 5 : 3.6, 0, 0, 7); g.fill();
-          g.fillStyle = "#fff"; g.beginPath(); g.arc(x - 1.5, ey - 4, girl ? 2.4 : 1.8, 0, 7); g.fill();
-          g.strokeStyle = "#2b1a14"; g.lineWidth = girl ? 2.4 : 1.8; g.beginPath(); g.ellipse(x, ey, girl ? 8 : 6.5, girl ? 11.5 : 9, 0, Math.PI * 1.08, Math.PI * 1.92); g.stroke();
-          g.lineWidth = girl ? 1.6 : 2.4; g.beginPath(); g.moveTo(x - 7, ey - (girl ? 19 : 15)); g.quadraticCurveTo(x, ey - (girl ? 22 : 18), x + 7, ey - (girl ? 19 : 15)); g.stroke(); }
-        g.strokeStyle = "rgba(150,90,70,0.55)"; g.lineWidth = 1.2; g.beginPath(); g.moveTo(128, 140); g.lineTo(127, 146); g.stroke();
-        g.strokeStyle = "#9a4c3c"; g.lineWidth = 1.8; g.beginPath(); g.arc(128, girl ? 154 : 158, girl ? 4.5 : 5, 0.15 * Math.PI, 0.85 * Math.PI); g.stroke(); });
-    }
-    function limb(a, b, r, mat, parent) { const d = b.clone().sub(a), L = d.length(); const m = new T.Mesh(K(new T.CapsuleGeometry(r, Math.max(0.001, L), 5, 10)), mat); m.position.copy(a).add(b).multiplyScalar(0.5); m.quaternion.setFromUnitVectors(V3(0, 1, 0), d.normalize()); parent.add(m); outline(m); return m; }
-    function headOf(r, skin, hairC, girl, parent, y) {
-      const hg = new T.Group(); hg.position.y = y; parent.add(hg);
-      const head = new T.Mesh(K(new T.SphereGeometry(r, 36, 24)), toon("#ffffff", { map: faceTex(skin, girl) })); hg.add(head); outline(head);
-      const hm = toon(hairC, { side: T.DoubleSide });
-      const back = new T.Mesh(K(new T.SphereGeometry(r * 1.07, 30, 16, Math.PI / 2 + (girl ? 1.0 : 1.2), Math.PI * 2 - (girl ? 2.0 : 2.4), 0, girl ? 2.1 : 1.85)), hm); hg.add(back); outline(back);
-      const capG = new T.Mesh(K(new T.SphereGeometry(r * 1.09, 30, 10, 0, Math.PI * 2, 0, girl ? 1.22 : 1.08)), hm); hg.add(capG); outline(capG);
-      if (!girl) for (let i = 0; i < 5; i++) { const a = Math.PI / 2 + (i - 2) * 0.32; const sp = mesh(new T.ConeGeometry(0.022, 0.06, 5), hm, hg, -Math.cos(a) * r * 0.98, r * 0.42, Math.sin(a) * r * 0.98); sp.rotation.set(Math.sin(a) * 2.2, 0, Math.cos(a) * 2.2); }
-      return hg;
-    }
-    const SKIN = "#f5d5ba";
-    function makeSetsuko() {
-      const g = new T.Group(), skin = toon(SKIN), dress = toon("#e4dac6"), white = toon("#f2ede3"), shoe = toon("#6a5a4a");
-      const check = canvasTex(64, 64, (c, w, h) => { c.fillStyle = "#3d6aa6"; c.fillRect(0, 0, w, h); c.fillStyle = "rgba(220,230,245,0.55)"; for (let i = 0; i < 4; i++) { c.fillRect(i * 16, 0, 4, h); c.fillRect(0, i * 16, w, 4); } c.fillStyle = "rgba(20,40,80,0.35)"; for (let i = 0; i < 4; i++) { c.fillRect(i * 16 + 8, 0, 2, h); c.fillRect(0, i * 16 + 8, w, 2); } }); check.wrapS = check.wrapT = T.RepeatWrapping; check.repeat.set(3, 2);
-      const skirtM = toon("#ffffff", { map: check });
-      const torso = lathe([[0, 0], [0.1, 0], [0.105, 0.06], [0.088, 0.18], [0.07, 0.25], [0.035, 0.28], [0, 0.285]], dress, g); torso.position.y = 0.02; outline(torso);
-      const skirt = mesh(new T.SphereGeometry(1, 22, 12, 0, Math.PI * 2, 0, Math.PI * 0.6), skirtM, g, 0, 0.05, 0.05, true); skirt.scale.set(0.14, 0.09, 0.16);
-      const col = mesh(new T.TorusGeometry(0.045, 0.014, 6, 18), white, g, 0, 0.29, 0); col.rotation.x = Math.PI / 2;
-      for (const s of [-1, 1]) { mesh(new T.SphereGeometry(0.046, 12, 10), dress, g, s * 0.092, 0.245, 0, true); limb(V3(s * 0.1, 0.235, 0), V3(s * 0.175, 0.39, 0.0), 0.028, skin, g); mesh(new T.SphereGeometry(0.03, 10, 8), skin, g, s * 0.18, 0.41, 0);
-        limb(V3(s * 0.05, 0.035, 0.02), V3(s * 0.056, 0.035, 0.2), 0.036, skin, g); }
-      const knees = [-1, 1].map((s) => { const k = new T.Group(); k.position.set(s * 0.056, 0.035, 0.2); g.add(k); limb(V3(0, 0, 0), V3(0, -0.19, 0.03), 0.031, skin, k); const sh = mesh(new T.SphereGeometry(1, 12, 8), shoe, k, 0, -0.215, 0.05, true); sh.scale.set(0.034, 0.026, 0.056); return k; });
-      limb(V3(0, 0.28, 0), V3(0, 0.33, 0), 0.03, skin, g);
-      const head = headOf(0.125, SKIN, "#1d1816", true, g, 0.435);
-      return { g, knees, head };
-    }
-    function makeSeita() {
-      const g = new T.Group(), skin = toon(SKIN), shirt = toon("#dcd8cc"), pants = toon("#6f6a4a"), shoe = toon("#2a2420"), patch = toon("#8a8060");
-      for (const s of [-1, 1]) { limb(V3(s * 0.08, 0.82, 0), V3(s * 0.088, 0.09, 0.0), 0.056, pants, g); limb(V3(s * 0.088, 0.36, 0.0), V3(s * 0.088, 0.07, 0.0), 0.062, shoe, g); const sh = mesh(new T.SphereGeometry(1, 12, 8), shoe, g, s * 0.088, 0.035, 0.035, true); sh.scale.set(0.055, 0.04, 0.1); }
-      mesh(new T.BoxGeometry(0.07, 0.09, 0.02), patch, g, 0.09, 0.55, 0.055); mesh(new T.BoxGeometry(0.06, 0.07, 0.02), patch, g, -0.08, 0.7, 0.056);
-      mesh(new T.CylinderGeometry(0.15, 0.145, 0.14, 18), pants, g, 0, 0.83, 0, true);
-      const torso = lathe([[0, 0.86], [0.15, 0.86], [0.155, 0.95], [0.165, 1.12], [0.175, 1.26], [0.12, 1.32], [0.05, 1.35], [0, 1.35]], shirt, g); outline(torso);
-      const shoulders = [-1, 1].map((s) => { const p = new T.Group(); p.position.set(s * 0.19, 1.27, 0); g.add(p); limb(V3(0, 0.02, 0), V3(0, -0.3, 0), 0.043, skin, p); limb(V3(0, -0.3, 0), V3(0, -0.54, 0.03), 0.037, skin, p); mesh(new T.SphereGeometry(0.042, 10, 8), skin, p, 0, -0.58, 0.035); return p; });
-      limb(V3(0, 1.33, 0), V3(0, 1.4, 0), 0.04, skin, g);
-      const head = headOf(0.108, SKIN, "#16120f", false, g, 1.5);
-      const capM = toon("#d2c9b0"); const cap = mesh(new T.CylinderGeometry(0.112, 0.118, 0.07, 22), capM, head, 0, 0.075, -0.005, true); cap.rotation.x = -0.12; const brim = mesh(new T.CylinderGeometry(0.1, 0.1, 0.012, 20, 1, false, -Math.PI / 2, Math.PI), capM, head, 0, 0.05, 0.075, true); brim.rotation.x = 0.2; mesh(new T.CylinderGeometry(0.114, 0.114, 0.02, 22), toon("#2a2620"), head, 0, 0.045, -0.004);
-      return { g, shoulders, head };
-    }
-    // o balanço: duas cordas no galho, a tábua, e a Setsuko sentada
+    /* ---------------- as duas crianças (personagens originais) ---------------- */
+    function makeGirl() { const p = ctx.person({ h: 0.95, skin: "#f2d4ba", hair: "#5a3a26", hairStyle: "trancas", ribbon: "#e8c24a", top: "#9ac48a", bottom: "#9ac48a", skirt: true, socks: "#f2ece0", shoes: "#8a4a2a", blush: true });
+      p.sit(); p.arms.forEach((a, i) => { a.sh.rotation.x = Math.PI * 0.92; a.sh.rotation.z = (i ? -1 : 1) * 0.12; a.el.rotation.x = 0; }); return { g: p.g, knees: p.legs.map((l) => l.knee), head: p.head, hipY: p.hipY }; }
+    function makeBoy() { const p = ctx.person({ h: 1.5, skin: "#e8c8a8", hair: "#3a2a1e", hairStyle: "curto", top: "#e8e6e0", bottom: "#5a6a7a", shoes: "#3a2a20" }); return { g: p.g, shoulders: p.arms.map((a) => a.sh), head: p.head }; }
+    // o balanço: duas cordas no galho, a tábua, e a menina sentada
     const swing = new T.Group(); swing.position.set(SW.x, SW.py, SW.z); scene.add(swing); const RL = SW.py - H(SW.x, SW.z) - 0.55;
     const rope = toon("#b6a27e", { toon: 0.5 }); for (const s of [-1, 1]) mesh(new T.CylinderGeometry(0.01, 0.01, RL, 5), rope, swing, s * 0.21, -RL / 2, 0);
     mesh(new T.BoxGeometry(0.5, 0.04, 0.17), woodM, swing, 0, -RL, 0, true);
-    const SE = makeSetsuko(); SE.g.position.set(0, -RL + 0.025, 0); swing.add(SE.g);
-    const SI = makeSeita(); SI.g.position.copy(at(SW.x, SW.z - 1.8)); scene.add(SI.g);
+    const SE = makeGirl(); SE.g.position.set(0, -RL + 0.03 - SE.hipY, 0); swing.add(SE.g);
+    const SI = makeBoy(); SI.g.position.copy(at(SW.x, SW.z - 1.8)); scene.add(SI.g);
     const swHit = mesh(new T.BoxGeometry(0.9, 1.5, 2.4), new T.MeshBasicMaterial(), null, SW.x, H(SW.x, SW.z) + 0.95, SW.z - 0.5); swHit.visible = false; // alvo parado: o balanço se mexe
     OBJ.balanco = { root: swing, hit: swHit, name: "o balanço", h: 0, mark: V3(SW.x + 0.55, H(SW.x, SW.z) + 1.35, SW.z + 0.2), pose: V3(SW.x, H(SW.x, SW.z) + 0.8, SW.z) };
 
@@ -462,7 +415,7 @@
         U.uT.value = t; const n0 = U.uNight.value; U.uNight.value += (nightT - n0) * Math.min(1, dt * (ctx.reduce ? 60 : 0.45)); const n = U.uNight.value;
         U.uFogD.value = 0.038 - n * 0.004; U.uPLC.value.setRGB(0.75, 1.0, 0.4).multiplyScalar(1.0 + 0.15 * Math.sin(t * 3.1) + 0.1 * Math.sin(t * 7.3));
         netGlow.material.opacity = n * (0.55 + 0.1 * Math.sin(t * 2.7));
-        // o balanço vai e volta; o Seita empurra quando ele volta
+        // o balanço vai e volta; o irmão empurra quando ele volta
         const sw = Math.sin(t * 1.62); swing.rotation.x = 0.33 * sw; SE.knees.forEach((kn) => (kn.rotation.x = -0.25 - 0.45 * Math.cos(t * 1.62))); SE.head.rotation.x = -0.12 * sw;
         const push = sm(0.35, 0.95, sw); SI.shoulders.forEach((s) => (s.rotation.x = -0.25 - push * 1.15)); SI.g.rotation.x = 0.06 * push; SI.head.rotation.x = 0.1 - 0.12 * push; SI.head.rotation.y = 0.15 * Math.sin(t * 0.3);
         for (const it of [...items, netItem]) { it.hot += ((hot === it || focus === it ? 1 : 0) - it.hot) * Math.min(1, dt * 6); it.mats.forEach((m) => (m.uniforms.uHot.value = it.hot * 0.8)); }

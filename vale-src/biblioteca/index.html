@@ -63,6 +63,58 @@ body.flying .hud.fade-on-fly { opacity: 0.35; }
 .idx-foot { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 6px; padding-top: 14px; border-top: 1px solid var(--line); }
 .dobra { position: fixed; inset: 0; z-index: 15; pointer-events: none; opacity: 0; transition: opacity 0.65s ease-in-out; background: radial-gradient(circle at 50% 50%, rgba(255, 222, 160, 0.22), rgba(6, 4, 3, 0.97) 62%); }
 .dobra.on { opacity: 1; }
+/* o livro aberto */
+.livro { position: fixed; inset: 0; z-index: 14; display: grid; place-items: center; padding: 18px; background: radial-gradient(ellipse at 50% 55%, rgba(30, 18, 8, 0.55), rgba(4, 3, 2, 0.88)); opacity: 0; pointer-events: none; transition: opacity 0.45s; }
+.livro.on { opacity: 1; pointer-events: auto; }
+.lv-livro { position: relative; width: min(1120px, 96vw); height: min(680px, 86vh); perspective: 2200px; transform: translateY(18px) scale(0.94); transition: transform 0.6s cubic-bezier(.2,.9,.25,1); }
+.livro.on .lv-livro { transform: none; }
+.lv-capa { position: absolute; inset: -14px -16px; border-radius: 14px; background: linear-gradient(90deg, #4A1B16, #6E2620 48%, #2A0F0C 50%, #6E2620 52%, #4A1B16); box-shadow: 0 30px 90px rgba(0,0,0,0.75), inset 0 0 0 3px rgba(184, 138, 64, 0.55), inset 0 0 0 9px rgba(0,0,0,0.25); }
+.lv-paginas { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; transform-style: preserve-3d; }
+.lv-pag { position: relative; overflow: hidden; padding: 34px 38px 30px; color: #2A1E14; display: flex; flex-direction: column; min-height: 0;
+  background: radial-gradient(ellipse at 50% 40%, #F3E7CB, #E6D3AD 75%, #D7C096); font: 500 1.02rem/1.6 var(--f-book); }
+.lv-esq { border-radius: 8px 2px 2px 8px; box-shadow: inset -26px 0 34px -18px rgba(70, 40, 10, 0.55); }
+.lv-dir { border-radius: 2px 8px 8px 2px; box-shadow: inset 26px 0 34px -18px rgba(70, 40, 10, 0.55); }
+.lv-img { margin: 0 0 16px; flex: 1 1 auto; min-height: 120px; display: grid; place-items: center; border-radius: 4px; background: #2A2018; box-shadow: inset 0 0 0 6px #C9A867, inset 0 0 0 8px #5A4430, 0 6px 16px rgba(60, 30, 5, 0.3); overflow: hidden; }
+.lv-img img { max-width: calc(100% - 28px); max-height: calc(100% - 28px); object-fit: contain; display: block; }
+.lv-sem { font: 800 3rem/1 var(--f-display); color: rgba(201, 168, 103, 0.35); writing-mode: vertical-rl; }
+.lv-kick { margin: 0 0 4px; font: 500 0.62rem/1.3 var(--f-label); letter-spacing: 0.18em; text-transform: uppercase; color: #8A3A22; }
+.lv-pag h2 { margin: 0; font: 600 clamp(1.3rem, 2.4vw, 1.9rem)/1.15 var(--f-display); color: #24170E; }
+.lv-fitas { position: absolute; left: 30px; bottom: -6px; display: flex; gap: 8px; flex-wrap: wrap; max-width: calc(100% - 60px); }
+.lv-esq { padding-bottom: 64px; }
+.fita { position: relative; padding: 9px 12px 16px; background: #9C2A22; color: #F6E7C8; text-decoration: none; font: 500 0.6rem/1.2 var(--f-label); letter-spacing: 0.1em; text-transform: uppercase; clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 82%, 0 100%); box-shadow: 0 4px 8px rgba(0,0,0,0.25); transition: transform 0.2s; }
+.fita:nth-child(2n) { background: #2E4A6E; } .fita:hover, .fita:focus-visible { transform: translateY(5px); }
+.lv-texto { flex: 1 1 auto; min-height: 0; overflow: auto; padding-right: 8px; scrollbar-width: thin; scrollbar-color: #B08A54 transparent; }
+.lv-texto h3, .lv-selos h3 { margin: 14px 0 4px; font: 600 0.66rem/1.3 var(--f-label); letter-spacing: 0.2em; text-transform: uppercase; color: #8A3A22; }
+.lv-texto h3:first-child { margin-top: 0; }
+.lv-texto p { margin: 0 0 10px; text-wrap: pretty; }
+.lv-nota { margin-top: 14px !important; padding: 10px 12px; border-left: 3px solid #B08A54; background: rgba(176, 138, 84, 0.12); font-style: italic; font-size: 0.92rem; color: #5A4430; }
+.lv-selos { flex: 0 0 auto; border-top: 1px solid rgba(120, 80, 40, 0.3); margin-top: 10px; padding-top: 4px; }
+.selos { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0; }
+.selo { width: 48px; height: 48px; border-radius: 50%; border: 0; cursor: pointer; display: grid; place-items: center; color: #F6E1C0; font: 700 0.7rem/1 var(--f-label);
+  background: radial-gradient(circle at 35% 30%, #C8402E, #8E1F17 60%, #5E1410); box-shadow: inset 0 0 0 3px rgba(255, 210, 160, 0.18), inset 0 -4px 6px rgba(0,0,0,0.35), 0 3px 6px rgba(70, 20, 5, 0.4); transition: transform 0.2s; }
+.selo:hover, .selo.on { transform: scale(1.08) rotate(-6deg); }
+.selo-txt { margin: 4px 0 0; min-height: 2.6em; font: italic 500 0.92rem/1.4 var(--f-book); color: #4A3624; }
+.lv-pos { position: absolute; right: 30px; bottom: 12px; font: 500 0.6rem/1 var(--f-label); letter-spacing: 0.16em; color: rgba(90, 60, 30, 0.6); }
+.lv-vira { position: absolute; top: 50%; width: 46px; height: 46px; margin-top: -23px; border-radius: 50%; border: 1px solid rgba(184, 138, 64, 0.7); background: rgba(30, 18, 10, 0.85); color: #F1E6CF; font: 500 22px/1 var(--f-label); cursor: pointer; z-index: 2; }
+.lv-vira[hidden] { display: none; }
+.lv-prev { left: -64px; } .lv-next { right: -64px; }
+.lv-fechar { position: absolute; top: -52px; right: 0; padding: 9px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--glass); color: var(--ink); font: 500 0.64rem/1 var(--f-label); letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer; }
+.lv-paginas.vira-d .lv-dir { animation: viraD 0.46s cubic-bezier(.4,.1,.3,1); transform-origin: left center; }
+.lv-paginas.vira-e .lv-esq { animation: viraE 0.46s cubic-bezier(.4,.1,.3,1); transform-origin: right center; }
+@keyframes viraD { 0% { transform: rotateY(0); } 50% { transform: rotateY(-88deg); filter: brightness(0.75); } 100% { transform: rotateY(0); } }
+@keyframes viraE { 0% { transform: rotateY(0); } 50% { transform: rotateY(88deg); filter: brightness(0.75); } 100% { transform: rotateY(0); } }
+body.lendo .hud, body.lendo .som { opacity: 0; pointer-events: none; }
+@media (max-width: 860px) {
+  .lv-livro { height: min(760px, 88vh); }
+  .lv-paginas { grid-template-columns: 1fr; overflow: auto; border-radius: 8px; }
+  .lv-pag { overflow: visible; padding: 24px 22px; }
+  .lv-esq { box-shadow: none; padding-bottom: 70px; } .lv-dir { box-shadow: none; }
+  .lv-img { height: 38vh; flex: 0 0 auto; }
+  .lv-texto { overflow: visible; }
+  .lv-prev { left: 4px; top: auto; bottom: -58px; } .lv-next { right: 4px; top: auto; bottom: -58px; }
+  .lv-fechar { top: -48px; }
+}
+@media (prefers-reduced-motion: reduce) { .lv-paginas.vira-d .lv-dir, .lv-paginas.vira-e .lv-esq { animation: none; } .lv-livro { transition: none; } }
 .som { position: fixed; z-index: 5; top: max(18px, env(safe-area-inset-top)); right: 16px; width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line); background: var(--glass); color: var(--ink-2); display: grid; place-items: center; cursor: pointer; backdrop-filter: blur(10px); }
 .som svg { width: 20px; height: 20px; }
 .som .x { display: inline; } .som .w1, .som .w2 { display: none; }
@@ -206,6 +258,27 @@ body.apresentando canvas#lib { cursor: none; }
   <header><div class="kick" id="pKick"></div><h2 id="pTitulo"></h2><button class="close" id="pFechar" type="button" aria-label="Fechar">×</button></header>
   <div class="body" id="pCorpo"></div>
 </aside>
+<div class="livro" id="livro" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="lvTitulo">
+  <div class="lv-livro">
+    <div class="lv-capa" aria-hidden="true"></div>
+    <div class="lv-paginas" id="lvPaginas">
+      <section class="lv-pag lv-esq">
+        <figure class="lv-img" id="lvImg"></figure>
+        <p class="lv-kick" id="lvKick"></p>
+        <h2 id="lvTitulo"></h2>
+        <div class="lv-fitas" id="lvFitas"></div>
+      </section>
+      <section class="lv-pag lv-dir">
+        <div class="lv-texto" id="lvTexto"></div>
+        <div class="lv-selos" id="lvSelos"></div>
+        <span class="lv-pos" id="lvPos"></span>
+      </section>
+    </div>
+    <button class="lv-vira lv-prev" id="lvPrev" type="button" aria-label="Página anterior">‹</button>
+    <button class="lv-vira lv-next" id="lvNext" type="button" aria-label="Próxima página">›</button>
+    <button class="lv-fechar" id="lvFechar" type="button">Fechar o livro</button>
+  </div>
+</div>
 <div class="toast" id="aviso" role="status" aria-live="polite"><small id="avisoK"></small><b id="avisoT"></b><span id="avisoS"></span></div>
 <!-- modo apresentação: o véu com o QR, o cursor e a lanterna do controle pelo celular -->
 <div class="veu" id="veu" aria-hidden="true" role="dialog" aria-labelledby="veuT">

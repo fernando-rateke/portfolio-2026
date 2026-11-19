@@ -58,6 +58,12 @@
       add(new T.BoxGeometry(0.07, 1.2, 0.02), toon("#b8c0d0"), -0.42, 1.9, 0.35, 0, 0, 0.08, statue); add(new T.BoxGeometry(0.3, 0.05, 0.05), stone, -0.47, 2.45, 0.35, 0, 0, 0.08, statue);
       // musgo e flores crescendo na base
       for (let i = 0; i < 10; i++) { const a = i * 0.63; add(new T.SphereGeometry(0.12 + rnd() * 0.08, 8, 6), toon("#3a6a4a"), Math.cos(a) * 0.95, 0.15 + rnd() * 0.3, Math.sin(a) * 0.95, 0, 0, 0, statue); } }
+    // um baú velho esquecido no pé do morro... que às vezes abre a boca sozinho
+    const chest = new T.Group(); chest.position.set(2.6, H(2.6, -2.2), -2.2); chest.rotation.y = -0.6; scene.add(chest);
+    new T.GLTFLoader().load(ctx.base + "frieren/bau.glb", (gl) => { const m = gl.scene; const box = new T.Box3().setFromObject(m), sz = box.getSize(V3()), k = 0.7 / Math.max(sz.x, sz.z);
+      m.scale.setScalar(k); m.position.set(-(box.min.x + box.max.x) / 2 * k, -box.min.y * k, -(box.min.z + box.max.z) / 2 * k); const ms = []; m.traverse((o) => { if (o.isMesh) ms.push(o); }); ms.forEach((o) => { const mp = o.material.map; o.material = toon("#ffffff", { map: mp }); ol(o, 1.02); }); chest.add(m); });
+    const chestGlow = new T.Sprite(K(new T.SpriteMaterial({ map: ctx.glowTex, color: 0xffd070, transparent: true, opacity: 0.35, depthWrite: false, blending: T.AdditiveBlending }))); chestGlow.scale.setScalar(1.1); chestGlow.position.y = 0.35; chest.add(chestGlow);
+    const chestHit = add(new T.BoxGeometry(0.9, 0.7, 0.7), K(new T.MeshBasicMaterial()), 0, 0.35, 0, 0, 0, 0, chest); chestHit.visible = false; let chestT = 0;
     const statueLight = new T.PointLight("#a8c0ff", 1.2, 7, 2); statueLight.position.set(SX + 0.5, H(SX, SZ) + 3.5, SZ + 2); scene.add(statueLight);
 
     /* ---------------- uma maga élfica viajante, no meio das flores, olhando o céu (personagem original) ---------------- */
@@ -116,11 +122,12 @@
           if (m.t < 0 || !m.p) { m.m.material.uniforms.uA.value = 0; continue; } const u = m.t / m.dur, dir = V3(Math.cos(m.a), Math.sin(m.a), 0); m.m.position.copy(m.p).addScaledVector(dir, u * 40); m.m.scale.set(m.len, 2, 1); m.m.rotation.set(0, 0, m.a + Math.PI); m.m.lookAt(camera.position); m.m.rotateZ(m.a + Math.PI); m.m.material.uniforms.uA.value = Math.sin(u * Math.PI); }
         for (const mo of motes) { const q = (t * 0.05 + mo.ph) % 1; mo.s.position.set(mo.x + Math.sin(t * 0.3 + mo.ph * 9) * 0.4, H(mo.x, mo.z) + 0.2 + q * 3, mo.z); mo.s.material.opacity = 0.6 * Math.sin(q * Math.PI); }
         if (fr.userData.head) { fr.userData.head.rotation.y = Math.sin(t * 0.2) * 0.15; fr.userData.staff.rotation.z = Math.sin(t * 0.6) * 0.02; }
+        chestT = Math.max(0, chestT - dt); chest.scale.set(1, 1 + Math.sin(chestT * 18) * 0.12 * chestT, 1); chest.position.y = H(2.6, -2.2) + Math.abs(Math.sin(chestT * 9)) * 0.12 * chestT; chestGlow.material.opacity = 0.3 + 0.1 * Math.sin(t * 2) + chestT * 0.4;
         for (const tf of tufts) { tf.hot += ((hot === tf || focus === tf ? 1 : 0) - tf.hot) * Math.min(1, dt * 6); tf.halo.material.opacity = 0.35 + 0.15 * Math.sin(t * 1.6 + tf.i) + tf.hot * 0.45; tf.halo.scale.setScalar(1.3 + tf.hot * 0.5); }
       },
       render(renderer) { renderer.setRenderTarget(null); renderer.render(scene, camera); },
       resize(w, h) { camera.aspect = w / h; const tall = w / h < 0.8; camera.fov = tall ? 72 : 52; camera.updateProjectionMatrix(); OVER.pos.copy(tall ? V3(0.4, 1.8, 9.5) : OVERP); if (!focus && !glide) cam.pos.copy(OVER.pos); },
-      pick(ndc) { ray.setFromCamera(ndc, camera); const hits = ray.intersectObjects(tufts.map((x) => x.hit), false); const tf = hits[0] && tufts.find((x) => x.hit === hits[0].object); hot = tf || null; return tf ? { label: [tf.a.t, "um agradecimento"], go: () => openTuft(tf) } : null; },
+      pick(ndc) { ray.setFromCamera(ndc, camera); if (ray.intersectObject(chestHit, false).length) { hot = null; return { label: ["Um baú esquecido", "abrir?"], go: () => { chestT = 1.2; try { ctx.toast("Cuidado", "Era um baú mímico", "Ele só queria um abraço."); } catch (e) { /* nada */ } } }; } const hits = ray.intersectObjects(tufts.map((x) => x.hit), false); const tf = hits[0] && tufts.find((x) => x.hit === hits[0].object); hot = tf || null; return tf ? { label: [tf.a.t, "um agradecimento"], go: () => openTuft(tf) } : null; },
       look(dx, dy) { if (glide) return; cam.yawT = Math.max(-1.0, Math.min(1.0, cam.yawT - dx * 0.003)); cam.pitchT = Math.max(-0.3, Math.min(0.6, cam.pitchT - dy * 0.003)); },
       back() { if (focus) { focus = null; to(OVER); return true; } return false; },
       dispose() { if (audio) { const a = audio; audio = null; try { a.out.gain.linearRampToValueAtTime(0, a.ac.currentTime + 0.5); setTimeout(() => { a.nodes.forEach((n) => { try { n.stop(); } catch (e) { /* já parou */ } }); a.ac.close(); }, 700); } catch (e) { /* sem som */ } } keep.forEach((o) => o.dispose && o.dispose()); },

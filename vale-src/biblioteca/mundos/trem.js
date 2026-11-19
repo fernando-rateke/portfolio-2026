@@ -251,7 +251,7 @@
       // um passageiro de verdade, de chapéu e casaco, lendo o jornal no banco da janela (personagem original), e mais uma sombra
       {
         const pp = ctx.person({ h: 1.7, skin: "#e8c8a8", hair: "#8a8a86", top: "#5a4a3a", bottom: "#3a342e", longSleeves: true, hat: "#3a3028" });
-        pp.sit(); pp.read(); pp.g.position.set(1.7, 0.56 - pp.hipY, -1.0); pp.g.rotation.y = 0.35; scene.add(pp.g);
+        pp.sit(); pp.read(); pp.g.position.set(1.75, 0.56 - pp.hipY, -1.08); pp.g.rotation.y = -0.7; pp.g.scale.setScalar(0.85); scene.add(new T.HemisphereLight(0xffd8c0, 0x5a3a30, 1.2)); { const sl = new T.DirectionalLight(0xffc8a0, 0.9); sl.position.set(-3, 4, -8); scene.add(sl); } scene.add(pp.g);
         const np = new T.Mesh(new T.PlaneGeometry(0.42, 0.32), new T.MeshBasicMaterial({ color: 0xe8e0cc, side: T.DoubleSide })); np.position.set(0, 1.0, 0.36); np.rotation.x = -0.5; pp.g.add(np);
         const sh2 = new T.Group(); sh2.position.set(5.6, 0.56, 1.0); sh2.rotation.y = Math.PI; scene.add(sh2);
         const smB = new T.MeshBasicMaterial({ color: 0x0b0a12, transparent: true, opacity: 0.55, depthWrite: false });

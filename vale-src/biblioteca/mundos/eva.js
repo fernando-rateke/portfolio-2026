@@ -90,7 +90,8 @@
       const vg = new T.Sprite(K(new T.SpriteMaterial({ map: ctx.glowTex, color: 0xffa040, transparent: true, opacity: 0.7, depthWrite: false, blending: T.AdditiveBlending, fog: false }))); vg.scale.set(3.2, 1.2, 1); vg.position.set(0, 0.05, 1.0); head.add(vg);
       g.userData.head = head; return g;
     }
-    const eva = makeMech(); eva.position.set(-28, 0, -120); eva.rotation.y = 0.35; eva.scale.setScalar(2.0); scene.add(eva);
+    const eva = makeMech(); eva.position.set(-24, 0, -78); eva.rotation.y = 0.45; eva.scale.setScalar(1.7); scene.add(eva); eva.traverse((o) => { if (o.material && o.material.isMeshStandardMaterial) o.material.fog = false; });
+    { const rim = new T.DirectionalLight("#ffb070", 0.9); rim.position.set(-10, 40, -160); rim.target = eva; scene.add(rim); }
     // a criatura no céu: um anel de monólitos brancos girando em volta de um núcleo vermelho (original)
     const ramiel = new T.Group(); ramiel.position.set(30, 52, -210); scene.add(ramiel);
     { const mono = K(new T.MeshStandardMaterial({ color: "#f0eee8", roughness: 0.3, metalness: 0.2, emissive: new T.Color("#3a3a40"), fog: false }));
@@ -103,7 +104,7 @@
       fragmentShader: `uniform float uAT, uT; varying vec2 vU; vec2 hx(vec2 p){ vec2 r = vec2(1.0, 1.732), h = r * 0.5; vec2 a = mod(p, r) - h, b = mod(p - h, r) - h; return dot(a, a) < dot(b, b) ? a : b; }
         void main(){ vec2 p = (vU - 0.5) * 2.0; float d = length(p); vec2 g = hx(p * 9.0); float e = smoothstep(0.42, 0.47, max(abs(g.x) * 0.866 + abs(g.y) * 0.5, abs(g.y))); float ring = smoothstep(0.08, 0.0, abs(d - uAT * 1.1)) + smoothstep(1.0, 0.0, d) * 0.25;
           float a = e * ring * (1.0 - uAT) * step(0.001, uAT); gl_FragColor = vec4(vec3(1.0, 0.55, 0.15) * a * 1.5, a); }` })));
-    at.position.set(-26, 18, -116); at.lookAt(OVERP); scene.add(at);
+    at.position.set(-22, 15, -74); at.lookAt(OVERP); scene.add(at);
 
     /* ---------------- um trem que passa de vez em quando ---------------- */
     const train = new T.Group(); train.visible = false; scene.add(train);

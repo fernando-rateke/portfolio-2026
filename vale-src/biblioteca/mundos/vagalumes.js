@@ -322,6 +322,8 @@
     mesh(new T.BoxGeometry(0.5, 0.04, 0.17), woodM, swing, 0, -RL, 0, true);
     const SE = makeGirl(); SE.g.position.set(0, -RL + 0.03 - SE.hipY, 0); swing.add(SE.g);
     const SI = makeBoy(); SI.g.position.copy(at(SW.x, SW.z - 1.8)); scene.add(SI.g);
+    // luz de preenchimento nas crianças, para não virarem silhueta no contraluz
+    const kidHemi = new T.HemisphereLight("#ffe8c8", "#5a4a30", 1.3); scene.add(kidHemi); const kidSun = new T.DirectionalLight("#ffd8a0", 1.0); kidSun.position.set(SW.x - 6, 10, SW.z + 8); kidSun.target = SI.g; scene.add(kidSun);
     const swHit = mesh(new T.BoxGeometry(0.9, 1.5, 2.4), new T.MeshBasicMaterial(), null, SW.x, H(SW.x, SW.z) + 0.95, SW.z - 0.5); swHit.visible = false; // alvo parado: o balanço se mexe
     OBJ.balanco = { root: swing, hit: swHit, name: "o balanço", h: 0, mark: V3(SW.x + 0.55, H(SW.x, SW.z) + 1.35, SW.z + 0.2), pose: V3(SW.x, H(SW.x, SW.z) + 0.8, SW.z) };
 
@@ -412,7 +414,7 @@
         const k = 1 - Math.exp(-dt * 3.5); cam.yaw += (cam.yawT - cam.yaw) * k; cam.pitch += (cam.pitchT - cam.pitch) * k;
         const d = cam.tgt.clone().sub(cam.pos), r = d.length(), yw = Math.atan2(d.z, d.x) + cam.yaw, pt = Math.asin(Math.max(-0.99, Math.min(0.99, d.y / r))) + cam.pitch;
         camera.position.copy(cam.pos).add(V3(0, Math.sin(t * 0.45) * 0.012, 0)); camera.lookAt(cam.pos.x + Math.cos(yw) * Math.cos(pt), cam.pos.y + Math.sin(pt), cam.pos.z + Math.sin(yw) * Math.cos(pt));
-        U.uT.value = t; const n0 = U.uNight.value; U.uNight.value += (nightT - n0) * Math.min(1, dt * (ctx.reduce ? 60 : 0.45)); const n = U.uNight.value;
+        U.uT.value = t; const n0 = U.uNight.value; U.uNight.value += (nightT - n0) * Math.min(1, dt * (ctx.reduce ? 60 : 0.45)); const n = U.uNight.value; kidHemi.intensity = 1.3 * (1 - n) + 0.25 * n; kidSun.intensity = 1.0 * (1 - n);
         U.uFogD.value = 0.038 - n * 0.004; U.uPLC.value.setRGB(0.75, 1.0, 0.4).multiplyScalar(1.0 + 0.15 * Math.sin(t * 3.1) + 0.1 * Math.sin(t * 7.3));
         netGlow.material.opacity = n * (0.55 + 0.1 * Math.sin(t * 2.7));
         // o balanço vai e volta; o irmão empurra quando ele volta

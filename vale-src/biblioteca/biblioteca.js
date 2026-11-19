@@ -1035,7 +1035,7 @@
   }
 
   /* ---------------- os mundos: cada fenda abre uma cena própria, baixada só quando a pessoa entra ---------------- */
-  const WORLD_FILE = { 0: "anteiku", 1: "deathnote", 3: "natureza", 4: "vagalumes", 5: "fios", 6: "trem" };
+  const WORLD_FILE = { 0: "anteiku", 1: "deathnote", 2: "eva", 3: "natureza", 4: "vagalumes", 5: "fios", 6: "trem" };
   let world = null, worldOf = null; const worldLoads = {};
   function loadWorld(id) {
     if (window.MUNDOS && window.MUNDOS[id]) return Promise.resolve(window.MUNDOS[id]);

@@ -36,9 +36,9 @@
 
   const NL = 16;
   const U = {
-    uTime: { value: 0 }, uWave: { value: 1e5 }, // abaixo de uWave a torre está apagada (o final)
+    uTime: { value: 0 }, uWave: { value: -1e5 }, // abaixo de uWave a torre está apagada (só no final; normalmente fica lá embaixo, tudo aceso)
     uFog: { value: new T.Color("#0b0806") }, uFogD: { value: small ? 0.04 : 0.036 },
-    uAmb: { value: new T.Vector3(0.085, 0.07, 0.056) },
+    uAmb: { value: new T.Vector3(0.17, 0.14, 0.11) },
     uLP: { value: Array.from({ length: NL }, () => new T.Vector3(0, -999, 0)) },
     uLC: { value: Array.from({ length: NL }, () => new T.Vector3()) },
   };
@@ -421,7 +421,10 @@
   const lookIn = (p) => faceTo(p.x, p.z, 0, 0); // +z local virado para o vão
   TLAMPS.forEach((p) => addLight(p.x, p.y, p.z, "#FFB868", 1.1, 0.06));
   // um lustre pendurado no meio do vão em cada andar, e a luz quente dele
-  for (let f = 0; f < NFLOORS - 1; f++) addLight(0, f * FH + 5.4, 0, "#FFB25A", 3.4, 0.03);
+  for (let f = 0; f < NFLOORS - 1; f++) addLight(0, f * FH + 5.4, 0, "#FFB25A", 6.0, 0.03);
+  // luz de preenchimento quente em volta do anel de cada andar (sem ela o térreo da entrada ficava quase preto)
+  for (let f = 0; f < NFLOORS; f++) for (let k = 0; k < 8; k++) { const a = (k + 0.5) / 8 * Math.PI * 2; addLight(Math.cos(a) * 11, f * FH + 4.6, Math.sin(a) * 11, "#FFB868", 1.9, 0.02); }
+  addLight(0, 2.2, -9.5, "#FFC27A", 2.6, 0.03); addLight(-4, 2.4, -4, "#FFC27A", 1.8, 0.03); addLight(4, 2.4, -4, "#FFC27A", 1.8, 0.03); // a entrada e o pé da escada
   prop("lustre", (m) => { for (let f = 0; f < NFLOORS - 2; f++) { const g = place(m.clone(true), { at: V3(0, f * FH + 4.4, 0), h: 2.6, emit: 0.35 }); const ch = new T.Mesh(new T.CylinderGeometry(0.02, 0.02, FH - 2.6, 4), structMat); ch.position.y = 2.6 + (FH - 2.6) / 2; g.add(ch); } }, 2);
   // placas: o nome de cada nicho em cima da boca, e o de cada andar ao lado da escada
   const signMat = (tex) => new T.ShaderMaterial({ uniforms: Object.assign({ map: { value: tex } }, U), vertexShader: PROP_VS, fragmentShader: `${COMMON} uniform sampler2D map; varying vec3 vW; varying vec3 vN; varying vec2 vUv; void main(){ vec4 c = texture2D(map, vUv); if (c.a < 0.1) discard; vec3 l = band(lights(vW, normalize(vN))); gl_FragColor = vec4(fogIt(c.rgb * (0.55 + l * 0.75), vW), 1.0); }` });
@@ -1309,8 +1312,8 @@
         c += b * 0.075;`}
         c = pow(max(c, 0.0), vec3(0.97, 1.0, 1.07)) * vec3(1.04, 1.0, 0.93);
         float l = dot(c, vec3(0.3, 0.59, 0.11)); c = mix(vec3(l), c, 0.9);
-        c = c * 1.06 + vec3(0.012, 0.008, 0.004);
-        vec2 q = vUv - 0.5; float vig = smoothstep(0.85, 0.2, length(q * vec2(1.0, 0.85)) * 1.25); c *= mix(0.32, 1.0, vig);
+        c = c * 1.2 + vec3(0.016, 0.011, 0.006);
+        vec2 q = vUv - 0.5; float vig = smoothstep(0.85, 0.2, length(q * vec2(1.0, 0.85)) * 1.25); c *= mix(0.55, 1.0, vig);
         c += (hh(vUv * uRes + fract(uTime * 7.0) * 100.0) - 0.5) * 0.04;
         c += uFlash * (1.0 - vig * 0.6); c *= 1.0 - uBlack;
         gl_FragColor = vec4(c, 1.0);
@@ -1568,7 +1571,7 @@
     pages.forEach((p) => (p.m.visible = true)); fin.y0 = cam.pos.y; { const hp = halos.geometry.attributes.position.array; TLAMPS.forEach((q, i) => hp.set([q.x, q.y, q.z], i * 3)); halos.geometry.attributes.position.needsUpdate = true; } if (music && !music.paused) fadeTo(0.12, 3000); SFX.whoosh();
   }
   function restoreAll() {
-    U.uWave.value = 1e5; portals.forEach((w) => w.g.scale.setScalar(1)); flyers.forEach((b) => (b.back = 0)); pages.forEach((p) => (p.m.visible = false));
+    U.uWave.value = -1e5; portals.forEach((w) => w.g.scale.setScalar(1)); flyers.forEach((b) => (b.back = 0)); pages.forEach((p) => (p.m.visible = false));
     lanG.visible = false; qrPlate.visible = false; qStars.visible = false; credEl.classList.remove("on"); nomeEl.classList.remove("on");
     camera.up.set(0, 1, 0); post.material.uniforms.uStreak.value = 0; post.material.uniforms.uFlash.value.set(0, 0, 0); camera.fov = baseFov * zoomK; camera.updateProjectionMatrix();
     { const hp = halos.geometry.attributes.position.array; TLAMPS.forEach((p, i) => hp.set([p.x, p.y, p.z], i * 3)); halos.geometry.attributes.position.needsUpdate = true; }

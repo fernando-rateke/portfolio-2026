@@ -27,9 +27,9 @@ doc = f"""<!doctype html>
 <meta property="og:type" content="website">
 <meta property="og:locale" content="pt_BR">
 <meta property="og:image" content="/og.png">
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="icon" href="/favicon.png" type="image/png">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="icon" href="/rateke-icone.svg" type="image/svg+xml">
+<link rel="icon" href="/rateke-icone.png" type="image/png" sizes="512x512">
+<link rel="apple-touch-icon" href="/rateke-toque.png">
 <script>window.VALE_BASE = "/vale/";</script>
 <script>(function(){{var d=new Date(),m=d.getHours()*60+d.getMinutes(),t=m<=300||m>1140?"dark":m<=840?"light":"dusk";try{{var s=sessionStorage.getItem("vale-tema");if(s)t=s;}}catch(e){{}}document.documentElement.setAttribute("data-theme",t);}})();</script>
 <style>body{{margin:0}}[hidden]{{display:none!important}}img{{max-width:100%}}</style>

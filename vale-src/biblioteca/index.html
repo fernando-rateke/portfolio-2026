@@ -63,6 +63,11 @@ body.flying .hud.fade-on-fly { opacity: 0.35; }
 .idx-foot { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 6px; padding-top: 14px; border-top: 1px solid var(--line); }
 .dobra { position: fixed; inset: 0; z-index: 15; pointer-events: none; opacity: 0; transition: opacity 0.65s ease-in-out; background: radial-gradient(circle at 50% 50%, rgba(255, 222, 160, 0.22), rgba(6, 4, 3, 0.97) 62%); }
 .dobra.on { opacity: 1; }
+.som { position: fixed; z-index: 5; top: max(18px, env(safe-area-inset-top)); right: 16px; width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line); background: var(--glass); color: var(--ink-2); display: grid; place-items: center; cursor: pointer; backdrop-filter: blur(10px); }
+.som svg { width: 20px; height: 20px; }
+.som .x { display: inline; } .som .w1, .som .w2 { display: none; }
+.som[aria-pressed="true"] { color: var(--gold); } .som[aria-pressed="true"] .x { display: none; } .som[aria-pressed="true"] .w1, .som[aria-pressed="true"] .w2 { display: inline; }
+body.apresentando .som { opacity: 0; pointer-events: none; }
 .dobra.mundo { background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--wc, #9db4d8) 60%, transparent), rgba(3, 3, 4, 0.98) 66%); transition-duration: 0.7s; }
 body.no-mundo .hint { display: none; }
 .marcas { position: fixed; inset: 0; z-index: 3; pointer-events: none; overflow: hidden; }
@@ -183,6 +188,7 @@ body.apresentando canvas#lib { cursor: none; }
   <button class="pill back" id="voltar" type="button" hidden aria-label="Voltar ao lugar anterior">‹ Voltar</button>
   <div class="here" id="aqui" role="button" tabindex="0" aria-label="Abrir o mapa"><small id="aquiK">O Grande Salão</small><b id="aquiT">Entrada</b></div>
 </div>
+<button class="som" id="som" type="button" aria-pressed="false" title="Ligar a música" aria-label="Música"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.2L12 5.5v13l-4.8-4H4z" fill="currentColor"/><path class="w1" d="M15.5 9a4 4 0 0 1 0 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path class="w2" d="M18 6.5a7.5 7.5 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path class="x" d="M15.5 9.5l5 5m0-5l-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
 <div class="hud left-bottom fade-on-fly"><button class="pill" id="abrirIndice" type="button">Mapa</button></div>
 <div class="hint" id="dica">Clique numa porta para seguir pelo corredor · arraste para olhar em volta<br>A placa em cima de cada porta diz para onde ela leva · o Mapa leva a qualquer sala</div>
 <nav class="index" id="indice" aria-label="Lugares da biblioteca" aria-hidden="true">

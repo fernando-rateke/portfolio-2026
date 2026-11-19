@@ -868,7 +868,7 @@
       veil.style.setProperty("--wc", w.c); veil.classList.add("on", "mundo"); document.body.classList.add("flying");
       Promise.all([ld, new Promise((r) => setTimeout(r, reduce ? 0 : 750))]).then(([make]) => {
         try { world = make(worldCtx()); } catch (e) { console.warn("mundo", e); world = null; }
-        if (world) { worldOf = w; world.resize(innerWidth, innerHeight); document.body.classList.add("no-mundo"); }
+        if (world) { worldOf = w; world.resize(innerWidth, innerHeight); document.body.classList.add("no-mundo"); if (music && !music.paused) fadeTo(0, 900, () => music.pause()); }
         document.body.classList.remove("flying"); veil.classList.remove("on"); setTimeout(() => veil.classList.remove("mundo"), 700); label();
       }).catch(() => { veil.classList.remove("on", "mundo"); document.body.classList.remove("flying"); toast(w.s, w.t, "Não deu para abrir este mundo agora."); });
     }, 1.6);
@@ -880,7 +880,7 @@
       try { world.dispose(); } catch (e) { /* nada */ }
       const w = worldOf; world = null; worldOf = null; document.body.classList.remove("no-mundo"); hotC = null; rotulo.classList.remove("on");
       cam.pos.copy(riftFront(w)); cam.tgt.copy(w.pos); cam.yaw = cam.pitch = cam.yawT = cam.pitchT = 0; lookReady = false; latKey = "";
-      veil.classList.remove("on"); setTimeout(() => veil.classList.remove("mundo"), 700); label();
+      veil.classList.remove("on"); setTimeout(() => veil.classList.remove("mundo"), 700); label(); if (musicWant) musicOn();
       if (then) then(); else glide([cam.pos.clone(), cur().pose.pos], cur().pose.tgt, null, 2.0);
     }, reduce ? 0 : 650);
   }
@@ -963,11 +963,25 @@
       }).catch(() => { $("fNota").textContent = "Sem conexão com a estante agora."; });
     });
   }
-  let music = null;
-  function toggleMusic() {
-    if (!music) { music = new Audio("/vale/audio/trem.mp3"); music.loop = true; music.volume = 0.6; }
-    if (music.paused) { music.play().then(() => toast("Gramofone", "Tocando", "Toque de novo no gramofone para parar.")).catch(() => {}); } else { music.pause(); toast("Gramofone", "Parado", ""); }
+  /* o tema da biblioteca: começa no primeiro toque ou clique (o navegador não deixa antes), em loop;
+     o arquivo toca como veio, só o volume sobe devagar. O botão de som e o gramofone ligam e desligam. */
+  let music = null, musicWant = true, fadeT = 0;
+  try { musicWant = localStorage.getItem("biblioteca-som") !== "0"; } catch (e) { /* sem storage */ }
+  const somBtn = $("som");
+  function setSomBtn() { somBtn.setAttribute("aria-pressed", String(!!(music && !music.paused))); somBtn.title = music && !music.paused ? "Desligar a música" : "Ligar a música"; }
+  function fadeTo(v, ms, then) { clearInterval(fadeT); const v0 = music.volume, t0 = performance.now(); fadeT = setInterval(() => { const k = Math.min(1, (performance.now() - t0) / ms); music.volume = v0 + (v - v0) * k; if (k >= 1) { clearInterval(fadeT); if (then) then(); } }, 50); }
+  function musicOn() {
+    if (!music) { music = new Audio("/biblioteca/audio/tema.mp3"); music.loop = true; music.volume = 0; music.addEventListener("play", setSomBtn); music.addEventListener("pause", setSomBtn); }
+    if (!music.paused) return; music.play().then(() => fadeTo(0.5, 3000)).catch(() => {});
   }
+  function musicOff() { if (music && !music.paused) fadeTo(0, 700, () => music.pause()); }
+  function toggleMusic() {
+    musicWant = !(music && !music.paused); try { localStorage.setItem("biblioteca-som", musicWant ? "1" : "0"); } catch (e) { /* sem storage */ }
+    if (musicWant) musicOn(); else musicOff();
+  }
+  somBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleMusic(); });
+  const firstTouch = () => { removeEventListener("pointerdown", firstTouch, true); removeEventListener("keydown", firstTouch, true); if (musicWant && !world) musicOn(); };
+  addEventListener("pointerdown", firstTouch, true); addEventListener("keydown", firstTouch, true);
   function activate(c) {
     switch (c.kind) {
       case "livro": openBook(c.data); break;

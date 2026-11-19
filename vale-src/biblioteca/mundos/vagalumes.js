@@ -281,13 +281,13 @@
     function lathe(pts, mat, parent) { const m = new T.Mesh(K(new T.LatheGeometry(pts.map(([a, b]) => V2(a, b)), 28)), mat); (parent || scene).add(m); return m; }
     const OBJ = {};
     // a lata de balas de frutas, em cima de uma pedra chata
-    { const g = new T.Group(); g.position.copy(at(D0.xf - 0.55, D0.z + 1.05)); scene.add(g);
+    { const g = new T.Group(); g.position.copy(at(D0.xf - 0.5, D0.z + 1.5)); scene.add(g);
       mesh(new T.SphereGeometry(0.22, 14, 8), toon("#8f8c84", { toon: 0.5 }), g, 0, 0.02, 0).scale.set(1, 0.32, 0.85);
       const lab = canvasTex(256, 128, (c, w, h) => { c.fillStyle = "#c6352b"; c.fillRect(0, 0, w, h); const cols = ["#f4c542", "#6fbf4a", "#f3eee2", "#f08a3c", "#c94f8a", "#7fc1e8"]; for (let i = 0; i < 26; i++) { c.fillStyle = cols[i % cols.length]; c.beginPath(); c.arc(8 + (i * 37) % w, 34 + ((i * 53) % 70), 8, 0, 7); c.fill(); } c.fillStyle = "#f3e6c8"; c.fillRect(0, 0, w, 12); c.fillRect(0, h - 12, w, 12); c.fillStyle = "#fff"; c.font = "700 30px sans-serif"; c.textAlign = "center"; c.fillText("ドロップ", w * 0.25, 76); c.fillText("ドロップ", w * 0.75, 76); });
       const tin = new T.Mesh(K(new T.CylinderGeometry(0.06, 0.06, 0.15, 24)), [toon("#ffffff", { map: lab, toon: 0.6 }), toon("#cfc8b8", { toon: 0.6 }), toon("#cfc8b8", { toon: 0.6 })]); tin.position.y = 0.15; tin.rotation.y = 0.7; g.add(tin); outline(tin);
       OBJ.lata = { root: g, name: "a lata de balas", h: 0.4 }; }
     // o guarda-chuva de papel, rasgado, caído de lado na frente da porta
-    { const g = new T.Group(); g.position.copy(at(D0.xf - 1.05, D0.z + 0.1)); scene.add(g); const u = new T.Group(); u.position.y = 0.42; u.rotation.set(0.15, -0.9, 1.75); g.add(u);
+    { const g = new T.Group(); g.position.copy(at(D0.xf - 1.25, D0.z + 0.8)); scene.add(g); const u = new T.Group(); u.position.y = 0.42; u.rotation.set(0.15, -0.9, 1.75); g.add(u);
       const paper = canvasTex(512, 128, (c, w, h) => { c.fillStyle = "#e7b467"; c.fillRect(0, 0, w, h); for (let i = 0; i < 32; i++) { c.fillStyle = "rgba(120,70,30,0.5)"; c.fillRect(i * w / 32, 0, 2, h); } c.fillStyle = "rgba(160,90,40,0.25)"; c.fillRect(0, 0, w, 18); c.fillStyle = "#4a3a6a"; c.fillRect(0, 0, w, 10);
         c.globalCompositeOperation = "destination-out"; for (let i = 0; i < 9; i++) { const x = rnd() * w, y = 30 + rnd() * 80; c.beginPath(); c.moveTo(x, y); for (let k = 0; k < 6; k++) c.lineTo(x + (rnd() - 0.4) * 60, y + (rnd() - 0.5) * 40); c.fill(); } });
       const cone = new T.Mesh(K(new T.ConeGeometry(0.55, 0.26, 32, 1, true)), toon("#ffffff", { map: paper, toon: 0.6, side: T.DoubleSide })); u.add(cone);
@@ -447,8 +447,8 @@
     const smoother = (x) => x * x * x * (x * (x * 6 - 15) + 10);
     function to(pose, dur = 2.0) { if (ctx.reduce) { cam.pos.copy(pose.pos); cam.tgt.copy(pose.tgt); return; } glide = { p0: cam.pos.clone(), t0: cam.tgt.clone(), p1: pose.pos.clone(), t1: pose.tgt.clone(), u: 0, dur }; cam.yawT = cam.pitchT = 0; }
     function poseFor(p, dist = 2.3, up = 0.9) { const dir = V3(OVERP.x - p.x, 0, OVERP.z - p.z).normalize(); return { pos: p.clone().addScaledVector(dir, dist).add(V3(0, up, 0)), tgt: p.clone() }; }
-    function openItem(it) { focus = it; const sw = it.o === OBJ.balanco; to(poseFor(it.focus, sw ? 3.2 : 2.2, sw ? 0.6 : 0.9)); setTimeout(() => { if (focus === it) ctx.openAct(sub.name, it.i); }, ctx.reduce ? 0 : 1500); }
-    function toggleNight() { nightT = nightT > 0.5 ? 0 : 1; focus = netItem; to({ pos: V3(D0.xf - 2.6, D0.y0 + 1.45, D0.z + 1.6), tgt: NET.clone().add(V3(-0.3, 0.1, 0)) }, 2.2); }
+    function openItem(it) { focus = it; const sw = it.o === OBJ.balanco; to(poseFor(it.focus, sw ? 3.2 : 2.3, sw ? 0.6 : 1.25)); setTimeout(() => { if (focus === it) ctx.openAct(sub.name, it.i); }, ctx.reduce ? 0 : 1500); }
+    function toggleNight() { nightT = nightT > 0.5 ? 0 : 1; focus = netItem; to({ pos: V3(D0.xf - 2.3, D0.y0 + 1.3, D0.z - 0.15), tgt: NET.clone().add(V3(0, 0.05, 0)) }, 2.2); }
     setTimeout(() => { try { ctx.toast("Túmulo dos Vaga-lumes", "O abrigo do lago", "Cada objeto marcado com um vaga-lume guarda uma atividade. O mosquiteiro, lá dentro, espera a noite."); } catch (e) { /* sem aviso */ } }, 900);
 
     const ray = new T.Raycaster();

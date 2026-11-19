@@ -108,7 +108,7 @@
     setTimeout(() => { try { ctx.toast("Attack on Titan", "O alto da muralha", "Do outro lado está o que vem depois. Cada ponto da muralha guarda uma perspectiva."); } catch (e) { /* sem aviso */ } }, 900);
 
     const ray = new T.Raycaster();
-    const fx = ctx.fantasy(scene, { center: V3(3, WH + 2.2, -3), radius: 9, height: 3, colors: ["#ffd890", "#ff9ab8", "#9ad8ff"], count: 6, power: 1.2, dim: 0.75, motes: 260, moteSize: 0.03 });
+    const fx = ctx.fantasy(scene, { center: V3(3, WH + 2.6, -10), radius: 8, height: 3.4, colors: ["#ffd070", "#ff7ab8", "#7ac8ff"], count: 10, power: 0.5, dim: 0.8, motes: 420, moteSize: 0.04, size: 1.6, glow: 0.75 });
     return {
       name: "O alto da muralha", sub: "Perspectivas para o futuro",
       update(dt, t) {

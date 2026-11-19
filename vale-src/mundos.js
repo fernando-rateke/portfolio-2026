@@ -1134,7 +1134,7 @@
       // letra por letra, mas cada palavra inteira numa linha só (a quebra acontece entre palavras)
       const letters = (t, d0) => { let i = 0; return t.split(" ").map((w) => `<span class="fim-w">${[...w].map((ch) => `<span style="animation-delay:${(d0 + (i++) * 0.055).toFixed(2)}s">${esc(ch)}</span>`).join("")}</span>`).join(" "); };
       fimEl.innerHTML = `<p class="fim-frase"><span class="fim-l1">${letters(FRASE[0], 2.2)}</span><span class="fim-l2">${letters(FRASE[1], 2.2 + FRASE[0].length * 0.055 + 0.9)}</span></p>
-        <p class="fim-assina">A jornada é o que dá forma ao mundo.<small>Fernando Rateke · Portfólio 2026</small></p>
+        <p class="fim-assina">Fernando Rateke<small>Portfólio 2026</small></p>
         <p class="fim-dica">Para voltar à capa, é só tocar em qualquer lugar da tela.</p>`;
     }
     const leaveFim = () => { if (!final) return; close(); if (window.vale && window.vale.toCover) window.vale.toCover(); };

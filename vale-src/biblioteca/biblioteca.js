@@ -866,7 +866,7 @@
     placeIdx = i;
     if (instant) { cam.pos.copy(to.pose.pos); cam.tgt.copy(to.pose.tgt); lookReady = false; if (done) done(); }
     else if (fly) fold(to, done); else travel(from.room, to, done);
-    label(); renderIndex(); hint(); if (!instant) $("hero").classList.add("off");
+    label(); renderIndex(); hint();
   }
   function back() { if (panel.classList.contains("open")) { closePanel(); return; } const i = hist.pop(); if (i != null) go(i, false, true); $("voltar").hidden = !hist.length; }
   $("voltar").addEventListener("click", back);
@@ -937,7 +937,7 @@
       case "porta": go(places.findIndex((p) => p.room === c.data.to && p.id !== "mesa")); break;
       case "musica": toggleMusic(); break;
       case "contato": showPanel("Contato", "Fernando Rateke", `<p>Estudante do Ensino Médio integrado ao Técnico em Análise e Desenvolvimento de Sistemas, no SESI SENAI, em Florianópolis.</p><div class="links"><a href="mailto:fernando_rateke-n@estudante.sesisenai.org.br">E-mail</a><a href="https://github.com/fernando-rateke" target="_blank" rel="noopener">GitHub</a></div>`); break;
-      case "sobre": showPanel("A Biblioteca Infinita", "Fernando Rateke · Portfólio 2026", `<p><i>A jornada é o que dá forma ao mundo.</i></p><p>Esta biblioteca não tem fim: cada sala tem oito portas, e cada porta dá num corredor que segue na diagonal ou numa rampa que sobe ou desce até outra sala, com mais portas. Dezesseis delas guardam este portfólio; o resto continua para sempre.</p><p>Clique numa porta para seguir pelo corredor. A placa em cima diz para onde ela leva. O Mapa leva a qualquer sala.</p>`); break;
+      case "sobre": showPanel("Rateke", "Fernando Rateke · Portfólio 2026", `<p>Esta biblioteca não tem fim: cada sala tem oito portas, e cada porta dá num corredor que segue na diagonal ou numa rampa que sobe ou desce até outra sala, com mais portas. Dezesseis delas guardam este portfólio; o resto continua para sempre.</p><p>Clique numa porta para seguir pelo corredor. A placa em cima diz para onde ela leva. O Mapa leva a qualquer sala.</p>`); break;
       case "cert": showPanel("Certificado", c.data.cf.t, `<p>${esc(c.data.cf.s)}</p><p class="note">${esc(c.data.cf.p)}</p>`); focusOn(c.data.pos, c.data.nx, c.data.nz, 1.4); break;
       case "visitante": c.data.open = true; showPanel(`Estante dos Visitantes · ${new Date(c.data.visitor.criado_em || Date.now()).toLocaleDateString("pt-BR")}`, c.data.visitor.nome || "Visitante", `<p>${esc(c.data.visitor.recado)}</p>` + (c.data.visitor.meu ? `<p class="note">Este é o seu. Ele aparece para todos depois de aprovado.</p>` : "")); focusOn(c.data.g.position, c.data.nx, c.data.nz, 1.35); break;
     }
@@ -1045,7 +1045,6 @@
     function paired() {
       on = true; veu.classList.add("lift"); veu.setAttribute("aria-hidden", "true"); document.body.classList.add("apresentando");
       cursorEl.classList.add("on"); chip.hidden = false; moveTo(innerWidth / 2, innerHeight / 2); lastState = ""; sendState(); closeIndex();
-      $("hero").classList.add("off");
     }
     function unpair() { phone = null; on = false; document.body.classList.remove("apresentando"); cursorEl.classList.remove("on"); spot.classList.remove("on"); chip.hidden = true; }
     function moveTo(x, y) {

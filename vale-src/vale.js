@@ -1682,7 +1682,7 @@
         g.fillStyle = "#C22026"; g.font = `600 15px ${MONO}`; g.fillText(L("履歴 · CURRÍCULO"), 390, 66);
         g.fillStyle = "#1C1718"; g.font = `600 20px ${SERIF}`; g.fillText("LinkedIn", 390, 102); g.fillText("Instagram", 390, 130);
         pin(40, 196, 520, 120, 0.015, "#F4EFE4");
-        g.fillStyle = "#1C1718"; g.font = `600 22px ${SERIF}`; g.fillText(L("A jornada é o que dá forma ao mundo."), 62, 248);
+        g.fillStyle = "#1C1718"; g.font = `600 22px ${SERIF}`; g.fillText("Fernando Rateke", 62, 248);
         g.font = `500 13px ${MONO}`; g.fillStyle = "#5A4E44"; g.fillText(L("© 2026 FERNANDO RATEKE · FEITO À MÃO COM THREE.JS"), 62, 284);
       };
       draw();
@@ -3621,7 +3621,7 @@
       { d: 5.0, from: [V3([-70, 26, -10]), V3([0, 0, -130])], to: [V3([-22, 20, -34]), V3([22, 0, -150])], night: 0, line: "Um lugar para atravessar." },
       { d: 4.2, follow: [[-34, 5, 38], [-20, 7, 27]], night: 0 },
       { d: 5.0, from: [V3([HILL.x - 2.8, H + 1.0, HILL.z + 5.2]), V3([HILL.x + 0.8, H + 0.9, -40])], to: [V3([HILL.x + 1.8, H + 1.3, HILL.z + 4.6]), V3([HILL.x + 0.2, H + 0.8, -40])], night: 1, line: "Gente para dividir o caminho." },
-      { d: 6.4, from: [V3([-24, 4, 44]), V3([10, 3, -80])], to: [V3([-12, 13, 34]), V3([10, 2, -80])], night: [1, 0], line: "A jornada é o que dá forma ao mundo.", long: true },
+      { d: 6.4, from: [V3([-24, 4, 44]), V3([10, 3, -80])], to: [V3([-12, 13, 34]), V3([10, 2, -80])], night: [1, 0] },
       { d: 3.4, black: true, seal: true, from: [BASE.pos.clone(), BASE.target.clone()], to: [BASE.pos.clone(), BASE.target.clone()] },
       { d: 3.2, arrive: true, from: [V3([0, 70, 70]), V3([0, 0, -60])], to: [V3([0, 38, 52]), V3([4, 0, -70])], night: 0, haze: [1, 0], hazeCurve: 0.6 },
       { d: 3.6, from: [V3([0, 38, 52]), V3([4, 0, -70])], to: exploreEl ? [OVERVIEW.pos.clone(), OVERVIEW.tgt.clone()] : [BASE.pos.clone(), BASE.target.clone()], night: [0, nightTarget] },

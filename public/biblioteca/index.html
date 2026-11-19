@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Biblioteca Infinita · Rateke</title>
+<title>Rateke</title>
 <meta property="og:title" content="Rateke · Portfólio 2026">
-<meta property="og:description" content="A jornada é o que dá forma ao mundo.">
+<meta property="og:description" content="Fernando Rateke · Portfólio 2026">
 <meta property="og:type" content="website">
 <meta property="og:image" content="/og.png">
 <meta name="description" content="A biblioteca infinita do portfólio de Fernando Rateke: um salão de estantes sem fim, as salas das matérias, os certificados e as portas para os mundos.">
@@ -133,10 +133,6 @@ body.apresentando .mk span { background: rgba(20, 14, 9, 0.6); }
 .fade.gone { opacity: 0; }
 .fade p { font: 500 0.62rem/1 var(--f-label); letter-spacing: 0.24em; text-transform: uppercase; color: var(--ink-3); }
 
-.hero { position: fixed; z-index: 4; left: 50%; top: 18%; transform: translateX(-50%); text-align: center; pointer-events: none; transition: opacity 1.6s; text-shadow: 0 2px 24px rgba(0,0,0,0.9); }
-.hero small { display: block; font: 500 0.62rem/1.4 var(--f-label); letter-spacing: 0.24em; text-transform: uppercase; color: var(--ink-2); margin-bottom: 10px; }
-.hero b { font: 600 clamp(1.6rem, 4vw, 3rem)/1.12 var(--f-display); color: var(--ink); }
-.hero.off { opacity: 0; }
 .veu { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; background: radial-gradient(ellipse at 50% 40%, rgba(20,14,10,0.92), rgba(2,1,1,0.98)); opacity: 0; pointer-events: none; transition: opacity 0.9s, clip-path 1.4s cubic-bezier(.7,0,.2,1); clip-path: inset(0 0 100% 0); }
 .veu.on { opacity: 1; pointer-events: auto; clip-path: inset(0 0 0 0); }
 .veu.lift { clip-path: inset(0 0 100% 0); opacity: 1; }
@@ -180,7 +176,7 @@ body.apresentando canvas#lib { cursor: none; }
 </head>
 <body>
 <canvas id="lib" tabindex="0" aria-label="Biblioteca infinita em 3D. Clique numa porta para seguir pelo corredor até outra sala, use o Mapa e arraste para olhar em volta."></canvas>
-<div class="hud brand fade-on-fly"><a href="/" title="Início"><span class="seal">ラテケ</span><span><b>Biblioteca Infinita</b><small>Fernando Rateke · Portfólio 2026</small></span></a></div>
+<div class="hud brand fade-on-fly"><a href="/" title="Início"><span class="seal">ラテケ</span><span><b>Rateke</b><small>Fernando Rateke · Portfólio 2026</small></span></a></div>
 <div class="hud nav" id="nav">
   <button class="pill back" id="voltar" type="button" hidden aria-label="Voltar ao lugar anterior">‹ Voltar</button>
   <div class="here" id="aqui" role="button" tabindex="0" aria-label="Abrir o mapa"><small id="aquiK">O Grande Salão</small><b id="aquiT">Entrada</b></div>
@@ -203,7 +199,6 @@ body.apresentando canvas#lib { cursor: none; }
   <div class="body" id="pCorpo"></div>
 </aside>
 <div class="toast" id="aviso" role="status" aria-live="polite"><small id="avisoK"></small><b id="avisoT"></b><span id="avisoS"></span></div>
-<div class="hero" id="hero" aria-hidden="true"><small>Fernando Rateke · Portfólio 2026</small><b>A jornada é o que<br>dá forma ao mundo.</b></div>
 <!-- modo apresentação: o véu com o QR, o cursor e a lanterna do controle pelo celular -->
 <div class="veu" id="veu" aria-hidden="true" role="dialog" aria-labelledby="veuT">
   <div class="veu-in">

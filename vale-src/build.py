@@ -23,7 +23,7 @@ doc = f"""<!doctype html>
 <title>Rateke · Portfólio 2026</title>
 <meta name="description" content="Portfólio de Fernando Rateke: um vale para atravessar, com o castelo andante, a Torre dos Grimórios, o Templo do Sino (AcousticBuild) e o mundo do Nós.">
 <meta property="og:title" content="Rateke · Portfólio 2026">
-<meta property="og:description" content="A jornada é o que dá forma ao mundo.">
+<meta property="og:description" content="Fernando Rateke · Portfólio 2026">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="pt_BR">
 <meta property="og:image" content="/og.png">

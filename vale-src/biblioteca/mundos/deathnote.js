@@ -1,6 +1,6 @@
-/* Mundo de Linguagens: Death Note. O quarto do Light à noite: a luz da rua entra pela persiana em listras, a
+/* Mundo de Linguagens: Death Note. O quarto de um estudante à noite: a luz da rua entra pela persiana em listras, a
    escrivaninha com o abajur, a gaveta entreaberta com o caderno preto, o saco de batatinhas, a TV mostrando o
-   "L" gótico, a estante e a cama. O Ryuk fica de pé atrás da cadeira, sorrindo. Cada atividade é uma maçã da
+   plantão da noite, a estante e a cama. Um visitante de capuz e máscara de osso flutua perto da janela (personagem original). Cada atividade é uma maçã da
    fruteira; o computador da mesa roda o jogo "Nós" (a atividade do jogo educativo). Tudo desenhado aqui. */
 (() => {
   window.MUNDOS = window.MUNDOS || {};
@@ -44,7 +44,7 @@
     // a gaveta de cima entreaberta, com o caderno lá dentro
     const drawer = new T.Group(); drawer.position.set(DESK.x + 0.6, 0.6, DESK.z + 0.34); scene.add(drawer);
     add(new T.BoxGeometry(0.4, 0.12, 0.62), deskM, 0, 0, 0, 0, 0, 0, drawer); add(new T.BoxGeometry(0.42, 0.14, 0.02), deskD, 0, 0, 0.32, 0, 0, 0, drawer); add(new T.SphereGeometry(0.015, 8, 6), std("#b8a070", { metalness: 0.7, roughness: 0.3 }), 0, 0, 0.34, 0, 0, 0, drawer);
-    const dnCover = cv(256, 360, (g, w, h) => { g.fillStyle = "#0a0a0c"; g.fillRect(0, 0, w, h); g.fillStyle = "#e8e8e8"; g.font = "italic 700 44px 'Cormorant Garamond', serif"; g.textAlign = "center"; g.fillText("DEATH", w / 2, 150); g.fillText("NOTE", w / 2, 200); g.strokeStyle = "rgba(255,255,255,0.08)"; g.lineWidth = 2; g.strokeRect(10, 10, w - 20, h - 20); });
+    const dnCover = cv(256, 360, (g, w, h) => { g.fillStyle = "#0a0a0c"; g.fillRect(0, 0, w, h); g.fillStyle = "#e8e8e8";  g.strokeStyle = "rgba(255,255,255,0.08)"; g.lineWidth = 2; g.strokeRect(10, 10, w - 20, h - 20); });
     const note = new T.Mesh(K(new T.BoxGeometry(0.17, 0.02, 0.24)), [std("#0a0a0c"), std("#0a0a0c"), std("#ffffff", { map: dnCover, roughness: 0.6 }), std("#0a0a0c"), std("#e8e2d2"), std("#e8e2d2")]); note.position.set(0, 0.07, 0.1); note.rotation.y = 0.2; drawer.add(note);
     // o abajur
     add(new T.CylinderGeometry(0.08, 0.1, 0.03, 16), std("#1a1a1c", { metalness: 0.4 }), DESK.x - 0.55, 0.78, DESK.z - 0.15); add(new T.CylinderGeometry(0.01, 0.01, 0.4, 6), std("#1a1a1c"), DESK.x - 0.55, 0.98, DESK.z - 0.15, 0, 0, 0.25);
@@ -67,7 +67,7 @@
     /* ---------------- a TV com o L, a estante, a cama ---------------- */
     const tv = new T.Group(); tv.position.set(RX - 0.55, 0.5, 0.2); tv.rotation.y = -Math.PI / 2; scene.add(tv);
     add(new T.BoxGeometry(0.8, 0.5, 0.45), std("#222428", { roughness: 0.5 }), 0, 0, 0, 0, 0, 0, tv); add(new T.BoxGeometry(0.9, 0.5, 0.5), deskD, 0, -0.26 - 0.01, 0, 0, 0, 0, tv);
-    const lT = cv(320, 240, (g, w, h) => { g.fillStyle = "#f4f4f2"; g.fillRect(0, 0, w, h); g.fillStyle = "#0a0a0a"; g.font = "700 190px 'Old English Text MT', 'UnifrakturMaguntia', 'Cormorant Garamond', serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("L", w / 2, h / 2 + 10); });
+    const lT = cv(320, 240, (g, w, h) => { g.fillStyle = "#f4f4f2"; g.fillRect(0, 0, w, h); g.fillStyle = "#1a2a4a"; g.fillRect(0, 0, w, h); g.fillStyle = "#c83a2a"; g.fillRect(0, h - 56, w, 34); g.fillStyle = "#fff"; g.font = "700 22px sans-serif"; g.textAlign = "left"; g.fillText("PLANTÃO · CASOS SEM EXPLICAÇÃO", 12, h - 32); g.fillStyle = "#d8d8e0"; g.font = "600 30px sans-serif"; g.fillText("AO VIVO", 16, 40); });
     const tvMat = K(new T.ShaderMaterial({ uniforms: { map: { value: lT }, uT }, vertexShader: "varying vec2 vU; void main(){ vU = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
       fragmentShader: "uniform sampler2D map; uniform float uT; varying vec2 vU; void main(){ vec3 c = texture2D(map, vU).rgb; c *= 0.85 + 0.15 * sin(vU.y * 500.0 - uT * 8.0); c += (fract(sin(dot(vU * 300.0 + uT, vec2(12.9, 78.2))) * 43758.5) - 0.5) * 0.08; gl_FragColor = vec4(c, 1.0); }" }));
     add(new T.PlaneGeometry(0.66, 0.4), tvMat, 0, 0.02, 0.226, 0, 0, 0, tv);
@@ -80,33 +80,26 @@
     // a cadeira, virada
     { const ch = new T.Group(); ch.position.set(DESK.x - 0.35, 0, DESK.z + 0.8); ch.rotation.y = 0.9; scene.add(ch); const cm = std("#1e1e22", { roughness: 0.5 }); add(new T.BoxGeometry(0.46, 0.08, 0.46), cm, 0, 0.47, 0, 0, 0, 0, ch); add(new T.BoxGeometry(0.46, 0.55, 0.06), cm, 0, 0.82, 0.22, 0, -0.1, 0, ch); add(new T.CylinderGeometry(0.03, 0.03, 0.4, 8), std("#777", { metalness: 0.8 }), 0, 0.23, 0, 0, 0, 0, ch); for (let i = 0; i < 5; i++) add(new T.BoxGeometry(0.3, 0.02, 0.03), std("#555", { metalness: 0.8 }), Math.cos(i * 1.256) * 0.15, 0.04, Math.sin(i * 1.256) * 0.15, -i * 1.256, 0, 0, ch); }
 
-    /* ---------------- o Ryuk ---------------- */
-    const ryuk = new T.Group(); ryuk.position.set(0.85, 0.0, -2.45); ryuk.rotation.y = -0.35; ryuk.scale.setScalar(0.92); scene.add(ryuk);
+    /* ---------------- o visitante: uma criatura alta de capuz e máscara de osso (personagem original) ---------------- */
+    const ryuk = new T.Group(); ryuk.position.set(0.85, 0.0, -2.45); ryuk.rotation.y = -0.35; scene.add(ryuk);
     const OUTM = K(new T.MeshBasicMaterial({ color: "#000", side: T.BackSide }));
     const part = (geo, mat, x, y, z, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1, parent = ryuk, ol = true) => { const m = add(geo, mat, x, y, z, ry, rx, rz, parent); m.scale.set(sx, sy, sz); if (ol) { const o = new T.Mesh(m.geometry, OUTM); o.scale.setScalar(1.04); m.add(o); } return m; };
-    { const leather = std("#141418", { roughness: 0.4, metalness: 0.2 }), skin = std("#5a6a7a", { roughness: 0.7 }), hairM = std("#0a0a0c", { roughness: 0.9 });
-      // corpo comprido e curvado, cintos, braços longos
-      part(new T.CapsuleGeometry(0.14, 0.7, 6, 14), leather, 0, 1.35, 0, 0.12, 0, 0, 1, 1, 0.7);
-      part(new T.CapsuleGeometry(0.06, 0.7, 5, 10), leather, -0.07, 0.45, 0.02, 0.05, 0, 0.03); part(new T.CapsuleGeometry(0.06, 0.7, 5, 10), leather, 0.07, 0.45, 0.0, -0.08, 0, -0.03);
-      for (const s of [-1, 1]) { part(new T.CapsuleGeometry(0.04, 0.55, 5, 10), skin, s * 0.24, 1.38, 0.05, 0.2, 0, s * 0.18); part(new T.CapsuleGeometry(0.035, 0.5, 5, 10), skin, s * 0.32, 0.92, 0.16, -0.5, 0, s * 0.08);
-        for (let k = 0; k < 4; k++) part(new T.ConeGeometry(0.012, 0.12, 5), std("#0a0a0c"), s * (0.33 + (k - 1.5) * 0.02), 0.62, 0.3, -1.9, 0, 0, 1, 1, 1, ryuk, false);
-        // ombreiras de penas
-        for (let k = 0; k < 6; k++) part(new T.ConeGeometry(0.05, 0.26, 4), hairM, s * (0.18 + k * 0.035), 1.78 - k * 0.02, -0.02, 0, 0, s * (1.1 + k * 0.15), 1, 1, 1, ryuk, false); }
-      for (const y of [1.05, 1.2]) part(new T.TorusGeometry(0.16, 0.012, 6, 20), std("#3a3a40", { metalness: 0.7 }), 0, y, 0, Math.PI / 2, 0, 0, 1, 0.75, 1, ryuk, false);
-      // asas dobradas atrás
-      for (const s of [-1, 1]) { const w = part(new T.ConeGeometry(0.28, 1.1, 4), hairM, s * 0.26, 1.55, -0.22, 0.3, 0, s * 0.25, 0.4, 1, 1.4); void w; }
-      // a cabeça: cara azulada, o sorriso enorme, olhos amarelos, cabelo espetado
-      const head = new T.Group(); head.position.set(0, 1.98, 0.1); ryuk.add(head);
-      const fc = cv(256, 256, (g, w, h) => { g.fillStyle = "#7a8a9a"; g.fillRect(0, 0, w, h);
-        for (const sx of [-1, 1]) { g.fillStyle = "#f2d22a"; g.beginPath(); g.arc(128 + sx * 34, 110, 22, 0, 7); g.fill(); g.fillStyle = "#c8141a"; g.beginPath(); g.arc(128 + sx * 34, 112, 7, 0, 7); g.fill(); g.strokeStyle = "#1a1a1a"; g.lineWidth = 4; g.beginPath(); g.arc(128 + sx * 34, 110, 22, 0, 7); g.stroke(); }
-        g.fillStyle = "#3a0a10"; g.beginPath(); g.moveTo(60, 160); g.quadraticCurveTo(128, 230, 196, 160); g.quadraticCurveTo(128, 186, 60, 160); g.fill();
-        g.fillStyle = "#f0e8d8"; for (let i = 0; i < 12; i++) { const x = 70 + i * 10.5, y = 164 + Math.sin((i / 11) * Math.PI) * 18; g.fillRect(x, y - 2, 6, 9); }
-        g.strokeStyle = "#1a1a1a"; g.lineWidth = 3; g.beginPath(); g.moveTo(60, 160); g.quadraticCurveTo(128, 230, 196, 160); g.stroke(); });
-      const hm = new T.Mesh(K(new T.SphereGeometry(0.17, 28, 20)), std("#ffffff", { map: fc, roughness: 0.6 })); hm.scale.set(1, 1.08, 0.95); head.add(hm); hm.rotation.y = -Math.PI / 2;
-      { const o = new T.Mesh(hm.geometry, OUTM); o.scale.setScalar(1.03); hm.add(o); }
-      for (let i = 0; i < 26; i++) { const a = rnd() * Math.PI * 2, b = rnd() * 1.2; if (Math.sin(a) > 0.55 && b > 0.5) continue; const sp = part(new T.ConeGeometry(0.035, 0.28 + rnd() * 0.18, 4), hairM, Math.cos(a) * Math.sin(b) * 0.15, 0.06 + Math.cos(b) * 0.12, Math.sin(a) * Math.sin(b) * 0.15 - 0.03, 0, 0, 0, 1, 1, 1, head, false); sp.lookAt(head.localToWorld(V3(Math.cos(a) * 2, 1.2, Math.sin(a) * 2 - 0.6))); sp.rotateX(Math.PI / 2); }
-      ryuk.userData.head = head; }
-    const ryukLight = new T.PointLight("#7a8acc", 0.6, 2.2, 2); ryukLight.position.set(1.0, 2.0, -1.2); scene.add(ryukLight);
+    { const cloth = std("#1a1622", { roughness: 0.9, side: T.DoubleSide }), bone = std("#e8e2d4", { roughness: 0.5 }), claw = std("#3a3440");
+      // o manto comprido que termina em farrapos, flutuando sem tocar o chão
+      const robe = part(new T.CylinderGeometry(0.16, 0.42, 1.6, 18, 6, true), cloth, 0, 1.0, 0); { const p = robe.geometry.attributes.position; for (let i = 0; i < p.count; i++) { const y = p.getY(i); if (y < -0.6) { const a = Math.atan2(p.getZ(i), p.getX(i)); p.setY(i, y - Math.abs(Math.sin(a * 5)) * 0.25); } } robe.geometry.computeVertexNormals(); }
+      part(new T.ConeGeometry(0.2, 0.42, 16, 1, true), cloth, 0, 2.02, -0.02); // o capuz
+      for (let k = 0; k < 9; k++) { const a = -1.2 + k * 0.3; part(new T.ConeGeometry(0.04, 0.3, 4), std("#0e0c12"), Math.sin(a) * 0.2, 1.72, Math.cos(a) * -0.06 - 0.04, 0.5, 0, a * 0.6, 1, 1, 1, ryuk, false); } // gola de penas
+      const mask = part(new T.SphereGeometry(0.13, 22, 16, 0, Math.PI * 2, 0, Math.PI * 0.75), bone, 0, 1.9, 0.05, -0.2, 0, 0, 0.85, 1.15, 0.7);
+      const eye = new T.Mesh(K(new T.PlaneGeometry(0.02, 0.12)), K(new T.MeshBasicMaterial({ color: "#c89aff" }))); eye.position.set(0, 1.92, 0.15); ryuk.add(eye); void mask;
+      const eg = new T.Sprite(K(new T.SpriteMaterial({ map: ctx.glowTex, color: 0xb07aff, transparent: true, opacity: 0.6, depthWrite: false, blending: T.AdditiveBlending }))); eg.scale.set(0.25, 0.4, 1); eg.position.set(0, 1.92, 0.17); ryuk.add(eg);
+      for (const s2 of [-1, 1]) { part(new T.CapsuleGeometry(0.035, 0.6, 5, 10), cloth, s2 * 0.22, 1.35, 0.1, -0.4, 0, s2 * 0.25); part(new T.CapsuleGeometry(0.025, 0.45, 5, 10), claw, s2 * 0.32, 0.92, 0.34, -0.9, 0, s2 * 0.1);
+        for (let k = 0; k < 3; k++) part(new T.ConeGeometry(0.01, 0.12, 5), bone, s2 * (0.34 + (k - 1) * 0.02), 0.78, 0.46, -2.2, 0, 0, 1, 1, 1, ryuk, false);
+        // asas de ossos com membrana rasgada
+        const wing = new T.Group(); wing.position.set(s2 * 0.12, 1.65, -0.12); wing.rotation.set(0.1, s2 * 0.5, s2 * 0.4); ryuk.add(wing);
+        for (let k = 0; k < 4; k++) { const b = add(new T.CylinderGeometry(0.01, 0.006, 0.9 - k * 0.12, 5), bone, s2 * (0.2 + k * 0.12), 0.25 - k * 0.12, 0, 0, 0, -s2 * (0.6 + k * 0.25), wing); void b; }
+        const mem = add(new T.CircleGeometry(0.55, 10, Math.PI * (s2 > 0 ? 0 : 0.5), Math.PI * 0.5), std("#120e18", { side: T.DoubleSide, transparent: true, opacity: 0.85 }), 0, 0, -0.01, 0, 0, 0, wing); void mem; }
+      ryuk.userData.head = mask; }
+    const ryukLight = new T.PointLight("#9a7acc", 0.8, 2.4, 2); ryukLight.position.set(1.0, 2.0, -1.9); scene.add(ryukLight);
 
     /* ---------------- as maçãs: uma atividade em cada ---------------- */
     const sub = ctx.subjects().find((s) => s.name === "Área de Linguagens") || { name: "Área de Linguagens", acts: [] };
@@ -140,19 +133,19 @@
     function to(pose, dur = 2.0) { if (ctx.reduce) { cam.pos.copy(pose.pos); cam.tgt.copy(pose.tgt); return; } glide = { p0: cam.pos.clone(), t0: cam.tgt.clone(), p1: pose.pos.clone(), t1: pose.tgt.clone(), u: 0, dur }; cam.yawT = cam.pitchT = 0; }
     function openItem(it) { focus = it; const p = it.pc ? pc.position.clone().add(V3(0, 0.27, 0)) : it.g.position; to({ pos: p.clone().add(V3(0.55, 0.42, 0.85)), tgt: p.clone() }); if (!it.pc) { it.bite = 1; if (audio) setTimeout(() => audio.crunch(), ctx.reduce ? 0 : 1100); }
       setTimeout(() => { if (focus === it) ctx.openAct(sub.name, it.i); }, ctx.reduce ? 0 : 1500); }
-    setTimeout(() => { try { ctx.toast("Death Note", "O quarto do Light", "Cada maçã da fruteira guarda uma atividade. O computador roda o Nós."); } catch (e) { /* sem aviso */ } }, 900);
+    setTimeout(() => { try { ctx.toast("Death Note", "O quarto do caderno", "Cada maçã da fruteira guarda uma atividade. O computador roda o Nós."); } catch (e) { /* sem aviso */ } }, 900);
 
     const ray = new T.Raycaster();
     return {
-      name: "O quarto do Light", sub: "Linguagens",
+      name: "O quarto do caderno", sub: "Linguagens",
       update(dt, t) {
         uT.value = t;
         if (glide) { glide.u = Math.min(1, glide.u + dt / glide.dur); const e = smoother(glide.u); cam.pos.lerpVectors(glide.p0, glide.p1, e); cam.tgt.lerpVectors(glide.t0, glide.t1, e); if (glide.u >= 1) glide = null; }
         const k = 1 - Math.exp(-dt * 3.5); cam.yaw += (cam.yawT - cam.yaw) * k; cam.pitch += (cam.pitchT - cam.pitch) * k;
         const d = cam.tgt.clone().sub(cam.pos), r = d.length(), yw = Math.atan2(d.z, d.x) + cam.yaw, pt = Math.asin(Math.max(-0.99, Math.min(0.99, d.y / r))) + cam.pitch;
         camera.position.copy(cam.pos).add(V3(0, Math.sin(t * 0.45) * 0.008, 0)); camera.lookAt(cam.pos.x + Math.cos(yw) * Math.cos(pt), cam.pos.y + Math.sin(pt), cam.pos.z + Math.sin(yw) * Math.cos(pt));
-        // o Ryuk flutua um pouco e acompanha a câmera com a cabeça
-        ryuk.position.y = 0.04 + Math.sin(t * 0.9) * 0.03; const h = ryuk.userData.head; if (h) { h.rotation.y = Math.sin(t * 0.3) * 0.25 + 0.3; h.rotation.z = Math.sin(t * 0.5) * 0.08; }
+        // o visitante flutua devagar, sem tocar o chão
+        ryuk.position.y = 0.12 + Math.sin(t * 0.9) * 0.05; ryuk.rotation.y = -0.35 + Math.sin(t * 0.25) * 0.12;
         slats.forEach((s, i) => (s.rotation.x = 0.6 + Math.sin(t * 0.4 + i * 0.3) * 0.015));
         if (Math.floor(t * 8) !== Math.floor((t - dt) * 8)) drawGame(t);
         tvLight.intensity = 0.8 * (0.9 + 0.1 * Math.sin(t * 30));
@@ -163,7 +156,7 @@
       resize(w, h) { camera.aspect = w / h; const tall = w / h < 0.8; camera.fov = tall ? 72 : 52; camera.updateProjectionMatrix(); OVER.pos.copy(tall ? V3(2.2, 1.7, 2.7) : OVERP); if (!focus && !glide) cam.pos.copy(OVER.pos); },
       pick(ndc) { ray.setFromCamera(ndc, camera); const hits = ray.intersectObjects(apples.map((a) => a.m).concat([screen]), false); const o = hits[0] && hits[0].object; const ap = o && apples.find((a) => a.m === o);
         hot = ap || (o === screen ? pcItem : null);
-        if (ap) return { label: [ap.a.t, "uma maçã para o Ryuk"], go: () => openItem(ap) };
+        if (ap) return { label: [ap.a.t, "uma maçã para o visitante"], go: () => openItem(ap) };
         if (o === screen && pcItem) return { label: [pcItem.a.t, "jogar o Nós"], go: () => openItem(pcItem) };
         return null; },
       look(dx, dy) { if (glide) return; cam.yawT = Math.max(-0.9, Math.min(0.9, cam.yawT - dx * 0.003)); cam.pitchT = Math.max(-0.3, Math.min(0.4, cam.pitchT - dy * 0.003)); },

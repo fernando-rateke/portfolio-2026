@@ -1,8 +1,7 @@
 /* Mundo do Quem sou: Tokyo Ghoul. O café Anteiku numa noite de chuva no 20º distrito: o balcão com os sifões
    de café, as xícaras na prateleira, as luminárias baixas, a janela grande com a chuva escorrendo e a cidade
-   desfocada lá fora. O Kaneki lê sentado à mesa da janela e a Rize, do outro lado, também lê. Os livros da
-   mesa guardam quem eu sou; a máscara fica em cima da mesa. Modelos: Kaneki (RigModels) e Rize Kamishiro
-   (Professor E12^2, CC BY 4.0); o resto é desenhado aqui. */
+   desfocada lá fora. Uma estudante lê na mesa da janela e o dono do café enxuga xícaras atrás do balcão
+   (personagens originais). Os livros da mesa guardam quem eu sou. Tudo é desenhado aqui. */
 (() => {
   window.MUNDOS = window.MUNDOS || {};
   window.MUNDOS.anteiku = (ctx) => {
@@ -85,47 +84,22 @@
     for (const [x, z] of [[TBL.x - 0.12, TBL.z - 0.2], [TBL.x + 0.28, TBL.z + 0.12]]) { add(new T.CylinderGeometry(0.075, 0.075, 0.01, 18), cupM, x, 0.765, z); add(new T.CylinderGeometry(0.045, 0.035, 0.07, 14), cupM, x, 0.8, z); add(new T.CircleGeometry(0.04, 14), lam("#2a1206", { roughness: 0.15 }), x, 0.832, z, 0, -Math.PI / 2);
       const st = new T.Sprite(K(new T.SpriteMaterial({ map: ctx.glowTex, color: 0xffffff, transparent: true, opacity: 0.12, depthWrite: false }))); st.scale.set(0.12, 0.3, 1); st.position.set(x, 0.98, z); scene.add(st); steams.push(st); }
 
-    /* ---------------- o Kaneki e a Rize ---------------- */
-    const loader = new T.GLTFLoader();
-    const load = (f) => new Promise((ok) => loader.load(base + f, (g) => ok(g.scene), undefined, () => ok(null)));
-    const qA = new T.Quaternion(), qB = new T.Quaternion(), qC = new T.Quaternion();
-    const findBone = (root, part) => { let b = null; root.traverse((o) => { if (!b && o.isBone && o.name.includes(part)) b = o; }); return b; };
-    const turn = (bone, axis, ang) => { if (!bone) return; bone.parent.updateMatrixWorld(true); bone.parent.getWorldQuaternion(qA); qB.setFromAxisAngle(axis, ang); qC.copy(qA).invert().multiply(qB).multiply(qA); bone.quaternion.premultiply(qC); bone.updateMatrixWorld(true); };
-    const AX = V3(1, 0, 0), AZ = V3(0, 0, 1), AY = V3(0, 1, 0);
+    /* ---------------- as pessoas do café (personagens originais) ---------------- */
     const bookM = (col) => [lam(col), lam(col), lam("#e8e0cc"), lam(col), lam(col), lam(col)];
-    function seat(m, b, H, seatY, pos, ry) {
-      // ajusta a altura e põe o quadril em cima do assento
-      m.updateMatrixWorld(true); const box = new T.Box3().setFromObject(m), k = H / (box.max.y - box.min.y);
-      const hip = new T.Vector3(); b.hip.getWorldPosition(hip);
-      const g = new T.Group(); m.scale.multiplyScalar(k); m.position.set(-hip.x * k, seatY - hip.y * k, -hip.z * k); g.add(m); g.position.copy(pos); g.rotation.y = ry; scene.add(g); return g;
-    }
-    let kHead = null, rHead = null, kGroup = null;
-    load("kaneki.glb").then((m) => { if (!m) return;
-      m.traverse((o) => { if (o.isMesh) { o.frustumCulled = false; if (o.name.startsWith("eqp_0")) o.visible = false; if (o.material && /heir/.test(o.material.name)) o.material.color = new T.Color(0.16, 0.15, 0.2); } });
-      m.updateMatrixWorld(true);
-      const la = findBone(m, "Chr_LArm"), ra = findBone(m, "Chr_RArm"), lf = findBone(m, "Chr_LForeArm"), rf = findBone(m, "Chr_RForeArm"), lt = findBone(m, "Chr_LUpLeg"), rt = findBone(m, "Chr_RUpLeg"), ll = findBone(m, "Chr_LLeg"), rl = findBone(m, "Chr_RLeg");
-      turn(la, AZ, 1.25); turn(ra, AZ, -1.25); turn(lt, AX, 1.5); turn(rt, AX, 1.5); turn(ll, AX, -1.5); turn(rl, AX, -1.5);
-      turn(la, AX, 0.5); turn(ra, AX, 0.5); turn(lf, AX, 0.9); turn(rf, AX, 0.9);
-      kHead = findBone(m, "Chr_Head"); if (kHead) kHead.userData.base = kHead.quaternion.clone(); turn(kHead, AX, -0.35);
-      kGroup = seat(m, { hip: lt }, 1.72, 0.47, V3(TBL.x, 0, TBL.z - 0.62), Math.PI);
-      // o livro aberto nas mãos
-      const bk = new T.Group(); bk.position.set(0, 0.95, -0.34); bk.rotation.x = 0.9; kGroup.add(bk);
-      add(new T.BoxGeometry(0.16, 0.012, 0.22), lam("#2a2a32"), -0.08, 0, 0, 0, 0, 0.12, bk); add(new T.BoxGeometry(0.16, 0.012, 0.22), lam("#2a2a32"), 0.08, 0, 0, 0, 0, -0.12, bk);
-      add(new T.BoxGeometry(0.15, 0.02, 0.2), lam("#ece4d0"), -0.075, 0.012, 0, 0, 0, 0.12, bk); add(new T.BoxGeometry(0.15, 0.02, 0.2), lam("#ece4d0"), 0.075, 0.012, 0, 0, 0, -0.12, bk); });
-    // a máscara do Kaneki em cima da mesa
-    load("kaneki.glb").then((m) => { if (!m) return; m.traverse((o) => { if (o.isMesh) { o.visible = o.name.startsWith("eqp_0"); o.frustumCulled = false; if (o.material) o.material.side = T.DoubleSide; } });
-      const g = new T.Group(); const box = new T.Box3(); m.updateMatrixWorld(true); m.traverse((o) => { if (o.isMesh && o.visible) box.expandByObject(o); }); const c = box.getCenter(V3());
-      m.position.set(-c.x, -c.y, -c.z); g.add(m); g.scale.setScalar(0.9); g.position.set(TBL.x - 0.3, 0.84, TBL.z + 0.18); g.rotation.set(-1.35, 0.5, 0); scene.add(g); });
-    load("rize.glb").then((m) => { if (!m) return;
-      m.traverse((o) => { if (o.isMesh) { o.frustumCulled = false; if (o.material && /Mori/.test(o.material.name)) o.visible = false; } });
-      m.updateMatrixWorld(true);
-      const L = findBone(m, "L_UpperArm"), R = findBone(m, "R_UpperArm"), LF = findBone(m, "L_Forearm"), RF = findBone(m, "R_Forearm"), lt = findBone(m, "L_Thigh"), rt = findBone(m, "R_Thigh"), lc = findBone(m, "L_Calf"), rc = findBone(m, "R_Calf");
-      turn(L, AZ, -1.25); turn(R, AZ, 1.25); turn(lt, AX, -1.5); turn(rt, AX, -1.5); turn(lc, AX, 1.45); turn(rc, AX, 1.45);
-      turn(L, AX, -0.5); turn(R, AX, -0.5); turn(LF, AX, -1.0); turn(RF, AX, -1.0);
-      rHead = findBone(m, "Head1");
-      const g = seat(m, { hip: lt }, 1.68, 0.47, V3(TBL.x + 0.6, 0, TBL.z + 0.32), -2.1);
-      const bk = new T.Group(); bk.position.set(0, 0.95, 0.3); bk.rotation.x = -1.0; g.add(bk); add(new T.BoxGeometry(0.28, 0.025, 0.2), lam("#6a1a1e"), 0, 0, 0, 0, 0, 0, bk); add(new T.BoxGeometry(0.26, 0.03, 0.19), lam("#ece4d0"), 0, 0.012, 0, 0, 0, 0, bk); });
-
+    const openBook = (parent, col, x, y, z, rx) => { const bk = new T.Group(); bk.position.set(x, y, z); bk.rotation.x = rx; parent.add(bk);
+      add(new T.BoxGeometry(0.16, 0.012, 0.22), lam(col), -0.08, 0, 0, 0, 0, 0.12, bk); add(new T.BoxGeometry(0.16, 0.012, 0.22), lam(col), 0.08, 0, 0, 0, 0, -0.12, bk);
+      add(new T.BoxGeometry(0.15, 0.02, 0.2), lam("#ece4d0"), -0.075, 0.012, 0, 0, 0, 0.12, bk); add(new T.BoxGeometry(0.15, 0.02, 0.2), lam("#ece4d0"), 0.075, 0.012, 0, 0, 0, -0.12, bk); return bk; };
+    // uma estudante lendo na mesa da janela, de cachecol mostarda
+    const reader = ctx.person({ h: 1.6, skin: "#f0d0b4", hair: "#6a3a22", hairStyle: "trancas", ribbon: "#d8a83a", top: "#5a7a5a", bottom: "#3a3040", skirt: true, socks: "#2a2a30", longSleeves: true, blush: true });
+    reader.sit(); reader.read(); reader.g.position.set(TBL.x, 0.47 - reader.hipY, TBL.z - 0.62); scene.add(reader.g);
+    add(new T.TorusGeometry(0.1, 0.035, 8, 18), lam("#d8a83a"), 0, 1.42, 0, 0, Math.PI / 2, 0, reader.body);
+    openBook(reader.g, "#3a4a6a", 0, 0.98, 0.32, -0.9);
+    // o dono do café atrás do balcão, enxugando uma xícara
+    const owner = ctx.person({ h: 1.74, skin: "#ecc8a8", hair: "#c8c4bc", hairStyle: "curto", top: "#f0ece4", bottom: "#2a2a2e", longSleeves: true });
+    owner.g.position.set(RX - 1.45, 0, 0.6); owner.g.rotation.y = -Math.PI / 2 + 0.4; scene.add(owner.g);
+    add(new T.BoxGeometry(0.34, 0.5, 0.02), lam("#2a2a2e"), 0, 1.15, 0.12, 0, 0, 0, owner.body); // o avental
+    owner.arms.forEach((a, i) => { a.sh.rotation.x = -0.9; a.sh.rotation.z = (i ? -1 : 1) * 0.35; a.el.rotation.x = -1.0; });
+    const cupO = add(new T.CylinderGeometry(0.045, 0.035, 0.07, 14), cupM, 0, 1.02, 0.34, 0, 0, 0, owner.body); void cupO;
     /* ---------------- os livros do perfil, empilhados na mesa ---------------- */
     const perfil = ctx.perfil ? ctx.perfil() : { name: "Quem sou", acts: [] };
     const tomes = [];
@@ -154,7 +128,7 @@
     const smoother = (x) => x * x * x * (x * (x * 6 - 15) + 10);
     function to(pose, dur = 2.0) { if (ctx.reduce) { cam.pos.copy(pose.pos); cam.tgt.copy(pose.tgt); return; } glide = { p0: cam.pos.clone(), t0: cam.tgt.clone(), p1: pose.pos.clone(), t1: pose.tgt.clone(), u: 0, dur }; cam.yawT = cam.pitchT = 0; }
     function openTome(tm) { focus = tm; to({ pos: V3(TBL.x - 0.9, 1.45, TBL.z + 1.1), tgt: V3(TBL.x + 0.05, 0.8, TBL.z + 0.2) }); setTimeout(() => { if (focus === tm && ctx.openPages) ctx.openPages(perfil, tm.i); }, ctx.reduce ? 0 : 1500); }
-    const kHit = new T.Mesh(K(new T.BoxGeometry(0.6, 1.3, 0.6)), K(new T.MeshBasicMaterial())); kHit.position.set(TBL.x, 0.7, TBL.z - 0.62); kHit.visible = false; scene.add(kHit);
+    const kHit = new T.Mesh(K(new T.BoxGeometry(0.6, 1.3, 0.6)), K(new T.MeshBasicMaterial())); kHit.position.set(RX - 1.45, 1.0, 0.6); kHit.visible = false; scene.add(kHit);
     setTimeout(() => { try { ctx.toast("Tokyo Ghoul", "Anteiku", "Os livros em cima da mesa contam quem eu sou."); } catch (e) { /* sem aviso */ } }, 900);
 
     const ray = new T.Raycaster();
@@ -176,7 +150,7 @@
       resize(w, h) { camera.aspect = w / h; const tall = w / h < 0.8; camera.fov = tall ? 70 : 50; camera.updateProjectionMatrix(); OVER.pos.copy(tall ? V3(-2.6, 1.7, 3.4) : OVERP); if (!focus && !glide) cam.pos.copy(OVER.pos); },
       pick(ndc) { ray.setFromCamera(ndc, camera); const hits = ray.intersectObjects(tomes.map((x) => x.b).concat([kHit]), false); const o = hits[0] && hits[0].object; const tm = o && tomes.find((x) => x.b === o); hot = tm || null;
         if (tm) return { label: [tm.a.t, "abrir o livro"], go: () => openTome(tm) };
-        if (o === kHit) return { label: ["Kaneki", "não atrapalhe a leitura"], go: () => { try { ctx.toast("Kaneki", "1000 − 7", "993… 986… 979… 972…"); } catch (e) { /* nada */ } } };
+        if (o === kHit) return { label: ["O dono do café", "pedir um café"], go: () => { try { ctx.toast("Anteiku", "Um café por conta da casa", "Pode ficar o tempo que quiser."); } catch (e) { /* nada */ } } };
         return null; },
       look(dx, dy) { if (glide) return; cam.yawT = Math.max(-0.9, Math.min(0.9, cam.yawT - dx * 0.003)); cam.pitchT = Math.max(-0.3, Math.min(0.4, cam.pitchT - dy * 0.003)); },
       back() { if (focus) { focus = null; to(OVER); return true; } return false; },

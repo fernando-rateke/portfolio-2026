@@ -1048,7 +1048,55 @@
     if (window.MUNDOS && window.MUNDOS[id]) return Promise.resolve(window.MUNDOS[id]);
     return worldLoads[id] || (worldLoads[id] = new Promise((ok, no) => { const el = document.createElement("script"); el.src = "/biblioteca/mundos/" + id + ".js"; el.onload = () => (window.MUNDOS && window.MUNDOS[id] ? ok(window.MUNDOS[id]) : no()); el.onerror = no; document.head.appendChild(el); }));
   }
-  const worldCtx = () => ({ T, base: "/biblioteca/mundos/", reduce, small, glowTex, esc, showPanel, closePanel, toast, aspect: () => innerWidth / innerHeight, subjects: () => subjects, textos: () => TEXTOS, perfil: () => ({ name: "Quem sou", acts: PERFIL.map((x) => Object.assign({ k: [], l: [] }, x, { r: x.r.replace(/\\n/g, "\n") })) }), openPages: (sub, i) => { if (sub && sub.acts[i]) showBook({ a: sub.acts[i], sub }); }, openAct: (name, i) => { const sub = subjects.find((x) => x.name === name); if (!sub || !sub.acts[i]) return; const b = books.find((x) => x.sub === sub && x.a === sub.acts[i]) || { a: sub.acts[i], sub }; showBook(b); } });
+  // um personagem original, de traço simples (cel shading com contorno), usado pelos mundos
+  function makePerson(o = {}) {
+    const s = (o.h || 1.65) / 1.65, g = new T.Group();
+    const grad = makePerson.grad || (makePerson.grad = (() => { const d = new Uint8Array([90, 90, 90, 255, 170, 170, 170, 255, 255, 255, 255, 255]); const t = new T.DataTexture(d, 3, 1); t.minFilter = t.magFilter = T.NearestFilter; t.needsUpdate = true; return t; })());
+    const OUT = makePerson.out || (makePerson.out = new T.MeshBasicMaterial({ color: "#16141a", side: T.BackSide }));
+    const mat = (c, extra) => new T.MeshToonMaterial(Object.assign({ color: c, gradientMap: grad }, extra || {}));
+    const part = (geo, m, parent, x = 0, y = 0, z = 0, ol = true) => { const me = new T.Mesh(geo, m); me.position.set(x, y, z); parent.add(me); if (ol) { const q = new T.Mesh(geo, OUT); q.scale.setScalar(1.06); me.add(q); } return me; };
+    const skin = mat(o.skin || "#f2d2b6"), top = mat(o.top || "#4a6a8a"), bot = mat(o.bottom || "#3a3a44"), shoe = mat(o.shoes || "#2a2220"), hair = mat(o.hair || "#2a2018");
+    const HIP = 0.86, SH = 1.36;
+    const body = new T.Group(); body.scale.setScalar(s); g.add(body);
+    // pernas: quadril > joelho > pé
+    const legs = [-1, 1].map((sd) => { const hip = new T.Group(); hip.position.set(sd * 0.085, HIP, 0); body.add(hip);
+      part(new T.CapsuleGeometry(0.058, 0.32, 5, 10), o.skirt ? skin : bot, hip, 0, -0.2, 0); const knee = new T.Group(); knee.position.y = -0.42; hip.add(knee);
+      part(new T.CapsuleGeometry(0.05, 0.3, 5, 10), o.socks ? mat(o.socks) : o.skirt ? skin : bot, knee, 0, -0.2, 0); const f = part(new T.SphereGeometry(1, 12, 8), shoe, knee, 0, -0.4, 0.04); f.scale.set(0.055, 0.04, 0.1); return { hip, knee }; });
+    // tronco e saia
+    const torso = part(new T.CapsuleGeometry(0.15, 0.36, 6, 14), top, body, 0, 1.13, 0); torso.scale.set(1, 1, 0.72);
+    if (o.skirt) { const sk = part(new T.CylinderGeometry(0.15, 0.27, 0.36, 18, 1, true), mat(o.bottom || "#3a3a44", { side: T.DoubleSide }), body, 0, 0.8, 0); void sk; }
+    else part(new T.CylinderGeometry(0.155, 0.16, 0.14, 16), bot, body, 0, 0.88, 0);
+    if (o.cloak) { const ck = part(new T.CylinderGeometry(0.17, 0.38, 1.0, 20, 1, true), mat(o.cloak, { side: T.DoubleSide }), body, 0, 0.92, -0.02); void ck; }
+    // braços: ombro > cotovelo > mão
+    const arms = [-1, 1].map((sd) => { const sh = new T.Group(); sh.position.set(sd * 0.2, SH, 0); body.add(sh);
+      part(new T.CapsuleGeometry(0.045, 0.22, 5, 10), o.sleeves === false ? skin : top, sh, 0, -0.14, 0); const el = new T.Group(); el.position.y = -0.29; sh.add(el);
+      part(new T.CapsuleGeometry(0.04, 0.2, 5, 10), o.longSleeves ? top : skin, el, 0, -0.13, 0); part(new T.SphereGeometry(0.042, 10, 8), skin, el, 0, -0.28, 0); return { sh, el }; });
+    part(new T.CylinderGeometry(0.04, 0.045, 0.1, 10), skin, body, 0, 1.44, 0);
+    // cabeça com rosto pintado
+    const head = new T.Group(); head.position.set(0, 1.56, 0); body.add(head);
+    const fc = document.createElement("canvas"); fc.width = 512; fc.height = 256; const c = fc.getContext("2d"); c.fillStyle = o.skin || "#f2d2b6"; c.fillRect(0, 0, 512, 256);
+    const ey = 124, ex = 17, eyeC = o.eyes || "#2a1a14";
+    for (const sd of [-1, 1]) { const x = 128 + sd * ex; c.fillStyle = eyeC; c.beginPath(); c.ellipse(x, ey, 5.5, 8, 0, 0, 7); c.fill(); c.fillStyle = "#fff"; c.beginPath(); c.arc(x - 1.5, ey - 3, 2, 0, 7); c.fill();
+      c.strokeStyle = "#2a1a14"; c.lineWidth = 2; c.beginPath(); c.moveTo(x - 7, ey - 15); c.quadraticCurveTo(x, ey - 18, x + 7, ey - 15); c.stroke();
+      if (o.blush) { c.fillStyle = "rgba(230,120,110,0.35)"; c.beginPath(); c.ellipse(128 + sd * 30, 148, 8, 4, 0, 0, 7); c.fill(); } }
+    c.strokeStyle = "#8a4a3a"; c.lineWidth = 1.6; c.beginPath(); c.arc(128, 156, 4.5, 0.2 * Math.PI, 0.8 * Math.PI); c.stroke();
+    const ft = new T.CanvasTexture(fc); part(new T.SphereGeometry(0.105, 32, 22), mat("#ffffff", { map: ft }), head, 0, 0, 0);
+    if (o.ears) for (const sd of [-1, 1]) { const e = part(new T.ConeGeometry(0.022, 0.1, 6), skin, head, sd * 0.11, 0.0, -0.01); e.rotation.z = -sd * 1.3; }
+    const hm = mat(o.hair || "#2a2018", { side: T.DoubleSide });
+    part(new T.SphereGeometry(0.114, 26, 12, 0, Math.PI * 2, 0, 1.15), hm, head, 0, 0.004, -0.004);
+    part(new T.SphereGeometry(0.112, 26, 14, Math.PI / 2 + 1.1, Math.PI * 2 - 2.2, 0, 1.9), hm, head, 0, 0, 0);
+    const st = o.hairStyle || "curto";
+    if (st === "longo") { const b = part(new T.CapsuleGeometry(0.075, 0.42, 6, 10), hm, head, 0, -0.27, -0.06); b.scale.set(1.3, 1, 0.45); }
+    if (st === "coque") part(new T.SphereGeometry(0.06, 14, 10), hm, head, 0, 0.08, -0.1);
+    if (st === "trancas") for (const sd of [-1, 1]) { const b = part(new T.CapsuleGeometry(0.03, 0.26, 5, 8), hm, head, sd * 0.09, -0.2, -0.05); b.rotation.z = sd * 0.08; part(new T.SphereGeometry(0.022, 8, 6), mat(o.ribbon || "#c83a3a"), head, sd * 0.095, -0.36, -0.05, false); }
+    if (o.hat) { const ht = part(new T.CylinderGeometry(0.13, 0.13, 0.04, 20), mat(o.hat), head, 0, 0.09, 0); void ht; part(new T.CylinderGeometry(0.08, 0.1, 0.09, 18), mat(o.hat), head, 0, 0.14, 0); }
+    if (o.headphones) { const hp = part(new T.TorusGeometry(0.12, 0.012, 6, 20, Math.PI), mat("#2a2a30"), head, 0, 0.02, 0); hp.rotation.y = Math.PI / 2; for (const sd of [-1, 1]) part(new T.CylinderGeometry(0.04, 0.04, 0.03, 14), mat("#2a2a30"), head, sd * 0.12, 0, 0).rotation.z = Math.PI / 2; }
+    const P = { g, body, head, legs, arms, hipY: HIP * s, s };
+    P.sit = () => { legs.forEach((l) => { l.hip.rotation.x = -Math.PI / 2; l.knee.rotation.x = Math.PI / 2; }); };
+    P.read = () => { arms.forEach((a, i) => { a.sh.rotation.x = -0.75; a.sh.rotation.z = (i ? -1 : 1) * 0.12; a.el.rotation.x = -1.25; }); head.rotation.x = 0.3; };
+    return P;
+  }
+  const worldCtx = () => ({ person: makePerson, T, base: "/biblioteca/mundos/", reduce, small, glowTex, esc, showPanel, closePanel, toast, aspect: () => innerWidth / innerHeight, subjects: () => subjects, textos: () => TEXTOS, perfil: () => ({ name: "Quem sou", acts: PERFIL.map((x) => Object.assign({ k: [], l: [] }, x, { r: x.r.replace(/\\n/g, "\n") })) }), openPages: (sub, i) => { if (sub && sub.acts[i]) showBook({ a: sub.acts[i], sub }); }, openAct: (name, i) => { const sub = subjects.find((x) => x.name === name); if (!sub || !sub.acts[i]) return; const b = books.find((x) => x.sub === sub && x.a === sub.acts[i]) || { a: sub.acts[i], sub }; showBook(b); } });
   const riftFront = (w) => w.pos.clone().addScaledVector(V3(w.nx, 0, w.nz), 1.6).setY(w.room.c.y + 1.75);
   function enterWorld(w) {
     const id = WORLD_FILE[w.k];

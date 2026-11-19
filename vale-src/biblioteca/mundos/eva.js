@@ -1,7 +1,7 @@
 /* Mundo de Matemática: Evangelion. Tokyo-3 no fim da tarde: a passagem de nível com as luzes vermelhas, os
    postes com fios até perder de vista, as cigarras, o lago que cobriu a cidade velha, prédios baixos e os que
-   sobem do chão. Lá longe a EVA-01 de pé, e o Ramiel, o cristal azul, flutuando sobre a cidade; de vez em quando
-   o campo AT acende em hexágonos. As três atividades estão no banco com o toca-fitas, na máquina de bebidas e na
+   sobem do chão. Lá longe o Guardião (um robô gigante original) de pé, e uma criatura de monólitos girando em volta de um
+   núcleo vermelho sobre a cidade; de vez em quando o campo de força acende em hexágonos. As três atividades estão no banco com o toca-fitas, na máquina de bebidas e na
    passagem de nível. Tudo desenhado aqui. */
 (() => {
   window.MUNDOS = window.MUNDOS || {};
@@ -75,21 +75,29 @@
     { const cord = []; for (let k = 0; k <= 14; k++) { const t = k / 14; cord.push(V3(0.05 + t * 0.25, 0.01 + Math.sin(t * Math.PI) * 0.02, Math.sin(t * 6) * 0.05)); } sdat.add(new T.Line(K(new T.BufferGeometry().setFromPoints(cord)), K(new T.LineBasicMaterial({ color: "#eeeeee" })))); add(new T.SphereGeometry(0.018, 8, 6), std("#eee"), 0.3, 0.012, 0.03, 0, 0, 0, sdat); add(new T.SphereGeometry(0.018, 8, 6), std("#eee"), 0.31, 0.012, -0.03, 0, 0, 0, sdat); }
     const sdatScreen = add(new T.PlaneGeometry(0.06, 0.02), K(new T.MeshBasicMaterial({ color: "#7aff9a" })), 0, 0.014, 0.012, 0, -Math.PI / 2, 0, sdat);
 
-    /* ---------------- a EVA-01 e o Ramiel ---------------- */
-    const eva = new T.Group(); eva.position.set(-28, 0, -120); eva.rotation.y = 0.35; eva.scale.setScalar(2.2); scene.add(eva);
-    { const pu = std("#5a3a8a", { roughness: 0.5, metalness: 0.2 }), gr = std("#7ad83a", { roughness: 0.5, emissive: new T.Color("#2a5a10") }), dk = std("#2a1a3a");
-      const P = (geo, m, x, y, z, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1) => { const o = add(geo, m, x, y, z, ry, rx, rz, eva); o.scale.set(sx, sy, sz); return o; };
-      P(new T.CapsuleGeometry(1.2, 3.2, 6, 12), pu, 0, 10.2, 0, 0, 0, 0, 1, 1, 0.7); P(new T.BoxGeometry(3.6, 1.6, 2.2), pu, 0, 12.0, 0); // tronco e ombros
-      for (const s of [-1, 1]) { P(new T.BoxGeometry(1.4, 1.6, 2.0), pu, s * 2.3, 12.3, 0, 0, 0, s * 0.15); P(new T.CapsuleGeometry(0.5, 3.4, 5, 10), pu, s * 2.4, 9.4, 0.2, 0, 0, s * 0.1); P(new T.CapsuleGeometry(0.45, 3.0, 5, 10), pu, s * 2.6, 6.2, 0.6, -0.3, 0, s * 0.05);
-        P(new T.CapsuleGeometry(0.7, 4.0, 5, 10), pu, s * 0.85, 5.6, 0, 0, 0, s * 0.04); P(new T.CapsuleGeometry(0.6, 4.0, 5, 10), pu, s * 0.95, 1.9, 0.1, 0.05, 0, 0); P(new T.BoxGeometry(1.2, 0.5, 2.0), dk, s * 0.95, 0.25, 0.4);
-        P(new T.BoxGeometry(0.2, 2.4, 0.3), gr, s * 0.6, 10.2, 0.85, 0, 0, s * 0.1); P(new T.BoxGeometry(0.25, 3.2, 0.3), gr, s * 0.95, 2.4, 0.66); }
-      const head = new T.Group(); head.position.set(0, 13.6, 0.3); eva.add(head);
-      const hm = add(new T.CylinderGeometry(0.55, 0.75, 1.6, 10), pu, 0, 0, 0, 0, 0, 0, head); hm.rotation.x = 0.15; add(new T.BoxGeometry(0.8, 0.6, 0.9), gr, 0, -0.55, 0.3, 0, 0.2, 0, head);
-      const horn = add(new T.ConeGeometry(0.16, 1.9, 6), pu, 0, 1.0, 0.25, 0, -0.5, 0, head); void horn;
-      for (const s of [-1, 1]) { const e = new T.Sprite(K(new T.SpriteMaterial({ map: ctx.glowTex, color: 0xfff0a0, transparent: true, opacity: 0.9, depthWrite: false, blending: T.AdditiveBlending, fog: false }))); e.scale.set(0.9, 0.9, 1); e.position.set(s * 0.25, 0.1, 0.7); head.add(e); }
-      eva.userData.head = head; }
-    const ramiel = new T.Mesh(K(new T.OctahedronGeometry(14, 0)), K(new T.MeshStandardMaterial({ color: "#5aa0ff", roughness: 0.1, metalness: 0.6, emissive: new T.Color("#1a4ac8"), emissiveIntensity: 0.9, fog: false }))); ramiel.position.set(30, 52, -210); scene.add(ramiel);
-    // o campo AT: hexágonos que acendem em volta da EVA
+    /* ---------------- o Guardião: um robô gigante original, branco e verde-água, de visor laranja ---------------- */
+    function makeMech() {
+      const g = new T.Group(), wh = std("#e8e6e0", { roughness: 0.45, metalness: 0.25 }), tl = std("#2a8a8a", { roughness: 0.5, metalness: 0.3 }), dk = std("#2a2e34", { roughness: 0.6 }), vis = K(new T.MeshBasicMaterial({ color: "#ffa040", fog: false }));
+      const P = (geo, m, x, y, z, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1) => { const o = add(geo, m, x, y, z, ry, rx, rz, g); o.scale.set(sx, sy, sz); return o; };
+      P(new T.SphereGeometry(2.0, 20, 14), wh, 0, 10.6, 0, 0, 0, 0, 1.15, 1.25, 0.9); P(new T.CylinderGeometry(1.2, 1.5, 2.2, 14), dk, 0, 8.2, 0); P(new T.BoxGeometry(2.6, 1.4, 1.8), tl, 0, 7.0, 0); // peito redondo, cintura, quadril
+      P(new T.BoxGeometry(1.8, 2.4, 1.2), dk, 0, 11.0, -1.6); for (const s of [-1, 1]) P(new T.CylinderGeometry(0.35, 0.45, 1.6, 10), tl, s * 0.6, 12.4, -1.9, 0, 0, 0); // mochila com dois exaustores
+      for (const s of [-1, 1]) { P(new T.SphereGeometry(1.3, 16, 12), wh, s * 2.6, 11.6, 0, 0, 0, 0, 1, 0.85, 1); P(new T.TorusGeometry(1.0, 0.18, 8, 20), tl, s * 2.6, 11.4, 0, 0, Math.PI / 2, 0);
+        P(new T.CapsuleGeometry(0.55, 2.6, 5, 10), dk, s * 3.1, 9.0, 0.2, 0, 0, s * 0.08); P(new T.CylinderGeometry(0.75, 0.6, 2.6, 12), wh, s * 3.3, 6.4, 0.5, -0.2, 0, s * 0.04); P(new T.BoxGeometry(0.9, 0.9, 1.0), dk, s * 3.35, 4.9, 0.8);
+        P(new T.CylinderGeometry(0.85, 0.75, 3.4, 12), wh, s * 1.0, 4.6, 0); P(new T.CapsuleGeometry(0.6, 2.4, 5, 10), dk, s * 1.0, 2.2, 0.1); P(new T.BoxGeometry(1.5, 0.8, 2.4), wh, s * 1.0, 0.4, 0.4); P(new T.BoxGeometry(0.2, 2.2, 0.2), tl, s * 1.0, 4.6, 0.86); }
+      const head = new T.Group(); head.position.set(0, 13.4, 0.2); g.add(head);
+      add(new T.SphereGeometry(1.0, 20, 14), wh, 0, 0, 0, 0, 0, 0, head).scale.set(1, 0.85, 1); add(new T.BoxGeometry(1.5, 0.22, 0.4), vis, 0, 0.05, 0.85, 0, 0, 0, head);
+      for (const s of [-1, 1]) { const fin = add(new T.BoxGeometry(0.12, 0.9, 0.5), tl, s * 0.95, 0.45, -0.1, 0, 0, -s * 0.5, head); void fin; }
+      const vg = new T.Sprite(K(new T.SpriteMaterial({ map: ctx.glowTex, color: 0xffa040, transparent: true, opacity: 0.7, depthWrite: false, blending: T.AdditiveBlending, fog: false }))); vg.scale.set(3.2, 1.2, 1); vg.position.set(0, 0.05, 1.0); head.add(vg);
+      g.userData.head = head; return g;
+    }
+    const eva = makeMech(); eva.position.set(-28, 0, -120); eva.rotation.y = 0.35; eva.scale.setScalar(2.0); scene.add(eva);
+    // a criatura no céu: um anel de monólitos brancos girando em volta de um núcleo vermelho (original)
+    const ramiel = new T.Group(); ramiel.position.set(30, 52, -210); scene.add(ramiel);
+    { const mono = K(new T.MeshStandardMaterial({ color: "#f0eee8", roughness: 0.3, metalness: 0.2, emissive: new T.Color("#3a3a40"), fog: false }));
+      for (let k = 0; k < 12; k++) { const a = k / 12 * Math.PI * 2; const m = add(new T.BoxGeometry(2.2, 9, 2.2), mono, Math.cos(a) * 14, 0, Math.sin(a) * 14, -a, 0, 0, ramiel); m.rotation.z = 0.3; }
+      const core = add(new T.IcosahedronGeometry(4, 1), K(new T.MeshStandardMaterial({ color: "#c81a1a", roughness: 0.2, emissive: new T.Color("#801010"), emissiveIntensity: 1.2, fog: false })), 0, 0, 0, 0, 0, 0, ramiel); void core;
+      const cg = new T.Sprite(K(new T.SpriteMaterial({ map: ctx.glowTex, color: 0xff3a2a, transparent: true, opacity: 0.6, depthWrite: false, blending: T.AdditiveBlending, fog: false }))); cg.scale.setScalar(22); ramiel.add(cg); }
+    // o campo de força: hexágonos que acendem em volta do Guardião
     const at = new T.Mesh(K(new T.PlaneGeometry(60, 60)), K(new T.ShaderMaterial({ transparent: true, depthWrite: false, blending: T.AdditiveBlending, side: T.DoubleSide, uniforms: { uAT, uT },
       vertexShader: "varying vec2 vU; void main(){ vU = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
       fragmentShader: `uniform float uAT, uT; varying vec2 vU; vec2 hx(vec2 p){ vec2 r = vec2(1.0, 1.732), h = r * 0.5; vec2 a = mod(p, r) - h, b = mod(p - h, r) - h; return dot(a, a) < dot(b, b) ? a : b; }
@@ -102,9 +110,42 @@
     for (let k = 0; k < 4; k++) { add(new T.BoxGeometry(19, 3.2, 2.9), std(k ? "#d8d8d0" : "#c8c8c0", { roughness: 0.5 }), k * 20, 1.9, 0, 0, 0, 0, train); add(new T.BoxGeometry(19, 0.4, 2.95), std("#2a8a4a"), k * 20, 2.3, 0, 0, 0, 0, train); for (let w = 0; w < 6; w++) add(new T.PlaneGeometry(1.6, 0.9), K(new T.MeshBasicMaterial({ color: "#ffe0b0" })), k * 20 - 7 + w * 2.8, 2.7, 1.48, 0, 0, 0, train); }
     train.position.set(-200, 0, RZ);
 
+    /* ---------------- a jaula: o hangar subterrâneo, com o Guardião mergulhado no líquido laranja ---------------- */
+    const sceneH = new T.Scene(); sceneH.background = new T.Color("#050608"); sceneH.fog = new T.FogExp2("#1a0e08", 0.018);
+    const addH = (geo, mat, x, y, z, ry = 0, rx = 0, rz = 0, parent) => add(geo, mat, x, y, z, ry, rx, rz, parent || sceneH);
+    sceneH.add(new T.HemisphereLight("#6a5040", "#1a0a04", 0.6));
+    { const room = addH(new T.BoxGeometry(60, 40, 60), std("#24262a", { side: T.BackSide, roughness: 0.9 }), 0, 10, 0); void room;
+      for (let k = -5; k <= 5; k++) { addH(new T.BoxGeometry(0.8, 40, 1.2), std("#33363c"), k * 5.5, 10, -29.4); addH(new T.BoxGeometry(1.2, 40, 0.8), std("#33363c"), -29.4, 10, k * 5.5); addH(new T.BoxGeometry(1.2, 40, 0.8), std("#33363c"), 29.4, 10, k * 5.5); }
+      for (let y = 4; y < 30; y += 6) addH(new T.BoxGeometry(60, 0.5, 0.6), std("#3a3d44"), 0, y, -29.2);
+      // faixas de aviso amarelas e pretas nas paredes
+      const warn = (() => { const c = document.createElement("canvas"); c.width = 256; c.height = 32; const g = c.getContext("2d"); for (let x = -32; x < 288; x += 32) { g.fillStyle = "#f2c22a"; g.beginPath(); g.moveTo(x, 0); g.lineTo(x + 16, 0); g.lineTo(x + 32, 32); g.lineTo(x + 16, 32); g.fill(); } const t = K(new T.CanvasTexture(c)); t.wrapS = T.RepeatWrapping; t.repeat.set(12, 1); return t; })();
+      addH(new T.PlaneGeometry(58, 1.2), K(new T.MeshStandardMaterial({ map: warn, transparent: true })), 0, 1.4, -28.9); addH(new T.PlaneGeometry(58, 1.2), K(new T.MeshStandardMaterial({ map: warn, transparent: true })), -28.9, 1.4, 0, Math.PI / 2); }
+    // o líquido laranja que enche a jaula
+    const coolant = addH(new T.PlaneGeometry(60, 60), K(new T.ShaderMaterial({ uniforms: { uT }, vertexShader: "varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }",
+      fragmentShader: "uniform float uT; varying vec3 vW; void main(){ vec2 p = vW.xz; float r = sin(p.x * 0.6 + uT * 0.8) * sin(p.y * 0.5 - uT * 0.6) * 0.5 + 0.5; vec3 V = normalize(cameraPosition - vW); float fr = pow(1.0 - max(V.y, 0.0), 3.0); vec3 c = mix(vec3(0.75, 0.3, 0.05), vec3(1.0, 0.55, 0.15), r * 0.6) + vec3(1.0, 0.8, 0.4) * fr * 0.4; float d = length(p) / 30.0; c *= 1.0 - d * 0.5; gl_FragColor = vec4(c, 1.0); }" })), 0, 0, 0, 0, -Math.PI / 2);
+    const glowL = new T.PointLight("#ff8a2a", 1.2, 30, 1.4); glowL.position.set(0, 1.5, 4); sceneH.add(glowL);
+    // o Guardião até o peito no líquido, preso pelas travas nos ombros
+    const mechH = makeMech(); mechH.scale.setScalar(1.4); mechH.position.set(0, -8.0 * 1.4, 0); sceneH.add(mechH);
+    for (const sd of [-1, 1]) { addH(new T.BoxGeometry(6, 1.4, 2.4), std("#4a4e56", { metalness: 0.6, roughness: 0.4 }), sd * 7.0, 4.6, 0.2); addH(new T.BoxGeometry(1.6, 3, 2.6), std("#3a3e46", { metalness: 0.6 }), sd * 4.4, 4.2, 0.2); addH(new T.BoxGeometry(1.0, 14, 1.0), std("#3a3e46"), sd * 10, 4, 0); }
+    const headL = new T.SpotLight("#fff0d8", 1.6, 40, 0.3, 0.6, 1.2); headL.position.set(0, 24, 14); headL.target.position.set(0, 7, 0); sceneH.add(headL, headL.target);
+    // a passarela que vai até a frente do rosto, e o painel
+    addH(new T.BoxGeometry(2.4, 0.2, 14), std("#5a5e66", { metalness: 0.6, roughness: 0.4 }), 0, 6.0, 10); for (const sd of [-1, 1]) { addH(new T.BoxGeometry(0.06, 0.06, 14), std("#f2c22a"), sd * 1.15, 7.0, 10); for (let z = 3.5; z < 17; z += 1.5) addH(new T.BoxGeometry(0.05, 1.0, 0.05), std("#8a8e96"), sd * 1.15, 6.5, z); }
+    const consoleH = new T.Group(); consoleH.position.set(1.0, 6.1, 12.5); consoleH.rotation.y = -0.6; sceneH.add(consoleH); add(new T.BoxGeometry(0.8, 1.0, 0.5), std("#2a2e34"), 0, 0.5, 0, 0, 0, 0, consoleH);
+    const scrTex = (() => { const c = document.createElement("canvas"); c.width = 256; c.height = 160; const g = c.getContext("2d"); g.fillStyle = "#0a1a10"; g.fillRect(0, 0, 256, 160); g.strokeStyle = "#3aff7a"; g.lineWidth = 2; for (let k = 0; k < 6; k++) { g.beginPath(); g.moveTo(10, 30 + k * 20); for (let x = 10; x < 246; x += 8) g.lineTo(x, 30 + k * 20 + Math.sin(x * 0.1 + k) * 6); g.stroke(); } g.fillStyle = "#ff9a3a"; g.font = "700 18px monospace"; g.fillText("SINCRONIA 41,3%", 12, 152); return K(new T.CanvasTexture(c)); })();
+    add(new T.PlaneGeometry(0.7, 0.44), K(new T.MeshBasicMaterial({ map: scrTex })), 0, 1.05, 0.12, 0, -0.5, 0, consoleH);
+    const doorH = addH(new T.BoxGeometry(2.2, 3.0, 0.3), std("#4a4e56", { metalness: 0.5 }), 0, 7.6, 17.2); const doorSign = addH(new T.PlaneGeometry(1.4, 0.4), K(new T.MeshBasicMaterial({ color: "#3aff7a" })), 0, 9.4, 17.0, Math.PI); void doorSign;
+    // giroflex vermelhos girando no teto
+    const beacons = []; for (const [x, z] of [[-12, -6], [12, -6], [-12, 14], [12, 14]]) { const bl = new T.SpotLight("#ff2a1a", 3, 30, 0.4, 0.6, 1.2); bl.position.set(x, 22, z); sceneH.add(bl, bl.target); const bulb = addH(new T.SphereGeometry(0.4, 12, 8), K(new T.MeshBasicMaterial({ color: "#ff3a2a" })), x, 22, z); beacons.push({ bl, bulb, x, z }); }
+    const OVER_H = { pos: V3(-0.5, 8.0, 16.2), tgt: V3(0, 7.6, 0) };
+    // na cidade, a cabine do elevador que desce até a jaula
+    const kiosk = new T.Group(); kiosk.position.set(2.6, 0, -3.5); kiosk.rotation.y = -0.3; scene.add(kiosk);
+    add(new T.BoxGeometry(1.6, 2.6, 1.6), std("#d8d8d0", { roughness: 0.5 }), 0, 1.3, 0, 0, 0, 0, kiosk); add(new T.BoxGeometry(1.0, 2.0, 0.05), std("#3a3e46", { metalness: 0.6 }), 0, 1.0, 0.81, 0, 0, 0, kiosk);
+    add(new T.BoxGeometry(1.7, 0.3, 1.7), std("#c83a2a"), 0, 2.75, 0, 0, 0, 0, kiosk); const kl = new T.PointLight("#3aff7a", 0.8, 4, 2); kl.position.set(0, 2.2, 1.2); kiosk.add(kl);
+
     /* ---------------- as atividades ---------------- */
     const sub = ctx.subjects().find((s) => s.name === "Área de Matemática") || { name: "Área de Matemática", acts: [] };
     const spots = [{ o: bench, name: "o toca-fitas no banco", at: V3(-2.2, 0.6, 5.6), r: 0.9 }, { o: vend, name: "a máquina de bebidas", at: V3(-3.7, 1.0, 6.2), r: 1.0 }, { o: crossing, name: "a passagem de nível", at: V3(XG.x, 1.6, XG.z), r: 0.8 }];
+    const hangarItems = [{ kind: "painel", hit: consoleH, name: "o painel da jaula" }, { kind: "subir", hit: doorH, name: "subir para Tokyo-3" }]; const kioskItem = { kind: "descer", hit: kiosk, name: "descer à jaula" };
     const items = sub.acts.slice(0, 3).map((a, i) => { const s = spots[i]; const hit = add(new T.CylinderGeometry(s.r, s.r, 2.4, 10), K(new T.MeshBasicMaterial()), s.at.x, s.at.y, s.at.z); hit.visible = false;
       const mk = new T.Sprite(K(new T.SpriteMaterial({ map: ctx.glowTex, color: 0xffa040, transparent: true, opacity: 0.6, depthWrite: false, blending: T.AdditiveBlending }))); mk.scale.set(0.5, 0.5, 1); mk.position.copy(s.at).add(V3(0, i === 2 ? 2.4 : 1.2, 0)); scene.add(mk);
       return { a, i, hit, mk, s, hot: 0 }; });
@@ -117,18 +158,20 @@
       for (let k = 0; k < 3; k++) { const s = ac.createBufferSource(); s.buffer = nb; s.loop = true; const bq = ac.createBiquadFilter(); bq.type = "bandpass"; bq.frequency.value = 4200 + k * 700; bq.Q.value = 8; const g = ac.createGain(); g.gain.value = 0.0; const lfo = ac.createOscillator(), lg = ac.createGain(); lfo.frequency.value = 7 + k * 3; lg.gain.value = 0.02; lfo.connect(lg).connect(g.gain); s.connect(bq).connect(g).connect(out); s.start(); lfo.start(); nodes.push(s, lfo);
         const swell = () => { if (!audio) return; const t0 = ac.currentTime; g.gain.cancelScheduledValues(t0); g.gain.setValueAtTime(0.0, t0); g.gain.linearRampToValueAtTime(0.045, t0 + 2); g.gain.setValueAtTime(0.045, t0 + 5); g.gain.linearRampToValueAtTime(0.005, t0 + 7); setTimeout(swell, 7000 + Math.random() * 4000); }; setTimeout(swell, k * 1500); }
       const bell = (n) => { if (!audio) return; const t0 = ac.currentTime; for (let i = 0; i < n; i++) for (const f of [740, 1110]) { const o = ac.createOscillator(), g = ac.createGain(); o.frequency.value = f; g.gain.setValueAtTime(0.0001, t0 + i * 0.5); g.gain.exponentialRampToValueAtTime(0.06, t0 + i * 0.5 + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t0 + i * 0.5 + 0.45); o.connect(g).connect(out); o.start(t0 + i * 0.5); o.stop(t0 + i * 0.5 + 0.5); } };
-      out.gain.linearRampToValueAtTime(0.75, ac.currentTime + 2); audio = { ac, out, nodes, bell };
+      const alarm = () => { const t0 = ac.currentTime; for (let i = 0; i < 4; i++) { const o = ac.createOscillator(), g = ac.createGain(); o.type = "square"; o.frequency.setValueAtTime(880, t0 + i * 0.7); o.frequency.linearRampToValueAtTime(660, t0 + i * 0.7 + 0.35); g.gain.setValueAtTime(0.0001, t0 + i * 0.7); g.gain.exponentialRampToValueAtTime(0.03, t0 + i * 0.7 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0 + i * 0.7 + 0.6); o.connect(g).connect(out); o.start(t0 + i * 0.7); o.stop(t0 + i * 0.7 + 0.65); } };
+      out.gain.linearRampToValueAtTime(0.75, ac.currentTime + 2); audio = { ac, out, nodes, bell, alarm };
     } catch (e) { audio = null; }
 
     /* ---------------- câmera ---------------- */
     const OVER = { pos: OVERP.clone(), tgt: OVERT.clone() };
     const cam = { pos: OVER.pos.clone(), tgt: OVER.tgt.clone(), yaw: 0, pitch: 0, yawT: 0, pitchT: 0 };
-    let glide = null, focus = null, hot = null, trainT = 8, atT = 5, bellOn = 0;
+    let glide = null, focus = null, hot = null, trainT = 8, atT = 5, bellOn = 0, area = "cidade";
+    function goArea(a) { area = a; focus = null; glide = null; const pose = a === "jaula" ? OVER_H : OVER; cam.pos.copy(pose.pos); cam.tgt.copy(pose.tgt); cam.yaw = cam.pitch = cam.yawT = cam.pitchT = 0; if (audio && audio.alarm && a === "jaula") audio.alarm(); }
     const smoother = (x) => x * x * x * (x * (x * 6 - 15) + 10);
     function to(pose, dur = 2.0) { if (ctx.reduce) { cam.pos.copy(pose.pos); cam.tgt.copy(pose.tgt); return; } glide = { p0: cam.pos.clone(), t0: cam.tgt.clone(), p1: pose.pos.clone(), t1: pose.tgt.clone(), u: 0, dur }; cam.yawT = cam.pitchT = 0; }
     function openItem(it) { focus = it; const p = it.s.at; const dir = V3(OVERP.x - p.x, 0, OVERP.z - p.z).normalize(); to({ pos: p.clone().addScaledVector(dir, it.i === 2 ? 4.2 : 2.6).add(V3(0, 0.7, 0)), tgt: p.clone().add(V3(0, it.i === 2 ? 0.8 : 0, 0)) }); if (it.i === 2 && audio) { bellOn = 4; audio.bell(6); }
       setTimeout(() => { if (focus === it) ctx.openAct(sub.name, it.i); }, ctx.reduce ? 0 : 1500); }
-    setTimeout(() => { try { ctx.toast("Evangelion", "Tokyo-3", "As atividades estão no banco, na máquina de bebidas e na passagem de nível."); } catch (e) { /* sem aviso */ } }, 900);
+    setTimeout(() => { try { ctx.toast("Evangelion", "Tokyo-3", "As atividades estão no banco, na máquina de bebidas e na passagem de nível. A cabine do elevador desce até a jaula."); } catch (e) { /* sem aviso */ } }, 900);
 
     const ray = new T.Raycaster();
     return {
@@ -139,7 +182,7 @@
         const k = 1 - Math.exp(-dt * 3.5); cam.yaw += (cam.yawT - cam.yaw) * k; cam.pitch += (cam.pitchT - cam.pitch) * k;
         const d = cam.tgt.clone().sub(cam.pos), r = d.length(), yw = Math.atan2(d.z, d.x) + cam.yaw, pt = Math.asin(Math.max(-0.99, Math.min(0.99, d.y / r))) + cam.pitch;
         camera.position.copy(cam.pos).add(V3(0, Math.sin(t * 0.45) * 0.01, 0)); camera.lookAt(cam.pos.x + Math.cos(yw) * Math.cos(pt), cam.pos.y + Math.sin(pt), cam.pos.z + Math.sin(yw) * Math.cos(pt));
-        ramiel.rotation.y = t * 0.15; ramiel.position.y = 52 + Math.sin(t * 0.4) * 1.5;
+        ramiel.rotation.y = t * 0.15; ramiel.rotation.x = Math.sin(t * 0.2) * 0.2; ramiel.position.y = 52 + Math.sin(t * 0.4) * 1.5;
         if (eva.userData.head) eva.userData.head.rotation.y = Math.sin(t * 0.15) * 0.3;
         atT -= dt; if (atT < 0) { atT = 9 + Math.random() * 8; uAT.value = 0.001; } if (uAT.value > 0) { uAT.value += dt * 0.6; if (uAT.value > 1) uAT.value = 0; }
         // o trem passa: o sino toca, as luzes piscam e a cancela desce
@@ -149,13 +192,18 @@
         reds.forEach((rl, i) => { const on = blink === i; rl.m.color.set(on ? "#ff2a1a" : "#3a0808"); rl.gl.material.opacity = on ? 0.9 : 0; });
         arm.rotation.z += ((bellOn > 0 ? 0 : Math.PI / 2 - 0.05) - arm.rotation.z) * Math.min(1, dt * 1.5);
         sdatScreen.material.color.setHSL(0.36, 1, 0.4 + 0.1 * Math.sin(t * 3));
+        if (area === "jaula") { beacons.forEach((b, i) => { const a = t * 2.4 + i * 1.6; b.bl.target.position.set(b.x + Math.cos(a) * 14, 0, b.z + Math.sin(a) * 14); b.bl.target.updateMatrixWorld(); }); mechH.position.y = -8.0 * 1.4 + Math.sin(t * 0.5) * 0.06; if (mechH.userData.head) mechH.userData.head.rotation.y = Math.sin(t * 0.2) * 0.08; glowL.intensity = 1.2 + Math.sin(t * 1.3) * 0.15; }
         for (const it of items) { it.hot += ((hot === it || focus === it ? 1 : 0) - it.hot) * Math.min(1, dt * 6); it.mk.material.opacity = 0.45 + 0.2 * Math.sin(t * 2 + it.i) + it.hot * 0.4; it.mk.scale.setScalar(0.5 + it.hot * 0.25); }
       },
-      render(renderer) { renderer.setRenderTarget(null); renderer.render(scene, camera); },
+      render(renderer) { renderer.setRenderTarget(null); renderer.render(area === "jaula" ? sceneH : scene, camera); },
       resize(w, h) { camera.aspect = w / h; const tall = w / h < 0.8; camera.fov = tall ? 72 : 50; camera.updateProjectionMatrix(); OVER.pos.copy(tall ? V3(-1.4, 1.8, 9.5) : OVERP); if (!focus && !glide) cam.pos.copy(OVER.pos); },
-      pick(ndc) { ray.setFromCamera(ndc, camera); const hits = ray.intersectObjects(items.map((x) => x.hit), false); const it = hits[0] && items.find((x) => x.hit === hits[0].object); hot = it || null; return it ? { label: [it.a.t, it.s.name], go: () => openItem(it) } : null; },
+      pick(ndc) { ray.setFromCamera(ndc, camera);
+        const find = (list) => { const hits = ray.intersectObjects(list.map((x) => x.hit), true); for (const h of hits) { let o = h.object; while (o) { const it = list.find((x) => x.hit === o); if (it) return it; o = o.parent; } } return null; };
+        if (area === "jaula") { const it = find(hangarItems); hot = null; if (!it) return null; if (it.kind === "subir") return { label: ["O elevador", it.name], go: () => goArea("cidade") }; const a = sub.acts[0]; return a ? { label: [a.t, it.name], go: () => { focus = it; to({ pos: V3(-0.3, 7.5, 14.4), tgt: V3(1.0, 7.1, 12.5) }); setTimeout(() => { if (focus === it) ctx.openAct(sub.name, 0); }, ctx.reduce ? 0 : 1500); } } : null; }
+        const k = find([kioskItem]); if (k) { hot = null; return { label: ["O elevador", k.name], go: () => goArea("jaula") }; }
+        const it = find(items); hot = it || null; return it ? { label: [it.a.t, it.s.name], go: () => openItem(it) } : null; },
       look(dx, dy) { if (glide) return; cam.yawT = Math.max(-1.0, Math.min(1.0, cam.yawT - dx * 0.003)); cam.pitchT = Math.max(-0.3, Math.min(0.5, cam.pitchT - dy * 0.003)); },
-      back() { if (focus) { focus = null; to(OVER); return true; } return false; },
+      back() { if (focus) { focus = null; to(area === "jaula" ? OVER_H : OVER); return true; } if (area === "jaula") { goArea("cidade"); return true; } return false; },
       dispose() { if (audio) { const a = audio; audio = null; try { a.out.gain.linearRampToValueAtTime(0, a.ac.currentTime + 0.5); setTimeout(() => { a.nodes.forEach((n) => { try { n.stop(); } catch (e) { /* já parou */ } }); a.ac.close(); }, 700); } catch (e) { /* sem som */ } } keep.forEach((o) => o.dispose && o.dispose()); },
     };
   };

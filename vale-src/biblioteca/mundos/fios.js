@@ -186,23 +186,18 @@
       for (const sx of [-1, 1]) { sp(0.055, sx * 0.14, 0.17, 0.05); sp(0.06, sx * 0.08, 0.04, 0.12, fur, 1, 0.8, 1.2); } }
     // frases que aparecem e somem no ar, perto do teto
     const glyphs = [];
-    for (const [txt, x, y, z, ry] of [["PRESENT DAY", -1.6, 2.55, -1.2, 0.4], ["PRESENT TIME", 1.7, 2.45, -1.6, -0.5], ["Let's all love Lain", -2.6, 2.2, 0.8, 1.2], ["Close the world, Open the nExt", 0.4, 2.7, 0.2, 0], ["No matter where you are, everyone is always connected.", 2.6, 2.1, 0.9, -1.2]]) {
+    for (const [txt, x, y, z, ry] of [["SINAL RECEBIDO", -1.6, 2.55, -1.2, 0.4], ["NÓ 00:13 ONLINE", 1.7, 2.45, -1.6, -0.5], ["quem está do outro lado?", -2.6, 2.2, 0.8, 1.2], ["a rede lembra de tudo", 0.4, 2.7, 0.2, 0], ["desconectar não é sair", 2.6, 2.1, 0.9, -1.2]]) {
       const c = document.createElement("canvas"); c.width = 1024; c.height = 128; const g = c.getContext("2d"); g.fillStyle = "#fff"; g.font = "500 54px 'Geist Mono', monospace"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(txt, 512, 64, 1000);
       const m = new T.Mesh(keep(new T.PlaneGeometry(2.2, 0.275)), keep(new T.MeshBasicMaterial({ map: keep(new T.CanvasTexture(c)), color: "#9ff4ff", transparent: true, opacity: 0, depthWrite: false, blending: T.AdditiveBlending, fog: false })));
       m.position.set(x, y, z); m.rotation.y = ry; scene.add(m); glyphs.push({ m, ph: rnd() * 20, y }); }
 
-    /* ---------------- ela: a Lain, em pé no meio dos fios ---------------- */
-    let lain = null;
-    load("lain.glb").then((gl) => {
-      if (!gl) return;
-      const root = gl.scene; root.traverse((o) => { if (o.isMesh) { o.frustumCulled = false; const mm = o.material; if (mm) { mm.roughness = 0.85; mm.metalness = 0; } } });
-      const box = new T.Box3().setFromObject(root), sz = box.getSize(new T.Vector3()), s = 1.5 / sz.y;
-      const g = new T.Group(); root.scale.setScalar(s); root.position.set(-(box.min.x + box.max.x) / 2 * s, -box.min.y * s, -(box.min.z + box.max.z) / 2 * s); g.add(root);
-      g.position.set(-1.55, 0, -0.95); g.lookAt(OVER.pos.x, 0, OVER.pos.z); scene.add(g);
-      const fill = new T.PointLight("#9fe0ec", 1.5, 4, 2); fill.position.set(-0.9, 1.7, 0.1); scene.add(fill); const rim = new T.PointLight("#ff6a7a", 0.5, 3, 2); rim.position.set(-2.2, 1.9, -1.8); scene.add(rim);
-      if (gl.animations && gl.animations.length) { mixer = new T.AnimationMixer(root); const clip = gl.animations[0], fps = 24, fr = Math.round(clip.duration * fps); const sub = T.AnimationUtils.subclip(clip, "parada", Math.min(14, fr - 2), fr, fps); const act = mixer.clipAction(sub); act.play(); }
-      lain = g;
-    });
+    /* ---------------- alguém conectado: uma pessoa de fones sentada diante do monitor principal (personagem original) ---------------- */
+    { const p = ctx.person({ h: 1.55, skin: "#e8d4c4", hair: "#3a2a24", hairStyle: "curto", top: "#7a7a86", bottom: "#2a2a30", longSleeves: true, headphones: true });
+      p.sit(); p.arms.forEach((a, i) => { a.sh.rotation.x = -1.0; a.sh.rotation.z = (i ? -1 : 1) * 0.15; a.el.rotation.x = -0.6; }); p.head.rotation.x = 0.1;
+      p.g.position.set(0, 0.46 - p.hipY, -RZ + 1.25); p.g.rotation.y = Math.PI; scene.add(p.g);
+      const stool = new T.Mesh(keep(new T.CylinderGeometry(0.2, 0.2, 0.05, 16)), keep(new T.MeshStandardMaterial({ color: "#2a2a30", roughness: 0.6 }))); stool.position.set(0, 0.44, -RZ + 1.25); scene.add(stool);
+      const leg = new T.Mesh(keep(new T.CylinderGeometry(0.03, 0.03, 0.44, 8)), stool.material); leg.position.set(0, 0.22, -RZ + 1.25); scene.add(leg);
+      const fill = new T.PointLight("#9fe0ec", 0.9, 3, 2); fill.position.set(0.2, 1.4, -RZ + 0.9); scene.add(fill); }
     let mixer = null;
 
     /* ---------------- o zumbido ---------------- */
@@ -220,7 +215,7 @@
 
     /* ---------------- a imagem passa por um tubo: aberração, linhas, grão, sombras vermelhas pontilhadas e falhas ---------------- */
     let prt = null; const postScene = new T.Scene(), postCam = new T.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-    const txt = (() => { const c = document.createElement("canvas"); c.width = 1024; c.height = 576; const g = c.getContext("2d"); g.fillStyle = "#fff"; g.font = "700 64px 'Geist Mono', monospace"; g.textAlign = "center"; g.fillText("PRESENT DAY", 512, 260); g.fillText("PRESENT TIME", 512, 340); g.font = "500 22px 'Geist Mono', monospace"; g.fillText("HAHAHAHA", 512, 400); return keep(new T.CanvasTexture(c)); })();
+    const txt = (() => { const c = document.createElement("canvas"); c.width = 1024; c.height = 576; const g = c.getContext("2d"); g.fillStyle = "#fff"; g.font = "700 64px 'Geist Mono', monospace"; g.textAlign = "center"; g.fillText("CONECTANDO", 512, 260); g.fillText("00:13:07", 512, 340); g.font = "500 22px 'Geist Mono', monospace"; g.fillText("sinal instável", 512, 400); return keep(new T.CanvasTexture(c)); })();
     const POST_FS = `uniform sampler2D tD, tTxt; uniform float uT, uG, uTx; uniform vec2 uRes; varying vec2 vU;
       float h(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
       float vn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(h(i), h(i + vec2(1, 0)), f.x), mix(h(i + vec2(0, 1)), h(i + vec2(1, 1)), f.x), f.y); }

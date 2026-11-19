@@ -142,6 +142,20 @@
     add(new T.BoxGeometry(1.6, 2.6, 1.6), std("#d8d8d0", { roughness: 0.5 }), 0, 1.3, 0, 0, 0, 0, kiosk); add(new T.BoxGeometry(1.0, 2.0, 0.05), std("#3a3e46", { metalness: 0.6 }), 0, 1.0, 0.81, 0, 0, 0, kiosk);
     add(new T.BoxGeometry(1.7, 0.3, 1.7), std("#c83a2a"), 0, 2.75, 0, 0, 0, 0, kiosk); const kl = new T.PointLight("#3aff7a", 0.8, 4, 2); kl.position.set(0, 2.2, 1.2); kiosk.add(kl);
 
+    /* ---------------- a escola: a sala de aula ao entardecer (o modelo que o Fernando mandou) ---------------- */
+    const sceneS = new T.Scene(); sceneS.background = new T.Color("#e8b890");
+    sceneS.add(new T.HemisphereLight("#fff0e0", "#8a6a50", 1.0)); { const sl = new T.DirectionalLight("#ffc890", 1.1); sl.position.set(20, 12, 6); sceneS.add(sl); }
+    let board = null;
+    new T.GLTFLoader().load(ctx.base + "eva/sala.glb", (gl) => { sceneS.add(gl.scene); gl.scene.traverse((o) => { if (o.isMesh) { o.frustumCulled = false; if (/Cube\.001/.test(o.name)) board = o; } }); });
+    const OVER_S = { pos: V3(-2, 3.2, -4.5), tgt: V3(-2, 2.2, 18) };
+    // o portão da escola, na beira da estrada
+    const gate = new T.Group(); gate.position.set(-5.6, 0, -1.5); gate.rotation.y = 0.5; scene.add(gate);
+    for (const sd of [-1, 1]) add(new T.BoxGeometry(0.5, 2.0, 0.5), std("#b8b0a0"), sd * 1.4, 1.0, 0, 0, 0, 0, gate);
+    add(new T.BoxGeometry(2.6, 0.08, 0.08), std("#6a6a70", { metalness: 0.6 }), 0, 1.2, 0, 0, 0, 0, gate);
+    { const c = document.createElement("canvas"); c.width = 256; c.height = 96; const g = c.getContext("2d"); g.fillStyle = "#e8e4d8"; g.fillRect(0, 0, 256, 96); g.fillStyle = "#2a2a2a"; g.font = "700 30px 'Shippori Mincho', serif"; g.textAlign = "center"; g.fillText("市立中学校", 128, 46); g.font = "500 16px sans-serif"; g.fillText("ESCOLA · 1º ANO", 128, 78);
+      add(new T.PlaneGeometry(0.7, 0.26), K(new T.MeshStandardMaterial({ map: K(new T.CanvasTexture(c)) })), -1.4, 1.5, 0.26, 0, 0, 0, gate); }
+    const gateItem = { kind: "escola", hit: gate, name: "entrar na escola" };
+
     /* ---------------- as atividades ---------------- */
     const sub = ctx.subjects().find((s) => s.name === "Área de Matemática") || { name: "Área de Matemática", acts: [] };
     const spots = [{ o: bench, name: "o toca-fitas no banco", at: V3(-2.2, 0.6, 5.6), r: 0.9 }, { o: vend, name: "a máquina de bebidas", at: V3(-3.7, 1.0, 6.2), r: 1.0 }, { o: crossing, name: "a passagem de nível", at: V3(XG.x, 1.6, XG.z), r: 0.8 }];
@@ -166,12 +180,12 @@
     const OVER = { pos: OVERP.clone(), tgt: OVERT.clone() };
     const cam = { pos: OVER.pos.clone(), tgt: OVER.tgt.clone(), yaw: 0, pitch: 0, yawT: 0, pitchT: 0 };
     let glide = null, focus = null, hot = null, trainT = 8, atT = 5, bellOn = 0, area = "cidade";
-    function goArea(a) { area = a; focus = null; glide = null; const pose = a === "jaula" ? OVER_H : OVER; cam.pos.copy(pose.pos); cam.tgt.copy(pose.tgt); cam.yaw = cam.pitch = cam.yawT = cam.pitchT = 0; if (audio && audio.alarm && a === "jaula") audio.alarm(); }
+    function goArea(a) { area = a; focus = null; glide = null; const pose = a === "jaula" ? OVER_H : a === "escola" ? OVER_S : OVER; cam.pos.copy(pose.pos); cam.tgt.copy(pose.tgt); cam.yaw = cam.pitch = cam.yawT = cam.pitchT = 0; if (audio && audio.alarm && a === "jaula") audio.alarm(); }
     const smoother = (x) => x * x * x * (x * (x * 6 - 15) + 10);
     function to(pose, dur = 2.0) { if (ctx.reduce) { cam.pos.copy(pose.pos); cam.tgt.copy(pose.tgt); return; } glide = { p0: cam.pos.clone(), t0: cam.tgt.clone(), p1: pose.pos.clone(), t1: pose.tgt.clone(), u: 0, dur }; cam.yawT = cam.pitchT = 0; }
     function openItem(it) { focus = it; const p = it.s.at; const dir = V3(OVERP.x - p.x, 0, OVERP.z - p.z).normalize(); to({ pos: p.clone().addScaledVector(dir, it.i === 2 ? 4.2 : 2.6).add(V3(0, 0.7, 0)), tgt: p.clone().add(V3(0, it.i === 2 ? 0.8 : 0, 0)) }); if (it.i === 2 && audio) { bellOn = 4; audio.bell(6); }
       setTimeout(() => { if (focus === it) ctx.openAct(sub.name, it.i); }, ctx.reduce ? 0 : 1500); }
-    setTimeout(() => { try { ctx.toast("Evangelion", "Tokyo-3", "As atividades estão no banco, na máquina de bebidas e na passagem de nível. A cabine do elevador desce até a jaula."); } catch (e) { /* sem aviso */ } }, 900);
+    setTimeout(() => { try { ctx.toast("Evangelion", "Tokyo-3", "As atividades estão no banco, na máquina de bebidas e na passagem de nível. A cabine do elevador desce até a jaula e o portão leva à escola."); } catch (e) { /* sem aviso */ } }, 900);
 
     const ray = new T.Raycaster();
     return {
@@ -195,15 +209,17 @@
         if (area === "jaula") { beacons.forEach((b, i) => { const a = t * 2.4 + i * 1.6; b.bl.target.position.set(b.x + Math.cos(a) * 14, 0, b.z + Math.sin(a) * 14); b.bl.target.updateMatrixWorld(); }); mechH.position.y = -8.0 * 1.4 + Math.sin(t * 0.5) * 0.06; if (mechH.userData.head) mechH.userData.head.rotation.y = Math.sin(t * 0.2) * 0.08; glowL.intensity = 1.2 + Math.sin(t * 1.3) * 0.15; }
         for (const it of items) { it.hot += ((hot === it || focus === it ? 1 : 0) - it.hot) * Math.min(1, dt * 6); it.mk.material.opacity = 0.45 + 0.2 * Math.sin(t * 2 + it.i) + it.hot * 0.4; it.mk.scale.setScalar(0.5 + it.hot * 0.25); }
       },
-      render(renderer) { renderer.setRenderTarget(null); renderer.render(area === "jaula" ? sceneH : scene, camera); },
+      render(renderer) { renderer.setRenderTarget(null); renderer.render(area === "jaula" ? sceneH : area === "escola" ? sceneS : scene, camera); },
       resize(w, h) { camera.aspect = w / h; const tall = w / h < 0.8; camera.fov = tall ? 72 : 50; camera.updateProjectionMatrix(); OVER.pos.copy(tall ? V3(-1.4, 1.8, 9.5) : OVERP); if (!focus && !glide) cam.pos.copy(OVER.pos); },
       pick(ndc) { ray.setFromCamera(ndc, camera);
         const find = (list) => { const hits = ray.intersectObjects(list.map((x) => x.hit), true); for (const h of hits) { let o = h.object; while (o) { const it = list.find((x) => x.hit === o); if (it) return it; o = o.parent; } } return null; };
         if (area === "jaula") { const it = find(hangarItems); hot = null; if (!it) return null; if (it.kind === "subir") return { label: ["O elevador", it.name], go: () => goArea("cidade") }; const a = sub.acts[0]; return a ? { label: [a.t, it.name], go: () => { focus = it; to({ pos: V3(-0.3, 7.5, 14.4), tgt: V3(1.0, 7.1, 12.5) }); setTimeout(() => { if (focus === it) ctx.openAct(sub.name, 0); }, ctx.reduce ? 0 : 1500); } } : null; }
+        if (area === "escola") { hot = null; if (!board) return null; const h = ray.intersectObject(board, false)[0]; const a = sub.acts[2] || sub.acts[0]; return h && a ? { label: [a.t, "o quadro"], go: () => { focus = { kind: "quadro" }; to({ pos: V3(-2, 2.8, 9), tgt: V3(-2, 2.8, 18.8) }); setTimeout(() => ctx.openAct(sub.name, sub.acts.indexOf(a)), ctx.reduce ? 0 : 1500); } } : null; }
         const k = find([kioskItem]); if (k) { hot = null; return { label: ["O elevador", k.name], go: () => goArea("jaula") }; }
+        const gi = find([gateItem]); if (gi) { hot = null; return { label: ["A escola", gi.name], go: () => goArea("escola") }; }
         const it = find(items); hot = it || null; return it ? { label: [it.a.t, it.s.name], go: () => openItem(it) } : null; },
       look(dx, dy) { if (glide) return; cam.yawT = Math.max(-1.0, Math.min(1.0, cam.yawT - dx * 0.003)); cam.pitchT = Math.max(-0.3, Math.min(0.5, cam.pitchT - dy * 0.003)); },
-      back() { if (focus) { focus = null; to(area === "jaula" ? OVER_H : OVER); return true; } if (area === "jaula") { goArea("cidade"); return true; } return false; },
+      back() { if (focus) { focus = null; to(area === "jaula" ? OVER_H : area === "escola" ? OVER_S : OVER); return true; } if (area !== "cidade") { goArea("cidade"); return true; } return false; },
       dispose() { if (audio) { const a = audio; audio = null; try { a.out.gain.linearRampToValueAtTime(0, a.ac.currentTime + 0.5); setTimeout(() => { a.nodes.forEach((n) => { try { n.stop(); } catch (e) { /* já parou */ } }); a.ac.close(); }, 700); } catch (e) { /* sem som */ } } keep.forEach((o) => o.dispose && o.dispose()); },
     };
   };

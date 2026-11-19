@@ -899,6 +899,13 @@
     });
     buildPlaces(); renderIndex(); if (!hist.length && !fly && !intro.on) go(placeIdx, true); else if (!intro.on) label();
   }
+  // textos que ainda vão chegar: agradecimentos e perspectivas para o futuro (só o que o Fernando escreveu)
+  const TEXTOS = {
+    agradecimentos: [
+      { t: "Quem veio junto", s: "Gratidão", r: "Com as minhas tias, a quem devo um agradecimento enorme por tudo.", img: "trem/tias.jpg" },
+    ],
+    futuro: [],
+  };
   // o nicho do Quem sou: os textos do perfil viram livros também
   const PERFIL = [
     { t: "Quem sou", s: "Fernando Rateke Neto", r: "Desenvolvedor de sistemas em formação, em Florianópolis (SC). Ensino Médio integrado ao Técnico em Análise e Desenvolvimento de Sistemas no SESI SENAI, turma 3B, 2026.\\n\\nDesde cedo tive afinidade com as exatas, principalmente matemática, biologia e programação. Gosto de desafios de lógica, de interfaces que se explicam sozinhas e de soluções que funcionam bem. Além do código, levo comigo a pesquisa científica pela Iniciação Científica.", img: "perfil/retrato.jpg" },
@@ -1035,13 +1042,13 @@
   }
 
   /* ---------------- os mundos: cada fenda abre uma cena própria, baixada só quando a pessoa entra ---------------- */
-  const WORLD_FILE = { 0: "anteiku", 1: "deathnote", 2: "eva", 3: "natureza", 4: "vagalumes", 5: "fios", 6: "trem" };
+  const WORLD_FILE = { 0: "anteiku", 1: "deathnote", 2: "eva", 3: "natureza", 4: "vagalumes", 5: "fios", 6: "trem", 8: "titan", 9: "frieren" };
   let world = null, worldOf = null; const worldLoads = {};
   function loadWorld(id) {
     if (window.MUNDOS && window.MUNDOS[id]) return Promise.resolve(window.MUNDOS[id]);
     return worldLoads[id] || (worldLoads[id] = new Promise((ok, no) => { const el = document.createElement("script"); el.src = "/biblioteca/mundos/" + id + ".js"; el.onload = () => (window.MUNDOS && window.MUNDOS[id] ? ok(window.MUNDOS[id]) : no()); el.onerror = no; document.head.appendChild(el); }));
   }
-  const worldCtx = () => ({ T, base: "/biblioteca/mundos/", reduce, small, glowTex, esc, showPanel, closePanel, toast, aspect: () => innerWidth / innerHeight, subjects: () => subjects, perfil: () => ({ name: "Quem sou", acts: PERFIL.map((x) => Object.assign({ k: [], l: [] }, x, { r: x.r.replace(/\\n/g, "\n") })) }), openPages: (sub, i) => { if (sub && sub.acts[i]) showBook({ a: sub.acts[i], sub }); }, openAct: (name, i) => { const sub = subjects.find((x) => x.name === name); if (!sub || !sub.acts[i]) return; const b = books.find((x) => x.sub === sub && x.a === sub.acts[i]) || { a: sub.acts[i], sub }; showBook(b); } });
+  const worldCtx = () => ({ T, base: "/biblioteca/mundos/", reduce, small, glowTex, esc, showPanel, closePanel, toast, aspect: () => innerWidth / innerHeight, subjects: () => subjects, textos: () => TEXTOS, perfil: () => ({ name: "Quem sou", acts: PERFIL.map((x) => Object.assign({ k: [], l: [] }, x, { r: x.r.replace(/\\n/g, "\n") })) }), openPages: (sub, i) => { if (sub && sub.acts[i]) showBook({ a: sub.acts[i], sub }); }, openAct: (name, i) => { const sub = subjects.find((x) => x.name === name); if (!sub || !sub.acts[i]) return; const b = books.find((x) => x.sub === sub && x.a === sub.acts[i]) || { a: sub.acts[i], sub }; showBook(b); } });
   const riftFront = (w) => w.pos.clone().addScaledVector(V3(w.nx, 0, w.nz), 1.6).setY(w.room.c.y + 1.75);
   function enterWorld(w) {
     const id = WORLD_FILE[w.k];

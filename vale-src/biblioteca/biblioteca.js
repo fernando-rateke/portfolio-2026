@@ -1215,7 +1215,7 @@
       if (!code) code = Array.from(crypto.getRandomValues(new Uint8Array(6)), (b) => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[b % 32]).join("");
       $("veuCode").textContent = code; veu.classList.remove("lift"); veu.classList.add("on"); veu.setAttribute("aria-hidden", "false");
       const url = location.origin + "/controle#" + code;
-      try { if (!window.qrcode) await loadScript("https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"); const q = window.qrcode(0, "M"); q.addData(url); q.make(); $("qr").innerHTML = q.createImgTag(6, 0, "QR code do controle"); }
+      try { if (!window.qrcode) await loadScript("/biblioteca/vendor/qrcode.min.js"); const q = window.qrcode(0, "M"); q.addData(url); q.make(); $("qr").innerHTML = q.createImgTag(6, 0, "QR code do controle"); }
       catch (e) { $("qr").innerHTML = `<div class="alt">Sem QR agora. No celular, abra<br><b>${esc(location.host)}/controle</b><br>e digite o código abaixo.</div>`; }
       $("qr").dataset.url = url;
       await connect();
@@ -1471,7 +1471,7 @@
   const visited = new Set();
   const orbs = FLOORS.map((fl, k) => {
     const m = new T.Mesh(new T.SphereGeometry(0.17, 16, 12), new T.MeshBasicMaterial({ color: FCOL[k] })); scene.add(m);
-    const h = new T.Sprite(new T.SpriteMaterial({ map: glowTex, color: new T.Color(FCOL[k]), transparent: true, opacity: 0.6, depthWrite: false, blending: T.AdditiveBlending })); h.scale.set(1.1, 1.1, 1); m.add(h);
+    const h = new T.Sprite(new T.SpriteMaterial({ map: glowTex, color: new T.Color(FCOL[k]), transparent: true, opacity: 0.6, depthWrite: false, blending: T.AdditiveBlending })); h.scale.set(0.62, 0.62, 1); m.add(h);
     const o = { m, h, f: k, hot: 0 }; clickable(m, "andar", o); return o;
   });
   // o telescópio de latão no parapeito, e a constelação que ele mostra
@@ -1527,9 +1527,9 @@
     lanterns.forEach((l) => { lanG.remove(l.m); l.m.material.map.dispose(); l.m.material.dispose(); }); lanterns.length = 0;
     const list = lanList.length ? lanList.slice(0, 40) : new Array(12).fill(null);
     list.forEach((e, i) => {
-      const m = new T.Mesh(new T.PlaneGeometry(1.15, 1.44), new T.MeshBasicMaterial({ map: lanternTex(e), transparent: true, depthWrite: false, fog: false }));
+      const m = new T.Mesh(new T.PlaneGeometry(1.5, 1.88), new T.MeshBasicMaterial({ map: lanternTex(e), transparent: true, depthWrite: false, fog: false }));
       const glow = new T.Sprite(new T.SpriteMaterial({ map: glowTex, color: 0xffa050, transparent: true, opacity: 0.55, depthWrite: false, blending: T.AdditiveBlending, fog: false })); glow.scale.set(3.4, 3.4, 1); m.add(glow);
-      lanG.add(m); lanterns.push({ m, e, a: Math.random() * Math.PI * 2, r: 7 + Math.random() * 16, y: -6 + Math.random() * 30, sp: 0.35 + Math.random() * 0.4, ph: Math.random() * 6, hot: 0 });
+      lanG.add(m); lanterns.push({ m, e, a: (Math.random() - 0.5) * 2.4, r: 6 + Math.random() * 13, y: -6 + Math.random() * 30, sp: 0.35 + Math.random() * 0.4, ph: Math.random() * 6, hot: 0 });
     });
   }
   // a placa do QR: estrelas se juntam e formam a placa com o código para deixar um recado
@@ -1545,7 +1545,7 @@
     const draw = () => { try { const q = window.qrcode(0, "M"); q.addData(qrUrl()); q.make(); const n = q.getModuleCount(), S = 340, cs = S / n, x0 = 256 - S / 2, y0 = 148; g.fillStyle = "#fff"; g.fillRect(x0 - 14, y0 - 14, S + 28, S + 28); g.fillStyle = "#1A120A"; for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) g.fillRect(x0 + c * cs, y0 + r * cs, cs + 0.5, cs + 0.5); } catch (e) { g.font = "500 20px 'Geist Mono', monospace"; g.fillStyle = "#3A2412"; g.fillText(location.host + "/biblioteca#recado", 256, 320); } qrTex.needsUpdate = true; };
     g.font = "500 16px 'Geist Mono', monospace"; g.fillStyle = "#7A5A30"; g.fillText(location.host + "/biblioteca#recado", 256, 540);
     g.font = "italic 600 22px 'Cormorant Garamond', serif"; g.fillStyle = "#5A3A20"; g.fillText("Fernando Rateke · Portfólio 2026", 256, 588);
-    if (window.qrcode) draw(); else { const el = document.createElement("script"); el.src = "https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"; el.onload = draw; el.onerror = draw; document.head.appendChild(el); }
+    if (window.qrcode) draw(); else { const el = document.createElement("script"); el.src = "/biblioteca/vendor/qrcode.min.js"; el.onload = draw; el.onerror = draw; document.head.appendChild(el); }
     qrTex.needsUpdate = true;
   }
   const qrPlate = new T.Mesh(new T.PlaneGeometry(2.0, 2.5), new T.MeshBasicMaterial({ map: qrTex, transparent: true, opacity: 0, depthWrite: false, fog: false })); qrPlate.visible = false; qrPlate.renderOrder = 6; scene.add(qrPlate);
@@ -1589,7 +1589,7 @@
   function finUpdate(dt, t) {
     // o topo vive mesmo fora do final
     armil.position.copy(seal.position); rings[0].rotation.set(t * 0.21, t * 0.13, 0); rings[1].rotation.set(Math.PI / 2 + t * 0.09, 0, t * 0.17); rings[2].rotation.set(0.6, t * 0.07, Math.PI / 3 + t * 0.11);
-    orbs.forEach((o, k) => { const a = t * 0.18 + k / orbs.length * Math.PI * 2, hv = hotC && hotC.data === o ? 1 : 0; o.hot += (hv - o.hot) * Math.min(1, dt * 6); o.m.position.set(Math.cos(a) * 3.9, TOPY + 3.5 + Math.sin(t * 0.7 + k) * 0.15, Math.sin(a) * 3.9); const lit = visited.has(k) ? 1 : 0.22; o.h.material.opacity = (0.25 + 0.6 * lit) * (1 + o.hot * 0.6); o.m.scale.setScalar(1 + o.hot * 0.35 + lit * 0.15); });
+    orbs.forEach((o, k) => { const a = t * 0.18 + k / orbs.length * Math.PI * 2, hv = hotC && hotC.data === o ? 1 : 0; o.hot += (hv - o.hot) * Math.min(1, dt * 6); o.m.position.set(Math.cos(a) * 3.9, TOPY + 3.5 + Math.sin(t * 0.7 + k) * 0.15, Math.sin(a) * 3.9); const lit = visited.has(k) ? 1 : 0.22; o.h.material.opacity = (0.18 + 0.4 * lit) * (1 + o.hot * 0.6); o.m.scale.setScalar(1 + o.hot * 0.35 + lit * 0.15); });
     if (constel.on) constel.v = Math.min(constel.n, constel.v + dt * constel.n / 4); else constel.v = Math.max(0, constel.v - dt * constel.n / 1.5); constel.m.geometry.setDrawRange(0, Math.floor(constel.v));
     met.t -= dt; if (met.t <= 0 && met.run < 0 && camera.position.y > TOPY - 4) { met.run = 0; met.t = 5 + Math.random() * 8; const a = Math.random() * Math.PI * 2; met.a.set(Math.cos(a) * 120, TOPY + 60 + Math.random() * 50, Math.sin(a) * 120); met.b.copy(met.a).add(V3(Math.cos(a + 1.9) * 70, -30, Math.sin(a + 1.9) * 70)); meteor.visible = true; }
     if (met.run >= 0) { met.run += dt / 0.9; meteor.position.lerpVectors(met.a, met.b, met.run); meteor.lookAt(camera.position); const d = V3().subVectors(met.b, met.a).project(camera); meteor.material.opacity = Math.sin(Math.min(1, met.run) * Math.PI); if (met.run >= 1) { met.run = -1; meteor.visible = false; } }
@@ -1612,7 +1612,7 @@
       // o céu desliza devagar; as lanternas sobem; as estrelas viram a placa do QR
       const d = V3().subVectors(cam.tgt, cam.pos); d.applyAxisAngle(V3(0, 1, 0), dt * 0.025); cam.tgt.copy(cam.pos).add(d);
       camera.getWorldDirection(tmp2); const up = V3(0, 1, 0).applyQuaternion(camera.quaternion);
-      for (const l of lanterns) { const hv = hotC && hotC.data === l ? 1 : 0; l.hot += (hv - l.hot) * Math.min(1, dt * 5); l.y += l.sp * dt * (1 - l.hot); if (l.y > 24) { l.y = -6; l.a = Math.random() * Math.PI * 2; } l.m.position.set(cam.pos.x + Math.cos(l.a) * l.r, cam.pos.y + l.y + Math.sin(t * 0.6 + l.ph) * 0.2, cam.pos.z + Math.sin(l.a) * l.r); l.m.lookAt(camera.position); l.m.scale.setScalar(1 + l.hot * 0.5); }
+      for (const l of lanterns) { const hv = hotC && hotC.data === l ? 1 : 0; l.hot += (hv - l.hot) * Math.min(1, dt * 5); l.y += l.sp * dt * (1 - l.hot); if (l.y > 24) { l.y = -6; l.a = (Math.random() - 0.5) * 2.4; } const yw = Math.atan2(tmp2.z, tmp2.x) + l.a; l.m.position.set(cam.pos.x + Math.cos(yw) * l.r, cam.pos.y + l.y + Math.sin(t * 0.6 + l.ph) * 0.2, cam.pos.z + Math.sin(yw) * l.r); l.m.lookAt(camera.position); l.m.scale.setScalar(1 + l.hot * 0.5); }
       const ctr = camera.position.clone().addScaledVector(tmp2, 6).addScaledVector(up, 0.15); qrPlate.position.copy(ctr); qrPlate.quaternion.copy(camera.quaternion);
       const pg = sstep(0.4, 4.5, fin.t), P = qsGeo.attributes.position.array;
       for (let i = 0; i < NQS; i++) { const tp = qsTo[i].clone().applyQuaternion(camera.quaternion).add(ctr), fp = qsFrom[i].clone().add(camera.position), e = pg * pg * (3 - 2 * pg); P[i * 3] = fp.x + (tp.x - fp.x) * e; P[i * 3 + 1] = fp.y + (tp.y - fp.y) * e; P[i * 3 + 2] = fp.z + (tp.z - fp.z) * e; }

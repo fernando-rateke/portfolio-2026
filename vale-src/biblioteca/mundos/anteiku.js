@@ -13,6 +13,7 @@
     const RX = 4.6, RZ = 3.6, RH = 3.2;
     const OVERP = V3(-1.35, 1.5, 0.55), OVERT = V3(0.2, 0.95, -2.35);
 
+    const PROC0 = scene.children.length; // daqui até as pessoas é o salão desenhado à mão (some se o modelo do café carregar)
     /* ---------------- o salão ---------------- */
     const cv = (w, h, draw) => { const c = document.createElement("canvas"); c.width = w; c.height = h; draw(c.getContext("2d"), w, h); const t = K(new T.CanvasTexture(c)); t.anisotropy = 4; return t; };
     const lam = (col, o = {}) => K(new T.MeshStandardMaterial(Object.assign({ color: col, roughness: 0.75, metalness: 0 }, o)));
@@ -84,6 +85,7 @@
     for (const [x, z] of [[TBL.x - 0.12, TBL.z - 0.2], [TBL.x + 0.28, TBL.z + 0.12]]) { add(new T.CylinderGeometry(0.075, 0.075, 0.01, 18), cupM, x, 0.765, z); add(new T.CylinderGeometry(0.045, 0.035, 0.07, 14), cupM, x, 0.8, z); add(new T.CircleGeometry(0.04, 14), lam("#2a1206", { roughness: 0.15 }), x, 0.832, z, 0, -Math.PI / 2);
       const st = new T.Sprite(K(new T.SpriteMaterial({ map: ctx.glowTex, color: 0xffffff, transparent: true, opacity: 0.12, depthWrite: false }))); st.scale.set(0.12, 0.3, 1); st.position.set(x, 0.98, z); scene.add(st); steams.push(st); }
 
+    const PROC1 = scene.children.length;
     /* ---------------- as pessoas do café (personagens originais) ---------------- */
     const bookM = (col) => [lam(col), lam(col), lam("#e8e0cc"), lam(col), lam(col), lam(col)];
     const openBook = (parent, col, x, y, z, rx) => { const bk = new T.Group(); bk.position.set(x, y, z); bk.rotation.x = rx; parent.add(bk);
@@ -110,6 +112,25 @@
       b.rotation.y = 0; const glow = new T.Sprite(K(new T.SpriteMaterial({ map: ctx.glowTex, color: 0xffc070, transparent: true, opacity: 0.35, depthWrite: false, blending: T.AdditiveBlending }))); glow.scale.set(0.5, 0.5, 1); g.add(glow);
       tomes.push({ g, b, glow, a, i, hot: 0 }); });
 
+    /* ---------------- o café de verdade: o modelo do salão que o Fernando mandou ---------------- */
+    const OVER_MODEL = { pos: V3(-5.6, 2.15, 0.6), tgt: V3(0.4, 0.95, 1.4) };
+    new T.GLTFLoader().load(base + "cafe.glb", (gl) => {
+      const m = gl.scene, S = 6.5; m.scale.setScalar(S); m.position.set(0, 0.1, 0); m.traverse((o) => { if (o.isMesh) { o.frustumCulled = false; const mt = o.material; if (mt && mt.map) mt.map.anisotropy = 4; } }); scene.add(m);
+      // esconde o salão desenhado à mão (as luzes ficam)
+      for (let k = PROC0; k < PROC1; k++) { const o = scene.children[k]; if (o && !o.isLight) o.visible = false; }
+      for (let k = PROC0; k < PROC1; k++) { const o = scene.children[k]; if (o && o.isLight && o.isPointLight) o.intensity *= 0.6; }
+      for (const [x, z] of [[0.2, -1.6], [-0.2, 1.8], [-1.5, 3.2], [0.6, 3.4], [-1.8, -1.0]]) { const l = new T.PointLight("#ffcc90", 0.7, 6, 2); l.position.set(x, 2.7, z); scene.add(l); }
+      // a estudante na mesa da direita, os livros na outra mesa, o dono atrás do balcão
+      reader.g.position.set(-1.51, 0.47 - reader.hipY, 2.95); reader.g.rotation.y = 0;
+      const chairR = new T.Mesh(K(new T.BoxGeometry(0.42, 0.04, 0.42)), lam("#3a2214")); chairR.position.set(-1.51, 0.45, 2.95); scene.add(chairR);
+      owner.g.position.set(1.25, 0.1, 0.2); owner.g.rotation.y = -Math.PI / 2; owner.body.traverse((o) => { if (o.material && o.material.color && o.material.isMeshToonMaterial) o.material.color.multiplyScalar(0.8); });
+      kHit.position.set(1.25, 1.0, 0.2);
+      tomes.forEach((tm, i) => { tm.g.position.set(0.57 + i * 0.03, 0.9 + i * 0.045, 3.62 - i * 0.02); tm.baseY = 0.9 + i * 0.045; });
+      OVER.pos.copy(OVER_MODEL.pos); OVER.tgt.copy(OVER_MODEL.tgt); if (!focus && !glide) { cam.pos.copy(OVER.pos); cam.tgt.copy(OVER.tgt); }
+      inModel = true;
+    });
+    let inModel = false;
+
     /* ---------------- o som: chuva no vidro, conversa baixa, o relógio ---------------- */
     let audio = null;
     try {
@@ -127,7 +148,7 @@
     let glide = null, focus = null, hot = null, count = null;
     const smoother = (x) => x * x * x * (x * (x * 6 - 15) + 10);
     function to(pose, dur = 2.0) { if (ctx.reduce) { cam.pos.copy(pose.pos); cam.tgt.copy(pose.tgt); return; } glide = { p0: cam.pos.clone(), t0: cam.tgt.clone(), p1: pose.pos.clone(), t1: pose.tgt.clone(), u: 0, dur }; cam.yawT = cam.pitchT = 0; }
-    function openTome(tm) { focus = tm; to({ pos: V3(TBL.x - 0.9, 1.45, TBL.z + 1.1), tgt: V3(TBL.x + 0.05, 0.8, TBL.z + 0.2) }); setTimeout(() => { if (focus === tm && ctx.openPages) ctx.openPages(perfil, tm.i); }, ctx.reduce ? 0 : 1500); }
+    function openTome(tm) { focus = tm; const tp = tm.g.position; to(inModel ? { pos: V3(tp.x - 1.1, 1.55, tp.z - 1.0), tgt: tp.clone() } : { pos: V3(TBL.x - 0.9, 1.45, TBL.z + 1.1), tgt: V3(TBL.x + 0.05, 0.8, TBL.z + 0.2) }); setTimeout(() => { if (focus === tm && ctx.openPages) ctx.openPages(perfil, tm.i); }, ctx.reduce ? 0 : 1500); }
     const kHit = new T.Mesh(K(new T.BoxGeometry(0.6, 1.3, 0.6)), K(new T.MeshBasicMaterial())); kHit.position.set(RX - 1.45, 1.0, 0.6); kHit.visible = false; scene.add(kHit);
     setTimeout(() => { try { ctx.toast("Tokyo Ghoul", "Anteiku", "Os livros em cima da mesa contam quem eu sou."); } catch (e) { /* sem aviso */ } }, 900);
 
@@ -143,11 +164,11 @@
         flames.forEach((f, i) => { f.scale.set(0.06, 0.09 + 0.02 * Math.sin(t * 13 + i), 1); });
         steams.forEach((s, i) => { s.position.y = 0.96 + Math.sin(t * 0.7 + i) * 0.02; s.material.opacity = 0.1 + 0.04 * Math.sin(t * 1.3 + i * 2); });
         lamps.forEach((l, i) => (l.intensity = 1.1 * (0.97 + 0.03 * Math.sin(t * 9 + i))));
-        for (const tm of tomes) { tm.hot += ((hot === tm || focus === tm ? 1 : 0) - tm.hot) * Math.min(1, dt * 6); tm.glow.material.opacity = 0.3 + 0.15 * Math.sin(t * 2 + tm.i) + tm.hot * 0.5; tm.g.position.y = 0.76 + tm.i * 0.045 + tm.hot * 0.03; }
+        for (const tm of tomes) { tm.hot += ((hot === tm || focus === tm ? 1 : 0) - tm.hot) * Math.min(1, dt * 6); tm.glow.material.opacity = 0.3 + 0.15 * Math.sin(t * 2 + tm.i) + tm.hot * 0.5; tm.g.position.y = (tm.baseY != null ? tm.baseY : 0.76 + tm.i * 0.045) + tm.hot * 0.03; }
         if (count && t - count.t0 > 0.6) { count.t0 = t; count.n -= 7; if (count.n < 900) count = null; }
       },
       render(renderer) { renderer.setRenderTarget(null); renderer.render(scene, camera); },
-      resize(w, h) { camera.aspect = w / h; const tall = w / h < 0.8; camera.fov = tall ? 70 : 50; camera.updateProjectionMatrix(); OVER.pos.copy(tall ? V3(-2.6, 1.7, 3.4) : OVERP); if (!focus && !glide) cam.pos.copy(OVER.pos); },
+      resize(w, h) { camera.aspect = w / h; const tall = w / h < 0.8; camera.fov = tall ? 70 : 50; camera.updateProjectionMatrix(); OVER.pos.copy(inModel ? (tall ? V3(-3.4, 1.8, 0.0) : OVER_MODEL.pos) : tall ? V3(-2.6, 1.7, 3.4) : OVERP); if (!focus && !glide) cam.pos.copy(OVER.pos); },
       pick(ndc) { ray.setFromCamera(ndc, camera); const hits = ray.intersectObjects(tomes.map((x) => x.b).concat([kHit]), false); const o = hits[0] && hits[0].object; const tm = o && tomes.find((x) => x.b === o); hot = tm || null;
         if (tm) return { label: [tm.a.t, "abrir o livro"], go: () => openTome(tm) };
         if (o === kHit) return { label: ["O dono do café", "pedir um café"], go: () => { try { ctx.toast("Anteiku", "Um café por conta da casa", "Pode ficar o tempo que quiser."); } catch (e) { /* nada */ } } };

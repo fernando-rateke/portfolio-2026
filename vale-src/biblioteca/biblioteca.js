@@ -931,13 +931,13 @@
   }
 
   /* ---------------- os mundos: cada fenda abre uma cena própria, baixada só quando a pessoa entra ---------------- */
-  const WORLD_FILE = { 5: "fios" };
+  const WORLD_FILE = { 4: "vagalumes", 5: "fios" };
   let world = null, worldOf = null; const worldLoads = {};
   function loadWorld(id) {
     if (window.MUNDOS && window.MUNDOS[id]) return Promise.resolve(window.MUNDOS[id]);
     return worldLoads[id] || (worldLoads[id] = new Promise((ok, no) => { const el = document.createElement("script"); el.src = "/biblioteca/mundos/" + id + ".js"; el.onload = () => (window.MUNDOS && window.MUNDOS[id] ? ok(window.MUNDOS[id]) : no()); el.onerror = no; document.head.appendChild(el); }));
   }
-  const worldCtx = () => ({ T, base: "/biblioteca/mundos/", reduce, small, glowTex, esc, showPanel, closePanel, toast, aspect: () => innerWidth / innerHeight, subjects: () => subjects });
+  const worldCtx = () => ({ T, base: "/biblioteca/mundos/", reduce, small, glowTex, esc, showPanel, closePanel, toast, aspect: () => innerWidth / innerHeight, subjects: () => subjects, openAct: (name, i) => { const sub = subjects.find((x) => x.name === name); if (!sub || !sub.acts[i]) return; const b = books.find((x) => x.sub === sub && x.a === sub.acts[i]) || { a: sub.acts[i], sub }; showBook(b); } });
   const riftFront = (w) => w.pos.clone().addScaledVector(V3(w.nx, 0, w.nz), 1.6).setY(w.room.c.y + 1.75);
   function enterWorld(w) {
     const id = WORLD_FILE[w.k];
@@ -1187,6 +1187,7 @@
     look, pointer: (nx, ny) => { ptr.set(nx, ny); hover(ptr); return !!hotC; }, click: (nx, ny) => clickAt(new T.Vector2(nx, ny)),
     close: () => { closePanel(); closeIndex(); }, books: () => books.map((b) => ({ id: b.id, t: b.a.t, room: b.room.id })), livro: () => livro.classList.contains("on"),
     openBook: (id) => { const b = books.find((o) => o.id === id); if (b) openBook(b); },
+    worldObj: () => world,
     state: () => ({ place: placeIdx, id: cur().id, fim: fin.stage, fimT: +fin.t.toFixed(2), voltas, intro: intro.on, world: world ? world.name : null, flying: !!fly, u: fly && fly.u != null ? fly.u : null, panel: panel.classList.contains("open") }),
     time: (v) => { if (v != null) clockT = v; return clockT; },
   };

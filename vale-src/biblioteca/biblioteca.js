@@ -658,6 +658,45 @@
     for (let k = 0; k < 16; k++) { const x = 8 + k * 32; g.beginPath(); for (let j = 0; j < 3 + Math.floor(r() * 3); j++) { const x0 = x + r() * 20, y0 = 12 + r() * 40, x1 = x + r() * 20, y1 = 12 + r() * 40; g.moveTo(x0, y0); g.lineTo(x1, y1); } g.stroke(); if (r() < 0.5) { g.beginPath(); g.arc(x + 10, 32, 5 + r() * 5, 0, Math.PI * 2); g.stroke(); } }
     const t = new T.CanvasTexture(c); t.wrapS = T.RepeatWrapping; return t; })();
   const archShape = (w, j) => { const s = new T.Shape(); s.moveTo(-w / 2, 0); s.lineTo(w / 2, 0); s.lineTo(w / 2, j); s.absarc(0, j, w / 2, 0, Math.PI, false); s.lineTo(-w / 2, 0); return s; };
+  // o que cada fenda deixa escapar para dentro da torre: cada mundo solta o seu tipo de partícula
+  const SPILL = {
+    0: { m: 0, a: "#ff2a2a", b: "#ff9a5a", add: 1, n: 90, s: 0.09, v: 0.5 },   // brasas vermelhas
+    1: { m: 2, a: "#0c0c10", b: "#2a2a30", add: 0, n: 55, s: 0.2, v: -0.7 },   // penas pretas caindo
+    2: { m: 3, a: "#ff8a2a", b: "#8a4fc0", add: 1, n: 50, s: 0.17, v: 0.15 },  // hexágonos de campo AT
+    3: { m: 5, a: "#9ef0e0", b: "#45b079", add: 1, n: 80, s: 0.14, v: 0.6 },   // bolhas subindo
+    4: { m: 0, a: "#c8ff6a", b: "#ffe08a", add: 1, n: 90, s: 0.08, v: 0.15 },  // vaga-lumes
+    5: { m: 4, a: "#5ce8f8", b: "#ffffff", add: 1, n: 110, s: 0.07, v: 0.05 }, // pixels
+    6: { m: 6, a: "#0a0808", b: "#ffffff", add: 0, n: 40, s: 0.17, v: 0.1 },   // fuligem
+    7: { m: 1, a: "#cfe6ff", b: "#ffffff", add: 1, n: 80, s: 0.12, v: -0.35 },
+    8: { m: 7, a: "#e8e2da", b: "#d8955a", add: 0, n: 50, s: 0.5, v: 0.7 },    // vapor
+    9: { m: 1, a: "#9ec8ff", b: "#fff4d0", add: 1, n: 90, s: 0.12, v: -0.3 },  // pétalas
+  };
+  const SPILL_VS = `uniform float uTime, uWave, uSize, uMode, uV, uPx; attribute vec4 aS; varying float vA, vR, vM; varying vec3 vC;
+    void main(){ float life = fract(uTime * (0.05 + aS.w * 0.05) + aS.x); vM = uMode;
+      vec3 p = vec3((aS.y - 0.5) * 2.5, 0.3 + aS.z * 3.3, 0.15 + life * 3.8);
+      float sw = sin(life * 7.0 + aS.x * 30.0), sw2 = cos(life * 5.0 + aS.y * 20.0);
+      p.y += uV * life * 1.6; p.x += sw * (uMode == 1.0 || uMode == 2.0 ? 0.45 : 0.18); p.y += sw2 * 0.12;
+      if (uMode == 4.0) { p = floor(p * 8.0) / 8.0; }
+      if (uMode == 0.0 && uV < 0.3) { p += vec3(sin(uTime * 0.7 + aS.x * 40.0), sin(uTime * 0.9 + aS.y * 30.0) * 0.5, cos(uTime * 0.6 + aS.z * 20.0)) * 0.35; }
+      vec4 w = modelMatrix * vec4(p, 1.0);
+      vA = smoothstep(0.0, 0.12, life) * smoothstep(1.0, 0.55, life) * (w.y > uWave ? 1.0 : 0.0);
+      if (uMode == 0.0 && uV < 0.3) vA *= smoothstep(0.35, 1.0, sin(uTime * (1.5 + aS.w * 2.0) + aS.x * 50.0) * 0.5 + 0.5);
+      if (uMode == 4.0) vA *= step(0.35, fract(sin(floor(uTime * 6.0 + aS.x * 20.0) * 12.9898) * 43758.5));
+      vR = aS.x * 6.28 + uTime * (aS.w - 0.5) * 2.0 + life * 3.0; vC = vec3(aS.w);
+      vec4 mv = viewMatrix * w; float grow = uMode == 3.0 ? (0.5 + life * 1.2) : uMode == 7.0 ? (0.4 + life * 1.6) : 1.0;
+      gl_PointSize = uPx * uSize * grow * (0.7 + aS.z * 0.6) / max(0.3, -mv.z); gl_Position = projectionMatrix * mv; }`;
+  const SPILL_FS = `uniform vec3 uA, uB; uniform float uAdd; varying float vA, vR, vM; varying vec3 vC;
+    void main(){ vec2 q = gl_PointCoord - 0.5; float c = cos(vR), s = sin(vR); vec2 r = mat2(c, -s, s, c) * q; float d = length(q), a = 0.0; vec3 col = mix(uA, uB, vC.x);
+      if (vM == 0.0) { a = pow(smoothstep(0.5, 0.0, d), 2.0); col += vec3(1.0) * smoothstep(0.12, 0.0, d) * 0.6; }
+      else if (vM == 1.0) { a = smoothstep(0.22, 0.12, length(r * vec2(2.4, 1.0))); }
+      else if (vM == 2.0) { float e = length(r * vec2(5.5, 1.05)); a = smoothstep(0.5, 0.38, e) * (0.75 + 0.25 * step(0.02, abs(r.x))); }
+      else if (vM == 3.0) { vec2 h = abs(r); float hx = max(h.x * 0.866 + h.y * 0.5, h.y); a = smoothstep(0.06, 0.0, abs(hx - 0.38)); }
+      else if (vM == 4.0) { a = step(max(abs(q.x), abs(q.y)), 0.34); }
+      else if (vM == 5.0) { a = smoothstep(0.05, 0.0, abs(d - 0.42)) * 0.9 + smoothstep(0.12, 0.0, length(q - vec2(-0.16, 0.16))) * 0.8 + smoothstep(0.42, 0.2, d) * 0.08; }
+      else if (vM == 6.0) { float fz = 0.36 + 0.07 * sin(atan(q.y, q.x) * 13.0 + vR * 3.0); a = smoothstep(fz, fz - 0.07, d); vec2 e1 = q - vec2(-0.1, 0.04), e2 = q - vec2(0.1, 0.04); float eye = max(smoothstep(0.08, 0.06, length(e1)), smoothstep(0.08, 0.06, length(e2))); float pup = max(smoothstep(0.035, 0.02, length(e1)), smoothstep(0.035, 0.02, length(e2))); col = mix(col, vec3(1.0), eye); col = mix(col, vec3(0.0), pup); }
+      else { a = smoothstep(0.5, 0.05, d) * 0.45; }
+      a *= vA; if (a < 0.01) discard;
+      gl_FragColor = uAdd > 0.5 ? vec4(col * a * 1.6, 1.0) : vec4(col, a); }`;
   const portals = [];
   ALC.filter((al) => al.world != null).forEach((al) => {
     const w = Object.assign({}, WORLDS[al.world]); w.k = al.world; w.al = al;
@@ -684,7 +723,12 @@
     const NSP = 70, sp = new Float32Array(NSP * 3), ss = new Float32Array(NSP).map(() => Math.random());
     const spg = new T.BufferGeometry(); spg.setAttribute("position", new T.BufferAttribute(sp, 3));
     const sparks = new T.Points(spg, new T.PointsMaterial({ map: glowTex, color: new T.Color(w.c).lerp(new T.Color("#ffffff"), 0.4), size: 0.09, transparent: true, opacity: 0.9, depthWrite: false, blending: T.AdditiveBlending })); sparks.frustumCulled = false; g.add(sparks);
-    lightAt(AL(al, 0, 1.8, al.d - 1.0), w.c, 1.6, 0.12);
+    { const cfg = SPILL[al.world] || SPILL[4], n = small ? Math.round(cfg.n * 0.6) : cfg.n, sg = new T.BufferGeometry(), seeds = new Float32Array(n * 4).map(() => Math.random());
+      sg.setAttribute("position", new T.BufferAttribute(new Float32Array(n * 3), 3)); sg.setAttribute("aS", new T.BufferAttribute(seeds, 4));
+      const sm2 = new T.ShaderMaterial({ uniforms: Object.assign({ uSize: { value: cfg.s }, uMode: { value: cfg.m }, uV: { value: cfg.v }, uPx: { value: innerHeight * Math.min(devicePixelRatio || 1, 2) * 1.1 }, uA: { value: new T.Color(cfg.a) }, uB: { value: new T.Color(cfg.b) }, uAdd: { value: cfg.add } }, U), vertexShader: SPILL_VS, fragmentShader: SPILL_FS, transparent: true, depthWrite: false, blending: cfg.add ? T.AdditiveBlending : T.NormalBlending });
+      const spill = new T.Points(sg, sm2); spill.frustumCulled = false; g.add(spill);
+      const fl = new T.Mesh(new T.PlaneGeometry(PW * 2.2, 3.6), new T.MeshBasicMaterial({ map: glowTex, color: new T.Color(w.c), transparent: true, opacity: 0.5, depthWrite: false, blending: T.AdditiveBlending })); fl.rotation.x = -Math.PI / 2; fl.position.set(0, 0.02, 1.4); g.add(fl); w.floorGlow = fl; }
+    lightAt(AL(al, 0, 1.8, al.d - 1.0), w.c, 3.2, 0.12); lightAt(AL(al, 0, 0.6, al.d - 3.0), w.c, 1.4, 0.2);
     sign(AL(al, 0, AH + 0.92, -1.02), lookIn(AL(al, 0, 0, -1.02)), w.t, w.s, w.c, 2.6, 0.6);
     Object.assign(w, { g, vm, rm, halo, sparks, ss, hot: 0, pos: AL(al, 0, 1.9, al.d - 0.1), nx: -al.u.x, nz: -al.u.z, room: { c: AL(al, 0, 0, al.d / 2) } });
     portals.push(w); clickable(vortex, "mundo", w); clickable(arch, "mundo", w);
@@ -833,10 +877,17 @@
     g.scale.setScalar(1.7); scene.add(g);
     return { g, body, halo, mats, home: g.position.clone(), homeR: g.rotation.y, nx: -al.u.x, nz: -al.u.z, room: al, al, out: 0, match: 0, fly: 0, ph: Math.random() * 6 };
   }
-  // os livros de um nicho em arco, na altura dos olhos, entre a câmera e o portal
+  // os livros de um nicho ficam de pé num móvel baixo de madeira, entre a câmera e o portal, presos por dois apoios de latão
   function shelfRow(al, list, make) {
-    const n = list.length, z = al.world != null ? al.d - 2.1 : al.d - 1.6, gap = Math.min(0.78, 4.8 / Math.max(1, n));
-    return list.map((it, i) => { const x = (i - (n - 1) / 2) * gap, y = 1.25 + 0.16 * Math.cos((i - (n - 1) / 2) / Math.max(1, n) * Math.PI); return make(it, i, x, y, z - Math.abs(x) * 0.12); });
+    const n = list.length, z = al.world != null ? al.d - 2.2 : al.d - 1.8, gap = 0.3, TOP = 0.8, W = n * gap + 0.7;
+    const c = AL(al, 0, 0, z), ry = lookIn(c);
+    const G = new T.Group(); G.position.copy(c); G.rotation.y = ry; scene.add(G);
+    const piece = (w, h, d, x, y, dz, col, emit = 0) => { const m = new T.Mesh(new T.BoxGeometry(w, h, d), new T.MeshBasicMaterial({ color: col })); propize(m, { emit, emitC: col }); m.position.set(x, y, dz); G.add(m); return m; };
+    piece(W, TOP - 0.1, 0.62, 0, (TOP - 0.1) / 2 + 0.05, 0, WOOD); piece(W + 0.1, 0.06, 0.7, 0, TOP - 0.03, 0, WOOD_D); piece(W + 0.12, 0.02, 0.72, 0, TOP, 0, GOLD, 0.2); piece(W + 0.06, 0.1, 0.66, 0, 0.05, 0, WOOD_D);
+    for (let k = 0; k < Math.max(2, Math.round(W / 0.8)); k++) { const nk = Math.max(2, Math.round(W / 0.8)), x = -W / 2 + (k + 0.5) * W / nk; piece(W / nk - 0.12, TOP - 0.34, 0.02, x, (TOP - 0.1) / 2 + 0.05, 0.32, "#4a2e1e"); piece(0.05, 0.05, 0.03, x, TOP * 0.6, 0.34, GOLD, 0.3); }
+    for (const sg of [-1, 1]) { const x = sg * (n * gap / 2 + 0.1); piece(0.03, 0.5, 0.36, x, TOP + 0.25, 0, GOLD, 0.25); piece(0.16, 0.03, 0.36, x - sg * 0.07, TOP + 0.015, 0, GOLD, 0.25); }
+    lightAt(AL(al, 0, 1.9, z - 0.6), "#FFC890", 0.55, 0.05);
+    return list.map((it, i) => { const x = (i - (n - 1) / 2) * gap, b = make(it, i, x, TOP + 0.005, z); b.shelf = true; return b; });
   }
   function addActivityBooks(list) {
     subjects = list;
@@ -1422,6 +1473,7 @@
       const target = b.open ? 1 : hotC && hotC.data === b ? 0.35 : 0; b.out += (target - b.out) * Math.min(1, dt * 6);
       const fl = b.open ? 1 : 0; b.fly += (fl - b.fly) * Math.min(1, dt * (b.open ? 3.2 : 2.4)); const e = b.fly * b.fly * (3 - 2 * b.fly);
       if (e > 0.002) { la.copy(camera.position).addScaledVector(tmp2, 1.3).add(V3(0, -0.28, 0)); b.g.position.lerpVectors(b.home, la, e); b.g.rotation.y = b.homeR + (faceTo(b.g.position.x, b.g.position.z, camera.position.x, camera.position.z) - b.homeR) * e; }
+      else if (b.shelf) { b.g.position.copy(b.home).add(V3(b.nx * b.out * 0.28, b.out * 0.05, b.nz * b.out * 0.28)); b.g.rotation.y = b.homeR; }
       else { b.g.position.copy(b.home).add(V3(0, Math.sin(t * 1.3 + b.ph) * 0.05 + b.out * 0.12, 0)); b.g.rotation.y = b.homeR + Math.sin(t * 0.7 + b.ph) * 0.06; }
       b.body.rotation.x = -b.out * 0.12 + Math.sin(t * 0.9 + b.ph) * 0.03;
       b.mats.forEach((m) => { m.uniforms.uHot.value = Math.max(b.out, e); m.uniforms.uMatch.value = b.match; });
@@ -1449,7 +1501,7 @@
     for (const w of portals) {
       if (camera.position.distanceTo(w.pos) > 34) continue;
       const h = hotC && hotC.data === w ? 1 : 0; w.hot += (h - w.hot) * Math.min(1, dt * 5);
-      w.vm.uniforms.uHot.value = w.hot; w.rm.uniforms.uHot.value = w.hot; w.halo.material.opacity = 0.42 + 0.1 * Math.sin(t * 1.7 + w.k) + w.hot * 0.35;
+      w.vm.uniforms.uHot.value = w.hot; w.rm.uniforms.uHot.value = w.hot; w.halo.material.opacity = 0.55 + 0.12 * Math.sin(t * 1.7 + w.k) + w.hot * 0.35; if (w.floorGlow) w.floorGlow.material.opacity = (0.4 + 0.12 * Math.sin(t * 1.3 + w.k * 2) + w.hot * 0.3) * (w.g.position.y > U.uWave.value ? 1 : 0.05);
       const P = w.sparks.geometry.attributes.position.array, n = w.ss.length;
       for (let i = 0; i < n; i++) { const q = (t * (0.16 + w.ss[i] * 0.2) * (1 + w.hot) + w.ss[i]) % 1, ang = w.ss[i] * 40 + q * 7, rr = (1 - q) * (PW * 0.8); P[i * 3] = Math.cos(ang) * rr; P[i * 3 + 1] = (PJ + PW / 2) * 0.5 + Math.sin(ang) * rr * 1.15; P[i * 3 + 2] = 0.12 + (1 - q) * 0.9; }
       w.sparks.geometry.attributes.position.needsUpdate = true;

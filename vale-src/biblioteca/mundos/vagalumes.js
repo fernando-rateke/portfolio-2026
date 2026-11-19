@@ -45,7 +45,7 @@
     const U = {
       uT: { value: 0 }, uNight: { value: 0 }, uClip: { value: 0 }, uRS: { value: 1 }, uPS: { value: 800 },
       uSun: { value: SUN }, uPL: { value: V3() }, uPLC: { value: new T.Color(0.75, 1.0, 0.4) },
-      uFogDay: { value: new T.Color("#d4e2db") }, uFogNight: { value: new T.Color("#0a1220") }, uFogD: { value: 0.03 },
+      uFogDay: { value: new T.Color("#ab9774") }, uFogNight: { value: new T.Color("#0a1220") }, uFogD: { value: 0.03 },
     };
     const COM = `uniform float uT, uNight, uClip, uFogD; uniform vec3 uSun, uPL, uPLC, uFogDay, uFogNight;
       float hs(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
@@ -55,9 +55,9 @@
       vec3 lightAt(vec3 N, vec3 W, float toon){
         float w = dot(N, normalize(uSun)) * 0.5 + 0.5;
         float lit = mix(smoothstep(0.12, 0.95, w), smoothstep(0.46, 0.56, w) * 0.72 + 0.28 * w, toon);
-        vec3 sunC = mix(vec3(1.06, 0.98, 0.86), vec3(0.3, 0.38, 0.6) * 0.5, uNight);
-        vec3 skyC = mix(vec3(0.6, 0.72, 0.72), vec3(0.06, 0.09, 0.17), uNight);
-        vec3 gC = mix(vec3(0.34, 0.4, 0.25), vec3(0.02, 0.03, 0.04), uNight);
+        vec3 sunC = mix(vec3(1.0, 0.84, 0.62), vec3(0.3, 0.36, 0.55) * 0.5, uNight);
+        vec3 skyC = mix(vec3(0.62, 0.57, 0.47), vec3(0.06, 0.08, 0.15), uNight);
+        vec3 gC = mix(vec3(0.36, 0.32, 0.22), vec3(0.02, 0.03, 0.04), uNight);
         vec3 c = mix(gC, skyC, N.y * 0.5 + 0.5) * 0.85 + sunC * lit * 0.72;
         vec3 L = uPL - W; float d = length(L); c += uPLC * (max(dot(N, L / max(d, 1e-3)), 0.0) * 0.75 + 0.25) / (1.0 + d * d * 0.9) * uNight * 1.6;
         return c; }
@@ -81,13 +81,17 @@
     const MOON = V3(-0.12, 0.3, -1).normalize();
     const sky = new T.Mesh(K(new T.SphereGeometry(450, 48, 24)), shader("varying vec3 vD; void main(){ vD = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
       `uniform vec3 uM; varying vec3 vD; void main(){ vec3 d = normalize(vD); float h = d.y;
-        vec3 day = mix(vec3(0.86, 0.91, 0.88), vec3(0.62, 0.78, 0.8), smoothstep(0.0, 0.7, h));
-        float cl = vnoise(d.xz / max(h + 0.15, 0.05) * 1.4 + uT * 0.01) * vnoise(d.xz / max(h + 0.15, 0.05) * 3.1); day = mix(day, vec3(0.95, 0.96, 0.94), smoothstep(0.25, 0.6, cl) * 0.5 * smoothstep(0.02, 0.3, h));
+        vec3 day = mix(vec3(0.74, 0.64, 0.47), vec3(0.5, 0.45, 0.38), smoothstep(0.0, 0.7, h));
+        vec2 sp = d.xz / max(h + 0.15, 0.05); float cl = vnoise(sp * 1.2 + vec2(uT * 0.012, 0.0)) * 0.6 + vnoise(sp * 3.3 - uT * 0.02) * 0.4;
+        day = mix(day, vec3(0.3, 0.26, 0.22), smoothstep(0.45, 0.85, cl) * 0.7 * smoothstep(0.0, 0.25, h));
+        vec3 sd = normalize(vec3(0.35, 0.22, -0.9)); float sm2 = dot(d, sd); day += vec3(1.0, 0.55, 0.22) * (smoothstep(0.9985, 0.9992, sm2) * 0.6 + pow(max(sm2, 0.0), 40.0) * 0.35);
         vec3 night = mix(vec3(0.06, 0.09, 0.17), vec3(0.01, 0.015, 0.045), smoothstep(-0.05, 0.6, h));
         for (int L = 0; L < 2; L++) { float sc = 220.0 + float(L) * 160.0; vec3 q = d * sc, i = floor(q); float s = hs(i.xy + i.z * 7.0 + float(L) * 9.0);
           vec2 o = vec2(hs(i.xz + 2.1), hs(i.yz + 5.3)) * 0.6 + 0.2; float tw = 0.6 + 0.4 * sin(uT * (1.0 + s * 2.0) + s * 40.0);
           night += vec3(0.85, 0.9, 1.0) * step(0.985, s) * smoothstep(0.1, 0.0, length(fract(q.xy) - o)) * tw * step(0.03, h); }
         float m = dot(d, uM); night += vec3(1.0, 0.97, 0.88) * smoothstep(0.9993, 0.9996, m) + vec3(0.3, 0.34, 0.45) * pow(max(m, 0.0), 30.0) * 0.6;
+        vec2 fx = normalize(vec2(0.8, -0.55)); float fire = pow(max(dot(normalize(d.xz + 1e-4), fx), 0.0), 6.0) * exp(-max(h, 0.0) * 9.0) * smoothstep(-0.04, 0.02, h);
+        night += vec3(0.6, 0.16, 0.05) * fire * (0.55 + 0.1 * sin(uT * 0.8));
         gl_FragColor = vec4(mix(day, night, uNight), 1.0); }`, { uM: { value: MOON } }, { side: T.BackSide, depthWrite: false }));
     scene.add(sky);
 
@@ -103,7 +107,7 @@
       void main(){ clipW(vW);
         for (int i = 0; i < 2; i++) { vec4 d = uDoor[i]; if (vW.x > d.x - 0.03 && vW.x < d.x + 3.3 && abs(vW.z - d.y) < d.z && vW.y < d.w) discard; }
         vec3 N = normalize(vN); float sl = 1.0 - N.y; float n = vnoise(vW.xz * 0.9), n2 = vnoise(vW.xz * 5.0 + 3.0), n3 = vnoise(vW.xz * 0.25 + 9.0);
-        vec3 g = mix(vec3(0.3, 0.47, 0.19), vec3(0.55, 0.67, 0.3), n * 0.7 + n3 * 0.3); g = mix(g, vec3(0.42, 0.55, 0.36), smoothstep(0.6, 0.9, n2) * 0.3);
+        vec3 g = mix(vec3(0.36, 0.4, 0.2), vec3(0.58, 0.56, 0.3), n * 0.7 + n3 * 0.3); g = mix(g, vec3(0.42, 0.55, 0.36), smoothstep(0.6, 0.9, n2) * 0.3);
         vec3 earth = mix(vec3(0.5, 0.38, 0.27), vec3(0.68, 0.55, 0.4), n2); earth *= 0.82 + 0.3 * vnoise(vec2(vW.x * 3.0 + vW.z * 3.0, vW.y * 0.8)); earth = mix(earth, vec3(0.34, 0.46, 0.24), smoothstep(0.55, 0.85, vnoise(vW.xz * 1.7 + vW.y * 1.3)) * 0.65);
         vec3 path = mix(vec3(0.68, 0.64, 0.46), vec3(0.52, 0.57, 0.35), n * 0.6);
         vec3 base = mix(g, earth, clamp(smoothstep(0.3, 0.55, sl + (n2 - 0.5) * 0.25) + vM.y * 0.6, 0.0, 1.0)); base = mix(base, path, vM.x);
@@ -126,8 +130,8 @@
         vec3 refl = texture2DProj(tR, rp).rgb;
         float depth = texture2D(tD, (p - uDB.xy) / uDB.zw).r * 2.0;
         float fr = 0.5 + 0.45 * pow(1.0 - max(V.y, 0.0), 2.0);
-        vec3 deep = mix(vec3(0.22, 0.36, 0.33), vec3(0.01, 0.015, 0.03), uNight);
-        vec3 c = mix(deep, refl * mix(vec3(0.86, 0.95, 0.92), vec3(1.0), uNight), fr);
+        vec3 deep = mix(vec3(0.27, 0.29, 0.22), vec3(0.01, 0.015, 0.03), uNight);
+        vec3 c = mix(deep, refl * mix(vec3(0.86, 0.8, 0.68), vec3(1.0), uNight), fr);
         c += vec3(0.9, 0.95, 0.9) * pow(max(n1 - 0.62, 0.0), 2.0) * 0.6 * (1.0 - uNight);
         gl_FragColor = vec4(fogIt(c, vW), mix(0.3, 0.97, smoothstep(0.0, 0.55, depth))); }`,
       { tR: { value: null }, tD: { value: depthTex }, uRM: { value: RM }, uDB: { value: new T.Vector4(...DB) } }, { transparent: true, depthWrite: false }));
@@ -161,7 +165,7 @@
         const nearPond = sm(1.2, 0.2, Math.abs(x - pondX(z) - 0.4)); let tall = 0.45 + rnd() * 0.6 + nearPond * 0.6; if (sl > 1.3) tall *= 0.6;
         for (const D of DOORS) if (Math.abs(z - D.z) < 2.8 && x > D.xf - 2.6 && x < D.xf + 0.2) tall *= 0.32; if (x > pondX(z) + 0.9 && x < hillX(z) + 0.1) tall *= 0.38; tall *= 0.45 + 0.55 * sm(2.6, 6.5, Math.hypot(x - OVERP.x, z - OVERP.z));
         q.setFromEuler(new T.Euler((rnd() - 0.5) * 0.35, rnd() * Math.PI, (rnd() - 0.5) * 0.35)); m.compose(V3(x, y - 0.03, z), q, V3(0.8 + rnd() * 0.8, tall, 1)); im.setMatrixAt(k, m);
-        const g = rnd(); aC.set([0.3 + g * 0.25 + pm * 0.1, 0.5 + g * 0.2, 0.18 + g * 0.08], k * 3); k++;
+        const g = rnd(); aC.set([0.4 + g * 0.24 + pm * 0.1, 0.45 + g * 0.16, 0.2 + g * 0.06], k * 3); k++;
       }
       im.count = k; im.geometry.setAttribute("aC", new T.InstancedBufferAttribute(aC, 3)); im.frustumCulled = false; scene.add(im);
       // folhas largas bem na frente da câmera, como no quadro do filme
@@ -169,8 +173,8 @@
       big.setAttribute("aC", new T.InstancedBufferAttribute(new Float32Array(18 * 3).map((_, i) => [0.36, 0.6, 0.24][i % 3] * (0.85 + rnd() * 0.3)), 3));
       const bm = new T.InstancedMesh(big, im.material, 18); for (let i = 0; i < 18; i++) { const x = OVERP.x - 0.9 - rnd() * 1.3, z = OVERP.z - 1.6 - rnd() * 1.2; q.setFromEuler(new T.Euler((rnd() - 0.5) * 0.9, rnd() * 3, (rnd() - 0.5) * 0.9)); m.compose(V3(x, Math.max(H(x, z), -0.2) - 0.05, z), q, V3(0.8, 0.5 + rnd() * 0.5, 0.8)); bm.setMatrixAt(i, m); }
       bm.frustumCulled = false; scene.add(bm); }
-    { const N = small ? 500 : 1100, fp = new Float32Array(N * 3), fc = new Float32Array(N * 3); let k = 0, tries = 0;
-      while (k < N && tries++ < N * 10) { const x = -1 + rnd() * 10, z = -14 + rnd() * 22, y = H(x, z); if (y < 0.05 || avoid(x, z) || sm(0.95, 0.35, Math.abs(x - pathX(z))) > 0.3) continue; fp.set([x, y + 0.15 + rnd() * 0.35, z], k * 3); fc.set(rnd() < 0.6 ? [1, 1, 0.96] : [1, 0.86, 0.3], k * 3); k++; }
+    { const N = small ? 150 : 300, fp = new Float32Array(N * 3), fc = new Float32Array(N * 3); let k = 0, tries = 0;
+      while (k < N && tries++ < N * 10) { const x = -1 + rnd() * 10, z = -14 + rnd() * 22, y = H(x, z); if (y < 0.05 || avoid(x, z) || sm(0.95, 0.35, Math.abs(x - pathX(z))) > 0.3) continue; fp.set([x, y + 0.15 + rnd() * 0.35, z], k * 3); fc.set(rnd() < 0.6 ? [0.78, 0.74, 0.66] : [0.75, 0.62, 0.3], k * 3); k++; }
       const g = K(new T.BufferGeometry()); g.setAttribute("position", new T.BufferAttribute(fp.slice(0, k * 3), 3)); g.setAttribute("aC", new T.BufferAttribute(fc.slice(0, k * 3), 3));
       const fl = new T.Points(g, shader(`attribute vec3 aC; uniform float uPS, uRS; varying vec3 vC, vW; void main(){ vC = aC; vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; vec4 mv = viewMatrix * w; gl_PointSize = clamp(uPS * uRS * 0.05 / -mv.z, 1.0, 14.0); gl_Position = projectionMatrix * mv; }`,
         `varying vec3 vC, vW; void main(){ clipW(vW); if (length(gl_PointCoord - 0.5) > 0.5) discard; gl_FragColor = vec4(fogIt(vC * lightAt(vec3(0.0, 1.0, 0.0), vW, 0.0) * 1.15, vW), 1.0); }`));
@@ -196,7 +200,7 @@
       if (extra) extra(trunk);
       return trunk;
     }
-    const G1 = [0.36, 0.55, 0.3], G2 = [0.44, 0.62, 0.32], G3 = [0.3, 0.48, 0.36];
+    const G1 = [0.4, 0.48, 0.27], G2 = [0.48, 0.53, 0.29], G3 = [0.33, 0.4, 0.29];
     // a árvore do balanço, no alto do barranco, com um galho comprido por cima do caminho
     const SW = { x: 1.25, z: 3.7, py: 4.35 };
     tree(hillX(4.6) + 1.9, 4.6, 7.5, V3(-0.9, 0, 0.2), 1.9, G2, (trunk) => { const s = trunk.getPointAt(0.62), e = V3(SW.x - 1.0, SW.py + 0.35, SW.z - 0.1); limbTube([s, s.clone().lerp(e, 0.4).add(V3(0, 0.5, 0)), V3(SW.x + 0.6, SW.py + 0.25, SW.z), e], 0.13, 0.04); canopy(e.clone().add(V3(0, 0.6, 0)), 1.3, 36, G1); canopy(V3(SW.x + 1.2, SW.py + 1.0, SW.z), 1.2, 30, G2); });
@@ -220,6 +224,32 @@
       const m = new T.Matrix4(), q = new T.Quaternion(); cards.forEach(([p, s, c, nn, r], i) => { m.compose(p, q, V3(s, s, s)); leaves.setMatrixAt(i, m); aC.set(c, i * 3); aN.set([nn.x, nn.y, nn.z], i * 3); aR[i] = r; });
       geo.setAttribute("aC", new T.InstancedBufferAttribute(aC, 3)); geo.setAttribute("aN", new T.InstancedBufferAttribute(aN, 3)); geo.setAttribute("aR", new T.InstancedBufferAttribute(aR, 1)); leaves.frustumCulled = false; scene.add(leaves); }
 
+    /* ---------------- a guerra ao redor: casas queimadas, postes tortos e os aviões passando ---------------- */
+    const charM = toon("#1f1914", { toon: 0.3 }), charL = toon("#3a2e24", { toon: 0.3 }), rubM = toon("#5a4e44", { toon: 0.3 });
+    const zincM = shader(VS_STD, `varying vec3 vW, vN; varying vec2 vU; void main(){ clipW(vW); vec3 N = normalize(vN); if (!gl_FrontFacing) N = -N; float rib = 0.7 + 0.3 * sin(vU.x * 90.0); vec3 b = mix(vec3(0.35, 0.3, 0.27), vec3(0.5, 0.24, 0.12), vnoise(vU * 8.0)) * rib; gl_FragColor = vec4(fogIt(b * lightAt(N, vW, 0.3), vW), 1.0); }`, {}, { side: T.DoubleSide });
+    function ruin(x, z, sc, rot) {
+      const g = new T.Group(); g.position.set(x, H(x, z) - 0.05, z); g.rotation.y = rot; g.scale.setScalar(sc); scene.add(g);
+      const posts = [[-2, -1.5, 2.6], [2, -1.5, 1.4], [-2, 1.5, 1.9], [2, 1.5, 2.8], [0, -1.5, 1.1], [0, 1.5, 2.2]];
+      for (const [px, pz, h] of posts) { const m = mesh(new T.BoxGeometry(0.16, h, 0.16), charM, g, px, h / 2, pz); m.rotation.set((rnd() - 0.5) * 0.25, 0, (rnd() - 0.5) * 0.25); }
+      const beam = mesh(new T.BoxGeometry(4.4, 0.14, 0.16), charM, g, 0, 2.2, -1.5); beam.rotation.z = -0.32;
+      const beam2 = mesh(new T.BoxGeometry(0.14, 0.14, 3.4), charL, g, -2, 1.6, 0); beam2.rotation.x = 0.5;
+      for (let i = 0; i < 3; i++) { const sh = mesh(new T.PlaneGeometry(1.8, 1.2), zincM, g, (rnd() - 0.5) * 3, 0.35 + rnd() * 0.5, (rnd() - 0.5) * 2.4); sh.rotation.set(-Math.PI / 2 + (rnd() - 0.5) * 0.9, rnd() * 3, (rnd() - 0.5) * 0.5); }
+      for (let i = 0; i < 14; i++) { const r = mesh(new T.DodecahedronGeometry(0.15 + rnd() * 0.35, 0), rnd() < 0.5 ? rubM : charL, g, (rnd() - 0.5) * 4.4, 0.05, (rnd() - 0.5) * 3.4); r.scale.y = 0.5; r.rotation.set(rnd() * 3, rnd() * 3, 0); }
+      const chim = mesh(new T.BoxGeometry(0.5, 3.6, 0.5), rubM, g, 1.2, 1.8, 0.4); chim.rotation.z = 0.06; // a chaminé que sobrou de pé
+    }
+    ruin(-25, -6, 1.0, 0.3); ruin(-26.5, -16, 1.15, -0.4); ruin(-24.5, 4, 0.9, 1.2); ruin(-27, -28, 1.2, 0.1); ruin(hillX(-26) + 0.5, -26, 0.9, 0.8); ruin(-20, -36, 1.3, -0.7);
+    // postes de luz tortos com os fios caídos, como no pôster
+    { const poles = []; for (let i = 0; i < 7; i++) { const x = -23 + (rnd() - 0.5) * 2, z = -34 + i * 7.5, b = V3(x, H(x, z) - 0.2, z), lean = V3((rnd() - 0.5) * 0.9, 0, (rnd() - 0.5) * 0.6), top = b.clone().add(V3(lean.x, 7.5, lean.z));
+        const pole = new T.Mesh(K(new T.CylinderGeometry(0.09, 0.13, 7.6, 6)), charM); pole.position.copy(b).lerp(top, 0.5); pole.quaternion.setFromUnitVectors(V3(0, 1, 0), top.clone().sub(b).normalize()); scene.add(pole);
+        const bar = mesh(new T.BoxGeometry(1.4, 0.1, 0.1), charM, null, top.x, top.y - 0.6, top.z); bar.rotation.z = (rnd() - 0.5) * 0.4; poles.push(top.clone().add(V3(0, -0.6, 0))); }
+      const wm = K(new T.LineBasicMaterial({ color: "#1a1512" }));
+      for (let i = 0; i < poles.length - 1; i++) for (const off of [-0.6, 0.6]) { const a = poles[i].clone().add(V3(off, 0, 0)), b = poles[i + 1].clone().add(V3(off, 0, 0)), pts = []; const sag = 1.2 + rnd() * (i % 3 === 0 ? 4 : 1.2); for (let k = 0; k <= 16; k++) { const t = k / 16; pts.push(a.clone().lerp(b, t).add(V3(0, -Math.sin(t * Math.PI) * sag, 0))); } scene.add(new T.Line(K(new T.BufferGeometry().setFromPoints(pts)), wm)); } }
+    // os bombardeiros: silhuetas lá no alto, de vez em quando, e o ronco grave
+    const bombers = new T.Group(); scene.add(bombers); bombers.visible = false;
+    { const bm = K(new T.MeshBasicMaterial({ color: "#2e2a26", fog: false, transparent: true, opacity: 0.75 }));
+      for (const [dx, dz] of [[0, 0], [-9, 7], [9, 7], [-18, 14], [18, 14]]) { const p = new T.Group(); p.position.set(dx, (rnd() - 0.5) * 2, dz); bombers.add(p);
+        mesh(new T.CylinderGeometry(0.5, 0.35, 9, 8), bm, p).rotation.x = Math.PI / 2; mesh(new T.BoxGeometry(14, 0.12, 1.6), bm, p, 0, 0, -0.6); mesh(new T.BoxGeometry(4.4, 0.1, 0.9), bm, p, 0, 0.1, 4.0); mesh(new T.BoxGeometry(0.1, 1.8, 1.2), bm, p, 0, 0.9, 4.0); } }
+    let bombT = 14;
     /* ---------------- o abrigo: portas de madeira, telhado de zinco e o túnel escuro ---------------- */
     const woodM = toon("#8d7c66", { toon: 0.5 }), woodD = toon("#6b5a48", { toon: 0.5 });
     const roofM = shader(VS_STD, `varying vec3 vW, vN; varying vec2 vU; void main(){ clipW(vW); vec3 N = normalize(vN); if (!gl_FrontFacing) N = -N; float n = vnoise(vU * vec2(6.0, 14.0)), rib = 0.72 + 0.28 * sin(vU.y * 120.0);
@@ -308,9 +338,11 @@
     }
     const SKIN = "#f5d5ba";
     function makeSetsuko() {
-      const g = new T.Group(), skin = toon(SKIN), dress = toon("#c4503f"), white = toon("#f2ede3"), shoe = toon("#6a2c22");
+      const g = new T.Group(), skin = toon(SKIN), dress = toon("#e4dac6"), white = toon("#f2ede3"), shoe = toon("#6a5a4a");
+      const check = canvasTex(64, 64, (c, w, h) => { c.fillStyle = "#3d6aa6"; c.fillRect(0, 0, w, h); c.fillStyle = "rgba(220,230,245,0.55)"; for (let i = 0; i < 4; i++) { c.fillRect(i * 16, 0, 4, h); c.fillRect(0, i * 16, w, 4); } c.fillStyle = "rgba(20,40,80,0.35)"; for (let i = 0; i < 4; i++) { c.fillRect(i * 16 + 8, 0, 2, h); c.fillRect(0, i * 16 + 8, w, 2); } }); check.wrapS = check.wrapT = T.RepeatWrapping; check.repeat.set(3, 2);
+      const skirtM = toon("#ffffff", { map: check });
       const torso = lathe([[0, 0], [0.1, 0], [0.105, 0.06], [0.088, 0.18], [0.07, 0.25], [0.035, 0.28], [0, 0.285]], dress, g); torso.position.y = 0.02; outline(torso);
-      const skirt = mesh(new T.SphereGeometry(1, 22, 12, 0, Math.PI * 2, 0, Math.PI * 0.6), dress, g, 0, 0.05, 0.05, true); skirt.scale.set(0.14, 0.09, 0.16);
+      const skirt = mesh(new T.SphereGeometry(1, 22, 12, 0, Math.PI * 2, 0, Math.PI * 0.6), skirtM, g, 0, 0.05, 0.05, true); skirt.scale.set(0.14, 0.09, 0.16);
       const col = mesh(new T.TorusGeometry(0.045, 0.014, 6, 18), white, g, 0, 0.29, 0); col.rotation.x = Math.PI / 2;
       for (const s of [-1, 1]) { mesh(new T.SphereGeometry(0.046, 12, 10), dress, g, s * 0.092, 0.245, 0, true); limb(V3(s * 0.1, 0.235, 0), V3(s * 0.175, 0.39, 0.0), 0.028, skin, g); mesh(new T.SphereGeometry(0.03, 10, 8), skin, g, s * 0.18, 0.41, 0);
         limb(V3(s * 0.05, 0.035, 0.02), V3(s * 0.056, 0.035, 0.2), 0.036, skin, g); }
@@ -320,13 +352,15 @@
       return { g, knees, head };
     }
     function makeSeita() {
-      const g = new T.Group(), skin = toon(SKIN), shirt = toon("#e6dcc2"), pants = toon("#7b7559"), shoe = toon("#2a2420");
-      for (const s of [-1, 1]) { limb(V3(s * 0.08, 0.82, 0), V3(s * 0.088, 0.09, 0.0), 0.056, pants, g); const sh = mesh(new T.SphereGeometry(1, 12, 8), shoe, g, s * 0.088, 0.035, 0.035, true); sh.scale.set(0.052, 0.036, 0.095); }
+      const g = new T.Group(), skin = toon(SKIN), shirt = toon("#dcd8cc"), pants = toon("#6f6a4a"), shoe = toon("#2a2420"), patch = toon("#8a8060");
+      for (const s of [-1, 1]) { limb(V3(s * 0.08, 0.82, 0), V3(s * 0.088, 0.09, 0.0), 0.056, pants, g); limb(V3(s * 0.088, 0.36, 0.0), V3(s * 0.088, 0.07, 0.0), 0.062, shoe, g); const sh = mesh(new T.SphereGeometry(1, 12, 8), shoe, g, s * 0.088, 0.035, 0.035, true); sh.scale.set(0.055, 0.04, 0.1); }
+      mesh(new T.BoxGeometry(0.07, 0.09, 0.02), patch, g, 0.09, 0.55, 0.055); mesh(new T.BoxGeometry(0.06, 0.07, 0.02), patch, g, -0.08, 0.7, 0.056);
       mesh(new T.CylinderGeometry(0.15, 0.145, 0.14, 18), pants, g, 0, 0.83, 0, true);
       const torso = lathe([[0, 0.86], [0.15, 0.86], [0.155, 0.95], [0.165, 1.12], [0.175, 1.26], [0.12, 1.32], [0.05, 1.35], [0, 1.35]], shirt, g); outline(torso);
-      const shoulders = [-1, 1].map((s) => { const p = new T.Group(); p.position.set(s * 0.19, 1.27, 0); g.add(p); limb(V3(0, 0, 0), V3(0, -0.17, 0), 0.058, shirt, p); limb(V3(0, -0.15, 0), V3(0, -0.3, 0), 0.04, skin, p); limb(V3(0, -0.3, 0), V3(0, -0.54, 0.03), 0.037, skin, p); mesh(new T.SphereGeometry(0.042, 10, 8), skin, p, 0, -0.58, 0.035); return p; });
+      const shoulders = [-1, 1].map((s) => { const p = new T.Group(); p.position.set(s * 0.19, 1.27, 0); g.add(p); limb(V3(0, 0.02, 0), V3(0, -0.3, 0), 0.043, skin, p); limb(V3(0, -0.3, 0), V3(0, -0.54, 0.03), 0.037, skin, p); mesh(new T.SphereGeometry(0.042, 10, 8), skin, p, 0, -0.58, 0.035); return p; });
       limb(V3(0, 1.33, 0), V3(0, 1.4, 0), 0.04, skin, g);
       const head = headOf(0.108, SKIN, "#16120f", false, g, 1.5);
+      const capM = toon("#d2c9b0"); const cap = mesh(new T.CylinderGeometry(0.112, 0.118, 0.07, 22), capM, head, 0, 0.075, -0.005, true); cap.rotation.x = -0.12; const brim = mesh(new T.CylinderGeometry(0.1, 0.1, 0.012, 20, 1, false, -Math.PI / 2, Math.PI), capM, head, 0, 0.05, 0.075, true); brim.rotation.x = 0.2; mesh(new T.CylinderGeometry(0.114, 0.114, 0.02, 22), toon("#2a2620"), head, 0, 0.045, -0.004);
       return { g, shoulders, head };
     }
     // o balanço: duas cordas no galho, a tábua, e a Setsuko sentada
@@ -353,13 +387,21 @@
       const pts = new T.Points(g, shader(FF_VS, FF_FS, {}, { transparent: true, depthWrite: false, blending: T.AdditiveBlending })); pts.frustumCulled = false; scene.add(pts); return pts; }
     { const L = []; for (let i = 0; i < (small ? 1100 : 2200); i++) { const x = -9 + rnd() * 18, z = -16 + rnd() * 26; const y = Math.max(H(x, z), 0) + 0.25 + Math.pow(rnd(), 1.7) * 3.2; L.push([x, y, z, 1, 9, 9]); } swarm(L); }
     { const L = []; for (let i = 0; i < 130; i++) L.push([NET.x + (rnd() - 0.5) * 1.2, D0.y0 + 0.15 + rnd() * 0.7, NET.z + (rnd() - 0.5) * 0.8, 0.12, 0.62, 0.36]); swarm(L); }
-    // de dia: pólen boiando na luz
-    { const n = 260, g = K(new T.BufferGeometry()), p = new Float32Array(n * 3); for (let i = 0; i < n; i++) p.set([-2 + rnd() * 9, 0.3 + rnd() * 4, -8 + rnd() * 16], i * 3); g.setAttribute("position", new T.BufferAttribute(p, 3));
-      const pol = new T.Points(g, shader(`uniform float uPS, uRS; varying float vA; varying vec3 vW; void main(){ vec3 p = position + vec3(sin(uT * 0.3 + position.z), sin(uT * 0.2 + position.x) * 0.5, cos(uT * 0.25 + position.y)) * 0.4; vec4 w = modelMatrix * vec4(p, 1.0); vW = w.xyz; vec4 mv = viewMatrix * w; vA = (1.0 - uNight) * (0.5 + 0.5 * sin(uT * 1.7 + position.x * 9.0)); gl_PointSize = clamp(uPS * uRS * 0.025 / -mv.z, 1.0, 8.0); gl_Position = projectionMatrix * mv; }`,
-        `varying float vA; varying vec3 vW; void main(){ if (length(gl_PointCoord - 0.5) > 0.5) discard; gl_FragColor = vec4(1.0, 1.0, 0.93, vA * 0.7); }`, {}, { transparent: true, depthWrite: false })); pol.frustumCulled = false; scene.add(pol); }
+    // cinzas caindo devagar, de dia e de noite
+    { const n = small ? 500 : 1000, g = K(new T.BufferGeometry()), p = new Float32Array(n * 3); for (let i = 0; i < n; i++) p.set([-6 + rnd() * 16, rnd() * 5, -10 + rnd() * 20], i * 3); g.setAttribute("position", new T.BufferAttribute(p, 3));
+      const ash = new T.Points(g, shader(`uniform float uPS, uRS; varying float vA, vR; varying vec3 vW; void main(){ vec3 p = position; p.y = mod(position.y - uT * (0.12 + fract(position.x * 7.3) * 0.1), 5.0) + 0.1; p.x += sin(uT * 0.5 + position.z * 3.0) * 0.4; p.z += cos(uT * 0.4 + position.x * 2.0) * 0.3;
+          vec4 w = modelMatrix * vec4(p, 1.0); vW = w.xyz; vec4 mv = viewMatrix * w; vA = smoothstep(0.1, 0.6, p.y) * smoothstep(5.1, 4.2, p.y) * mix(0.75, 0.45, uNight); vR = uT * (fract(position.z * 9.1) - 0.5) * 3.0 + position.x; gl_PointSize = clamp(uPS * uRS * 0.04 / -mv.z, 1.0, 10.0); gl_Position = projectionMatrix * mv; }`,
+        `varying float vA, vR; varying vec3 vW; void main(){ vec2 q = gl_PointCoord - 0.5; float c = cos(vR), s = sin(vR); q = mat2(c, -s, s, c) * q; if (length(q * vec2(1.0, 2.2)) > 0.45) discard; gl_FragColor = vec4(fogIt(mix(vec3(0.42, 0.4, 0.38), vec3(0.12, 0.11, 0.12), uNight), vW), vA); }`, {}, { transparent: true, depthWrite: false })); ash.frustumCulled = false; scene.add(ash); }
+    // colunas de fumaça no horizonte: a cidade bombardeada
+    for (let i = 0; i < 6; i++) { const a = -0.9 + i * 0.5 + rnd() * 0.2, r = 70 + rnd() * 40; const m = new T.Mesh(K(new T.PlaneGeometry(14 + rnd() * 8, 60)), shader("varying vec2 vU; varying vec3 vW; void main(){ vU = uv; vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }",
+        `uniform float uSeed; varying vec2 vU; varying vec3 vW; void main(){ vec2 p = vec2((vU.x - 0.5) * (1.0 + vU.y * 2.2), vU.y); float n = vnoise(vec2(p.x * 3.0 + uSeed, p.y * 4.0 - uT * 0.06)) * 0.6 + vnoise(vec2(p.x * 7.0, p.y * 9.0 - uT * 0.1 + uSeed)) * 0.4;
+          float a = smoothstep(0.5, 0.05, abs(p.x) + (n - 0.5) * 0.35) * smoothstep(0.0, 0.08, vU.y) * smoothstep(1.0, 0.55, vU.y) * (0.45 + n * 0.5);
+          vec3 c = mix(vec3(0.18, 0.15, 0.13), vec3(0.42, 0.36, 0.3), n); c = mix(c, vec3(0.7, 0.25, 0.08), smoothstep(0.12, 0.0, vU.y) * 0.6);
+          gl_FragColor = vec4(mix(c, vec3(0.1, 0.07, 0.07), uNight * 0.7), a * mix(0.8, 0.55, uNight)); }`, { uSeed: { value: rnd() * 20 } }, { transparent: true, depthWrite: false, side: T.DoubleSide }));
+      m.position.set(Math.cos(a) * r - 10, 26, -Math.abs(Math.sin(a)) * r - 30); m.lookAt(OVERP.x, 26, OVERP.z); scene.add(m); }
     // feixes de luz atravessando as copas, de dia
     for (let i = 0; i < 4; i++) { const m = new T.Mesh(K(new T.PlaneGeometry(1.6 + rnd(), 13)), shader("varying vec2 vU; void main(){ vU = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
-      `varying vec2 vU; void main(){ float a = smoothstep(0.0, 0.35, vU.x) * smoothstep(1.0, 0.65, vU.x) * smoothstep(0.0, 0.5, vU.y) * smoothstep(1.0, 0.75, vU.y); gl_FragColor = vec4(vec3(1.0, 0.98, 0.88), a * 0.13 * (1.0 - uNight) * (1.0 - uClip)); }`, {}, { transparent: true, depthWrite: false, blending: T.AdditiveBlending, side: T.DoubleSide }));
+      `varying vec2 vU; void main(){ float a = smoothstep(0.0, 0.35, vU.x) * smoothstep(1.0, 0.65, vU.x) * smoothstep(0.0, 0.5, vU.y) * smoothstep(1.0, 0.75, vU.y); gl_FragColor = vec4(vec3(1.0, 0.82, 0.55), a * 0.11 * (1.0 - uNight) * (1.0 - uClip)); }`, {}, { transparent: true, depthWrite: false, blending: T.AdditiveBlending, side: T.DoubleSide }));
       m.position.set(0.8 + i * 1.5, 5.5, -3.5 - i * 2.2); m.rotation.set(0, -0.55, -0.55); scene.add(m); }
 
     /* ---------------- marcadores: um vaga-lume parado em cima de cada objeto que abre ---------------- */
@@ -393,7 +435,9 @@
         const chirp = () => { if (!audio) return; const t0 = ac.currentTime; g.gain.cancelScheduledValues(t0); g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(0.012, t0 + 0.05); g.gain.setValueAtTime(0.012, t0 + 0.35 + Math.random() * 0.5); g.gain.linearRampToValueAtTime(0, t0 + 0.9); setTimeout(chirp, 900 + Math.random() * 2600); }; setTimeout(chirp, 300 + k * 700); }
       const frog = () => { if (!audio) return; const t0 = ac.currentTime, o = ac.createOscillator(), g = ac.createGain(), f = ac.createBiquadFilter(); o.type = "sawtooth"; o.frequency.setValueAtTime(150 + Math.random() * 40, t0); o.frequency.linearRampToValueAtTime(110, t0 + 0.22); f.type = "lowpass"; f.frequency.value = 600; o.connect(f).connect(g).connect(nightG); g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.05, t0 + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.28); o.start(t0); o.stop(t0 + 0.3); setTimeout(frog, 2500 + Math.random() * 6000); }; setTimeout(frog, 1800);
       out.gain.linearRampToValueAtTime(0.8, ac.currentTime + 2.5);
-      audio = { ac, out, dayG, nightG, nodes, last: -1 };
+      const drone = () => { const t0 = ac.currentTime, g = ac.createGain(), f = ac.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 320; g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.09, t0 + 9); g.gain.setValueAtTime(0.09, t0 + 15); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 26); f.connect(g).connect(dayG);
+        for (const fr of [58, 61.5, 87, 117]) { const o = ac.createOscillator(); o.type = "sawtooth"; o.frequency.value = fr; const og = ac.createGain(); og.gain.value = fr > 100 ? 0.25 : 0.5; o.connect(og).connect(f); o.start(t0); o.stop(t0 + 26.5); } };
+      audio = { ac, out, dayG, nightG, nodes, last: -1, drone };
     } catch (e) { audio = null; }
 
     /* ---------------- câmera ---------------- */
@@ -416,13 +460,15 @@
         const d = cam.tgt.clone().sub(cam.pos), r = d.length(), yw = Math.atan2(d.z, d.x) + cam.yaw, pt = Math.asin(Math.max(-0.99, Math.min(0.99, d.y / r))) + cam.pitch;
         camera.position.copy(cam.pos).add(V3(0, Math.sin(t * 0.45) * 0.012, 0)); camera.lookAt(cam.pos.x + Math.cos(yw) * Math.cos(pt), cam.pos.y + Math.sin(pt), cam.pos.z + Math.sin(yw) * Math.cos(pt));
         U.uT.value = t; const n0 = U.uNight.value; U.uNight.value += (nightT - n0) * Math.min(1, dt * (ctx.reduce ? 60 : 0.45)); const n = U.uNight.value;
-        U.uFogD.value = 0.03 + n * 0.006; U.uPLC.value.setRGB(0.75, 1.0, 0.4).multiplyScalar(1.0 + 0.15 * Math.sin(t * 3.1) + 0.1 * Math.sin(t * 7.3));
+        U.uFogD.value = 0.038 - n * 0.004; U.uPLC.value.setRGB(0.75, 1.0, 0.4).multiplyScalar(1.0 + 0.15 * Math.sin(t * 3.1) + 0.1 * Math.sin(t * 7.3));
         netGlow.material.opacity = n * (0.55 + 0.1 * Math.sin(t * 2.7));
         // o balanço vai e volta; o Seita empurra quando ele volta
         const sw = Math.sin(t * 1.62); swing.rotation.x = 0.33 * sw; SE.knees.forEach((kn) => (kn.rotation.x = -0.25 - 0.45 * Math.cos(t * 1.62))); SE.head.rotation.x = -0.12 * sw;
         const push = sm(0.35, 0.95, sw); SI.shoulders.forEach((s) => (s.rotation.x = -0.25 - push * 1.15)); SI.g.rotation.x = 0.06 * push; SI.head.rotation.x = 0.1 - 0.12 * push; SI.head.rotation.y = 0.15 * Math.sin(t * 0.3);
         for (const it of [...items, netItem]) { it.hot += ((hot === it || focus === it ? 1 : 0) - it.hot) * Math.min(1, dt * 6); it.mats.forEach((m) => (m.uniforms.uHot.value = it.hot * 0.8)); }
         for (const it of items) { const b = Math.sin(t * 1.3 + it.i) * 0.05; it.halo.position.copy(it.mk).add(V3(Math.sin(t * 0.7 + it.i) * 0.04, b, 0)); it.core.position.copy(it.halo.position); it.halo.material.opacity = (0.35 + 0.25 * Math.sin(t * 2.4 + it.i * 2)) * (1 + it.hot) + n * 0.3; it.halo.scale.setScalar(0.55 + it.hot * 0.35 + n * 0.25); }
+        bombT -= dt; if (bombT < 0) { bombT = 55 + Math.random() * 30; bombers.visible = n < 0.5; bombers.userData.t = 0; if (audio && bombers.visible) audio.drone(); }
+        if (bombers.visible) { const bt = (bombers.userData.t += dt), u = bt / 26; bombers.position.set(70 - u * 150, 95, -60 + u * 30); bombers.rotation.y = Math.atan2(-150, 30); if (u > 1) bombers.visible = false; }
         if (audio && Math.abs(audio.last - n) > 0.02) { audio.last = n; const tt = audio.ac.currentTime; audio.dayG.gain.setTargetAtTime(1 - n, tt, 0.4); audio.nightG.gain.setTargetAtTime(n, tt, 0.4); }
       },
       render(renderer) {

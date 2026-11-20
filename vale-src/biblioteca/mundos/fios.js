@@ -193,7 +193,7 @@
 
     /* ---------------- alguém conectado: uma pessoa de fones sentada diante do monitor principal (personagem original) ---------------- */
     { const p = ctx.person({ h: 1.55, skin: "#e8d4c4", hair: "#3a2a24", hairStyle: "curto", top: "#7a7a86", bottom: "#2a2a30", longSleeves: true, headphones: true });
-      p.sit(); p.arms.forEach((a, i) => { a.sh.rotation.x = -1.0; a.sh.rotation.z = (i ? -1 : 1) * 0.15; a.el.rotation.x = -0.6; }); p.head.rotation.x = 0.1;
+      p.g.visible = false; p.sit(); p.arms.forEach((a, i) => { a.sh.rotation.x = -1.0; a.sh.rotation.z = (i ? -1 : 1) * 0.15; a.el.rotation.x = -0.6; }); p.head.rotation.x = 0.1;
       p.g.position.set(0, 0.46 - p.hipY, -RZ + 1.25); p.g.rotation.y = Math.PI; scene.add(p.g);
       const stool = new T.Mesh(keep(new T.CylinderGeometry(0.2, 0.2, 0.05, 16)), keep(new T.MeshStandardMaterial({ color: "#2a2a30", roughness: 0.6 }))); stool.position.set(0, 0.44, -RZ + 1.25); scene.add(stool);
       const leg = new T.Mesh(keep(new T.CylinderGeometry(0.03, 0.03, 0.44, 8)), stool.material); leg.position.set(0, 0.22, -RZ + 1.25); scene.add(leg);
@@ -257,7 +257,7 @@
     /* ---------------- o que o resto da biblioteca usa ---------------- */
     const ray = new T.Raycaster();
     let blinkT = 0, noiseT = 0;
-    const fx = ctx.fantasy(scene, { center: V3(0, 1.6, -0.5), radius: 3.4, height: 1.2, colors: ["#5ce8f8", "#ff4a8a", "#b0f0ff"], count: 5, power: 0.6, dim: 0.85, motes: 200, moteSize: 0.01 });
+    const fx = ctx.fantasy(scene, { center: V3(0, 1.6, -0.5), radius: 3.4, height: 1.2, colors: ["#5ce8f8", "#ff4a8a", "#b0f0ff"], count: 0, power: 0.6, dim: 0.85, motes: 0, moteSize: 0.01 });
     return {
       name: "Área técnica", sub: "o quarto dos fios",
       update(dt, t) {

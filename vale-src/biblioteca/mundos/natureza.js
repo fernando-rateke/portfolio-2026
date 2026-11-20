@@ -108,7 +108,7 @@
       if (src.map) src.map.encoding = T.LinearEncoding;
       if (o.glow && o.glow[src.name] != null) { mm.emissive = new T.Color(o.glowC || "#7aff9a"); mm.emissiveIntensity = o.glow[src.name]; } x.material = mm; }); return m; };
     // o guardião da mata: um espírito alto de cervo, coberto de musgo, com lanternas penduradas nos chifres (personagem original)
-    const toto = new T.Group(); toto.position.set(-0.4, 0, -2.6); toto.rotation.y = 0.2; scene.add(toto);
+    const toto = new T.Group(); toto.visible = false; toto.position.set(-0.4, 0, -2.6); toto.rotation.y = 0.2; scene.add(toto);
     const umb = new T.Group(); toto.add(umb);
     { const moss = K(new T.MeshLambertMaterial({ color: "#3a5a3a" })), bark = K(new T.MeshLambertMaterial({ color: "#5a4a36" })), mask = K(new T.MeshLambertMaterial({ color: "#e8e2d2" }));
       const P = (geo, m, x, y, z, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1) => { const o = new T.Mesh(K(geo), m); o.position.set(x, y, z); o.rotation.set(rx, ry, rz); o.scale.set(sx, sy, sz); toto.add(o); return o; };
@@ -194,7 +194,7 @@
     setTimeout(() => { try { ctx.toast("Meu Amigo Totoro e Ponyo", "O ponto de ônibus", "Cada bolota plantada na grama guarda uma atividade. O velho ônibus passa de vez em quando."); } catch (e) { /* sem aviso */ } }, 900);
 
     const ray = new T.Raycaster(); let busT = 6;
-    const fx = ctx.fantasy(scene, { center: V3(0, 1.5, 0.5), radius: 7, height: 2, colors: ["#7affc8", "#c8ff7a", "#9ad8ff"], count: 7, power: 1.0, dim: 0.75, motes: 260, moteSize: 0.02 });
+    const fx = ctx.fantasy(scene, { center: V3(0, 1.5, 0.5), radius: 7, height: 2, colors: ["#7affc8", "#c8ff7a", "#9ad8ff"], count: 0, power: 1.0, dim: 0.75, motes: 0, moteSize: 0.02 });
     return {
       name: "O ponto de ônibus", sub: "Ciências da Natureza",
       update(dt, t) {

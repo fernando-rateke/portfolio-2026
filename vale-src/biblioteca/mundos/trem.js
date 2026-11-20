@@ -248,16 +248,6 @@
       const s2 = new T.Mesh(new T.SphereGeometry(0.17, 16, 12), sm); s2.position.y = 1.0; shadow.add(s2);
       const s3 = new T.Mesh(new T.CapsuleGeometry(0.09, 0.35, 4, 8), sm); s3.position.set(0, 0.0, 0.3); s3.rotation.x = Math.PI / 2; shadow.add(s3);
 
-      // um passageiro de verdade, de chapéu e casaco, lendo o jornal no banco da janela (personagem original), e mais uma sombra
-      {
-        const pp = ctx.person({ h: 1.7, skin: "#e8c8a8", hair: "#8a8a86", top: "#5a4a3a", bottom: "#3a342e", longSleeves: true, hat: "#3a3028" });
-        pp.sit(); pp.read(); pp.g.position.set(1.75, 0.56 - pp.hipY, -1.08); pp.g.rotation.y = -0.7; pp.g.scale.setScalar(0.85); scene.add(new T.HemisphereLight(0xffd8c0, 0x5a3a30, 1.2)); { const sl = new T.DirectionalLight(0xffc8a0, 0.9); sl.position.set(-3, 4, -8); scene.add(sl); } scene.add(pp.g);
-        const np = new T.Mesh(new T.PlaneGeometry(0.42, 0.32), new T.MeshBasicMaterial({ color: 0xe8e0cc, side: T.DoubleSide })); np.position.set(0, 1.0, 0.36); np.rotation.x = -0.5; pp.g.add(np);
-        const sh2 = new T.Group(); sh2.position.set(5.6, 0.56, 1.0); sh2.rotation.y = Math.PI; scene.add(sh2);
-        const smB = new T.MeshBasicMaterial({ color: 0x0b0a12, transparent: true, opacity: 0.55, depthWrite: false });
-        const b1 = new T.Mesh(new T.CapsuleGeometry(0.2, 0.46, 6, 12), smB); b1.position.y = 0.42; sh2.add(b1); const b2 = new T.Mesh(new T.SphereGeometry(0.16, 16, 12), smB); b2.position.y = 0.95; sh2.add(b2);
-      }
-
       // cenário que passa: postes com fios, ilhotas, casinhas, uma estação
       const r = mulberry(18);
       const poleGeo = Builder().add(new T.CylinderGeometry(0.07, 0.09, 6, 6), M(0, 2.6, 0), "#2A2224").add(new T.BoxGeometry(1.4, 0.08, 0.08), M(0, 5.2, 0), "#2A2224").add(new T.BoxGeometry(1.0, 0.07, 0.07), M(0, 4.7, 0), "#2A2224").build();
@@ -364,7 +354,7 @@
     const sub = { name: "A jornada", acts: MEMS.map((m) => ({ t: m.t, s: m.tag, r: m.d, img: "trem/" + m.src.split("/").pop() })) };
     const look = { x: 0, y: 0, sx: 0, sy: 0 };
     build(); startSound();
-    const fx = ctx.fantasy(scene, { center: new T.Vector3(0, 1.7, -4), radius: 5, height: 1.4, colors: ["#ffc8e0", "#ffe090", "#a8d0ff"], count: 5, power: 0.6, dim: 0.8, motes: 220, moteSize: 0.018 });
+    const fx = ctx.fantasy(scene, { center: new T.Vector3(0, 1.7, -4), radius: 5, height: 1.4, colors: ["#ffc8e0", "#ffe090", "#a8d0ff"], count: 0, power: 0.6, dim: 0.8, motes: 0, moteSize: 0.018 });
     // o dragão branco passa de vez em quando, bem longe, mesmo sem o final
     { const dr = scene.userData.dragon; dr.next = 1e9; dr.g.visible = false; }
     const birds = new T.Group(); scene.add(birds); for (let k = 0; k < 9; k++) { const b = new T.Group(); for (const sd of [-1, 1]) { const w = new T.Mesh(new T.PlaneGeometry(2.2, 0.5), new T.MeshBasicMaterial({ color: 0xf4f0ea, side: T.DoubleSide })); w.position.x = sd * 1.1; b.add(w); } b.position.set(-Math.abs(k - 4) * 4, -Math.abs(k - 4) * 0.8, (k - 4) * 3); birds.add(b); } birds.visible = false; let birdT = 10;

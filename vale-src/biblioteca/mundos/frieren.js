@@ -69,7 +69,7 @@
     /* ---------------- uma maga élfica viajante, no meio das flores, olhando o céu (personagem original) ---------------- */
     const fr = new T.Group(); const FX = 0.9, FZ = 1.2; fr.position.set(FX, H(FX, FZ), FZ); fr.rotation.y = Math.PI + 0.45; scene.add(fr);
     { const mage = ctx.person({ h: 1.55, skin: "#f4dcc8", hair: "#2a3a5a", hairStyle: "coque", top: "#4a6a5a", bottom: "#3a2e2a", longSleeves: true, cloak: "#7a4a2a", ears: true, shoes: "#4a3424" });
-      fr.add(mage.g); mage.head.rotation.x = -0.4;
+      mage.g.visible = false; fr.add(mage.g); mage.head.rotation.x = -0.4;
       // o cajado de madeira torta com um cristal âmbar e uma fita
       const staff = new T.Group(); staff.position.set(0.26, 0, 0.06); fr.add(staff);
       add(new T.CylinderGeometry(0.016, 0.022, 1.7, 8), toon("#6a4a2a"), 0, 0.85, 0, 0, 0, 0.04, staff); const cr = add(new T.OctahedronGeometry(0.07, 0), K(new T.MeshBasicMaterial({ color: "#ffc860" })), 0.03, 1.78, 0, 0, 0, 0, staff); cr.scale.set(0.8, 1.4, 0.8);
@@ -110,7 +110,7 @@
     setTimeout(() => { try { ctx.toast("Frieren", "O campo de flores", "Cada tufo de flores que brilha mais forte guarda um agradecimento."); } catch (e) { /* sem aviso */ } }, 900);
 
     const ray = new T.Raycaster();
-    const fx = ctx.fantasy(scene, { center: V3(0, 1.6, -1), radius: 8, height: 2.2, colors: ["#9ec8ff", "#ffd890", "#c8a8ff"], count: 7, power: 1.2, dim: 0.7, motes: 320, moteSize: 0.025 });
+    const fx = ctx.fantasy(scene, { center: V3(0, 1.6, -1), radius: 8, height: 2.2, colors: ["#9ec8ff", "#ffd890", "#c8a8ff"], count: 0, power: 1.2, dim: 0.7, motes: 0, moteSize: 0.025 });
     return {
       name: "O campo de flores", sub: "Agradecimentos",
       update(dt, t) {

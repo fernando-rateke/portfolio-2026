@@ -1105,7 +1105,7 @@
     scene.traverse((l) => { if (l.isHemisphereLight || l.isAmbientLight) l.intensity *= dim; else if (l.isDirectionalLight) l.intensity *= 0.5 + dim * 0.5; });
     const group = new T.Group(); scene.add(group);
     const wisps = [];
-    for (let k = 0; k < (o.count || 5); k++) {
+    for (let k = 0; k < (o.count == null ? 5 : o.count); k++) {
       const col = new T.Color(cols[k % cols.length]);
       const core = new T.Sprite(new T.SpriteMaterial({ map: glowTex, color: col.clone().lerp(new T.Color("#ffffff"), 0.5), transparent: true, depthWrite: false, blending: T.AdditiveBlending, fog: false })); core.scale.setScalar((R * 0.035 + 0.1) * SZ);
       const halo = new T.Sprite(new T.SpriteMaterial({ map: glowTex, color: col, transparent: true, opacity: 0.5, depthWrite: false, blending: T.AdditiveBlending, fog: false }));
@@ -1115,7 +1115,7 @@
       group.add(core, halo, trail); if (light) group.add(light);
       wisps.push({ core, halo, light, trail, tp, hist: [], r: R * (0.35 + Math.random() * 0.65), a0: Math.random() * 6.28, sp: (0.06 + Math.random() * 0.08) * (Math.random() < 0.5 ? -1 : 1), y0: (Math.random() - 0.3) * H, ph: Math.random() * 10 });
     }
-    const NM = small ? (o.motes || 260) >> 1 : (o.motes || 260), mg = new T.BufferGeometry(), mp = new Float32Array(NM * 3), ms = new Float32Array(NM * 2);
+    const NM0 = o.motes == null ? 260 : o.motes, NM = small ? NM0 >> 1 : NM0, mg = new T.BufferGeometry(), mp = new Float32Array(NM * 3), ms = new Float32Array(NM * 2);
     for (let i = 0; i < NM; i++) { const a = Math.random() * 6.28, r = Math.sqrt(Math.random()) * R * 1.2; mp.set([c.x + Math.cos(a) * r, c.y - H * 0.6 + Math.random() * H * 1.6, c.z + Math.sin(a) * r], i * 3); ms.set([Math.random(), Math.random()], i * 2); }
     mg.setAttribute("position", new T.BufferAttribute(mp, 3)); mg.setAttribute("aS", new T.BufferAttribute(ms, 2));
     const cv3 = cols.slice(0, 3).map((x) => new T.Color(x)); while (cv3.length < 3) cv3.push(cv3[0]);

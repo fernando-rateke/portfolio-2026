@@ -82,7 +82,7 @@
     { const ch = new T.Group(); ch.position.set(DESK.x - 0.35, 0, DESK.z + 0.8); ch.rotation.y = 0.9; scene.add(ch); const cm = std("#1e1e22", { roughness: 0.5 }); add(new T.BoxGeometry(0.46, 0.08, 0.46), cm, 0, 0.47, 0, 0, 0, 0, ch); add(new T.BoxGeometry(0.46, 0.55, 0.06), cm, 0, 0.82, 0.22, 0, -0.1, 0, ch); add(new T.CylinderGeometry(0.03, 0.03, 0.4, 8), std("#777", { metalness: 0.8 }), 0, 0.23, 0, 0, 0, 0, ch); for (let i = 0; i < 5; i++) add(new T.BoxGeometry(0.3, 0.02, 0.03), std("#555", { metalness: 0.8 }), Math.cos(i * 1.256) * 0.15, 0.04, Math.sin(i * 1.256) * 0.15, -i * 1.256, 0, 0, ch); }
 
     /* ---------------- o visitante: uma criatura alta de capuz e máscara de osso (personagem original) ---------------- */
-    const ryuk = new T.Group(); ryuk.position.set(0.85, 0.0, -2.45); ryuk.rotation.y = -0.35; scene.add(ryuk);
+    const ryuk = new T.Group(); ryuk.visible = false; ryuk.position.set(0.85, 0.0, -2.45); ryuk.rotation.y = -0.35; scene.add(ryuk);
     const OUTM = K(new T.MeshBasicMaterial({ color: "#000", side: T.BackSide }));
     const part = (geo, mat, x, y, z, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1, parent = ryuk, ol = true) => { const m = add(geo, mat, x, y, z, ry, rx, rz, parent); m.scale.set(sx, sy, sz); if (ol) { const o = new T.Mesh(m.geometry, OUTM); o.scale.setScalar(1.04); m.add(o); } return m; };
     { const cloth = std("#1a1622", { roughness: 0.9, side: T.DoubleSide }), bone = std("#e8e2d4", { roughness: 0.5 }), claw = std("#3a3440");
@@ -100,7 +100,7 @@
         for (let k = 0; k < 4; k++) { const b = add(new T.CylinderGeometry(0.01, 0.006, 0.9 - k * 0.12, 5), bone, s2 * (0.2 + k * 0.12), 0.25 - k * 0.12, 0, 0, 0, -s2 * (0.6 + k * 0.25), wing); void b; }
         const mem = add(new T.CircleGeometry(0.55, 10, Math.PI * (s2 > 0 ? 0 : 0.5), Math.PI * 0.5), std("#120e18", { side: T.DoubleSide, transparent: true, opacity: 0.85 }), 0, 0, -0.01, 0, 0, 0, wing); void mem; }
       ryuk.userData.head = mask; }
-    const ryukLight = new T.PointLight("#9a7acc", 0.8, 2.4, 2); ryukLight.position.set(1.0, 2.0, -1.9); scene.add(ryukLight);
+    const ryukLight = new T.PointLight("#9a7acc", 0, 2.4, 2); ryukLight.position.set(1.0, 2.0, -1.9); scene.add(ryukLight);
 
     /* ---------------- as maçãs: uma atividade em cada ---------------- */
     const sub = ctx.subjects().find((s) => s.name === "Área de Linguagens") || { name: "Área de Linguagens", acts: [] };
@@ -137,7 +137,7 @@
     setTimeout(() => { try { ctx.toast("Death Note", "O quarto do caderno", "Cada maçã da fruteira guarda uma atividade. O computador roda o Nós."); } catch (e) { /* sem aviso */ } }, 900);
 
     const ray = new T.Raycaster();
-    const fx = ctx.fantasy(scene, { center: V3(0.1, 1.5, -1.2), radius: 2.6, height: 1.2, colors: ["#b07aff", "#7affc8", "#ff6a8a"], count: 4, power: 0.6, dim: 0.75, motes: 160, moteSize: 0.01 });
+    const fx = ctx.fantasy(scene, { center: V3(0.1, 1.5, -1.2), radius: 2.6, height: 1.2, colors: ["#b07aff", "#7affc8", "#ff6a8a"], count: 0, power: 0.6, dim: 0.75, motes: 0, moteSize: 0.01 });
     return {
       name: "O quarto do caderno", sub: "Linguagens",
       update(dt, t) {

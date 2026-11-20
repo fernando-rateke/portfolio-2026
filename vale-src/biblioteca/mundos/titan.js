@@ -68,7 +68,7 @@
     const flagGeo = K(new T.PlaneGeometry(2.4, 2.4, 16, 8)); const flag = add(flagGeo, std("#ffffff", { map: flagTex, side: T.DoubleSide, roughness: 0.9 }), FLAG.x + 1.2, FLAG.y + 4.7, FLAG.z, -0.6);
     const flagBase = flagGeo.attributes.position.array.slice();
     // o viajante sentado na beirada, de costas, com a capa marrom
-    const soldier = new T.Group(); soldier.position.set(2.4, WH + 0.32, 0.25); soldier.rotation.y = 0.2; scene.add(soldier);
+    const soldier = new T.Group(); soldier.visible = false; soldier.position.set(2.4, WH + 0.32, 0.25); soldier.rotation.y = 0.2; scene.add(soldier);
     { const cloak = std("#5a4632", { side: T.DoubleSide }), skin = std("#e8c8b0"), boots = std("#3a2a20"), white = std("#e8e4da"), metal = std("#8a8a90", { metalness: 0.8, roughness: 0.3 }), hair = std("#2a2220");
       add(new T.CapsuleGeometry(0.17, 0.4, 6, 12), white, 0, 0.35, 0, 0, 0, 0, soldier);
       for (const s of [-1, 1]) { add(new T.CapsuleGeometry(0.075, 0.38, 5, 10), white, s * 0.1, 0.02, -0.22, Math.PI / 2, 0, 0, soldier); add(new T.CapsuleGeometry(0.07, 0.36, 5, 10), boots, s * 0.1, -0.3, -0.45, 0, 0, 0, soldier);
@@ -83,7 +83,7 @@
     const tx = ctx.textos ? ctx.textos() : { futuro: [] };
     const list = tx.futuro && tx.futuro.length ? tx.futuro : [{ t: "Perspectivas para o futuro", s: "em breve", r: "Este texto ainda vai ser escrito." }];
     const sub = { name: "Perspectivas para o futuro", acts: list.map((a) => Object.assign({ k: [], l: [] }, a)) };
-    const SPOTS = [{ at: V3(2.4, WH + 0.9, 0.3), name: "o viajante na beirada" }, { at: V3(6, WH + 1.1, 3.2), name: "o canhão" }, { at: FLAG.clone().add(V3(0.6, 2.5, 0)), name: "a bandeira" }, { at: V3(16, WH + 1.1, 3.2), name: "o segundo canhão" }, { at: V3(26, WH + 1.1, 3.2), name: "o terceiro canhão" }];
+    const SPOTS = [{ at: V3(2.4, WH + 0.9, 0.3), name: "a beirada da muralha" }, { at: V3(6, WH + 1.1, 3.2), name: "o canhão" }, { at: FLAG.clone().add(V3(0.6, 2.5, 0)), name: "a bandeira" }, { at: V3(16, WH + 1.1, 3.2), name: "o segundo canhão" }, { at: V3(26, WH + 1.1, 3.2), name: "o terceiro canhão" }];
     const items = sub.acts.slice(0, SPOTS.length).map((a, i) => { const s = SPOTS[i]; const hit = add(new T.SphereGeometry(1.1, 8, 6), K(new T.MeshBasicMaterial()), s.at.x, s.at.y, s.at.z); hit.visible = false;
       const mk = new T.Sprite(K(new T.SpriteMaterial({ map: ctx.glowTex, color: 0xffd090, transparent: true, opacity: 0.6, depthWrite: false, blending: T.AdditiveBlending }))); mk.scale.setScalar(0.8); mk.position.copy(s.at).add(V3(0, 1.2, 0)); scene.add(mk); return { a, i, hit, mk, s, hot: 0 }; });
 
@@ -108,7 +108,7 @@
     setTimeout(() => { try { ctx.toast("Attack on Titan", "O alto da muralha", "Do outro lado está o que vem depois. Cada ponto da muralha guarda uma perspectiva."); } catch (e) { /* sem aviso */ } }, 900);
 
     const ray = new T.Raycaster();
-    const fx = ctx.fantasy(scene, { center: V3(3, WH + 2.6, -10), radius: 8, height: 3.4, colors: ["#ffd070", "#ff7ab8", "#7ac8ff"], count: 10, power: 0.5, dim: 0.8, motes: 420, moteSize: 0.04, size: 1.6, glow: 0.75 });
+    const fx = ctx.fantasy(scene, { center: V3(3, WH + 2.6, -10), radius: 8, height: 3.4, colors: ["#ffd070", "#ff7ab8", "#7ac8ff"], count: 0, power: 0.5, dim: 0.8, motes: 0, moteSize: 0.04, size: 1.6, glow: 0.75 });
     return {
       name: "O alto da muralha", sub: "Perspectivas para o futuro",
       update(dt, t) {

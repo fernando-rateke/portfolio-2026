@@ -320,8 +320,8 @@
     const swing = new T.Group(); swing.position.set(SW.x, SW.py, SW.z); scene.add(swing); const RL = SW.py - H(SW.x, SW.z) - 0.55;
     const rope = toon("#b6a27e", { toon: 0.5 }); for (const s of [-1, 1]) mesh(new T.CylinderGeometry(0.01, 0.01, RL, 5), rope, swing, s * 0.21, -RL / 2, 0);
     mesh(new T.BoxGeometry(0.5, 0.04, 0.17), woodM, swing, 0, -RL, 0, true);
-    const SE = makeGirl(); SE.g.position.set(0, -RL + 0.03 - SE.hipY, 0); swing.add(SE.g);
-    const SI = makeBoy(); SI.g.position.copy(at(SW.x, SW.z - 1.8)); scene.add(SI.g);
+    const SE = makeGirl(); SE.g.visible = false; SE.g.position.set(0, -RL + 0.03 - SE.hipY, 0); swing.add(SE.g);
+    const SI = makeBoy(); SI.g.visible = false; SI.g.position.copy(at(SW.x, SW.z - 1.8)); scene.add(SI.g);
     // luz de preenchimento nas crianças, para não virarem silhueta no contraluz
     const kidHemi = new T.HemisphereLight("#ffe8c8", "#5a4a30", 1.3); scene.add(kidHemi); const kidSun = new T.DirectionalLight("#ffd8a0", 1.0); kidSun.position.set(SW.x - 6, 10, SW.z + 8); kidSun.target = SI.g; scene.add(kidSun);
     const swHit = mesh(new T.BoxGeometry(0.9, 1.5, 2.4), new T.MeshBasicMaterial(), null, SW.x, H(SW.x, SW.z) + 0.95, SW.z - 0.5); swHit.visible = false; // alvo parado: o balanço se mexe
@@ -407,7 +407,7 @@
     setTimeout(() => { try { ctx.toast("Túmulo dos Vaga-lumes", "O abrigo do lago", "Cada objeto marcado com um vaga-lume guarda uma atividade. O mosquiteiro, lá dentro, espera a noite."); } catch (e) { /* sem aviso */ } }, 900);
 
     const ray = new T.Raycaster();
-    const fx = ctx.fantasy(scene, { center: V3(1.5, 1.6, 0), radius: 7, height: 2, colors: ["#d8ffb0", "#a8e0ff", "#ffd8a0"], count: 5, power: 0, lights: false, dim: 1, motes: 160, moteSize: 0.016 });
+    const fx = ctx.fantasy(scene, { center: V3(1.5, 1.6, 0), radius: 7, height: 2, colors: ["#d8ffb0", "#a8e0ff", "#ffd8a0"], count: 0, power: 0, lights: false, dim: 1, motes: 0, moteSize: 0.016 });
     const api = {
       name: "O abrigo do lago", sub: "Ciências Humanas", scene,
       update(dt, t) {

@@ -93,12 +93,12 @@
       add(new T.BoxGeometry(0.15, 0.02, 0.2), lam("#ece4d0"), -0.075, 0.012, 0, 0, 0, 0.12, bk); add(new T.BoxGeometry(0.15, 0.02, 0.2), lam("#ece4d0"), 0.075, 0.012, 0, 0, 0, -0.12, bk); return bk; };
     // uma estudante lendo na mesa da janela, de cachecol mostarda
     const reader = ctx.person({ h: 1.6, skin: "#f0d0b4", hair: "#6a3a22", hairStyle: "trancas", ribbon: "#d8a83a", top: "#5a7a5a", bottom: "#3a3040", skirt: true, socks: "#2a2a30", longSleeves: true, blush: true });
-    reader.sit(); reader.read(); reader.g.position.set(TBL.x, 0.47 - reader.hipY, TBL.z - 0.62); scene.add(reader.g);
+    reader.g.visible = false; reader.sit(); reader.read(); reader.g.position.set(TBL.x, 0.47 - reader.hipY, TBL.z - 0.62); scene.add(reader.g);
     add(new T.TorusGeometry(0.1, 0.035, 8, 18), lam("#d8a83a"), 0, 1.42, 0, 0, Math.PI / 2, 0, reader.body);
     openBook(reader.g, "#3a4a6a", 0, 0.98, 0.32, -0.9);
     // o dono do café atrás do balcão, enxugando uma xícara
     const owner = ctx.person({ h: 1.74, skin: "#ecc8a8", hair: "#c8c4bc", hairStyle: "curto", top: "#f0ece4", bottom: "#2a2a2e", longSleeves: true });
-    owner.g.position.set(RX - 1.45, 0, 0.6); owner.g.rotation.y = -Math.PI / 2 + 0.4; scene.add(owner.g);
+    owner.g.visible = false; owner.g.position.set(RX - 1.45, 0, 0.6); owner.g.rotation.y = -Math.PI / 2 + 0.4; scene.add(owner.g);
     add(new T.BoxGeometry(0.34, 0.5, 0.02), lam("#2a2a2e"), 0, 1.15, 0.12, 0, 0, 0, owner.body); // o avental
     owner.arms.forEach((a, i) => { a.sh.rotation.x = -0.9; a.sh.rotation.z = (i ? -1 : 1) * 0.35; a.el.rotation.x = -1.0; });
     const cupO = add(new T.CylinderGeometry(0.045, 0.035, 0.07, 14), cupM, 0, 1.02, 0.34, 0, 0, 0, owner.body); void cupO;
@@ -118,8 +118,24 @@
       const m = gl.scene, S = 6.5; m.scale.setScalar(S); m.position.set(0, 0.1, 0); m.traverse((o) => { if (o.isMesh) { o.frustumCulled = false; const mt = o.material; if (mt && mt.map) mt.map.anisotropy = 4; } }); scene.add(m);
       // esconde o salão desenhado à mão (as luzes ficam)
       for (let k = PROC0; k < PROC1; k++) { const o = scene.children[k]; if (o && !o.isLight) o.visible = false; }
-      for (let k = PROC0; k < PROC1; k++) { const o = scene.children[k]; if (o && o.isLight && o.isPointLight) o.intensity *= 0.6; }
-      for (const [x, z] of [[0.2, -1.6], [-0.2, 1.8], [-1.5, 3.2], [0.6, 3.4], [-1.8, -1.0]]) { const l = new T.PointLight("#ffcc90", 0.7, 6, 2); l.position.set(x, 2.7, z); scene.add(l); }
+      // a luz do fim de tarde: o café quase escuro, o sol baixo entrando de lado e as luminárias pendentes acesas
+      scene.traverse((o) => { if (o.isLight) o.visible = false; });
+      scene.fog = new T.Fog("#1a0f08", 7, 18);
+      scene.add(new T.HemisphereLight("#9a8070", "#1a0e08", 0.6));
+      m.traverse((o) => { if (o.isMesh && o.material && o.material.color) { const c = o.material.color, l = (c.r + c.g + c.b) / 3; c.setRGB(c.r * 0.9 + l * 0.1, c.g, c.b); } });
+      const sun = new T.DirectionalLight("#ffb060", 1.05); sun.position.set(-6, 3.2, -9); sun.target.position.set(0, 1, 4); scene.add(sun, sun.target);
+      for (const [x, z] of [[0.3, -1.4], [0.3, 0.2], [-0.4, 1.9], [-1.6, 3.2], [0.6, 3.5]]) { const l = new T.PointLight("#ffb062", 0.8, 3.0, 2); l.position.set(x, 2.3, z); scene.add(l); }
+      // as manchas de sol na parede da direita, em faixas inclinadas como a luz que passa pela janela
+      const beamM = K(new T.ShaderMaterial({ transparent: true, depthWrite: false, blending: T.AdditiveBlending, uniforms: { uT: uT },
+        vertexShader: "varying vec2 vU; void main(){ vU = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
+        fragmentShader: "uniform float uT; varying vec2 vU; void main(){ vec2 q = vU; float x = q.x + (q.y - 0.5) * 0.35; float a = smoothstep(0.0, 0.08, x) * smoothstep(1.0, 0.92, x) * smoothstep(0.0, 0.1, q.y) * smoothstep(1.0, 0.9, q.y); a *= 0.92 + 0.08 * sin(uT * 0.6 + q.y * 3.0); float mull = step(0.08, abs(fract(q.y * 3.0) - 0.5)) * step(0.06, abs(x - 0.5)); a *= mull; gl_FragColor = vec4(vec3(1.0, 0.7, 0.3) * a * 0.75, a * 0.75); }" }));
+      for (const [x, w] of [[-0.9, 1.1], [0.6, 1.1], [2.1, 1.1]]) { const b = new T.Mesh(K(new T.PlaneGeometry(w, 1.6)), beamM); b.position.set(x, 1.55, 4.05); b.rotation.y = Math.PI; scene.add(b); }
+      // o raio de sol no ar, com poeira
+      const ray2 = new T.Mesh(K(new T.PlaneGeometry(1.0, 6.5)), K(new T.ShaderMaterial({ transparent: true, depthWrite: false, blending: T.AdditiveBlending, side: T.DoubleSide, uniforms: { uT: uT },
+        vertexShader: "varying vec2 vU; void main(){ vU = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
+        fragmentShader: "uniform float uT; varying vec2 vU; float h(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); } void main(){ float a = smoothstep(0.0, 0.35, vU.x) * smoothstep(1.0, 0.65, vU.x) * smoothstep(0.0, 0.2, vU.y) * smoothstep(1.0, 0.6, vU.y) * 0.07; float d = step(0.996, h(floor(vec2(vU.x * 60.0, vU.y * 300.0 + uT * 4.0)))); gl_FragColor = vec4(vec3(1.0, 0.75, 0.4) * (a + d * 0.25 * a * 10.0), a); }" })));
+      ray2.position.set(-1.0, 1.6, 1.4); ray2.rotation.set(0, 0.4, 1.0); scene.add(ray2);
+      inModel = true;
       // a estudante na mesa da direita, os livros na outra mesa, o dono atrás do balcão
       reader.g.position.set(-1.51, 0.47 - reader.hipY, 2.95); reader.g.rotation.y = 0;
       const chairR = new T.Mesh(K(new T.BoxGeometry(0.42, 0.04, 0.42)), lam("#3a2214")); chairR.position.set(-1.51, 0.45, 2.95); scene.add(chairR);
@@ -127,7 +143,6 @@
       kHit.position.set(1.25, 1.0, 0.2);
       tomes.forEach((tm, i) => { tm.g.position.set(0.57 + i * 0.03, 0.9 + i * 0.045, 3.62 - i * 0.02); tm.baseY = 0.9 + i * 0.045; });
       OVER.pos.copy(OVER_MODEL.pos); OVER.tgt.copy(OVER_MODEL.tgt); if (!focus && !glide) { cam.pos.copy(OVER.pos); cam.tgt.copy(OVER.tgt); }
-      inModel = true;
     });
     let inModel = false;
 
@@ -153,9 +168,9 @@
     setTimeout(() => { try { ctx.toast("Tokyo Ghoul", "Anteiku", "Os livros em cima da mesa contam quem eu sou."); } catch (e) { /* sem aviso */ } }, 900);
 
     const ray = new T.Raycaster();
-    const fx = ctx.fantasy(scene, { center: V3(-0.6, 1.6, 1.4), radius: 3.6, height: 1.6, colors: ["#ffc870", "#c89aff", "#7ad8ff"], count: 6, power: 0.7, dim: 0.65, motes: 220, moteSize: 0.012 });
+    const fx = ctx.fantasy(scene, { center: V3(-0.6, 1.6, 1.4), radius: 3.6, height: 1.6, colors: ["#ffc870", "#c89aff", "#7ad8ff"], count: 0, power: 0.7, dim: 0.65, motes: 0, moteSize: 0.012 });
     return {
-      name: "Anteiku", sub: "Quem sou",
+      name: "Anteiku", sub: "Quem sou", scene,
       update(dt, t) {
         fx.update(t);
         uT.value = t;
@@ -169,9 +184,9 @@
         for (const tm of tomes) { tm.hot += ((hot === tm || focus === tm ? 1 : 0) - tm.hot) * Math.min(1, dt * 6); tm.glow.material.opacity = 0.3 + 0.15 * Math.sin(t * 2 + tm.i) + tm.hot * 0.5; tm.g.position.y = (tm.baseY != null ? tm.baseY : 0.76 + tm.i * 0.045) + tm.hot * 0.03; }
         if (count && t - count.t0 > 0.6) { count.t0 = t; count.n -= 7; if (count.n < 900) count = null; }
       },
-      render(renderer) { renderer.setRenderTarget(null); renderer.render(scene, camera); },
+      render(renderer) { renderer.setRenderTarget(null); const tm = renderer.toneMapping, te = renderer.toneMappingExposure; if (inModel) { renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.0; } renderer.render(scene, camera); renderer.toneMapping = tm; renderer.toneMappingExposure = te; },
       resize(w, h) { camera.aspect = w / h; const tall = w / h < 0.8; camera.fov = tall ? 70 : 50; camera.updateProjectionMatrix(); OVER.pos.copy(inModel ? (tall ? V3(-3.4, 1.8, 0.0) : OVER_MODEL.pos) : tall ? V3(-2.6, 1.7, 3.4) : OVERP); if (!focus && !glide) cam.pos.copy(OVER.pos); },
-      pick(ndc) { ray.setFromCamera(ndc, camera); const hits = ray.intersectObjects(tomes.map((x) => x.b).concat([kHit]), false); const o = hits[0] && hits[0].object; const tm = o && tomes.find((x) => x.b === o); hot = tm || null;
+      pick(ndc) { ray.setFromCamera(ndc, camera); const hits = ray.intersectObjects(tomes.map((x) => x.b), false); const o = hits[0] && hits[0].object; const tm = o && tomes.find((x) => x.b === o); hot = tm || null;
         if (tm) return { label: [tm.a.t, "abrir o livro"], go: () => openTome(tm) };
         if (o === kHit) return { label: ["O dono do café", "pedir um café"], go: () => { try { ctx.toast("Anteiku", "Um café por conta da casa", "Pode ficar o tempo que quiser."); } catch (e) { /* nada */ } } };
         return null; },

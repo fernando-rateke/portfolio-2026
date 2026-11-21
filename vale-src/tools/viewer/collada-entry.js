@@ -1,4 +1,3 @@
-import * as THREE from "../node_modules/three/build/three.module.js";
 import { ColladaLoader } from "../node_modules/three/examples/jsm/loaders/ColladaLoader.js";
 import { GLTFExporter } from "../node_modules/three/examples/jsm/exporters/GLTFExporter.js";
 window.convert = (url) => new Promise((res, rej) => new ColladaLoader().load(url, (c) => {

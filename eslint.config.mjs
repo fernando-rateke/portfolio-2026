@@ -15,6 +15,8 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     "public/**",
+    // GLTFLoader do three r149 já minificado (código de terceiros)
+    "vale-src/gltf.js",
   ]),
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
@@ -36,6 +38,16 @@ const eslintConfig = defineConfig([
         version: "detect",
       },
     },
+    rules: {
+      // catch (e) sem usar o erro é o padrão do projeto para "segue sem isso"
+      "@typescript-eslint/no-unused-vars": ["error", { caughtErrors: "none" }],
+    },
+  },
+  {
+    // ferramentas de linha de comando em CommonJS (testes com Playwright, visualizador)
+    files: ["**/*.cjs"],
+    languageOptions: { sourceType: "commonjs" },
+    rules: { "@typescript-eslint/no-require-imports": "off" },
   },
 ]);
 

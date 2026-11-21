@@ -23,12 +23,20 @@ Abra http://localhost:3000.
 | `npm start`     | serve o build de produção              |
 | `npm run lint`  | ESLint (Next, React, acessibilidade)   |
 
-## Página inicial: o Vale
+## Página inicial: a cidade
 
-A raiz (`/`) serve a experiência nova, ainda em construção: `public/vale/index.html`,
-com a cena 3D em `public/vale/vale.js` (Three.js r149, incluído em `public/vale/three.min.js`)
-e os mundos de destaque em `public/vale/mundos.js`. O portfólio anterior continua em
-`/antigo`, e as demais páginas (`/materias`, `/sobre`...) seguem nas rotas de sempre.
+A raiz (`/`) serve a cidade japonesa ao entardecer: `public/cidade/index.html`, uma cena 3D contínua
+(Three.js r149) que vai da rua com as lojas ao santuário, à floresta, aos arrozais e ao lago. Cada loja é uma
+matéria; o resto do portfólio (certificados, agradecimentos, jornada, futuro e o quadro de emas dos visitantes)
+fica nos lugares do caminho. Modelos e texturas são do Poly Haven (CC0), créditos em `public/cidade/CREDITOS.txt`.
+O vale continua em `/vale`, o portfólio anterior em `/antigo`, e as demais páginas (`/materias`, `/sobre`...)
+seguem nas rotas de sempre. Detalhes para quem continua o trabalho: `vale-src/CONTEXTO.md`.
+
+### Modo apresentação
+
+Na cidade, a tecla P (ou o botão "Apresentar") mostra um QR code. O primeiro celular que abrir `/controle`
+vira o controle: move um cursor na tela, troca de lugar, abre e rola os painéis e mostra as anotações de cada
+lugar (`public/cidade/notas.json`).
 
 ## Estrutura
 
@@ -44,6 +52,8 @@ app/
 ├── SculptureScene.tsx    # escultura 3D de fundo (muda conforme a seção)
 ├── AudioController.tsx   # música de fundo (só baixa ao dar play)
 └── utils/a11y.ts         # helper de teclado para elementos clicáveis
+public/cidade/            # a capa (cidade japonesa)
+public/vale/              # o vale (gerado por vale-src/build.py)
 public/                   # imagens, áudio, favicons e imagem de compartilhamento
 ```
 
@@ -57,7 +67,7 @@ automaticamente; para um domínio próprio, defina `NEXT_PUBLIC_SITE_URL` (veja 
 
 ## Mural de ema (livro de visitas)
 
-Os recados da estação do fim da linha ficam numa tabela do Supabase, acessada só pela rota `app/api/ema/route.ts` (no servidor). Sem configuração, o mural funciona em modo local: cada visitante vê só os próprios recados, guardados no navegador.
+Os recados do quadro de emas (no santuário da cidade) ficam numa tabela do Supabase, acessada só pela rota `app/api/ema/route.ts` (no servidor). Sem configuração, o mural funciona em modo local: cada visitante vê só os próprios recados, guardados no navegador.
 
 Para ligar o mural público:
 

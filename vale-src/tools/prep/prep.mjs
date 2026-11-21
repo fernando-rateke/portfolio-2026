@@ -1,7 +1,7 @@
 // prepara um modelo para o vale: texturas certas, malha simplificada, texturas em webp menores
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
-import { dedup, weld, simplify, textureCompress, prune, join, flatten, quantize } from '@gltf-transform/functions';
+import { dedup, weld, simplify, textureCompress, prune, join, flatten } from '@gltf-transform/functions';
 import { MeshoptSimplifier } from 'meshoptimizer';
 import sharp from 'sharp';
 import fs from 'fs';

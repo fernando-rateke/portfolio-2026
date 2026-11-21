@@ -29,7 +29,6 @@ const PAINT = {
   totoroDorme(u, n, p, c) {
     const front = n[2] > 0.12 && u[2] > 0.45;
     for (const cx of [0.33, 0.655]) {
-      const dx = u[0] - cx;
       if (front && ell(u[0], u[1], cx, 0.785, 0.06, 0.045)) return '#6A7381';
     }
     return PAINT.totoro(u, n, p, c);

@@ -112,11 +112,11 @@
        mistura esse reflexo com a cor funda, ondulando de leve (como o Reflector do three.js, escrito aqui) */
     function espelho(geo) {
       const pr = M.renderer.getPixelRatio(), k = M.leve ? 0.33 : 0.5;
-      const rt = new T.WebGLRenderTarget(Math.max(256, innerWidth * pr * k), Math.max(256, innerHeight * pr * k), { type: T.HalfFloatType });
+      const rt = new T.WebGLRenderTarget(Math.max(256, innerWidth * pr * k), Math.max(256, innerHeight * pr * k));
       addEventListener("resize", () => rt.setSize(Math.max(256, innerWidth * pr * k), Math.max(256, innerHeight * pr * k)));
       const tm = new T.Matrix4(), vc = new T.PerspectiveCamera();
       const mat = new T.ShaderMaterial({ fog: true, transparent: false,
-        uniforms: T.UniformsUtils.merge([T.UniformsLib.fog, { tRefl: { value: null }, tMat: { value: tm }, uT: { value: 0 }, uFundo: { value: new T.Color("#1a2228") } }]),
+        uniforms: T.UniformsUtils.merge([T.UniformsLib.fog, { tRefl: { value: null }, tMat: { value: tm }, uT: { value: 0 }, uFundo: { value: new T.Color("#0e1418") } }]),
         vertexShader: `uniform mat4 tMat; varying vec4 vR; varying vec3 vW;
           #include <fog_pars_vertex>
           void main(){ vR = tMat * vec4(position, 1.); vec4 w = modelMatrix * vec4(position, 1.); vW = w.xyz; vec4 mvPosition = viewMatrix * w; gl_Position = projectionMatrix * mvPosition;
@@ -130,12 +130,15 @@
             vec3 r = texture2DProj(tRefl, vR + vec4(d * vR.w, 0., 0.)).rgb;
             vec3 v = normalize(cameraPosition - vW); float fr = 0.25 + 0.75 * pow(1. - max(v.y, 0.), 3.);
             vec3 col = mix(uFundo, r, fr);
+            // o reflexo já sai com o tom final; aqui só converte a cor para a tela
             gl_FragColor = vec4(col, 1.);
-            #include <tonemapping_fragment>
+            #ifdef SO_REFLEXO
+            gl_FragColor = vec4(r, 1.);
+            #endif
             #include <encodings_fragment>
             #include <fog_fragment>
           }` });
-      mat.uniforms.tRefl.value = rt.texture;
+      mat.uniforms.tRefl.value = rt.texture; mat.uniforms.tMat.value = tm; M.lagoRT = rt; M.lagoVC = vc;
       const mesh = new T.Mesh(geo, mat);
       const wp = new T.Vector3(), cp = new T.Vector3(), nrm = new T.Vector3(), rot = new T.Matrix4(), look = new T.Vector3(), tgt = new T.Vector3(), view = new T.Vector3(), plane = new T.Plane(), clip = new T.Vector4(), q = new T.Vector4();
       let ocupado = false;
@@ -153,7 +156,7 @@
         const e = vc.projectionMatrix.elements; q.set((Math.sign(clip.x) + e[8]) / e[0], (Math.sign(clip.y) + e[9]) / e[5], -1, (1 + e[10]) / e[14]);
         clip.multiplyScalar(2 / clip.dot(q)); e[2] = clip.x; e[6] = clip.y; e[10] = clip.z + 1 - 0.003; e[14] = clip.w;
         ocupado = true; mesh.visible = false; const prev = renderer.getRenderTarget(), sau = renderer.shadowMap.autoUpdate; renderer.shadowMap.autoUpdate = false;
-        renderer.setRenderTarget(rt); renderer.state.buffers.depth.setMask(true); if (renderer.autoClear === false) renderer.clear(); renderer.render(sc, vc);
+        renderer.setRenderTarget(rt); renderer.state.buffers.depth.setMask(true); if (renderer.autoClear === false) renderer.clear(); const nv = sc.fog; sc.fog = null; renderer.render(sc, vc); sc.fog = nv;
         renderer.shadowMap.autoUpdate = sau; renderer.setRenderTarget(prev); mesh.visible = true; ocupado = false;
       };
       return mesh;

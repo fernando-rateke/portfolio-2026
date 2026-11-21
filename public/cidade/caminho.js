@@ -24,7 +24,7 @@
       { p: at(tx(-196), -196, 3.2), o: V3(0, L.Y_VALE + 1, -290), nome: "O vale", jp: "谷" },
       { p: at(tx(-222) + 1.5, -222, 1.65), o: V3(-34, L.Y_VALE + 3.5, -226), nome: "O arrozal", jp: "田んぼ" },
       { p: at(tx(-245), -245, 1.65), o: V3(0, L.Y_VALE + 4, -300) },
-      { p: M.pierFim.clone().add(V3(0, 1.6, 3)), o: V3(0, L.Y_AGUA + 7, -299), nome: "O lago", jp: "湖" },
+      { p: M.pierFim.clone().add(V3(0, 1.9, 3)), o: V3(0, L.Y_AGUA + 3.2, -305), nome: "O lago", jp: "湖" },
     ];
     const posC = new T.CatmullRomCurve3(N.map((n) => n.p), false, "centripetal");
     const lookC = new T.CatmullRomCurve3(N.map((n) => n.o), false, "centripetal");

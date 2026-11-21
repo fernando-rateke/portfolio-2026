@@ -175,6 +175,7 @@
     ["設計", "#1a1a1a", "#ffd27a", "図", "modelagem"], ["開発", "#c8281e", "#fff4e0", "技", "desenvolvimento"], ["アプリ", "#f2c230", "#1a1a1a", "携", "programacao-aplicativos"], ["電子", "#3a2a6a", "#ece4ff", "電", "iot"], ["データ", "#f4efe4", "#c8281e", "庫", "banco"]];
   const EXTRA = [["らーめん", "#c8281e", "#fff4e0", "麺"], ["居酒屋", "#1a1a1a", "#ffd27a", "酒"], ["銭湯", "#2a4a8a", "#ffffff", "湯"], ["定食", "#f2c230", "#1a1a1a", "食"], ["美容室", "#f4efe4", "#c8281e", "髪"], ["たばこ", "#d8332a", "#ffffff", "煙"]];
   const lojas = []; // placas clicáveis
+  const buildings = [];
   function street() {
     // primeiro sorteia os lotes dos dois lados; as matérias ficam nos lotes mais perto do começo da rua, alternando os lados
     const lotes = [];

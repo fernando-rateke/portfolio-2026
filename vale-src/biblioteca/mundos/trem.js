@@ -239,6 +239,50 @@
       // parede do lado da câmera (vista ao olhar em volta)
       B.add(new T.BoxGeometry(16, 2.66, 0.12), M(0, 1.33, 1.5), WOOD);
       scene.add(new T.Mesh(B.build(), mat));
+      // o estofado dos bancos: veludo vinho capitonê, com botões, costuras e um friso dourado
+      {
+        const mk = (w, h, draw) => { const c = document.createElement("canvas"); c.width = w; c.height = h; draw(c.getContext("2d"), w, h); const t = new T.CanvasTexture(c); t.wrapS = t.wrapT = T.RepeatWrapping; t.anisotropy = 8; return t; };
+        const tuft = (g, w, h, bump) => {
+          if (!bump) { const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#7a2228"); gr.addColorStop(1, "#5a161c"); g.fillStyle = gr; } else g.fillStyle = "#808080";
+          g.fillRect(0, 0, w, h);
+          const cw = w / 2, ch = h / 2; // um losango por célula
+          for (let yy = -1; yy <= 2; yy++) for (let xx = -1; xx <= 2; xx++) {
+            const cx = xx * cw + (yy % 2 ? cw / 2 : 0), cy = yy * ch;
+            const rg = g.createRadialGradient(cx + cw / 2, cy + ch / 2, 2, cx + cw / 2, cy + ch / 2, cw * 0.62);
+            if (bump) { rg.addColorStop(0, "#e0e0e0"); rg.addColorStop(1, "#606060"); } else { rg.addColorStop(0, "rgba(190,90,90,0.35)"); rg.addColorStop(1, "rgba(0,0,0,0.22)"); }
+            g.fillStyle = rg; g.beginPath(); g.moveTo(cx + cw / 2, cy); g.lineTo(cx + cw, cy + ch / 2); g.lineTo(cx + cw / 2, cy + ch); g.lineTo(cx, cy + ch / 2); g.closePath(); g.fill();
+          }
+          // vincos entre os botões
+          g.strokeStyle = bump ? "#303030" : "rgba(30,6,10,0.55)"; g.lineWidth = bump ? 4 : 2.5;
+          for (let k = -4; k <= 4; k++) { g.beginPath(); g.moveTo(k * cw, 0); g.lineTo(k * cw + h, h); g.stroke(); g.beginPath(); g.moveTo(k * cw, 0); g.lineTo(k * cw - h, h); g.stroke(); }
+          // botões
+          for (let yy = 0; yy <= 2; yy++) for (let xx = -1; xx <= 3; xx++) { const bx = xx * cw / 1 + (yy % 2 ? cw / 2 : 0) - cw / 2, by = yy * ch;
+            g.fillStyle = bump ? "#202020" : "#2a0a0e"; g.beginPath(); g.arc(bx + cw / 2, by, 6, 0, 7); g.fill(); if (!bump) { g.fillStyle = "rgba(255,190,160,0.35)"; g.beginPath(); g.arc(bx + cw / 2 - 1.5, by - 1.5, 2.2, 0, 7); g.fill(); } }
+          if (!bump) { for (let i = 0; i < 2500; i++) { g.fillStyle = `rgba(${Math.random() < 0.5 ? "255,200,200" : "0,0,0"},${(Math.random() * 0.05).toFixed(3)})`; g.fillRect(Math.random() * w, Math.random() * h, 1, 1); } }
+        };
+        const velvet = mk(256, 256, (g, w, h) => tuft(g, w, h, false)), velB = mk(256, 256, (g, w, h) => tuft(g, w, h, true));
+        const plain = mk(64, 64, (g, w, h) => { g.fillStyle = "#64191f"; g.fillRect(0, 0, w, h); for (let i = 0; i < 300; i++) { g.fillStyle = `rgba(0,0,0,${(Math.random() * 0.08).toFixed(3)})`; g.fillRect(Math.random() * w, Math.random() * h, 1, 1); } });
+        velvet.repeat.set(30, 1); velB.repeat.set(30, 1);
+        const backM = new T.MeshStandardMaterial({ map: velvet, bumpMap: velB, bumpScale: 0.02, roughness: 0.75, color: "#ffffff" });
+        const seatT = velvet.clone(); seatT.needsUpdate = true; seatT.repeat.set(30, 1.2); const seatB = velB.clone(); seatB.needsUpdate = true; seatB.repeat.set(30, 1.2);
+        const seatM = new T.MeshStandardMaterial({ map: seatT, bumpMap: seatB, bumpScale: 0.015, roughness: 0.8 });
+        const sideM = new T.MeshStandardMaterial({ map: plain, roughness: 0.85 });
+        const gold = new T.MeshStandardMaterial({ color: "#b8913e", metalness: 0.7, roughness: 0.35 });
+        for (const sd of [-1, 1]) {
+          const z = sd * 1.05, back = sd * 1.3;
+          // assento: almofada arredondada
+          const seat = new T.Mesh(new T.CapsuleGeometry(0.12, 14.8, 6, 16), [seatM][0]); seat.rotation.z = Math.PI / 2; seat.scale.set(1, 0.8, 1.9); seat.position.set(0, 0.56, z); seat.material = seatM; scene.add(seat);
+          { const uv = seat.geometry.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getY(i), uv.getX(i)); }
+          // encosto: almofada alta, levemente inclinada
+          const bk = new T.Mesh(new T.BoxGeometry(14.8, 0.42, 0.1, 1, 1, 1), [sideM, sideM, sideM, sideM, sd < 0 ? backM : sideM, sd < 0 ? sideM : backM]); bk.scale.y = 0.82; bk.position.set(0, 0.7, back + (sd < 0 ? 0.02 : -0.02)); bk.rotation.x = sd * 0.1; scene.add(bk);
+          const roll = new T.Mesh(new T.CylinderGeometry(0.055, 0.055, 14.8, 14), seatM); roll.rotation.z = Math.PI / 2; roll.position.set(0, 0.88, back); scene.add(roll);
+          // frisos dourados na frente do assento e no topo do encosto
+          const p1 = new T.Mesh(new T.CylinderGeometry(0.012, 0.012, 14.8, 8), gold); p1.rotation.z = Math.PI / 2; p1.position.set(0, 0.5, z - sd * 0.23); scene.add(p1);
+          const p2 = new T.Mesh(new T.CylinderGeometry(0.01, 0.01, 14.8, 8), gold); p2.rotation.z = Math.PI / 2; p2.position.set(0, 0.93, back); scene.add(p2);
+          // divisórias de madeira com braço a cada lugar
+          for (let x = -4.8; x <= 4.8; x += 3.2) { const arm = new T.Mesh(new T.BoxGeometry(0.08, 0.32, 0.5), new T.MeshStandardMaterial({ color: "#4a2c1c", roughness: 0.5 })); arm.position.set(x, 0.66, z + sd * 0.02); scene.add(arm); const cap = new T.Mesh(new T.CylinderGeometry(0.05, 0.05, 0.52, 10), new T.MeshStandardMaterial({ color: "#5a3622", roughness: 0.4 })); cap.rotation.x = Math.PI / 2; cap.position.set(x, 0.83, z + sd * 0.02); scene.add(cap); }
+        }
+      }
       // a luz do sol baixo atravessando as janelas: feixes no ar e manchas quentes no banco e na parede da frente
       const beamM = new T.ShaderMaterial({ transparent: true, depthWrite: false, blending: T.AdditiveBlending, side: T.DoubleSide, uniforms: { uDark: UD, uTime: { value: 0 } },
         vertexShader: "varying vec2 vU; void main(){ vU = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",

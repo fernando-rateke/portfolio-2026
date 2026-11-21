@@ -10,6 +10,7 @@
 
     /* pontos de luz com brilho próprio: tamanho em perspectiva, piscar suave e deriva */
     function luzinhas(n, gen, opt) {
+      if (M.leve) n = Math.round(n * 0.5);
       const pos = new Float32Array(n * 3), ph = new Float32Array(n), base = [];
       for (let i = 0; i < n; i++) { const p = gen(i); base.push(p); pos.set([p.x, p.y, p.z], i * 3); ph[i] = rnd() * 100; }
       const g = new T.BufferGeometry(); g.setAttribute("position", new T.BufferAttribute(pos, 3)); g.setAttribute("ph", new T.BufferAttribute(ph, 1));

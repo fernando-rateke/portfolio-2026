@@ -3,16 +3,24 @@
 (() => {
   const T = window.THREE;
   const canvas = document.getElementById("c");
+  const Q = new URLSearchParams(location.search);
+  /* modo Leve ou Completo: escolhido na abertura ou no botão do canto e guardado no navegador; sem escolha,
+     celular e tablet começam no Leve. ?leve e ?completo na URL forçam um dos dois.
+     Leve: sem sombras, sem o reflexo de verdade no lago, menos plantas, flores e vaga-lumes, resolução menor e a
+     névoa um pouco mais perto (o que some nela não é desenhado). Completo: tudo ligado. */
+  const toque = matchMedia("(pointer: coarse)").matches;
+  let pesoSalvo = null; try { pesoSalvo = localStorage.getItem("cidade-peso"); } catch (e) { /* sem storage */ }
+  const peso = Q.has("leve") ? "leve" : Q.has("completo") ? "completo" : pesoSalvo === "leve" || pesoSalvo === "completo" ? pesoSalvo : toque ? "leve" : "completo";
+  const leve = peso === "leve";
   const renderer = new T.WebGLRenderer({ canvas, antialias: true });
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, matchMedia("(pointer: coarse)").matches ? 1 : 1.5));
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, leve ? 1 : toque ? 1.25 : 1.5));
   renderer.outputEncoding = T.sRGBEncoding;
   renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.68;
-  renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap;
+  renderer.shadowMap.enabled = !leve; renderer.shadowMap.type = T.PCFSoftShadowMap;
   const scene = new T.Scene();
   const camera = new T.PerspectiveCamera(48, 1, 0.1, 600);
   camera.layers.enable(1); // camada 1: detalhes do chão que ficam fora do reflexo do lago
   const V3 = (x, y, z) => new T.Vector3(x, y, z);
-  const Q = new URLSearchParams(location.search);
   const loader = new T.GLTFLoader(), texL = new T.TextureLoader();
   if (window.MeshoptDecoder) loader.setMeshoptDecoder(window.MeshoptDecoder);
   const load = (f) => new Promise((ok) => loader.load("/cidade/modelos/" + f + ".glb", (g) => ok(g.scene), undefined, () => ok(null)));
@@ -23,9 +31,8 @@
     t.mapping = T.EquirectangularReflectionMapping; t.encoding = T.sRGBEncoding;
     scene.background = t; const pm = new T.PMREMGenerator(renderer); scene.environment = pm.fromEquirectangular(t).texture;
   });
-  scene.fog = new T.FogExp2("#b98a7a", 0.0068);
+  scene.fog = new T.FogExp2("#b98a7a", leve ? 0.0082 : 0.0068);
   const sun = new T.DirectionalLight("#ff9a58", 2.4); sun.position.set(-26, 11, -72); sun.castShadow = true;
-  const toque = matchMedia("(pointer: coarse)").matches;
   sun.shadow.mapSize.set(toque ? 1024 : 2048, toque ? 1024 : 2048); Object.assign(sun.shadow.camera, { left: -32, right: 32, top: 32, bottom: -32, near: 1, far: 95 }); sun.shadow.bias = -0.0004; scene.add(sun);
   scene.add(new T.HemisphereLight("#8f86b8", "#4a3028", 0.3));
 
@@ -94,7 +101,7 @@
   const cidadeG = new T.Group(), matCache = {};
   // o que passa de ~300 m some na névoa: não vale desenhar (as malhas juntadas e os pedaços instanciados entram aqui)
   const longe = [], LONGE = 300, cv = new T.Vector3();
-  function cortaLonge() { for (const o of longe) { const s = o.geometry.boundingSphere; if (!s) continue; cv.copy(s.center).applyMatrix4(o.matrixWorld); o.visible = cv.distanceTo(camera.position) - s.radius < (o.userData.longe || LONGE); } }
+  function cortaLonge() { for (const o of longe) { const s = o.geometry.boundingSphere; if (!s) continue; cv.copy(s.center).applyMatrix4(o.matrixWorld); o.visible = cv.distanceTo(camera.position) - s.radius < (o.userData.longe || LONGE) * (leve ? 0.7 : 1); } }
   function building(x0, z0, side, bays, floors, kinds) {
     const g = new T.Group(); g.position.set(x0, 0.12, z0); g.rotation.y = side < 0 ? Math.PI / 2 : -Math.PI / 2; cidadeG.add(g);
     const tint = new T.Color(kinds.tint || "#ffffff");
@@ -280,8 +287,7 @@
 
   /* ---------------- o resto do mundo (outros arquivos) usa estas peças ---------------- */
   const ticks = [];
-  const leve = Q.has("leve") || (matchMedia("(pointer: coarse)").matches && !Q.has("pesado"));
-  const M = window.MUNDO = Object.assign(window.MUNDO || {}, { leve, T, scene, renderer, camera, sun, V3, rnd, load, pbr, tx, canvasTex, shadowOn, texL, Q, ticks, JP, JPS, chochin, norens, lojas, juntar, longe, lerF });
+  const M = window.MUNDO = Object.assign(window.MUNDO || {}, { leve, peso, T, scene, renderer, camera, sun, V3, rnd, load, pbr, tx, canvasTex, shadowOn, texL, Q, ticks, JP, JPS, chochin, norens, lojas, juntar, longe, lerF });
 
   /* ---------------- câmera ---------------- */
   camera.position.set(0.6, 1.65, 26); camera.lookAt(-0.4, 3.2, -10); // até o passeio assumir

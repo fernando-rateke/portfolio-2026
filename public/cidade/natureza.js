@@ -123,7 +123,7 @@
         c.globalAlpha = 1; });
       const pts = []; sak.updateMatrixWorld(true); const v = new T.Vector3();
       sak.traverse((o) => { if (!o.isMesh || !/leaves/.test(o.material.name || "")) return; const P = M.lerF(o.geometry.attributes.position); const n = P.length / 3;
-        for (let i = 0; i < 200; i++) { const k = (rnd() * n) | 0; pts.push(new T.Vector3(P[k * 3], P[k * 3 + 1], P[k * 3 + 2]).applyMatrix4(o.matrixWorld)); } });
+        for (let i = 0; i < (M.leve ? 110 : 200); i++) { const k = (rnd() * n) | 0; pts.push(new T.Vector3(P[k * 3], P[k * 3 + 1], P[k * 3 + 2]).applyMatrix4(o.matrixWorld)); } });
       // cada nuvem de flores é um quadrado sempre virado para a câmera (instanciado: sem limite de tamanho de ponto)
       const mats = [], m4 = new T.Matrix4();
       for (const m of S) { const sc = m.getMaxScaleOnAxis(); for (const p of pts) { v.copy(p).applyMatrix4(m); const t = (1.1 + rnd() * 0.9) * sc / 0.3; mats.push(new T.Matrix4().makeScale(t, t, t).setPosition(v)); } }

@@ -46,6 +46,10 @@ vão em pedaços instanciados com esfera de limite (`M.instPedacos`), o que pass
 seguem a câmera. As cerejeiras 3D são só tronco e galhos; a copa são quadrados de flores (textura desenhada em
 natureza.js). Referência: rua ~2,8 milhões de triângulos e ~1.000 chamadas por quadro, contando a sombra.
 
+Modos Leve e Completo: escolhidos na abertura ou no botão do canto (guardado em `localStorage` "cidade-peso";
+sem escolha, celular começa no Leve; `?leve=1` e `?completo=1` forçam). Leve: sem sombras, lago sem o reflexo da
+cena (só o céu), resolução 1x, névoa um pouco mais perto e menos plantas, flores, pétalas e vaga-lumes (`M.leve`).
+
 Para testar sem placa de vídeo, use `?pausa=1` (só desenha depois de carregar), `?limpo=1` (sem interface) e
 `?s=N` (começa no lugar N). `MUNDO.pular(N)` no console troca de lugar na hora.
 

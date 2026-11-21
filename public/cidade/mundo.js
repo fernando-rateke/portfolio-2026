@@ -131,6 +131,8 @@
     /* o lago é um espelho de verdade: a cena é desenhada de novo, vista de baixo da água, numa textura; a água
        mistura esse reflexo com a cor funda, ondulando de leve (como o Reflector do three.js, escrito aqui) */
     function espelho(geo) {
+      // no modo Leve a água só reflete o céu (sem desenhar a cena uma segunda vez)
+      if (M.leve) return new T.Mesh(geo, new T.MeshStandardMaterial({ color: "#16202a", roughness: 0.06, metalness: 1, envMapIntensity: 0.75 }));
       const pr = M.renderer.getPixelRatio(), k = M.leve ? 0.3 : 0.42;
       const rt = new T.WebGLRenderTarget(Math.max(256, innerWidth * pr * k), Math.max(256, innerHeight * pr * k));
       addEventListener("resize", () => rt.setSize(Math.max(256, innerWidth * pr * k), Math.max(256, innerHeight * pr * k)));

@@ -286,7 +286,7 @@
     for (const n of norens) n.m.rotation.x = Math.sin(t * 1.3 + n.ph) * 0.06 * (n.k || 1);
     for (const l of lanterns) { l.g.rotation.z = Math.sin(t * 0.9 + l.ph) * 0.04; l.l.intensity = 0.8 * (0.92 + 0.08 * Math.sin(t * 7 + l.ph)); }
     for (let i = 0; i < blinkers.length; i++) blinkers[i].visible = Math.sin(t * 2 + i) > 0;
-    renderer.render(scene, camera); requestAnimationFrame(frame);
+    if (!(Q.has("pausa") && !window.cidadePronta)) renderer.render(scene, camera); requestAnimationFrame(frame);
   }
   frame();
 })();

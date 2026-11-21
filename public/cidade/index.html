@@ -6,14 +6,37 @@
 <title>Rateke</title>
 <link rel="icon" href="/rateke-icone.svg">
 <style>
-  html, body { margin: 0; height: 100%; background: #0d0b10; overflow: hidden; }
-  canvas { display: block; width: 100vw; height: 100vh; }
+  html, body { margin: 0; height: 100%; background: #1a1418; overflow: hidden; }
+  canvas { display: block; width: 100vw; height: 100vh; touch-action: none; }
+  #abertura { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: radial-gradient(ellipse at 50% 60%, #3a2430 0%, #1a1418 70%); color: #f2e8dc; font-family: "Noto Serif JP", "Hiragino Mincho ProN", Georgia, serif; transition: opacity 1.4s ease; }
+  #abertura.fim { opacity: 0; pointer-events: none; }
+  #abertura .bx { text-align: center; padding: 0 16px; }
+  #abertura .kj { font-size: 13px; letter-spacing: .6em; opacity: .7; margin-bottom: 14px; }
+  #abertura h1 { font-weight: 500; font-size: clamp(26px, 5vw, 40px); letter-spacing: .08em; margin: 0 0 26px; }
+  #abertura .linha { width: min(260px, 60vw); height: 1px; background: rgba(242,232,220,.18); margin: 0 auto; overflow: hidden; }
+  #abertura .linha i { display: block; height: 100%; width: 0; background: #e8a070; transition: width .4s ease; }
+  #abertura .dica { margin-top: 16px; font-size: 13px; opacity: .55; letter-spacing: .04em; }
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
+<div id="abertura" role="status" aria-live="polite"><div class="bx"><div class="kj">ラテケ</div><h1>Fernando Rateke</h1><div class="linha"><i></i></div><div class="dica">Carregando a cidade…</div></div></div>
 <script src="/vale/three.min.js"></script>
+<script>
+  // a barra de carregamento acompanha todos os modelos e texturas
+  (() => { const bar = document.querySelector("#abertura .linha i"); let max = 0;
+    THREE.DefaultLoadingManager.onProgress = (u, a, b) => { const p = Math.max(max, a / Math.max(b, 1)); max = p; bar.style.width = (p * 100).toFixed(0) + "%"; };
+    const fim = () => { const ab = document.getElementById("abertura"); bar.style.width = "100%"; ab.querySelector(".dica").textContent = matchMedia("(pointer: coarse)").matches ? "Deslize para andar" : "Role, use as setas ou os botões para andar"; setTimeout(() => ab.classList.add("fim"), 1600); };
+    const w = setInterval(() => { if (window.cidadePronta) { clearInterval(w); fim(); } }, 200); })();
+</script>
 <script src="/vale/gltf.js"></script>
+<script src="/cidade/meshopt.js"></script>
 <script src="/cidade/cidade.js"></script>
+<script src="/cidade/japao.js"></script>
+<script src="/cidade/mundo.js"></script>
+<script src="/cidade/natureza.js"></script>
+<script src="/cidade/caminho.js"></script>
+<script src="/cidade/magia.js"></script>
+<script src="/cidade/conteudo.js"></script>
 </body>
 </html>

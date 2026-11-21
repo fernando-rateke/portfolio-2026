@@ -4,7 +4,7 @@
   const T = window.THREE;
   const canvas = document.getElementById("c");
   const renderer = new T.WebGLRenderer({ canvas, antialias: true });
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.75));
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, matchMedia("(pointer: coarse)").matches ? 1.25 : 1.75));
   renderer.outputEncoding = T.sRGBEncoding;
   renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.68;
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap;
@@ -13,6 +13,7 @@
   const V3 = (x, y, z) => new T.Vector3(x, y, z);
   const Q = new URLSearchParams(location.search);
   const loader = new T.GLTFLoader(), texL = new T.TextureLoader();
+  if (window.MeshoptDecoder) loader.setMeshoptDecoder(window.MeshoptDecoder);
   const load = (f) => new Promise((ok) => loader.load("/cidade/modelos/" + f + ".glb", (g) => ok(g.scene), undefined, () => ok(null)));
   let seed = 9; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
 
@@ -21,27 +22,27 @@
     t.mapping = T.EquirectangularReflectionMapping; t.encoding = T.sRGBEncoding;
     scene.background = t; const pm = new T.PMREMGenerator(renderer); scene.environment = pm.fromEquirectangular(t).texture;
   });
-  scene.fog = new T.Fog("#b98a7a", 28, 125);
+  scene.fog = new T.FogExp2("#b98a7a", 0.0068);
   const sun = new T.DirectionalLight("#ff9a58", 2.4); sun.position.set(-26, 11, -72); sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -40, right: 40, top: 40, bottom: -40, near: 1, far: 170 }); sun.shadow.bias = -0.0004; scene.add(sun);
   scene.add(new T.HemisphereLight("#8f86b8", "#4a3028", 0.3));
 
   /* ---------------- materiais com textura de verdade ---------------- */
   const texCache = new Map();
-  const tx = (name, f, rep, srgb) => { const key = name + f + rep; if (texCache.has(key)) return texCache.get(key); const t = texL.load(`/cidade/tex/${name}_${f}.jpg`); t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(rep[0], rep[1]); t.anisotropy = 8; if (srgb) t.encoding = T.sRGBEncoding; texCache.set(key, t); return t; };
+  const tx = (name, f, rep, srgb) => { const key = name + f + rep; if (texCache.has(key)) return texCache.get(key); const t = texL.load(`/cidade/tex/${name}_${f}.webp`); t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(rep[0], rep[1]); t.anisotropy = 8; if (srgb) t.encoding = T.sRGBEncoding; texCache.set(key, t); return t; };
   function pbr(name, rep, extra) {
     const arm = tx(name, "arm", rep);
     return new T.MeshStandardMaterial(Object.assign({ map: tx(name, "diff", rep, true), normalMap: tx(name, "nor", rep), roughnessMap: arm, metalnessMap: arm, metalness: 1, roughness: 1 }, extra || {}));
   }
 
   /* ---------------- a rua ---------------- */
-  const LEN = 170, RW = 5.2, SW = 1.6; // comprimento, largura da pista, calçada
-  const road = new T.Mesh(new T.PlaneGeometry(RW, LEN), pbr("asphalt_02", [RW / 4, LEN / 4])); road.rotation.x = -Math.PI / 2; road.receiveShadow = true; scene.add(road);
+  const LEN = 96, RW = 5.2, SW = 1.6, ZC = -16; // comprimento, largura da pista, calçada, centro da rua em z
+  const road = new T.Mesh(new T.PlaneGeometry(RW, LEN), pbr("asphalt_02", [RW / 4, LEN / 4])); road.rotation.x = -Math.PI / 2; road.position.z = ZC; road.receiveShadow = true; scene.add(road);
   for (const sd of [-1, 1]) {
-    const walk = new T.Mesh(new T.BoxGeometry(SW, 0.12, LEN), pbr("brick_pavement_02", [SW / 2, LEN / 2])); walk.position.set(sd * (RW / 2 + SW / 2), 0.06, 0); walk.receiveShadow = true; scene.add(walk);
-    const curb = new T.Mesh(new T.BoxGeometry(0.14, 0.14, LEN), pbr("concrete", [0.2, LEN / 2])); curb.position.set(sd * (RW / 2 + 0.07), 0.07, 0); curb.receiveShadow = true; scene.add(curb);
+    const walk = new T.Mesh(new T.BoxGeometry(SW, 0.12, LEN), pbr("brick_pavement_02", [SW / 2, LEN / 2])); walk.position.set(sd * (RW / 2 + SW / 2), 0.06, ZC); walk.receiveShadow = true; scene.add(walk);
+    const curb = new T.Mesh(new T.BoxGeometry(0.14, 0.14, LEN), pbr("concrete", [0.2, LEN / 2])); curb.position.set(sd * (RW / 2 + 0.07), 0.07, ZC); curb.receiveShadow = true; scene.add(curb);
     // a faixa branca da beira da pista, típica das ruas japonesas
-    const line = new T.Mesh(new T.PlaneGeometry(0.12, LEN), new T.MeshStandardMaterial({ color: "#e8e6e0", roughness: 0.6 })); line.rotation.x = -Math.PI / 2; line.position.set(sd * (RW / 2 - 0.45), 0.005, 0); scene.add(line);
+    const line = new T.Mesh(new T.PlaneGeometry(0.12, LEN), new T.MeshStandardMaterial({ color: "#e8e6e0", roughness: 0.6 })); line.rotation.x = -Math.PI / 2; line.position.set(sd * (RW / 2 - 0.45), 0.005, ZC); scene.add(line);
   }
   // 止まれ pintado no chão, perto da câmera
   { const c = document.createElement("canvas"); c.width = 512; c.height = 256; const g = c.getContext("2d"); g.fillStyle = "rgba(240,238,232,0.92)"; g.font = "900 190px 'Hiragino Sans', 'Noto Sans JP', sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("止まれ", 256, 128);
@@ -169,28 +170,36 @@
   /* ---------------- a rua montada ---------------- */
   const TINTS = ["#f2ede2", "#e8e2d6", "#d8dcd8", "#ece4d2", "#cfd2d6", "#e6d8c6", "#f4f0e8", "#d6cfc4"];
   const WINS = ["centered_large", "centered_double", "centered_small", "offset_small"];
-  const SHOPS = [["喫茶", "#2a3a5a", "#f4efe4", "珈琲"], ["書店", "#f4efe4", "#1a1a1a", "本"], ["らーめん", "#c8281e", "#fff4e0", "麺"], ["居酒屋", "#1a1a1a", "#ffd27a", "酒"], ["薬", "#2a7a4a", "#ffffff", "薬"], ["古本", "#5a3a22", "#f4e8d0", "本"], ["定食", "#f2c230", "#1a1a1a", "食"], ["たばこ", "#d8332a", "#ffffff", "煙"], ["美容室", "#f4efe4", "#c8281e", "髪"], ["銭湯", "#2a4a8a", "#ffffff", "湯"]];
-  const buildings = [];
+  // as lojas que guardam o portfólio: cada placa é uma matéria (em japonês), a cafeteria é o "Quem sou"
+  const SHOPS = [["喫茶", "#2a3a5a", "#f4efe4", "珈琲", "perfil"], ["理科", "#2a6a46", "#ffffff", "理", "natureza"], ["社会", "#5a3a22", "#f4e8d0", "史", "humanas"], ["国語", "#f4efe4", "#1a1a1a", "文", "linguagens"], ["数学", "#2a4a8a", "#ffffff", "数", "matematica"],
+    ["設計", "#1a1a1a", "#ffd27a", "図", "modelagem"], ["開発", "#c8281e", "#fff4e0", "技", "desenvolvimento"], ["アプリ", "#f2c230", "#1a1a1a", "携", "programacao-aplicativos"], ["電子", "#3a2a6a", "#ece4ff", "電", "iot"], ["データ", "#f4efe4", "#c8281e", "庫", "banco"]];
+  const EXTRA = [["らーめん", "#c8281e", "#fff4e0", "麺"], ["居酒屋", "#1a1a1a", "#ffd27a", "酒"], ["銭湯", "#2a4a8a", "#ffffff", "湯"], ["定食", "#f2c230", "#1a1a1a", "食"], ["美容室", "#f4efe4", "#c8281e", "髪"], ["たばこ", "#d8332a", "#ffffff", "煙"]];
+  const lojas = []; // placas clicáveis
   function street() {
-    let k = 0;
+    // primeiro sorteia os lotes dos dois lados; as matérias ficam nos lotes mais perto do começo da rua, alternando os lados
+    const lotes = [];
     for (const side of [-1, 1]) {
       let z = side < 0 ? 24 : 22;
       while (z > -60) {
-        const bays = 2 + Math.floor(rnd() * 3), floors = 2 + Math.floor(rnd() * 3), w = bays * 3, shop = SHOPS[k % SHOPS.length]; k++;
+        const bays = 2 + Math.floor(rnd() * 3), floors = 2 + Math.floor(rnd() * 3), w = bays * 3;
         const ground = Array.from({ length: bays }, (_, i) => (i === 0 ? (rnd() < 0.5 ? "loja" : "porta") : rnd() < 0.35 ? "porta" : rnd() < 0.25 ? "loja" : "janela"));
-        // lado esquerdo: o kit cresce para -z; lado direito: para +z
-        const zStart = side < 0 ? z : z - w;
-        const b = building(side * WALL_X, zStart, side, bays, floors, { ground, win: WINS.slice(Math.floor(rnd() * 3)), tint: TINTS[Math.floor(rnd() * TINTS.length)], lit: 0.5, balc: rnd() < 0.6 ? 1 + Math.floor(rnd() * 2) : 0 });
+        lotes.push({ side, z, w, bays, floors, ground, kinds: { ground, win: WINS.slice(Math.floor(rnd() * 3)), tint: TINTS[Math.floor(rnd() * TINTS.length)], lit: 0.5, balc: rnd() < 0.6 ? 1 + Math.floor(rnd() * 2) : 0 } });
+        z -= w + (rnd() < 0.35 ? 1.2 + rnd() * 1.2 : 0); // às vezes um beco entre um prédio e outro
+      }
+    }
+    [...lotes].sort((a, b) => b.z - a.z).forEach((l, i) => { l.shop = i < SHOPS.length ? SHOPS[i] : EXTRA[(i - SHOPS.length) % EXTRA.length]; });
+    for (const { side, z, w, bays, floors, kinds, shop } of lotes) {
+        const zStart = side < 0 ? z : z - w; // lado esquerdo: o kit cresce para -z; lado direito: para +z
+        const b = building(side * WALL_X, zStart, side, bays, floors, kinds);
         buildings.push({ b, side, z0: z, z1: z - w, shop, bays, floors });
         // a placa vertical na quina, acesa
         const vs = vsign(shop[0], shop[1], shop[2], 0.55, Math.min(2.6, 0.75 * [...shop[0]].length + 0.4)); vs.position.set(side * (WALL_X - 0.42), 0.12 + H.base + H.dado + 3 + 1.5, z - 0.4); scene.add(vs); shadowOn(vs);
         // a placa de cima da porta
         const hs = hsign(shop[0], shop[1], shop[2], 2.6, 0.5); hs.position.set(side * (WALL_X - 0.12), 0.12 + H.base + H.dado + 2.62, z - 1.5); hs.rotation.y = side < 0 ? Math.PI / 2 : -Math.PI / 2; scene.add(hs);
+        if (shop[4]) lojas.push({ id: shop[4], kanji: shop[0], cor: shop[1], alvos: [vs, hs], porta: V3(side * (WALL_X - 0.2), 1.6, z - 1.5), side });
         // noren na porta, e lanternas vermelhas em alguns
-        if (rnd() < 0.7) { const n = noren(shop[3], shop[1] === "#f4efe4" ? "#2a3a5a" : shop[1], 1.7); n.position.set(side * (WALL_X - 0.2), 0.12 + H.base + H.dado + 2.25, z - 1.5); n.rotation.y = side < 0 ? Math.PI / 2 : -Math.PI / 2; scene.add(n); }
+        if (shop[4] || rnd() < 0.7) { const n = noren(shop[3], shop[1] === "#f4efe4" ? "#2a3a5a" : shop[1], 1.7); n.position.set(side * (WALL_X - 0.2), 0.12 + H.base + H.dado + 2.25, z - 1.5); n.rotation.y = side < 0 ? Math.PI / 2 : -Math.PI / 2; scene.add(n); if (shop[4]) lojas[lojas.length - 1].alvos.push(...n.children); }
         if (rnd() < 0.5) for (const dz of [-0.2, -2.8]) { const l = chochin(shop[3]); l.position.set(side * (WALL_X - 0.35), 0.12 + H.base + H.dado + 2.1, z + dz); scene.add(l); }
-        z -= w + (rnd() < 0.35 ? 1.2 + rnd() * 1.2 : 0); // às vezes um beco entre um prédio e outro
-      }
     }
     // duas máquinas de bebida lado a lado, perto da câmera
     for (const [dz, col] of [[0, "#d8332a"], [-1.05, "#2a6ad8"]]) { const v = vending(col); v.position.set(-(WALL_X - 0.5), 0.12, 14.6 + dz); v.rotation.y = Math.PI / 2; scene.add(v); }
@@ -242,6 +251,11 @@
     for (let z = 18; z > -55; z -= 11) { const m = place(M.man, 0.6 * (rnd() < 0.5 ? -1 : 1), z, rnd() * 6); if (m) m.position.y = 0.002; }
   }
 
+  /* ---------------- o resto do mundo (outros arquivos) usa estas peças ---------------- */
+  const ticks = [];
+  const leve = Q.has("leve") || (matchMedia("(pointer: coarse)").matches && !Q.has("pesado"));
+  const M = window.MUNDO = Object.assign(window.MUNDO || {}, { leve, T, scene, renderer, camera, sun, V3, rnd, load, pbr, tx, canvasTex, shadowOn, texL, Q, ticks, JP, JPS, chochin, lanterns, norens, lojas });
+
   /* ---------------- câmera ---------------- */
   const cam = { pos: V3(0.6, 1.65, 26), tgt: V3(-0.4, 3.2, -10) };
   if (Q.get("debug") === "predio") { cam.pos.set(6, 5, 16); cam.tgt.set(6, 5, 0); }
@@ -257,16 +271,18 @@
       if (Q.get("debug") === "predio") { const b = building(0, 0, 1, 4, 3, { ground: ["porta", "janela"], win: ["centered_large", "centered_double", "centered_small"] }); b.rotation.y = 0; }
     }
     SH = await load("rollershutter_door"); if (SH) { const gr = SH.getObjectByName("rollershutter_door_graffiti"); if (gr) gr.parent.remove(gr); }
-    if (KIT && !Q.get("debug")) { street(); skyline(); }
+    if (KIT && !Q.get("debug")) street();
     const [poles, lamp0, ubox1, ubox2, trash, crate, pot1, pot2, planter, man, pot3] = await Promise.all(["modular_electricity_poles", "security_light", "utility_box_01", "utility_box_02", "metal_trash_can", "plastic_crate_01", "potted_plant_01", "potted_plant_02", "planter_box_01", "water_manhole_cover", "planter_pot_clay"].map(load));
     props({ poles, lamp: lamp0, ubox1, ubox2, trash, crate, pot1, pot2, planter, man, pot3 });
+    for (const b of M.builders || []) { try { await b(M); } catch (e) { console.error("mundo:", e); } }
     window.cidadePronta = true;
   })();
 
   const clock = new T.Clock();
   function frame() {
     const t = clock.getElapsedTime();
-    camera.position.copy(cam.pos).add(V3(Math.sin(t * 0.13) * 0.08, Math.sin(t * 0.21) * 0.03, 0)); camera.lookAt(cam.tgt);
+    if (M.camTick) M.camTick(t); else { camera.position.copy(cam.pos).add(V3(Math.sin(t * 0.13) * 0.08, Math.sin(t * 0.21) * 0.03, 0)); camera.lookAt(cam.tgt); }
+    for (const f of ticks) f(t);
     for (const n of norens) n.m.rotation.x = Math.sin(t * 1.3 + n.ph) * 0.06 * (n.k || 1);
     for (const l of lanterns) { l.g.rotation.z = Math.sin(t * 0.9 + l.ph) * 0.04; l.l.intensity = 0.8 * (0.92 + 0.08 * Math.sin(t * 7 + l.ph)); }
     for (let i = 0; i < blinkers.length; i++) blinkers[i].visible = Math.sin(t * 2 + i) > 0;

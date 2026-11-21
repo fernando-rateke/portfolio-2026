@@ -1,2 +1,16 @@
-Modelos 3D e texturas desta página: Poly Haven (polyhaven.com), licença CC0.
-Céu: "belfast_sunset_puresky" (Poly Haven, CC0), com cores ajustadas.
+Modelos 3D, texturas e céu desta página: Poly Haven (polyhaven.com), licença CC0 (domínio público).
+
+Modelos: modular_urban_apartments_facade, modular_electricity_poles, security_light, utility_box_01/02,
+rollershutter_door, potted_plant_01/02, planter_box_01, planter_pot_clay, plastic_crate_01, metal_trash_can,
+water_manhole_cover, island_tree_01/02/03, jacaranda_tree (cerejeiras, recoloridas), tree_small_02 (bordos,
+recoloridos), pine_tree_01, fir_tree_01, fern_02, grass_medium_01/02, shrub_02/04, rock_moss_set_01/02,
+boulder_01, tree_stump_01.
+
+Texturas: asphalt_02, brick_pavement_02, concrete, japanese_stone_wall, hinoki_planks, japanese_cedar_planks,
+grey_roof_tiles, thatch_roof_angled, mossy_rock, leaves_forest_ground, gravel_floor, stone_pathway, farm_soil,
+brown_mud, leafy_grass, rock_wall_10, stair_planks.
+
+Céu: belfast_sunset_puresky, com as cores ajustadas para o pôr do sol.
+
+As árvores distantes são imagens renderizadas a partir desses mesmos modelos. Torii, lanternas de pedra,
+santuário, casa de fazenda, placas, cortinas e lanternas de papel foram montados em código com essas texturas.

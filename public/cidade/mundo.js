@@ -36,6 +36,8 @@
     if (e < 1.8) y = mix(L.Y_AGUA - 2.2, y, smooth(0.75, 1.5, e));
     // a trilha da floresta é aplainada
     if (z < L.Z_PLAT1 + 2 && z > L.Z_VALE - 20) { const d = Math.abs(x - trilhaX(z)); const base = L.Y_TOPO - (L.Y_TOPO - L.Y_VALE) * smooth(L.Z_PLAT1, L.Z_VALE, z); y = mix(base, y, smooth(1.8, 6, d)); }
+    // o pátio do santuário é plano (com uma borda suave até a floresta)
+    if (z < L.Z_ESC1 + 0.5) { const dx = Math.max(0, Math.abs(x) - 21), dz = Math.max(0, L.Z_PLAT1 + 1 - z); y = mix(L.Y_TOPO - 0.05, y, smooth(0, 6, Math.hypot(dx, dz))); }
     // cidade e praça ficam no zero
     if (z > -62) y *= 0; else if (z > -68 && ax < 30) y = Math.min(y, mix(0, y, smooth(-62, -68, z)));
     return y;

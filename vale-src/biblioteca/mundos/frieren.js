@@ -47,7 +47,7 @@
     const motes = []; for (let i = 0; i < 60; i++) { const s = new T.Sprite(K(new T.SpriteMaterial({ map: ctx.glowTex, color: 0xa8d0ff, transparent: true, opacity: 0.5, depthWrite: false, blending: T.AdditiveBlending }))); s.scale.setScalar(0.12); scene.add(s); motes.push({ s, x: (rnd() - 0.5) * 16, z: -8 + rnd() * 12, ph: rnd() }); }
 
     /* ---------------- no alto do morro, a estátua de um cavaleiro antigo (original) ---------------- */
-    const statue = new T.Group(); const SX = -1, SZ = -9; statue.position.set(SX, H(SX, SZ), SZ); statue.rotation.y = 0.25; scene.add(statue);
+    const statue = new T.Group(); statue.visible = false; const SX = -1, SZ = -9; statue.position.set(SX, H(SX, SZ), SZ); statue.rotation.y = 0.25; scene.add(statue);
     { const stone = toon("#8a90a0"), dark = toon("#5a6070");
       add(new T.CylinderGeometry(0.9, 1.0, 1.0, 8), dark, 0, 0.5, 0, 0, 0, 0, statue); add(new T.CylinderGeometry(0.75, 0.8, 0.22, 8), stone, 0, 1.1, 0, 0, 0, 0, statue);
       ol(add(new T.CylinderGeometry(0.34, 0.42, 1.1, 10), stone, 0, 1.85, 0, 0, 0, 0, statue)); ol(add(new T.SphereGeometry(0.42, 14, 10), stone, 0, 2.45, 0, 0, 0, 0, statue)).scale.set(1, 0.8, 0.85);
@@ -64,7 +64,7 @@
       m.scale.setScalar(k); m.position.set(-(box.min.x + box.max.x) / 2 * k, -box.min.y * k, -(box.min.z + box.max.z) / 2 * k); const ms = []; m.traverse((o) => { if (o.isMesh) ms.push(o); }); ms.forEach((o) => { const mp = o.material.map; o.material = toon("#ffffff", { map: mp }); ol(o, 1.02); }); chest.add(m); });
     const chestGlow = new T.Sprite(K(new T.SpriteMaterial({ map: ctx.glowTex, color: 0xffd070, transparent: true, opacity: 0.35, depthWrite: false, blending: T.AdditiveBlending }))); chestGlow.scale.setScalar(1.1); chestGlow.position.y = 0.35; chest.add(chestGlow);
     const chestHit = add(new T.BoxGeometry(0.9, 0.7, 0.7), K(new T.MeshBasicMaterial()), 0, 0.35, 0, 0, 0, 0, chest); chestHit.visible = false; let chestT = 0;
-    const statueLight = new T.PointLight("#a8c0ff", 1.2, 7, 2); statueLight.position.set(SX + 0.5, H(SX, SZ) + 3.5, SZ + 2); scene.add(statueLight);
+    const statueLight = new T.PointLight("#a8c0ff", 0, 7, 2); statueLight.position.set(SX + 0.5, H(SX, SZ) + 3.5, SZ + 2); scene.add(statueLight);
 
     /* ---------------- uma maga élfica viajante, no meio das flores, olhando o céu (personagem original) ---------------- */
     const fr = new T.Group(); const FX = 0.9, FZ = 1.2; fr.position.set(FX, H(FX, FZ), FZ); fr.rotation.y = Math.PI + 0.45; scene.add(fr);

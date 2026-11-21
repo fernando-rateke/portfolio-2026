@@ -156,13 +156,22 @@
       const mat = toon(env);
       // céu
       const sky = new T.Mesh(new T.SphereGeometry(1200, 40, 20), new T.ShaderMaterial({
-        side: T.BackSide, depthWrite: false, uniforms: { uDark: UD },
+        side: T.BackSide, depthWrite: false, uniforms: { uDark: UD, uTime: { value: 0 } },
         vertexShader: `varying vec3 vD; void main(){ vD=normalize(position); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
-        fragmentShader: `${NOISE} ${SKY} varying vec3 vD;
+        fragmentShader: `${NOISE} ${SKY} uniform float uTime; varying vec3 vD;
+          float fbm(vec2 p){ float a=0.5, f=0.0; for(int i=0;i<5;i++){ f+=a*snoise(p); p=p*2.03+vec2(1.7,9.2); a*=0.5; } return f; }
           void main(){ vec3 d=normalize(vD); vec3 c=skyCol(d);
-            float band=snoise(vec2(atan(d.z,d.x)*2.4,d.y*11.0))*0.5+0.5;
-            float cl=smoothstep(0.6,0.82,band)*smoothstep(0.04,0.1,d.y)*smoothstep(0.36,0.16,d.y);
-            c=mix(c,mix(vec3(0.99,0.74,0.72),vec3(0.22,0.2,0.34),uDark),cl*0.7);
+            vec3 sd=normalize(vec3(-0.45,0.09,-0.89));
+            if (d.y>0.0) {
+              vec2 q=d.xz/(d.y+0.12)*0.9+vec2(uTime*0.004,0.0);
+              float dens=fbm(q*0.55)*0.6+fbm(q*1.6+3.0)*0.4;
+              float cov=smoothstep(0.02,0.45,dens)*smoothstep(0.0,0.08,d.y)*smoothstep(0.75,0.25,d.y);
+              float lit=clamp(fbm(q*0.55+sd.xz*0.25)-dens+0.55,0.0,1.0);
+              float rim=pow(max(dot(d,sd),0.0),6.0);
+              vec3 shade=mix(vec3(0.62,0.5,0.66),vec3(1.0,0.82,0.7),lit)+vec3(1.0,0.75,0.45)*rim*0.9;
+              shade=mix(shade,vec3(0.2,0.18,0.3),uDark);
+              c=mix(c,shade,cov*0.9);
+            }
             gl_FragColor=vec4(c,1.0); }`,
       }));
       sky.renderOrder = -1; scene.add(sky); scene.userData.sky = sky;
@@ -181,10 +190,16 @@
             float d=length(vW-cameraPosition);
             c=mix(c*vec3(0.78,0.84,0.92),c,smoothstep(4.0,60.0,d));
             c+=vec3(1.0,0.86,0.6)*smoothstep(0.55,0.95,n)*0.12*(1.0-smoothstep(10.0,120.0,d))*(1.0-uDark*0.8);
-            gl_FragColor=vec4(c,1.0);
+            vec3 sd=normalize(vec3(-0.45,0.09,-0.89)); float gl=pow(max(dot(R,sd),0.0),300.0)*(0.6+2.4*smoothstep(0.3,0.9,snoise(q*vec2(1.5,6.0)+uTime*0.8)));
+            c+=vec3(1.0,0.9,0.7)*gl*(1.0-uDark);
+            // os trilhos do outro lado, logo abaixo da água
+            float rz=vW.z+4.2; float rail=smoothstep(0.035,0.0,abs(abs(rz)-0.36)); float slp=step(abs(rz),0.62)*step(0.72,fract(q.x/0.7));
+            float under=(1.0-smoothstep(3.0,40.0,d))*0.55; c=mix(c,vec3(0.25,0.2,0.22),max(rail*0.85,slp*0.45)*under);
+            float alpha=mix(0.72,0.97,smoothstep(2.0,90.0,d));
+            gl_FragColor=vec4(c,alpha);
           }`,
       }));
-      water.rotation.x = -Math.PI / 2; water.position.y = -0.35; scene.add(water); scene.userData.water = water;
+      water.material.transparent = true; water.material.depthWrite = false; water.renderOrder = 2; water.rotation.x = -Math.PI / 2; water.position.y = -0.35; scene.add(water); scene.userData.water = water;
 
       // o vagão
       const B = Builder();
@@ -218,9 +233,26 @@
         B.add(new T.SphereGeometry(0.14, 12, 8), M(x, 2.48, 0), "#FFE2A8", 1);
         B.add(new T.CylinderGeometry(0.16, 0.2, 0.06, 12), M(x, 2.6, 0), BRASS);
       }
+      // bagageiros de latão sobre as janelas e plaquinhas de anúncio
+      for (const zz of [-1.22]) { for (const dz of [0, 0.1, 0.2]) B.add(new T.CylinderGeometry(0.008, 0.008, 15.6, 6), M(0, 2.4, zz + dz, 0, 0, Math.PI / 2), "#7A5A2A"); for (let x = -7.2; x <= 7.2; x += 1.8) B.add(new T.BoxGeometry(0.02, 0.12, 0.02), M(x, 2.46, zz + 0.2), "#5A4020"); }
+      winX.forEach((x, i) => { B.add(new T.BoxGeometry(1.0, 0.14, 0.02), M(x - 0.6, 2.55, -1.38), ["#C8A878", "#9AB0A0", "#D8B0A0", "#A8A0C0", "#C8C090"][i]); B.add(new T.BoxGeometry(0.8, 0.14, 0.02), M(x + 0.55, 2.55, -1.38), ["#B07A60", "#D8C8A0", "#90A8C0", "#C89888", "#A0B888"][i]); });
       // parede do lado da câmera (vista ao olhar em volta)
       B.add(new T.BoxGeometry(16, 2.66, 0.12), M(0, 1.33, 1.5), WOOD);
       scene.add(new T.Mesh(B.build(), mat));
+      // a luz do sol baixo atravessando as janelas: feixes no ar e manchas quentes no banco e na parede da frente
+      const beamM = new T.ShaderMaterial({ transparent: true, depthWrite: false, blending: T.AdditiveBlending, side: T.DoubleSide, uniforms: { uDark: UD, uTime: { value: 0 } },
+        vertexShader: "varying vec2 vU; void main(){ vU = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
+        fragmentShader: "uniform float uDark, uTime; varying vec2 vU; float h(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); } void main(){ float a = smoothstep(0.0, 0.2, vU.x) * smoothstep(1.0, 0.8, vU.x) * smoothstep(0.0, 0.25, vU.y) * smoothstep(1.0, 0.7, vU.y) * 0.06; float dust = 0.0; gl_FragColor = vec4(vec3(1.0, 0.78, 0.5) * (a + dust * 0.5) * (1.0 - uDark), 1.0); }" });
+      const patchM = new T.ShaderMaterial({ transparent: true, depthWrite: false, blending: T.AdditiveBlending, uniforms: { uDark: UD },
+        vertexShader: "varying vec2 vU; void main(){ vU = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
+        fragmentShader: "uniform float uDark; varying vec2 vU; void main(){ float a = smoothstep(0.0, 0.06, vU.x) * smoothstep(1.0, 0.94, vU.x) * smoothstep(0.0, 0.1, vU.y) * smoothstep(1.0, 0.9, vU.y); gl_FragColor = vec4(vec3(1.0, 0.72, 0.42) * a * 0.32 * (1.0 - uDark), 1.0); }" });
+      scene.userData.beams = [];
+      winX.forEach((x) => {
+        const bm = new T.Mesh(new T.PlaneGeometry(ww * 0.9, 3.0), beamM); bm.position.set(x + 0.55, 1.1, 0.0); bm.rotation.set(-1.15, 0, 0.18); scene.add(bm); scene.userData.beams.push(bm);
+        const p1 = new T.Mesh(new T.PlaneGeometry(ww * 0.85, 0.5), patchM); p1.position.set(x + 0.8, 0.57, 1.0); p1.rotation.x = -Math.PI / 2; scene.add(p1);
+        const p2 = new T.Mesh(new T.PlaneGeometry(ww * 0.85, 0.7), patchM); p2.position.set(x + 0.9, 1.05, 1.43); p2.rotation.y = Math.PI; scene.add(p2);
+      });
+      scene.userData.beamM = beamM;
 
       // o dragão branco, bem longe, cruzando o céu de vez em quando
       {
@@ -311,6 +343,18 @@
         movers.push(item); photos.push(item);
       });
 
+      // reflexos: uma cópia de cada coisa que passa, espelhada embaixo da água
+      const WY = -0.35; scene.userData.refl = [];
+      movers.slice().forEach((o) => { const r2 = o.m.clone(true); r2.scale.y = -o.m.scale.y; scene.add(r2); scene.userData.refl.push({ o, r: r2 }); });
+      { const wr = wire.clone(); wr.scale.y = -1; wr.position.y = 2 * WY; scene.add(wr); scene.userData.wireR = wr; }
+      void WY;
+      // um trem que vem no sentido contrário, no trilho de lá
+      scene.add(new T.HemisphereLight(0xffd8c0, 0x5a3a40, 1.0)); { const sl = new T.DirectionalLight(0xffc090, 1.1); sl.position.set(-30, 12, -60); scene.add(sl); }
+      const other = new T.Group(); other.visible = false; scene.add(other); scene.userData.other = other;
+      new T.GLTFLoader().load("/vale/modelos/trem.glb", (gl) => { const m = gl.scene; const box = new T.Box3().setFromObject(m), sz = box.getSize(new T.Vector3()), k = 2.9 / sz.y;
+        m.scale.setScalar(k); m.position.set(-(box.min.x + box.max.x) / 2 * k, -box.min.y * k, -(box.min.z + box.max.z) / 2 * k);
+        for (let i = 0; i < 3; i++) { const c = i ? m.clone(true) : m; c.position.x += i * sz.x * k * 1.02; other.add(c); }
+        const ro = other.clone(true); ro.scale.y = -1; ro.position.y = 2 * -0.35 - (-0.3); scene.add(ro); scene.userData.otherR = ro; ro.visible = false; });
       env.uPL.value[0].set(-4.8, 2.3, 0); env.uPLC.value[0].set("#C98A50"); env.uPLR.value[0] = 2.0;
       env.uPL.value[1].set(0, 2.3, 0); env.uPLC.value[1].set("#C98A50"); env.uPLR.value[1] = 2.0;
       env.uPL.value[2].set(4.8, 2.3, 0); env.uPLC.value[2].set("#C98A50"); env.uPLR.value[2] = 2.0;
@@ -359,14 +403,17 @@
     { const dr = scene.userData.dragon; dr.next = 1e9; dr.g.visible = false; }
     const birds = new T.Group(); scene.add(birds); for (let k = 0; k < 9; k++) { const b = new T.Group(); for (const sd of [-1, 1]) { const w = new T.Mesh(new T.PlaneGeometry(2.2, 0.5), new T.MeshBasicMaterial({ color: 0xf4f0ea, side: T.DoubleSide })); w.position.x = sd * 1.1; b.add(w); } b.position.set(-Math.abs(k - 4) * 4, -Math.abs(k - 4) * 0.8, (k - 4) * 3); birds.add(b); } birds.visible = false; let birdT = 10;
     return {
-      name: "O trem sobre a água", sub: "1º e 2º ano",
+      name: "O trem sobre a água", sub: "1º e 2º ano", scene,
       update(dt, t) {
         fx.update(t);
         time += dt; look.sx += (look.x - look.sx) * Math.min(1, dt * 2.5); look.sy += (look.y - look.sy) * Math.min(1, dt * 2.5);
         speed += (target - speed) * Math.min(1, dt * 1.2); travel += speed * dt;
         scene.userData.water.material.uniforms.uTravel.value = travel; scene.userData.water.material.uniforms.uTime.value = time;
         movers.forEach((o) => { o.m.position.x = wrap(o.base - travel * (o.par || 1)); if (o.photo) o.m.position.y = 1.6 + Math.sin(time * 0.8 + o.i) * 0.06; });
-        scene.userData.wire.position.x = -(travel % (L / 14));
+        scene.userData.wire.position.x = -(travel % (L / 14)); if (scene.userData.wireR) scene.userData.wireR.position.x = scene.userData.wire.position.x;
+        for (const rf of scene.userData.refl) { rf.r.position.x = rf.o.m.position.x; rf.r.position.y = 2 * -0.35 - rf.o.m.position.y; rf.r.position.z = rf.o.m.position.z; }
+        scene.userData.sky.material.uniforms.uTime.value = time; scene.userData.beamM.uniforms.uTime.value = time;
+        { const ot = scene.userData.other, orf = scene.userData.otherR; if (ot) { ot.userData.t = (ot.userData.t == null ? -18 : ot.userData.t) + dt; const u = ot.userData.t; const on = u > 0 && u < 9; ot.visible = on; if (orf) orf.visible = on; if (on) { const x = -140 + u * 34 - travel * 0.0; ot.position.set(x, -0.3, -4.2); if (orf) orf.position.set(x, 2 * -0.35 + 0.3, -4.2); } if (u > 9) ot.userData.t = -(35 + Math.random() * 25); } }
         birdT -= dt; if (birdT < 0 && !birds.visible) { birds.visible = true; birds.userData.u = 0; } if (birds.visible) { const u = (birds.userData.u += dt / 22); birds.position.set(-140 + u * 280, 34 + Math.sin(u * 3) * 4, -150); birds.children.forEach((b, i) => b.children.forEach((w, j) => (w.rotation.z = (j ? -1 : 1) * Math.sin(time * 5 + i) * 0.35))); if (u > 1) { birds.visible = false; birdT = 30 + Math.random() * 25; } }
         const dr = scene.userData.dragon;
         if (dr.t < 0) { dr.next -= dt; if (dr.next <= 0) { dr.t = 0; dr.g.visible = true; } }

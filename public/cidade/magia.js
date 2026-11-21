@@ -21,7 +21,7 @@
             float b = 0.5 + 0.5 * sin(uT * (1.1 + fract(ph) * 1.4) + ph * 6.0); vA = mix(1.0, smoothstep(0.15, 1.0, b), uBlink);
             vec4 mv = modelViewMatrix * vec4(p, 1.); gl_Position = projectionMatrix * mv; gl_PointSize = uSize * uPx * 300. / -mv.z; }`,
         fragmentShader: `uniform sampler2D uMap; uniform vec3 uCol; varying float vA; void main(){ float a = texture2D(uMap, gl_PointCoord).a; gl_FragColor = vec4(uCol * a * vA, a * vA); }` });
-      const pts = new T.Points(g, m); pts.frustumCulled = false; scene.add(pts); ticks.push((t) => { m.uniforms.uT.value = t; }); return pts;
+      const pts = new T.Points(g, m); pts.frustumCulled = false; pts.layers.set(1); scene.add(pts); ticks.push((t) => { m.uniforms.uT.value = t; }); return pts;
     }
     const renderer = () => M.renderer;
 
@@ -41,13 +41,14 @@
 
     /* 4. pétalas de cerejeira caindo no pátio do santuário e na beira do lago */
     {
-      const N = 420, geo = new T.PlaneGeometry(0.05, 0.035); const m = new T.MeshStandardMaterial({ color: "#f8c8d4", emissive: new T.Color("#ff9ab8"), emissiveIntensity: 0.12, side: T.DoubleSide, roughness: 0.8 });
-      const im = new T.InstancedMesh(geo, m, N); im.frustumCulled = false; scene.add(im);
-      const P = []; const zonas = [[0, L.Y_TOPO, -132, 22, 18], [13, L.Y_TOPO, -126, 7, 9], [0, L.Y_AGUA, -268, 40, 8]];
-      for (let i = 0; i < N; i++) { const zz = zonas[i % 3]; P.push({ c: zz, x: zz[0] + (rnd() - 0.5) * zz[3] * 2, z: zz[2] + (rnd() - 0.5) * zz[4] * 2, y0: rnd(), ph: rnd() * 6.28, sp: 0.25 + rnd() * 0.35 }); }
+      const N = M.leve ? 300 : 520, geo = new T.PlaneGeometry(0.05, 0.035); const m = new T.MeshStandardMaterial({ color: "#f8c8d4", emissive: new T.Color("#ff9ab8"), emissiveIntensity: 0.12, side: T.DoubleSide, roughness: 0.8 });
+      const im = new T.InstancedMesh(geo, m, N); im.frustumCulled = false; im.layers.set(1); scene.add(im);
+      // pátio do santuário, a cerejeira grande do pátio, a beira do lago e, a maior parte, a escadaria das cerejeiras
+      const P = []; const zonas = [[0, L.Y_TOPO, -132, 22, 18], [13, L.Y_TOPO, -126, 7, 9], [0, L.Y_AGUA, -268, 40, 8], [0, null, (L.Z_ESC0 + L.Z_ESC1) / 2, 6, 21], [0, null, (L.Z_ESC0 + L.Z_ESC1) / 2, 6, 21]];
+      for (let i = 0; i < N; i++) { const zz = zonas[i % zonas.length]; const z = zz[2] + (rnd() - 0.5) * zz[4] * 2; P.push({ c: zz, gy: zz[1] == null ? M.yEsc(z) : zz[1], x: zz[0] + (rnd() - 0.5) * zz[3] * 2, z, y0: rnd(), ph: rnd() * 6.28, sp: 0.25 + rnd() * 0.35 }); }
       const m4 = new T.Matrix4(), q = new T.Quaternion(), e = new T.Euler(), sc = new T.Vector3(1, 1, 1), p = new T.Vector3();
       ticks.push((t) => { for (let i = 0; i < N; i++) { const a = P[i], H = 9; const k = ((a.y0 * H + t * a.sp) % H);
-        const gy = a.c[1]; p.set(a.x + Math.sin(t * 0.6 + a.ph) * 0.8 + k * 0.25, gy + H - k, a.z + Math.cos(t * 0.5 + a.ph) * 0.6);
+        const gy = a.gy; p.set(a.x + Math.sin(t * 0.6 + a.ph) * 0.8 + k * 0.25, gy + H - k, a.z + Math.cos(t * 0.5 + a.ph) * 0.6);
         e.set(t * 1.7 + a.ph, t * 1.1 + a.ph, t * 0.7); q.setFromEuler(e); m4.compose(p, q, sc); im.setMatrixAt(i, m4); } im.instanceMatrix.needsUpdate = true; });
     }
 

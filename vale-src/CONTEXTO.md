@@ -20,7 +20,7 @@ estação do fim da linha, torii) e cada lugar abre um "mundo" (uma cena própri
 
 ### A cidade (public/cidade, a capa)
 
-Cidade japonesa ao entardecer, contínua: a rua com as lojas, o grande torii, a escadaria com mil torii, o santuário,
+Cidade japonesa ao entardecer, contínua: a rua com as lojas, o grande torii, a escadaria com cerejeiras (três torii e lanternas), o santuário,
 a árvore sagrada, a floresta, o vale com os arrozais e a casa, e o lago com o torii dentro d'água. Não tem build: os
 arquivos de `public/cidade` são a fonte (exceto `atividades.json`, que o `build.py` gera a partir do vale).
 
@@ -39,6 +39,12 @@ public/cidade/
   notas.json       anotações do apresentador por lugar e por seção, mostradas no celular
   modelos/ tex/    modelos e texturas do Poly Haven (CC0), reduzidos para a web; ver CREDITOS.txt
 ```
+
+Desempenho (medido com `renderer.info`): tudo o que é parado vira poucas malhas (`M.juntar`), as cópias de modelos
+vão em pedaços instanciados com esfera de limite (`M.instPedacos`), o que passa de ~300 m some na névoa
+(`cortaLonge` em cidade.js), os detalhes do chão ficam na camada 1 (fora do reflexo do lago) e só 4 luzes pontuais
+seguem a câmera. As cerejeiras 3D são só tronco e galhos; a copa são quadrados de flores (textura desenhada em
+natureza.js). Referência: rua ~2,8 milhões de triângulos e ~1.000 chamadas por quadro, contando a sombra.
 
 Para testar sem placa de vídeo, use `?pausa=1` (só desenha depois de carregar), `?limpo=1` (sem interface) e
 `?s=N` (começa no lugar N). `MUNDO.pular(N)` no console troca de lugar na hora.

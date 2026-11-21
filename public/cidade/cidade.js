@@ -4,12 +4,13 @@
   const T = window.THREE;
   const canvas = document.getElementById("c");
   const renderer = new T.WebGLRenderer({ canvas, antialias: true });
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, matchMedia("(pointer: coarse)").matches ? 1.25 : 1.75));
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, matchMedia("(pointer: coarse)").matches ? 1 : 1.5));
   renderer.outputEncoding = T.sRGBEncoding;
   renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.68;
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap;
   const scene = new T.Scene();
   const camera = new T.PerspectiveCamera(48, 1, 0.1, 600);
+  camera.layers.enable(1); // camada 1: detalhes do chão que ficam fora do reflexo do lago
   const V3 = (x, y, z) => new T.Vector3(x, y, z);
   const Q = new URLSearchParams(location.search);
   const loader = new T.GLTFLoader(), texL = new T.TextureLoader();
@@ -24,7 +25,8 @@
   });
   scene.fog = new T.FogExp2("#b98a7a", 0.0068);
   const sun = new T.DirectionalLight("#ff9a58", 2.4); sun.position.set(-26, 11, -72); sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -40, right: 40, top: 40, bottom: -40, near: 1, far: 170 }); sun.shadow.bias = -0.0004; scene.add(sun);
+  const toque = matchMedia("(pointer: coarse)").matches;
+  sun.shadow.mapSize.set(toque ? 1024 : 2048, toque ? 1024 : 2048); Object.assign(sun.shadow.camera, { left: -32, right: 32, top: 32, bottom: -32, near: 1, far: 95 }); sun.shadow.bias = -0.0004; scene.add(sun);
   scene.add(new T.HemisphereLight("#8f86b8", "#4a3028", 0.3));
 
   /* ---------------- materiais com textura de verdade ---------------- */
@@ -50,6 +52,37 @@
 
   /* ---------------- prédios montados com o kit de fachada ---------------- */
   const shadowOn = (o) => o.traverse((m) => { if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } });
+  /* juntar: tudo o que não se mexe vira poucas malhas, uma por material e por pedaço do mapa (o pedaço deixa a
+     câmera ignorar o que está fora da tela). Luzes e peças animadas (userData.anima) voltam para a cena como estão. */
+  const lerF = (a) => { const n = a.count, k = a.itemSize, out = new Float32Array(n * k); const il = a.isInterleavedBufferAttribute, arr = il ? a.data.array : a.array, st = il ? a.data.stride : k, of = il ? a.offset : 0;
+    const den = !a.normalized ? 1 : arr instanceof Int16Array ? 1 / 32767 : arr instanceof Uint16Array ? 1 / 65535 : arr instanceof Int8Array ? 1 / 127 : arr instanceof Uint8Array ? 1 / 255 : 1;
+    for (let i = 0; i < n; i++) for (let c = 0; c < k; c++) { let v = arr[i * st + of + c] * den; if (a.normalized && den !== 1 && (arr instanceof Int16Array || arr instanceof Int8Array)) v = Math.max(-1, v); out[i * k + c] = v; } return out; };
+  function juntar(group, cell = 30, alvo = scene) {
+    group.updateMatrixWorld(true);
+    const soltos = []; group.traverse((o) => { if (o.isLight || o.isInstancedMesh || (o.isMesh && o.userData.anima)) soltos.push(o); });
+    for (const o of soltos) { alvo.attach(o); if (o.target && o.target.parent !== alvo) alvo.attach(o.target); }
+    const by = new Map(), v = new T.Vector3(), nm = new T.Matrix3(), ctr = new T.Vector3();
+    group.traverse((o) => {
+      if (!o.isMesh) return; const g = o.geometry; if (!g.attributes.position) return;
+      if (!g.boundingSphere) g.computeBoundingSphere(); ctr.copy(g.boundingSphere.center).applyMatrix4(o.matrixWorld);
+      const ck = Math.floor(ctr.z / cell) + ":" + Math.floor(ctr.x / cell);
+      const P = lerF(g.attributes.position), N = g.attributes.normal ? lerF(g.attributes.normal) : null, U = g.attributes.uv ? lerF(g.attributes.uv) : null, I = g.index ? g.index.array : null;
+      nm.getNormalMatrix(o.matrixWorld);
+      const grupos = Array.isArray(o.material) && g.groups.length ? g.groups : [{ start: 0, count: I ? I.length : P.length / 3, materialIndex: 0 }];
+      for (const gr of grupos) {
+        const m = Array.isArray(o.material) ? o.material[gr.materialIndex] : o.material; const key = m.uuid + "|" + ck;
+        let e = by.get(key); if (!e) by.set(key, (e = { m, p: [], n: [], u: [], sh: o.castShadow }));
+        for (let k = gr.start; k < gr.start + gr.count; k++) { const i = I ? I[k] : k;
+          v.set(P[i * 3], P[i * 3 + 1], P[i * 3 + 2]).applyMatrix4(o.matrixWorld); e.p.push(v.x, v.y, v.z);
+          if (N) { v.set(N[i * 3], N[i * 3 + 1], N[i * 3 + 2]).applyMatrix3(nm).normalize(); e.n.push(v.x, v.y, v.z); } else e.n.push(0, 1, 0);
+          if (U) e.u.push(U[i * 2], U[i * 2 + 1]); else e.u.push(0, 0); }
+      }
+    });
+    const out = new T.Group();
+    for (const e of by.values()) { const geo = new T.BufferGeometry(); geo.setAttribute("position", new T.Float32BufferAttribute(e.p, 3)); geo.setAttribute("normal", new T.Float32BufferAttribute(e.n, 3)); geo.setAttribute("uv", new T.Float32BufferAttribute(e.u, 2)); geo.computeBoundingSphere();
+      const mesh = new T.Mesh(geo, e.m); mesh.castShadow = e.sh; mesh.receiveShadow = true; out.add(mesh); longe.push(mesh); }
+    if (group.parent) group.parent.remove(group); alvo.add(out); return out;
+  }
   let KIT = null;
   const piece = (name) => { const o = KIT.getObjectByName(name); if (!o) { console.warn("sem peça", name); return new T.Group(); } const c = o.clone(true); c.position.set(0, 0, 0); c.rotation.set(0, 0, 0); return c; };
   const greyCache = new Map();
@@ -58,12 +91,17 @@
     const nt = new T.CanvasTexture(c); nt.encoding = T.sRGBEncoding; nt.wrapS = t.wrapS; nt.wrapT = t.wrapT; nt.flipY = t.flipY; nt.repeat.copy(t.repeat); nt.offset.copy(t.offset); greyCache.set(t, nt); return nt; }
   const H = {}; // altura de cada camada, medida no próprio modelo
   const measure = (name) => { const c = piece(name); const b = new T.Box3().setFromObject(c); return b; };
+  const cidadeG = new T.Group(), matCache = {};
+  // o que passa de ~300 m some na névoa: não vale desenhar (as malhas juntadas e os pedaços instanciados entram aqui)
+  const longe = [], LONGE = 300, cv = new T.Vector3();
+  function cortaLonge() { for (const o of longe) { const s = o.geometry.boundingSphere; if (!s) continue; cv.copy(s.center).applyMatrix4(o.matrixWorld); o.visible = cv.distanceTo(camera.position) - s.radius < (o.userData.longe || LONGE); } }
   function building(x0, z0, side, bays, floors, kinds) {
-    const g = new T.Group(); g.position.set(x0, 0.12, z0); g.rotation.y = side < 0 ? Math.PI / 2 : -Math.PI / 2; scene.add(g);
-    const tint = new T.Color(kinds.tint || "#ffffff"), mats = {};
+    const g = new T.Group(); g.position.set(x0, 0.12, z0); g.rotation.y = side < 0 ? Math.PI / 2 : -Math.PI / 2; cidadeG.add(g);
+    const tint = new T.Color(kinds.tint || "#ffffff");
     const retint = (o) => o.traverse((m) => { if (!m.isMesh) return; const n = m.material.name || "";
-      if (/plaster/.test(n)) { if (!mats.p) { mats.p = m.material.clone(); mats.p.map = greyMap(m.material.map); mats.p.color.copy(tint); } m.material = mats.p; }
-      else if (/glass/.test(n)) { const lit = rnd() < (kinds.lit == null ? 0.45 : kinds.lit); const gm = m.material.clone(); if (lit) { gm.emissive = new T.Color(["#ffcf8a", "#ffe2b0", "#fff0d8", "#cfe4ff"][Math.floor(rnd() * 4)]); gm.emissiveIntensity = 0.55 + rnd() * 0.6; } m.material = gm; } });
+      if (/plaster/.test(n)) { const k = "p" + tint.getHexString(); if (!matCache[k]) { matCache[k] = m.material.clone(); matCache[k].map = greyMap(m.material.map); matCache[k].color.copy(tint); } m.material = matCache[k]; }
+      else if (/glass/.test(n)) { const lit = rnd() < (kinds.lit == null ? 0.45 : kinds.lit) ? 1 + Math.floor(rnd() * 4) : 0, k = "g" + lit + n;
+        if (!matCache[k]) { const gm = (matCache[k] = m.material.clone()); if (lit) { gm.emissive = new T.Color(["#ffcf8a", "#ffe2b0", "#fff0d8", "#cfe4ff"][lit - 1]); gm.emissiveIntensity = 0.75; } } m.material = matCache[k]; } });
     const BW = 3, FH = H.wall;
     for (let i = 0; i < bays; i++) {
       const x = (i + 1) * BW;
@@ -114,9 +152,10 @@
   function bracket(g, x, y) { const m = new T.MeshStandardMaterial({ color: "#5a5c60", metalness: 0.6, roughness: 0.5 }); for (const s of [-0.3, 0.3]) { const b = new T.Mesh(new T.BoxGeometry(0.04, 0.04, 0.4), m); b.position.set(x + s, y - 0.3, 0.32); g.add(b); } }
   // roupa no varal da varanda
   const clothCols = ["#f2f0ea", "#c8d4e4", "#e8c8b8", "#4a5a7a", "#f0e2a8", "#d8d8d8", "#9a3a3a"];
+  const roupaMats = {}; const roupaMat = (c) => roupaMats[c] || (roupaMats[c] = new T.MeshStandardMaterial({ color: c, side: T.DoubleSide, roughness: 0.95 }));
   function laundry(g, cx, y, z) {
     const pole = new T.Mesh(new T.CylinderGeometry(0.015, 0.015, 2.6, 6), new T.MeshStandardMaterial({ color: "#b8bcc2", metalness: 0.6, roughness: 0.4 })); pole.rotation.z = Math.PI / 2; pole.position.set(cx, y, z); g.add(pole);
-    let x = cx - 1.1; while (x < cx + 1.0) { const w = 0.3 + rnd() * 0.4, h = 0.4 + rnd() * 0.5; const c = new T.Mesh(new T.PlaneGeometry(w, h), new T.MeshStandardMaterial({ color: clothCols[Math.floor(rnd() * clothCols.length)], side: T.DoubleSide, roughness: 0.95 })); c.position.set(x + w / 2, y - h / 2 - 0.02, z); c.rotation.y = (rnd() - 0.5) * 0.3; g.add(c); norens.push({ m: c, ph: rnd() * 6, k: 0.5 }); x += w + 0.08 + rnd() * 0.2; }
+    let x = cx - 1.1; while (x < cx + 1.0) { const w = 0.3 + rnd() * 0.4, h = 0.4 + rnd() * 0.5; const c = new T.Mesh(new T.PlaneGeometry(w, h), roupaMat(clothCols[Math.floor(rnd() * clothCols.length)])); c.position.set(x + w / 2, y - h / 2 - 0.02, z); c.rotation.y = (rnd() - 0.5) * 0.3; c.rotation.x = (rnd() - 0.5) * 0.12; g.add(c); x += w + 0.08 + rnd() * 0.2; }
   }
   // telhado: mureta, caixa d'água e ar-condicionados
   const tankMat = new T.MeshStandardMaterial({ color: "#c8c4b8", roughness: 0.7, metalness: 0.2 });
@@ -148,13 +187,14 @@
     const rod = new T.Mesh(new T.CylinderGeometry(0.015, 0.015, w + 0.2, 8), new T.MeshStandardMaterial({ color: "#6a4a2a" })); rod.rotation.z = Math.PI / 2; g.add(rod); return g;
   }
   // lanterna de papel vermelha (chōchin), acesa por dentro
-  const lanterns = [];
+  const chochinMats = {}, chochinTampa = new T.MeshStandardMaterial({ color: "#151212" });
   function chochin(text) {
-    const tex = canvasTex(256, 256, (c, W, Hh) => { c.fillStyle = "#c8281e"; c.fillRect(0, 0, W, Hh); c.fillStyle = "#1a1210"; c.font = `700 92px ${JP}`; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(text, W / 2, Hh / 2 + 4); c.strokeStyle = "rgba(0,0,0,0.25)"; for (let y = 10; y < Hh; y += 18) { c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); } });
+    if (!chochinMats[text]) { const tex = canvasTex(256, 256, (c, W, Hh) => { c.fillStyle = "#c8281e"; c.fillRect(0, 0, W, Hh); c.fillStyle = "#1a1210"; c.font = `700 92px ${JP}`; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(text, W / 2, Hh / 2 + 4); c.strokeStyle = "rgba(0,0,0,0.25)"; for (let y = 10; y < Hh; y += 18) { c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); } });
+      chochinMats[text] = new T.MeshStandardMaterial({ map: tex, emissiveMap: tex, emissive: new T.Color("#ffb070"), emissiveIntensity: 1.3, roughness: 0.8 }); }
     const pts = []; for (let i = 0; i <= 16; i++) { const t = i / 16; pts.push(new T.Vector2(0.2 * Math.sin(Math.PI * (0.08 + t * 0.84)) + 0.02, -0.28 + t * 0.56)); }
-    const g = new T.Group(); const body = new T.Mesh(new T.LatheGeometry(pts, 24), new T.MeshStandardMaterial({ map: tex, emissiveMap: tex, emissive: new T.Color("#ffb070"), emissiveIntensity: 1.3, roughness: 0.8 })); g.add(body);
-    for (const y of [-0.29, 0.29]) { const c = new T.Mesh(new T.CylinderGeometry(0.09, 0.09, 0.05, 16), new T.MeshStandardMaterial({ color: "#151212" })); c.position.y = y; g.add(c); }
-    const l = new T.PointLight("#ff9a5a", 0.8, 5, 2); g.add(l); lanterns.push({ g, l, ph: rnd() * 6 }); return g;
+    const g = new T.Group(); const body = new T.Mesh(new T.LatheGeometry(pts, 20), chochinMats[text]); g.add(body);
+    for (const y of [-0.29, 0.29]) { const c = new T.Mesh(new T.CylinderGeometry(0.09, 0.09, 0.05, 12), chochinTampa); c.position.y = y; g.add(c); }
+    const l = new T.PointLight("#ff9a5a", 0.8, 5, 2); g.add(l); return g;
   }
   // máquina de bebidas: caixa com a frente iluminada, fileiras de latas e botões
   function vending(col) {
@@ -194,16 +234,16 @@
         const b = building(side * WALL_X, zStart, side, bays, floors, kinds);
         buildings.push({ b, side, z0: z, z1: z - w, shop, bays, floors });
         // a placa vertical na quina, acesa
-        const vs = vsign(shop[0], shop[1], shop[2], 0.55, Math.min(2.6, 0.75 * [...shop[0]].length + 0.4)); vs.position.set(side * (WALL_X - 0.42), 0.12 + H.base + H.dado + 3 + 1.5, z - 0.4); scene.add(vs); shadowOn(vs);
+        const vs = vsign(shop[0], shop[1], shop[2], 0.55, Math.min(2.6, 0.75 * [...shop[0]].length + 0.4)); vs.position.set(side * (WALL_X - 0.42), 0.12 + H.base + H.dado + 3 + 1.5, z - 0.4); cidadeG.add(vs); shadowOn(vs);
         // a placa de cima da porta
-        const hs = hsign(shop[0], shop[1], shop[2], 2.6, 0.5); hs.position.set(side * (WALL_X - 0.12), 0.12 + H.base + H.dado + 2.62, z - 1.5); hs.rotation.y = side < 0 ? Math.PI / 2 : -Math.PI / 2; scene.add(hs);
+        const hs = hsign(shop[0], shop[1], shop[2], 2.6, 0.5); hs.position.set(side * (WALL_X - 0.12), 0.12 + H.base + H.dado + 2.62, z - 1.5); hs.rotation.y = side < 0 ? Math.PI / 2 : -Math.PI / 2; cidadeG.add(hs);
         if (shop[4]) lojas.push({ id: shop[4], kanji: shop[0], cor: shop[1], alvos: [vs, hs], porta: V3(side * (WALL_X - 0.2), 1.6, z - 1.5), side });
         // noren na porta, e lanternas vermelhas em alguns
         if (shop[4] || rnd() < 0.7) { const n = noren(shop[3], shop[1] === "#f4efe4" ? "#2a3a5a" : shop[1], 1.7); n.position.set(side * (WALL_X - 0.2), 0.12 + H.base + H.dado + 2.25, z - 1.5); n.rotation.y = side < 0 ? Math.PI / 2 : -Math.PI / 2; scene.add(n); if (shop[4]) lojas[lojas.length - 1].alvos.push(...n.children); }
-        if (rnd() < 0.5) for (const dz of [-0.2, -2.8]) { const l = chochin(shop[3]); l.position.set(side * (WALL_X - 0.35), 0.12 + H.base + H.dado + 2.1, z + dz); scene.add(l); }
+        if (rnd() < 0.5) for (const dz of [-0.2, -2.8]) { const l = chochin(shop[3]); l.position.set(side * (WALL_X - 0.35), 0.12 + H.base + H.dado + 2.1, z + dz); l.rotation.z = (rnd() - 0.5) * 0.06; cidadeG.add(l); }
     }
     // duas máquinas de bebida lado a lado, perto da câmera
-    for (const [dz, col] of [[0, "#d8332a"], [-1.05, "#2a6ad8"]]) { const v = vending(col); v.position.set(-(WALL_X - 0.5), 0.12, 14.6 + dz); v.rotation.y = Math.PI / 2; scene.add(v); }
+    for (const [dz, col] of [[0, "#d8332a"], [-1.05, "#2a6ad8"]]) { const v = vending(col); v.position.set(-(WALL_X - 0.5), 0.12, 14.6 + dz); v.rotation.y = Math.PI / 2; cidadeG.add(v); }
   }
 
   /* postes com fiação, luminárias e as miudezas da calçada */
@@ -214,18 +254,18 @@
     const tops = { "-1": [], "1": [] };
     for (const side of [-1, 1]) poleZ.forEach((z, i) => {
       const zz = z - (side > 0 ? 6 : 0); const x = side * (RW / 2 + 0.35);
-      if (preset) { const p = preset.grp.clone(true); p.position.set(x, 0.12, zz); p.rotation.y = side < 0 ? 0 : Math.PI; scene.add(p); shadowOn(p); tops[side].push(V3(x, preset.top - 0.4, zz)); }
-      if (M.lamp && i % 2 === 0) { const l = M.lamp.clone(true); const b = new T.Box3().setFromObject(l), k = 0.55 / (b.max.y - b.min.y); l.scale.setScalar(k); l.position.set(x - side * 0.3, 4.3, zz); l.rotation.y = side < 0 ? Math.PI / 2 : -Math.PI / 2; l.traverse((o) => { if (o.isMesh && /glass|bulb/i.test(o.material.name || "")) { o.material = o.material.clone(); o.material.emissive = new T.Color("#fff2d8"); o.material.emissiveIntensity = 1.5; } }); scene.add(l); const pl = new T.SpotLight("#ffe8c8", 3.5, 14, 0.9, 0.6, 1.5); pl.position.set(x - side * 0.45, 4.15, zz); pl.target.position.set(x - side * 2.2, 0, zz); scene.add(pl, pl.target); }
+      if (preset) { const p = preset.grp.clone(true); p.position.set(x, 0.12, zz); p.rotation.y = side < 0 ? 0 : Math.PI; cidadeG.add(p); shadowOn(p); tops[side].push(V3(x, preset.top - 0.4, zz)); }
+      if (M.lamp && i % 2 === 0) { const l = M.lamp.clone(true); const b = new T.Box3().setFromObject(l), k = 0.55 / (b.max.y - b.min.y); l.scale.setScalar(k); l.position.set(x - side * 0.3, 4.3, zz); l.rotation.y = side < 0 ? Math.PI / 2 : -Math.PI / 2; l.traverse((o) => { if (o.isMesh && /glass|bulb/i.test(o.material.name || "")) { const k = "luz" + o.material.uuid; if (!matCache[k]) { matCache[k] = o.material.clone(); matCache[k].emissive = new T.Color("#fff2d8"); matCache[k].emissiveIntensity = 1.5; } o.material = matCache[k]; } }); cidadeG.add(l); const pl = new T.SpotLight("#ffe8c8", 3.5, 14, 0.9, 0.6, 1.5); pl.position.set(x - side * 0.45, 4.15, zz); pl.target.position.set(x - side * 2.2, 0, zz); scene.add(pl, pl.target); }
     });
     // fios: vários por vão, com barriga, de poste em poste e atravessando a rua
     const wm = new T.MeshStandardMaterial({ color: "#16161a", roughness: 0.6 });
-    const span = (a, b, sag, r) => { const pts = []; for (let k = 0; k <= 14; k++) { const t = k / 14; pts.push(a.clone().lerp(b, t).add(V3(0, -Math.sin(t * Math.PI) * sag, 0))); } const m = new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(pts), 20, r, 4), wm); scene.add(m); };
+    const span = (a, b, sag, r) => { const pts = []; for (let k = 0; k <= 14; k++) { const t = k / 14; pts.push(a.clone().lerp(b, t).add(V3(0, -Math.sin(t * Math.PI) * sag, 0))); } const m = new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(pts), 20, r, 4), wm); m.castShadow = true; cidadeG.add(m); };
     for (const side of [-1, 1]) { const t = tops[side]; for (let i = 0; i < t.length - 1; i++) for (let k = 0; k < 6; k++) { const off = V3(0, -k * 0.28 - (k > 2 ? 0.5 : 0), ((k % 3) - 1) * 0.35); span(t[i].clone().add(off), t[i + 1].clone().add(off), 0.35 + rnd() * 0.5, k > 2 ? 0.018 : 0.011); } }
     for (let i = 0; i < Math.min(tops["-1"].length, tops["1"].length); i += 2) { span(tops["-1"][i].clone().add(V3(0, -0.9, 0)), tops["1"][i].clone().add(V3(0, -0.9, 6)), 0.6, 0.012); span(tops["-1"][i].clone().add(V3(0, -1.3, 0)), tops["1"][i].clone().add(V3(0, -1.2, 6)), 0.8, 0.012); }
     // fios até as fachadas
     for (const B of buildings) if (rnd() < 0.6) { const t = tops[B.side]; if (!t.length) continue; const near = t.reduce((a, b) => (Math.abs(b.z - B.z0) < Math.abs(a.z - B.z0) ? b : a)); span(near.clone().add(V3(0, -1.1, 0)), V3(B.side * (WALL_X - 0.1), 0.12 + H.base + H.dado + 3 * Math.min(2, B.floors) - 0.4, B.z0 - 1.2), 0.3, 0.01); }
     // miudezas: caixas de luz, lixeiras, vasos, engradados, tampas de bueiro
-    const place = (m, x, z, ry = 0, s = 1) => { if (!m) return; const o = m.clone(true); o.position.set(x, 0.12, z); o.rotation.y = ry; o.scale.setScalar(s); scene.add(o); shadowOn(o); return o; };
+    const place = (m, x, z, ry = 0, s = 1) => { if (!m) return; const o = m.clone(true); o.position.set(x, 0.12, z); o.rotation.y = ry; o.scale.setScalar(s); cidadeG.add(o); shadowOn(o); return o; };
     for (const B of buildings) {
       const x = B.side * (WALL_X - 0.45), r = B.side < 0 ? Math.PI / 2 : -Math.PI / 2;
       if (rnd() < 0.55) place(rnd() < 0.5 ? M.pot1 : M.pot2, x, B.z0 - 0.3 - rnd() * 0.4, rnd() * 6, 0.8);
@@ -241,7 +281,7 @@
   /* ---------------- o resto do mundo (outros arquivos) usa estas peças ---------------- */
   const ticks = [];
   const leve = Q.has("leve") || (matchMedia("(pointer: coarse)").matches && !Q.has("pesado"));
-  const M = window.MUNDO = Object.assign(window.MUNDO || {}, { leve, T, scene, renderer, camera, sun, V3, rnd, load, pbr, tx, canvasTex, shadowOn, texL, Q, ticks, JP, JPS, chochin, lanterns, norens, lojas });
+  const M = window.MUNDO = Object.assign(window.MUNDO || {}, { leve, T, scene, renderer, camera, sun, V3, rnd, load, pbr, tx, canvasTex, shadowOn, texL, Q, ticks, JP, JPS, chochin, norens, lojas, juntar, longe, lerF });
 
   /* ---------------- câmera ---------------- */
   camera.position.set(0.6, 1.65, 26); camera.lookAt(-0.4, 3.2, -10); // até o passeio assumir
@@ -258,6 +298,7 @@
     if (KIT) street();
     const [poles, lamp0, ubox1, ubox2, trash, crate, pot1, pot2, planter, man, pot3] = await Promise.all(["modular_electricity_poles", "security_light", "utility_box_01", "utility_box_02", "metal_trash_can", "plastic_crate_01", "potted_plant_01", "potted_plant_02", "planter_box_01", "water_manhole_cover", "planter_pot_clay"].map(load));
     props({ poles, lamp: lamp0, ubox1, ubox2, trash, crate, pot1, pot2, planter, man, pot3 });
+    scene.add(cidadeG); juntar(cidadeG, 48);
     for (const b of M.builders || []) { try { await b(M); } catch (e) { console.error("mundo:", e); } }
     window.cidadePronta = true;
   })();
@@ -266,9 +307,9 @@
   function frame() {
     const t = clock.getElapsedTime();
     if (M.camTick) M.camTick(t);
+    cortaLonge();
     for (const f of ticks) f(t);
     for (const n of norens) n.m.rotation.x = Math.sin(t * 1.3 + n.ph) * 0.06 * (n.k || 1);
-    for (const l of lanterns) l.g.rotation.z = Math.sin(t * 0.9 + l.ph) * 0.04;
     // ?pausa=1: não desenha enquanto carrega (para testes num computador sem placa de vídeo)
     if (!(Q.has("pausa") && !window.cidadePronta)) renderer.render(scene, camera);
     requestAnimationFrame(frame);

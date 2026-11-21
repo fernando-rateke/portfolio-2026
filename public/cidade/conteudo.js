@@ -1,5 +1,5 @@
 /* O portfólio dentro da cidade. Cada loja da rua é uma matéria (a placa em japonês, o nome em português ao passar o
-   mouse); a cafeteria é o "Quem sou". No resto do caminho: os torii da escadaria guardam os certificados, o santuário
+   mouse); a cafeteria é o "Quem sou". No resto do caminho: as lanternas da escadaria guardam os certificados, o santuário
    os agradecimentos, o quadro de emas os recados dos visitantes, a casa do arrozal a jornada (1º e 2º ano) e o torii
    do lago o futuro. Clicar ou tocar abre um painel de papel; as atividades vêm de /cidade/atividades.json. */
 (() => {
@@ -170,7 +170,8 @@
     if (M.L) {
       const L = M.L, YT = L.Y_TOPO;
       // os pilares dos torii da escadaria levam as inscrições: os certificados
-      for (const sx of [-1.75, 1.75]) { const len = Math.hypot(L.Z_ESC0 - L.Z_ESC1, YT); const b = caixa(0.5, 3.6, len, sx, YT / 2 + 1.8, (L.Z_ESC0 + L.Z_ESC1) / 2); b.rotation.x = Math.atan2(YT, L.Z_ESC0 - L.Z_ESC1); marca(b, "Certificados", () => abrir("certificados")); }
+      // as lanternas de pedra da escadaria guardam os certificados
+      for (const t of M.torosEscada || []) marca(caixa(1.1, 2.2, 1.1, t.position.x, t.position.y + 1.0, t.position.z), "Certificados", () => abrir("certificados"));
       if (M.haiden) marca(caixa(11, 6, 8, M.haiden.position.x, YT + 3, M.haiden.position.z), "Agradecimentos", () => abrir("agradecimentos"));
       if (quadro.children.length) marca(caixa(3, 2.4, 0.6, quadro.position.x, YT + 1.2, quadro.position.z, quadro.rotation.y), "Quadro de emas", abrirEmas);
       if (M.casa) marca(caixa(9, 7, 13, M.casa.position.x, M.casa.position.y + 3.5, M.casa.position.z), "A jornada", () => abrir("jornada"));

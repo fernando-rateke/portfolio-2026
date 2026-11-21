@@ -14,7 +14,7 @@
       { p: V3(0.3, 1.65, -14), o: V3(0, 3.6, -60), id: "lojas", g: "A cidade", nome: "As lojas", jp: "商店街" },
       { p: V3(0, 1.7, -53), o: V3(0, 7.5, -75), id: "torii", g: "O santuário", nome: "O grande torii", jp: "鳥居" },
       { p: at(0, -78, 1.6), o: V3(0, yEsc(-96) + 2, -96) },
-      { p: at(0, -94, 1.6), o: V3(0, yEsc(-112) + 2.2, -112), id: "mil-torii", g: "O santuário", nome: "Mil torii", jp: "千本鳥居" },
+      { p: at(0, -94, 1.6), o: V3(0, yEsc(-112) + 2.2, -112), id: "escadaria", g: "O santuário", nome: "A escadaria das cerejeiras", jp: "桜の石段" },
       { p: at(0, -111, 1.65), o: V3(0, L.Y_TOPO + 3, -140) },
       { p: at(0, -119, 1.65), o: V3(0, L.Y_TOPO + 3.5, -140), id: "santuario", g: "O santuário", nome: "O santuário", jp: "神社" },
       { p: at(-2.2, -121.5, 1.65), o: V3(-11, L.Y_TOPO + 3.2, -128), id: "arvore", g: "O santuário", nome: "A árvore sagrada", jp: "御神木" },
@@ -65,8 +65,8 @@
       if (o.isSpotLight) { f.tg = new T.Vector3(); o.target.getWorldPosition(f.tg); f.ang = o.angle; f.pen = o.penumbra; fontes.s.push(f); } else fontes.p.push(f); });
     for (const f of [...fontes.p, ...fontes.s]) { f.src.parent && f.src.parent.remove(f.src); if (f.src.target && f.src.target.parent) f.src.target.parent.remove(f.src.target); }
     M.luzFonte = (w, c, i, d) => fontes.p.push({ w, c: new T.Color(c), i, d, dec: 2 });
-    const poolP = Array.from({ length: 6 }, () => { const l = new T.PointLight("#fff", 0, 5, 2); scene.add(l); return l; });
-    const poolS = Array.from({ length: 3 }, () => { const l = new T.SpotLight("#fff", 0, 14, 0.9, 0.6, 1.5); scene.add(l, l.target); return l; });
+    const poolP = Array.from({ length: M.leve ? 3 : 4 }, () => { const l = new T.PointLight("#fff", 0, 5, 2); scene.add(l); return l; });
+    const poolS = Array.from({ length: 2 }, () => { const l = new T.SpotLight("#fff", 0, 14, 0.9, 0.6, 1.5); scene.add(l, l.target); return l; });
     const fv = new T.Vector3();
     function luzes(pos) {
       camera.getWorldDirection(fv);
@@ -80,7 +80,7 @@
     let lastNome = "";
     const look = new T.Vector3(), pos = new T.Vector3(), tmp = new T.Vector3();
     scene.add(sun.target);
-    const sunOff = sun.position.clone();
+    const sunOff = sun.position.clone().setLength(45); // perto: a sombra só precisa cobrir os arredores da câmera
     let prevT = 0;
     M.camTick = (t) => {
       const dt = Math.min(0.05, t - prevT); prevT = t;

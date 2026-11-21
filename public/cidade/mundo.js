@@ -57,14 +57,12 @@
       const mesh = new M.T.Mesh(geo, m); mesh.castShadow = mesh.receiveShadow = true; out.add(mesh); }
     return out;
   }
-  M.merge = merge;
   // várias cópias de um grupo já juntado, como InstancedMesh (uma chamada por material)
   function instances(merged, mats4) {
     const out = new M.T.Group();
     for (const c of merged.children) { const im = new M.T.InstancedMesh(c.geometry, c.material, mats4.length); mats4.forEach((m, i) => im.setMatrixAt(i, m)); im.castShadow = im.receiveShadow = true; im.frustumCulled = false; out.add(im); }
     return out;
   }
-  M.instances = instances;
   const TRS = (x, y, z, ry = 0, s = 1) => new M.T.Matrix4().compose(new M.T.Vector3(x, y, z), new M.T.Quaternion().setFromAxisAngle(new M.T.Vector3(0, 1, 0), ry), new M.T.Vector3(s, s, s));
   M.TRS = TRS;
 
@@ -132,13 +130,10 @@
             vec3 col = mix(uFundo, r, fr);
             // o reflexo já sai com o tom final; aqui só converte a cor para a tela
             gl_FragColor = vec4(col, 1.);
-            #ifdef SO_REFLEXO
-            gl_FragColor = vec4(r, 1.);
-            #endif
             #include <encodings_fragment>
             #include <fog_fragment>
           }` });
-      mat.uniforms.tRefl.value = rt.texture; mat.uniforms.tMat.value = tm; M.lagoRT = rt; M.lagoVC = vc;
+      mat.uniforms.tRefl.value = rt.texture; mat.uniforms.tMat.value = tm;
       const mesh = new T.Mesh(geo, mat);
       const wp = new T.Vector3(), cp = new T.Vector3(), nrm = new T.Vector3(), rot = new T.Matrix4(), look = new T.Vector3(), tgt = new T.Vector3(), view = new T.Vector3(), plane = new T.Plane(), clip = new T.Vector4(), q = new T.Vector4();
       let ocupado = false;
@@ -161,8 +156,6 @@
       };
       return mesh;
     }
-    const aguaM = new T.MeshStandardMaterial({ color: "#3a4a5a", roughness: 0.04, metalness: 1, transparent: true, opacity: 0.86, envMapIntensity: 1.0 });
-    M.aguaM = aguaM;
     const lago = espelho(new T.CircleGeometry(1, 64)); lago.rotation.x = -Math.PI / 2; lago.scale.set(L.LAGO.rx * 1.45, L.LAGO.rz * 1.45, 1); lago.position.set(L.LAGO.x, L.Y_AGUA, L.LAGO.z); scene.add(lago); M.lago = lago;
 
     /* ---------- praça e o grande torii ---------- */
@@ -208,7 +201,6 @@
       for (let i = 0; i < seg; i++) { const a = i * 2; idx.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); }
       const g = new T.BufferGeometry(); g.setAttribute("position", new T.Float32BufferAttribute(pos, 3)); g.setAttribute("uv", new T.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals();
       const tr = new T.Mesh(g, pbr("stone_pathway", [1, 1], { metalness: 0, color: "#bdb6a8" })); tr.receiveShadow = true; scene.add(tr);
-      M.trilha = curve;
     }
 
     /* ---------- vale: arrozais em degraus de água ---------- */

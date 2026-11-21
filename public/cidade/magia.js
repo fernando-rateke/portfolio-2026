@@ -14,13 +14,11 @@
       for (let i = 0; i < n; i++) { const p = gen(i); base.push(p); pos.set([p.x, p.y, p.z], i * 3); ph[i] = rnd() * 100; }
       const g = new T.BufferGeometry(); g.setAttribute("position", new T.BufferAttribute(pos, 3)); g.setAttribute("ph", new T.BufferAttribute(ph, 1));
       const m = new T.ShaderMaterial({ transparent: true, depthWrite: false, blending: T.AdditiveBlending,
-        uniforms: { uT: { value: 0 }, uMap: { value: glowTex }, uCol: { value: new T.Color(opt.cor) }, uSize: { value: opt.tam }, uDrift: { value: opt.deriva || 0.4 }, uRise: { value: opt.sobe || 0 }, uH: { value: opt.altura || 0 }, uBlink: { value: opt.pisca == null ? 1 : opt.pisca }, uPx: { value: renderer().getPixelRatio() } },
-        vertexShader: `attribute float ph; uniform float uT, uSize, uDrift, uRise, uH, uBlink, uPx; varying float vA;
+        uniforms: { uT: { value: 0 }, uMap: { value: glowTex }, uCol: { value: new T.Color(opt.cor) }, uSize: { value: opt.tam }, uDrift: { value: opt.deriva || 0.4 }, uBlink: { value: opt.pisca == null ? 1 : opt.pisca }, uPx: { value: renderer().getPixelRatio() } },
+        vertexShader: `attribute float ph; uniform float uT, uSize, uDrift, uBlink, uPx; varying float vA;
           void main(){ vec3 p = position; float t = uT * 0.35 + ph;
             p += vec3(sin(t * 1.3 + ph) , sin(t * 0.9 + ph * 1.7) * 0.5, cos(t * 1.1 + ph * 0.7)) * uDrift;
-            if (uH > 0.) p.y += mod(uT * uRise + ph * 3.1, uH);
             float b = 0.5 + 0.5 * sin(uT * (1.1 + fract(ph) * 1.4) + ph * 6.0); vA = mix(1.0, smoothstep(0.15, 1.0, b), uBlink);
-            if (uH > 0.) vA *= smoothstep(0., 0.15 * uH, mod(uT * uRise + ph * 3.1, uH)) * (1. - smoothstep(0.75 * uH, uH, mod(uT * uRise + ph * 3.1, uH)));
             vec4 mv = modelViewMatrix * vec4(p, 1.); gl_Position = projectionMatrix * mv; gl_PointSize = uSize * uPx * 300. / -mv.z; }`,
         fragmentShader: `uniform sampler2D uMap; uniform vec3 uCol; varying float vA; void main(){ float a = texture2D(uMap, gl_PointCoord).a; gl_FragColor = vec4(uCol * a * vA, a * vA); }` });
       const pts = new T.Points(g, m); pts.frustumCulled = false; scene.add(pts); ticks.push((t) => { m.uniforms.uT.value = t; }); return pts;
@@ -62,7 +60,7 @@
       const A = []; for (let i = 0; i < N; i++) { const a = rnd() * 6.28, r = Math.sqrt(rnd()); A.push({ x: L.LAGO.x + Math.cos(a) * r * L.LAGO.rx * 0.8, z: L.LAGO.z + Math.sin(a) * r * L.LAGO.rz * 0.8 - 6, h0: rnd(), sp: 0.18 + rnd() * 0.12, ph: rnd() * 6.28 }); }
       const halo = new T.Sprite(new T.SpriteMaterial({ map: glowTex, color: "#ffb070", transparent: true, depthWrite: false, blending: T.AdditiveBlending, opacity: 0.5 }));
       const halos = A.map(() => { const s = halo.clone(); s.scale.setScalar(1.6); scene.add(s); return s; });
-      const m4 = new T.Matrix4(), p = new T.Vector3(), q = new T.Quaternion(), s1 = new T.Vector3(1, 1, 1), s2 = new T.Vector3(1, -1, 1);
+      const m4 = new T.Matrix4(), p = new T.Vector3(), q = new T.Quaternion(), s1 = new T.Vector3(1, 1, 1);
       ticks.push((t) => { for (let i = 0; i < N; i++) { const a = A[i], H = 60, k = (a.h0 * H + t * a.sp) % H; const y = L.Y_AGUA + 0.3 + k;
         p.set(a.x + Math.sin(t * 0.2 + a.ph) * 1.5 * (k / H), y, a.z + Math.cos(t * 0.17 + a.ph) * 1.2 * (k / H)); q.setFromAxisAngle(V3(0, 0, 1), Math.sin(t * 0.8 + a.ph) * 0.06);
         m4.compose(p, q, s1); im.setMatrixAt(i, m4); halos[i].position.copy(p).add(V3(0, 0.2, 0)); halos[i].material.opacity = 0.45 * Math.min(1, k / 3);

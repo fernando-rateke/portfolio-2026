@@ -10,33 +10,33 @@
     const at = (x, z, a = 1.65) => V3(x, chao(x, z) + a, z);
     // cada nó: posição dos olhos, para onde olhar e, se for um lugar, o nome
     const N = [
-      { p: V3(0.6, 1.65, 26), o: V3(-0.4, 3.2, -10), nome: "A rua", jp: "通り" },
-      { p: V3(0.3, 1.65, -14), o: V3(0, 3.6, -60), nome: "As lojas", jp: "商店街" },
-      { p: V3(0, 1.7, -53), o: V3(0, 7.5, -75), nome: "O grande torii", jp: "鳥居" },
+      { p: V3(0.6, 1.65, 26), o: V3(-0.4, 3.2, -10), id: "rua", g: "A cidade", nome: "A rua", jp: "通り" },
+      { p: V3(0.3, 1.65, -14), o: V3(0, 3.6, -60), id: "lojas", g: "A cidade", nome: "As lojas", jp: "商店街" },
+      { p: V3(0, 1.7, -53), o: V3(0, 7.5, -75), id: "torii", g: "O santuário", nome: "O grande torii", jp: "鳥居" },
       { p: at(0, -78, 1.6), o: V3(0, yEsc(-96) + 2, -96) },
-      { p: at(0, -94, 1.6), o: V3(0, yEsc(-112) + 2.2, -112), nome: "Mil torii", jp: "千本鳥居" },
+      { p: at(0, -94, 1.6), o: V3(0, yEsc(-112) + 2.2, -112), id: "mil-torii", g: "O santuário", nome: "Mil torii", jp: "千本鳥居" },
       { p: at(0, -111, 1.65), o: V3(0, L.Y_TOPO + 3, -140) },
-      { p: at(0, -119, 1.65), o: V3(0, L.Y_TOPO + 3.5, -140), nome: "O santuário", jp: "神社" },
-      { p: at(-2.2, -121.5, 1.65), o: V3(-11, L.Y_TOPO + 3.2, -128), nome: "A árvore sagrada", jp: "御神木" },
+      { p: at(0, -119, 1.65), o: V3(0, L.Y_TOPO + 3.5, -140), id: "santuario", g: "O santuário", nome: "O santuário", jp: "神社" },
+      { p: at(-2.2, -121.5, 1.65), o: V3(-11, L.Y_TOPO + 3.2, -128), id: "arvore", g: "O santuário", nome: "A árvore sagrada", jp: "御神木" },
       { p: at(-10.5, -137, 1.65), o: V3(-9, L.Y_TOPO, -152) },
       { p: at(tx(-150), -150, 1.65), o: V3(tx(-165), h(tx(-165), -165) + 1.4, -165) },
-      { p: at(tx(-172), -172, 1.65), o: V3(tx(-188), h(tx(-188), -188) + 1.2, -188), nome: "A floresta", jp: "森" },
-      { p: at(tx(-196), -196, 3.2), o: V3(0, L.Y_VALE + 1, -290), nome: "O vale", jp: "谷" },
-      { p: at(tx(-222) + 1.5, -222, 1.65), o: V3(-34, L.Y_VALE + 3.5, -226), nome: "O arrozal", jp: "田んぼ" },
+      { p: at(tx(-172), -172, 1.65), o: V3(tx(-188), h(tx(-188), -188) + 1.2, -188), id: "floresta", g: "O campo", nome: "A floresta", jp: "森" },
+      { p: at(tx(-196), -196, 3.2), o: V3(0, L.Y_VALE + 1, -290), id: "vale", g: "O campo", nome: "O vale", jp: "谷" },
+      { p: at(tx(-222) + 1.5, -222, 1.65), o: V3(-34, L.Y_VALE + 3.5, -226), id: "arrozal", g: "O campo", nome: "O arrozal", jp: "田んぼ" },
       { p: at(tx(-245), -245, 1.65), o: V3(0, L.Y_VALE + 4, -300) },
-      { p: M.pierFim.clone().add(V3(0, 1.9, 3)), o: V3(0, L.Y_AGUA + 3.2, -305), nome: "O lago", jp: "湖" },
+      { p: M.pierFim.clone().add(V3(0, 1.9, 3)), o: V3(0, L.Y_AGUA + 3.2, -305), id: "lago", g: "O campo", nome: "O lago", jp: "湖" },
     ];
     const posC = new T.CatmullRomCurve3(N.map((n) => n.p), false, "centripetal");
     const lookC = new T.CatmullRomCurve3(N.map((n) => n.o), false, "centripetal");
     const lugares = N.map((n, i) => (n.nome ? i : -1)).filter((i) => i >= 0);
-    M.lugares = lugares.map((i) => ({ i, nome: N[i].nome, jp: N[i].jp }));
+    M.lugares = lugares.map((i, k) => ({ i: k, id: N[i].id, g: N[i].g, nome: N[i].nome, jp: N[i].jp }));
     const last = N.length - 1;
     let s = 0, alvo = 0;
     const q = M.Q.get("s"); if (q != null) { const v = parseFloat(q); s = alvo = q.includes(".") ? v : lugares[Math.min(lugares.length - 1, v | 0)] ?? 0; }
     M.irPara = (k) => { alvo = lugares[Math.max(0, Math.min(lugares.length - 1, k))]; };
     M.pular = (k) => { s = alvo = lugares[Math.max(0, Math.min(lugares.length - 1, k))]; };
     const atual = () => { let k = 0; for (let j = 0; j < lugares.length; j++) if (lugares[j] <= alvo + 0.01) k = j; return k; };
-    M.proximo = () => M.irPara(atual() + 1); M.anterior = () => M.irPara(atual() - 1);
+    M.proximo = () => M.irPara(atual() + 1); M.anterior = () => M.irPara(atual() - 1); M.lugarAtual = atual;
 
     /* interface mínima: nome do lugar e duas setas */
     const css = document.createElement("style");
@@ -48,13 +48,13 @@
     if (!M.Q.has("limpo")) document.body.appendChild(ui);
     const [bA, nm, bP] = [ui.children[0], ui.children[1], ui.children[2]];
     bA.onclick = () => M.anterior(); bP.onclick = () => M.proximo();
-    addEventListener("keydown", (e) => { if (["ArrowRight", "ArrowDown", "PageDown", " "].includes(e.key)) { M.proximo(); e.preventDefault(); } if (["ArrowLeft", "ArrowUp", "PageUp"].includes(e.key)) { M.anterior(); e.preventDefault(); } });
+    addEventListener("keydown", (e) => { if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return; if (["ArrowRight", "ArrowDown", "PageDown", " "].includes(e.key)) { M.proximo(); e.preventDefault(); } if (["ArrowLeft", "ArrowUp", "PageUp"].includes(e.key)) { M.anterior(); e.preventDefault(); } });
     let wheelAcc = 0, wheelT = 0;
     addEventListener("wheel", (e) => { const now = performance.now(); if (now - wheelT > 450) wheelAcc = 0; wheelT = now; wheelAcc += e.deltaY; if (Math.abs(wheelAcc) > 60) { (wheelAcc > 0 ? M.proximo : M.anterior)(); wheelAcc = 0; wheelT = now + 500; } }, { passive: true });
     let ty = null; addEventListener("touchstart", (e) => { ty = [e.touches[0].clientX, e.touches[0].clientY]; }, { passive: true });
     addEventListener("touchend", (e) => { if (!ty) return; const t = e.changedTouches[0], dx = t.clientX - ty[0], dy = t.clientY - ty[1]; if (Math.max(Math.abs(dx), Math.abs(dy)) > 40) ((Math.abs(dy) > Math.abs(dx) ? dy < 0 : dx < 0) ? M.proximo : M.anterior)(); ty = null; }, { passive: true });
     // olhar um pouco em volta com o mouse
-    let mx = 0, my = 0; addEventListener("pointermove", (e) => { if (e.pointerType === "mouse") { mx = e.clientX / innerWidth - 0.5; my = e.clientY / innerHeight - 0.5; } });
+    let mx = 0, my = 0, ox = 0, oy = 0; M.olhar = (dx, dy) => { ox = Math.max(-1.2, Math.min(1.2, ox + dx)); oy = Math.max(-0.8, Math.min(0.8, oy + dy)); }; addEventListener("pointermove", (e) => { if (e.pointerType === "mouse") { mx = e.clientX / innerWidth - 0.5; my = e.clientY / innerHeight - 0.5; } });
 
     /* luzes: em vez de dezenas de luzes ligadas ao mesmo tempo, um punhado delas segue a câmera e ocupa o lugar
        das fontes mais próximas (lanternas, máquinas, postes). O número de luzes nunca muda, então nada recompila. */
@@ -76,7 +76,6 @@
       const ss = fontes.s.map((f) => [nota(f), f]).sort((a, b) => a[0] - b[0]);
       poolS.forEach((l, k) => { const e = ss[k]; if (!e || e[0] > 60) { l.intensity = 0; return; } const f = e[1]; l.position.copy(f.w); l.target.position.copy(f.tg); l.color.copy(f.c); l.distance = f.d; l.angle = f.ang; l.penumbra = f.pen; l.intensity = f.i * Math.min(1, (60 - e[0]) / 15); });
     }
-    M.fontesLuz = fontes;
 
     let lastNome = "";
     const look = new T.Vector3(), pos = new T.Vector3(), tmp = new T.Vector3();
@@ -92,7 +91,7 @@
       const g = chao(pos.x, pos.z) + 1.3; if (pos.y < g) pos.y = g;
       pos.x += Math.sin(t * 0.13) * 0.05; pos.y += Math.sin(t * 0.21) * 0.025;
       camera.position.copy(pos);
-      tmp.copy(look).sub(pos); const yaw = -mx * 0.35, pitch = -my * 0.18;
+      tmp.copy(look).sub(pos); const yaw = -(mx + ox) * 0.35, pitch = -(my + oy) * 0.18; ox *= 0.995; oy *= 0.995;
       tmp.applyAxisAngle(V3(0, 1, 0), yaw); tmp.y += pitch * tmp.length();
       camera.lookAt(tmp.add(pos));
       sun.target.position.copy(pos); sun.position.copy(pos).add(sunOff);

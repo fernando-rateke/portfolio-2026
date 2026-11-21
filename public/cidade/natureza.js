@@ -10,7 +10,6 @@
     const byName = Object.fromEntries(meta.map((m) => [m.n, m]));
 
     /* ---------- árvores-imagem (billboards cilíndricos), todas numa única malha instanciada ---------- */
-    const sun = M.sun;
     const U = T.UniformsUtils.merge([T.UniformsLib.fog, { map: { value: null }, uTime: { value: 0 }, uSun: { value: new T.Color("#ffb27a") }, uSky: { value: new T.Color("#8a86a8") } }]);
     U.map.value = atlas;
     const bbMat = new T.ShaderMaterial({
@@ -79,11 +78,10 @@
       ig.setAttribute("aUV", new T.InstancedBufferAttribute(aUV, 4)); ig.setAttribute("aTint", new T.InstancedBufferAttribute(aT, 4));
       const im = new T.InstancedMesh(ig, bbMat, bb.length); const m4 = new T.Matrix4();
       bb.forEach((b, i) => { m4.makeScale(b.sx, b.sy, 1).setPosition(b.x, b.y, b.z); im.setMatrixAt(i, m4); });
-      im.frustumCulled = false; scene.add(im); M.arvoresBB = im; console.log("árvores-imagem", bb.length);
+      im.frustumCulled = false; scene.add(im);
     }
 
     /* ---------- árvores 3D perto do caminho ---------- */
-    const GM = {};
     const [sak, mom, isl1, isl2] = await Promise.all(["sakura", "momiji", "island_tree_01", "island_tree_02"].map(load));
     function recolor(model, re, color) {
       model.traverse((o) => { if (!o.isMesh) return; const m = o.material; if (!re.test(m.name || "")) return; const nm = m.clone(); nm.color = new T.Color(color);
@@ -98,7 +96,7 @@
     if (isl1) sombra(isl1); if (isl2) sombra(isl2);
     const YT = L.Y_TOPO;
     // a árvore sagrada: a grande árvore antiga do santuário, abraçada pela corda
-    if (isl1) { const o = planta(isl1, M.arvoreSagrada.x, M.arvoreSagrada.z, 2.6, 2.2, 0.1); M.sagrada = o;
+    if (isl1) { const o = planta(isl1, M.arvoreSagrada.x, M.arvoreSagrada.z, 2.6, 2.2, 0.1);
       // mede o tronco na altura da corda para a corda abraçar o tronco de verdade
       const yC = o.position.y + 1.9; let cx = 0, cz = 0, n = 0; const pts = []; o.updateMatrixWorld(true); const v = new T.Vector3();
       try { o.traverse((m) => { if (!m.isMesh || /leaves|branches/.test(m.material.name || "")) return; const p = m.geometry.attributes.position; const step = Math.max(1, Math.floor(p.count / 60000));
@@ -106,7 +104,7 @@
       let c = new T.Vector3(o.position.x, yC, o.position.z), r = 1.1;
       if (n > 10) { cx /= n; cz /= n; let rr = 0; for (let i = 0; i < pts.length; i += 2) rr = Math.max(rr, Math.hypot(pts[i] - cx, pts[i + 1] - cz)); c.set(cx, yC, cz); r = Math.min(2.2, rr * 0.92 + 0.06); }
       const frente = new T.Vector3(1, 0, 0.6).normalize();
-      scene.add(M.J.shimenawaAnel(c, r, 5, frente)); M.cordaSagrada = { c, r }; }
+      scene.add(M.J.shimenawaAnel(c, r, 5, frente)); }
     // cerejeiras no pátio do santuário
     if (sak) { planta(sak, 13, -126, 0.42, 1.0); planta(sak, 15.5, -143, 0.36, 2.5); planta(sak, -16, -146, 0.38, 4.0); planta(sak, 6.5, -66.5, 0.3, 0.5); }
     // bordos vermelhos ao longo da trilha da floresta

@@ -162,7 +162,7 @@ button:disabled { opacity: 0.35; }
     let g0 = null;
     $("list").innerHTML = state.places.map((p) => { const head = p.g !== g0 ? `<h3>${esc(p.g)}</h3>` : ""; g0 = p.g; return head + `<button type="button" data-i="${p.i}" class="${p.i === state.place ? "cur" : ""}"><b>${esc(p.t)}</b>${p.sub ? `<span>${esc(p.sub)}</span>` : ""}</button>`; }).join("");
   }
-  fetch("/biblioteca/notas.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : {})).then((j) => { notes = j || {}; render(); }).catch(() => {});
+  fetch("/cidade/notas.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : {})).then((j) => { notes = j || {}; render(); }).catch(() => {});
 
   /* botões */
   const tap = (id, fn) => $(id).addEventListener("click", () => { vib(8); fn(); });

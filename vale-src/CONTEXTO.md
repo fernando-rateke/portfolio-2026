@@ -11,9 +11,37 @@ lugares (castelo andante, Torre dos Grimórios, Grande Árvore, montanha da név
 estação do fim da linha, torii) e cada lugar abre um "mundo" (uma cena própria) com conteúdo.
 
 - Repositório: `fernando-rateke/portfolio-2026`, branch `main`. Next.js 16 na Vercel (deploy automático no push).
-- `/` e `/vale` reescrevem para `public/vale/index.html` (ver `next.config.ts`). `/tg` redireciona para `/`
+- `/` reescreve para `public/cidade/index.html` (a cidade japonesa, a capa atual) e `/vale` para
+  `public/vale/index.html` (ver `next.config.ts`). A Biblioteca Infinita foi apagada a pedido do dono; `/biblioteca`
+  redireciona para `/`. `/tg` redireciona para `/`
   (o portfólio de Tokyo Ghoul foi apagado a pedido do dono; não volte com nada dele).
-- O resto do app Next (`app/`) é antigo; o que importa é `public/vale` e a rota `app/api/ema/route.ts`.
+- O resto do app Next (`app/`) é antigo; o que importa é `public/cidade`, `public/vale`, `public/controle`,
+  `public/admin` e as rotas `app/api/ema`, `app/api/config` e `app/api/admin`.
+
+### A cidade (public/cidade, a capa)
+
+Cidade japonesa ao entardecer, contínua: a rua com as lojas, o grande torii, a escadaria com mil torii, o santuário,
+a árvore sagrada, a floresta, o vale com os arrozais e a casa, e o lago com o torii dentro d'água. Não tem build: os
+arquivos de `public/cidade` são a fonte (exceto `atividades.json`, que o `build.py` gera a partir do vale).
+
+```
+public/cidade/
+  index.html       carregamento e a ordem dos scripts
+  cidade.js        renderizador, céu, luz e a rua (prédios montados com o kit de fachada do Poly Haven)
+  japao.js         torii, lanterna de pedra, santuário, corda sagrada, casa de fazenda
+  mundo.js         relevo h(x,z), escadaria, santuário, trilha, arrozais, lago com reflexo real
+  natureza.js      árvores (imagens ao longe, modelos 3D perto do caminho) e o chão (samambaias, pedras, capim)
+  caminho.js       o passeio: lugares, câmera, controles (rolar, setas, toque) e as luzes que seguem a câmera
+  magia.js         lanternas que se acendem, vaga-lumes, pétalas, lanternas subindo do lago, estrelas
+  conteudo.js      o portfólio: lojas = matérias, painel de papel, certificados, agradecimentos, quadro de emas,
+                   jornada (1º e 2º ano) e futuro
+  apresentacao.js  música tema (audio/tema.mp3) e o modo apresentação com o controle pelo celular (/controle)
+  notas.json       anotações do apresentador por lugar e por seção, mostradas no celular
+  modelos/ tex/    modelos e texturas do Poly Haven (CC0), reduzidos para a web; ver CREDITOS.txt
+```
+
+Para testar sem placa de vídeo, use `?pausa=1` (só desenha depois de carregar), `?limpo=1` (sem interface) e
+`?s=N` (começa no lugar N). `MUNDO.pular(N)` no console troca de lugar na hora.
 
 ## 2. Regras do dono (valem sempre)
 
@@ -39,7 +67,7 @@ vale-src/            fonte legível (EDITE AQUI)
   mundos.js          os mundos que abrem por cima do vale (nos, torre, trem, quarto, castelo, arvore, ultimo)
   i18n.js            tradução PT -> EN por dicionário de frases inteiras (números viram #)
   gltf.js            GLTFLoader do three r149 já minificado (window.THREE.GLTFLoader, aceita EXT_texture_webp)
-  build.py           monta public/vale (minifica com terser)
+  build.py           monta public/vale (minifica com terser), public/controle e public/cidade/atividades.json
   tools/             ferramentas Node (npm install dentro de vale-src/tools)
     prep/            preparo de modelos (gltf-transform + meshoptimizer + sharp)
     viewer/          visualizador para inspecionar modelos (esbuild + three)

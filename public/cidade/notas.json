@@ -1,0 +1,82 @@
+{
+  "rua": [
+    "Apresente-se: nome, turma 3B, Ensino Médio com o Técnico em Desenvolvimento de Sistemas.",
+    "A ideia: uma cidade japonesa ao entardecer que guarda tudo o que eu fiz, da rua até o lago.",
+    "Cada loja da rua é uma matéria; a placa em japonês diz qual."
+  ],
+  "lojas": [
+    "Clique numa loja para abrir as atividades daquela matéria. A cafeteria é o Quem sou."
+  ],
+  "perfil": [
+    "Quem sou: interesses, valores e o que me move."
+  ],
+  "natureza": [
+    "Ciências da Natureza: contexto, aprendizagens, competências e importância das duas atividades."
+  ],
+  "humanas": [
+    "Ciências Humanas: contexto, aprendizagens, competências e importância das duas atividades."
+  ],
+  "linguagens": [
+    "Linguagens: contexto, aprendizagens, competências e importância das duas atividades."
+  ],
+  "matematica": [
+    "Matemática: contexto, aprendizagens, competências e importância das duas atividades."
+  ],
+  "modelagem": [
+    "Técnico (Modelagem de Sistemas): por que escolhi e o que aprendi."
+  ],
+  "desenvolvimento": [
+    "Técnico (Desenvolvimento de Sistemas): o AcousticBuild, minha parte e o que aprendi."
+  ],
+  "programacao-aplicativos": [
+    "Técnico (Programação de Aplicativos)."
+  ],
+  "iot": [
+    "Técnico (IoT): as práticas com o circuito e a lógica de controle."
+  ],
+  "banco": [
+    "Técnico (Banco de Dados)."
+  ],
+  "torii": [
+    "O grande torii marca a entrada do santuário. Daqui para cima, a parte da trajetória."
+  ],
+  "mil-torii": [
+    "Os pilares dos torii guardam as inscrições: os certificados.",
+    "Infomatrix 2025, DUAL 2025 e 2026, FEBRACE 2026, FEBIC 2026 (2º lugar) e a Iniciação Científica."
+  ],
+  "certificados": [
+    "Infomatrix 2025, DUAL 2025 e 2026, FEBRACE 2026, FEBIC 2026 (2º lugar) e a Iniciação Científica."
+  ],
+  "santuario": [
+    "O santuário guarda os agradecimentos.",
+    "Ao lado fica o quadro de emas: convide a plateia a deixar um recado."
+  ],
+  "agradecimentos": [
+    "Agradeça a quem fez parte da jornada."
+  ],
+  "emas": [
+    "O quadro de emas: quem passou deixou um recado aqui. Pelo celular, quem está assistindo pode deixar um também."
+  ],
+  "arvore": [
+    "A árvore sagrada, com a corda e as tiras de papel."
+  ],
+  "floresta": [
+    "A trilha desce pela floresta até o vale."
+  ],
+  "vale": [
+    "Do alto da floresta aparecem os arrozais e o lago."
+  ],
+  "arrozal": [
+    "A casa do arrozal guarda a jornada: 1º e 2º ano, o que veio antes deste ano."
+  ],
+  "jornada": [
+    "1º e 2º ano: o que veio antes deste ano."
+  ],
+  "lago": [
+    "O torii do lago guarda as perspectivas para o futuro.",
+    "Fim do passeio: agradeça e abra para perguntas."
+  ],
+  "futuro": [
+    "Objetivos e futuro: para onde eu vou depois do 3º ano."
+  ]
+}

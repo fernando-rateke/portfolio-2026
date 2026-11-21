@@ -205,22 +205,8 @@
     // duas máquinas de bebida lado a lado, perto da câmera
     for (const [dz, col] of [[0, "#d8332a"], [-1.05, "#2a6ad8"]]) { const v = vending(col); v.position.set(-(WALL_X - 0.5), 0.12, 14.6 + dz); v.rotation.y = Math.PI / 2; scene.add(v); }
   }
-  /* a cidade lá no fundo: prédios mais altos recortados contra o pôr do sol, com janelas acesas */
-  function skyline() {
-    const winTex = (seedc) => canvasTex(128, 256, (c, W, Hh) => { c.fillStyle = "#6a5262"; c.fillRect(0, 0, W, Hh); for (let y = 8; y < Hh - 8; y += 14) for (let x = 6; x < W - 6; x += 12) { const r = rnd(); c.fillStyle = r < 0.22 ? ["#ffcf8a", "#ffe6c0", "#cfe0ff"][Math.floor(rnd() * 3)] : "#624c5c"; c.fillRect(x, y, 7, 8); } });
-    const texs = [winTex(), winTex(), winTex()];
-    for (let k = 0; k < 46; k++) {
-      const z = -72 - rnd() * 90, side = rnd() < 0.5 ? -1 : 1, x = side * (6 + rnd() * 60), w = 6 + rnd() * 12, d = 6 + rnd() * 10, h = 10 + rnd() * (Math.abs(x) < 20 ? 18 : 34);
-      const t = texs[k % 3].clone(); t.needsUpdate = true; t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(w / 10, h / 20);
-      const m = new T.MeshStandardMaterial({ color: "#000000", map: t, emissiveMap: t, emissive: new T.Color("#ffffff"), emissiveIntensity: 0.62, roughness: 0.9, fog: false, envMapIntensity: 0.25 });
-      const b = new T.Mesh(new T.BoxGeometry(w, h, d), m); b.position.set(x, h / 2, z); scene.add(b);
-      if (rnd() < 0.3) { const l = new T.Mesh(new T.SphereGeometry(0.25, 8, 6), new T.MeshBasicMaterial({ color: "#ff3a2a" })); l.position.set(x, h + 0.4, z); scene.add(l); blinkers.push(l); }
-    }
-  }
-  const blinkers = [];
 
   /* postes com fiação, luminárias e as miudezas da calçada */
-  const wires = [];
   function props(M) {
     const poleZ = []; for (let z = 22; z > -60; z -= 13) poleZ.push(z);
     let preset = null;
@@ -233,7 +219,7 @@
     });
     // fios: vários por vão, com barriga, de poste em poste e atravessando a rua
     const wm = new T.MeshStandardMaterial({ color: "#16161a", roughness: 0.6 });
-    const span = (a, b, sag, r) => { const pts = []; for (let k = 0; k <= 14; k++) { const t = k / 14; pts.push(a.clone().lerp(b, t).add(V3(0, -Math.sin(t * Math.PI) * sag, 0))); } const m = new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(pts), 20, r, 4), wm); scene.add(m); wires.push(m); };
+    const span = (a, b, sag, r) => { const pts = []; for (let k = 0; k <= 14; k++) { const t = k / 14; pts.push(a.clone().lerp(b, t).add(V3(0, -Math.sin(t * Math.PI) * sag, 0))); } const m = new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(pts), 20, r, 4), wm); scene.add(m); };
     for (const side of [-1, 1]) { const t = tops[side]; for (let i = 0; i < t.length - 1; i++) for (let k = 0; k < 6; k++) { const off = V3(0, -k * 0.28 - (k > 2 ? 0.5 : 0), ((k % 3) - 1) * 0.35); span(t[i].clone().add(off), t[i + 1].clone().add(off), 0.35 + rnd() * 0.5, k > 2 ? 0.018 : 0.011); } }
     for (let i = 0; i < Math.min(tops["-1"].length, tops["1"].length); i += 2) { span(tops["-1"][i].clone().add(V3(0, -0.9, 0)), tops["1"][i].clone().add(V3(0, -0.9, 6)), 0.6, 0.012); span(tops["-1"][i].clone().add(V3(0, -1.3, 0)), tops["1"][i].clone().add(V3(0, -1.2, 6)), 0.8, 0.012); }
     // fios até as fachadas
@@ -258,8 +244,7 @@
   const M = window.MUNDO = Object.assign(window.MUNDO || {}, { leve, T, scene, renderer, camera, sun, V3, rnd, load, pbr, tx, canvasTex, shadowOn, texL, Q, ticks, JP, JPS, chochin, lanterns, norens, lojas });
 
   /* ---------------- câmera ---------------- */
-  const cam = { pos: V3(0.6, 1.65, 26), tgt: V3(-0.4, 3.2, -10) };
-  if (Q.get("debug") === "predio") { cam.pos.set(6, 5, 16); cam.tgt.set(6, 5, 0); }
+  camera.position.set(0.6, 1.65, 26); camera.lookAt(-0.4, 3.2, -10); // até o passeio assumir
   function resize() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.fov = w / h < 0.8 ? 66 : 48; camera.updateProjectionMatrix(); }
   addEventListener("resize", resize); resize();
 
@@ -268,11 +253,9 @@
     KIT = await load("modular_urban_apartments_facade");
     if (KIT) {
       H.base = measure("base_standard_01").max.y; H.dado = measure("dado_standard_standard_01").max.y; H.wall = measure("wall_pier_standard_01").max.y; H.cornice = measure("cornice_standard_standard_01").max.y;
-      console.log("alturas", JSON.stringify(H));
-      if (Q.get("debug") === "predio") { const b = building(0, 0, 1, 4, 3, { ground: ["porta", "janela"], win: ["centered_large", "centered_double", "centered_small"] }); b.rotation.y = 0; }
     }
     SH = await load("rollershutter_door"); if (SH) { const gr = SH.getObjectByName("rollershutter_door_graffiti"); if (gr) gr.parent.remove(gr); }
-    if (KIT && !Q.get("debug")) street();
+    if (KIT) street();
     const [poles, lamp0, ubox1, ubox2, trash, crate, pot1, pot2, planter, man, pot3] = await Promise.all(["modular_electricity_poles", "security_light", "utility_box_01", "utility_box_02", "metal_trash_can", "plastic_crate_01", "potted_plant_01", "potted_plant_02", "planter_box_01", "water_manhole_cover", "planter_pot_clay"].map(load));
     props({ poles, lamp: lamp0, ubox1, ubox2, trash, crate, pot1, pot2, planter, man, pot3 });
     for (const b of M.builders || []) { try { await b(M); } catch (e) { console.error("mundo:", e); } }
@@ -282,12 +265,13 @@
   const clock = new T.Clock();
   function frame() {
     const t = clock.getElapsedTime();
-    if (M.camTick) M.camTick(t); else { camera.position.copy(cam.pos).add(V3(Math.sin(t * 0.13) * 0.08, Math.sin(t * 0.21) * 0.03, 0)); camera.lookAt(cam.tgt); }
+    if (M.camTick) M.camTick(t);
     for (const f of ticks) f(t);
     for (const n of norens) n.m.rotation.x = Math.sin(t * 1.3 + n.ph) * 0.06 * (n.k || 1);
-    for (const l of lanterns) { l.g.rotation.z = Math.sin(t * 0.9 + l.ph) * 0.04; l.l.intensity = 0.8 * (0.92 + 0.08 * Math.sin(t * 7 + l.ph)); }
-    for (let i = 0; i < blinkers.length; i++) blinkers[i].visible = Math.sin(t * 2 + i) > 0;
-    if (!(Q.has("pausa") && !window.cidadePronta)) renderer.render(scene, camera); requestAnimationFrame(frame);
+    for (const l of lanterns) l.g.rotation.z = Math.sin(t * 0.9 + l.ph) * 0.04;
+    // ?pausa=1: não desenha enquanto carrega (para testes num computador sem placa de vídeo)
+    if (!(Q.has("pausa") && !window.cidadePronta)) renderer.render(scene, camera);
+    requestAnimationFrame(frame);
   }
   frame();
 })();

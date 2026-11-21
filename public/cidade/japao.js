@@ -153,7 +153,6 @@
       for (let x = -W / 2; x <= W / 2 + 0.01; x += W / 5) for (const z of [-D / 2, D / 2]) { const p = box(0.22, H, 0.22, MD, x, 0.45 + H / 2, z); g.add(p); }
       const sho = canvasTex(256, 256, (c, w, h) => { c.fillStyle = "#ffe2b0"; c.fillRect(0, 0, w, h); c.fillStyle = "#4a3422"; for (let x = 0; x <= w; x += 42) c.fillRect(x - 3, 0, 6, h); for (let y = 0; y <= h; y += 32) c.fillRect(0, y - 2, w, 4); });
       const shoM = new T.MeshStandardMaterial({ map: sho, emissiveMap: sho, emissive: new T.Color("#ffb060"), emissiveIntensity: 0.7, roughness: 0.9 });
-      M.minkaLuz = shoM;
       const wall = mat("parede-minka", () => pbr("japanese_cedar_planks", [2, 1], { color: "#7a6450", metalness: 0 }));
       for (const z of [-D / 2]) g.add(box(W, H, 0.14, wall, 0, 0.45 + H / 2, z));
       for (const x of [-W / 2, W / 2]) g.add(box(0.14, H, D, wall, x, 0.45 + H / 2, 0));

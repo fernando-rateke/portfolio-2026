@@ -40,7 +40,7 @@
 
     /* ---------- música ---------- */
     const somBtn = html(`<button class="som" type="button" aria-pressed="false" title="Ligar a música" aria-label="Música"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.2L12 5.5v13l-4.8-4H4z" fill="currentColor"/><path class="w1" d="M15.5 9a4 4 0 0 1 0 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path class="w2" d="M18 6.5a7.5 7.5 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path class="x" d="M15.5 9.5l5 5m0-5l-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>`);
-    if (limpo) somBtn.hidden = true;
+    if (limpo) somBtn.style.display = "none";
     let music = null, musicWant = true, fadeT = 0;
     try { musicWant = localStorage.getItem("cidade-som") !== "0"; } catch (e) { /* sem storage */ }
     const setSomBtn = () => { const on = !!(music && !music.paused); somBtn.setAttribute("aria-pressed", String(on)); somBtn.title = on ? "Desligar a música" : "Ligar a música"; };
@@ -56,7 +56,7 @@
     addEventListener("pointerdown", primeiro); addEventListener("keydown", primeiro);
 
     /* ---------- modo apresentação ---------- */
-    const aprBtn = html(`<button class="apr" type="button" title="Controlar pelo celular (tecla P)">Apresentar</button>`); if (limpo) aprBtn.hidden = true;
+    const aprBtn = html(`<button class="apr" type="button" title="Controlar pelo celular (tecla P)">Apresentar</button>`); if (limpo) aprBtn.style.display = "none";
     const veu = html(`<div class="veu" role="dialog" aria-hidden="true" aria-labelledby="veuT"><div class="veu-in"><small>MODO APRESENTAÇÃO</small><b id="veuT">Escaneie com o celular</b><div class="qr"></div><p class="code">código <span>------</span></p><p class="note">O primeiro celular que entrar vira o controle. Os outros não conseguem mexer em nada.</p><button type="button">Fechar</button></div></div>`);
     const cursorEl = html(`<div class="cursor" aria-hidden="true"></div>`), spot = html(`<div class="lanterna" aria-hidden="true"></div>`);
     const light = html(`<div class="lightbox" aria-hidden="true"><img alt=""></div>`), chip = html(`<div class="ctl" aria-live="polite" hidden><i></i><span>Controle conectado</span></div>`);

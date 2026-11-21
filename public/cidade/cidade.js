@@ -1,0 +1,276 @@
+/* A cidade: uma rua estreita de bairro japonês ao entardecer. Tudo o que é objeto vem de modelos prontos
+   (Poly Haven, CC0); o código só monta a rua, a luz, o céu e os detalhes de papel e luz. */
+(() => {
+  const T = window.THREE;
+  const canvas = document.getElementById("c");
+  const renderer = new T.WebGLRenderer({ canvas, antialias: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.75));
+  renderer.outputEncoding = T.sRGBEncoding;
+  renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.68;
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap;
+  const scene = new T.Scene();
+  const camera = new T.PerspectiveCamera(48, 1, 0.1, 600);
+  const V3 = (x, y, z) => new T.Vector3(x, y, z);
+  const Q = new URLSearchParams(location.search);
+  const loader = new T.GLTFLoader(), texL = new T.TextureLoader();
+  const load = (f) => new Promise((ok) => loader.load("/cidade/modelos/" + f + ".glb", (g) => ok(g.scene), undefined, () => ok(null)));
+  let seed = 9; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+
+  /* ---------------- céu e luz ---------------- */
+  texL.load("/cidade/tex/sky.jpg", (t) => {
+    t.mapping = T.EquirectangularReflectionMapping; t.encoding = T.sRGBEncoding;
+    scene.background = t; const pm = new T.PMREMGenerator(renderer); scene.environment = pm.fromEquirectangular(t).texture;
+  });
+  scene.fog = new T.Fog("#b98a7a", 28, 125);
+  const sun = new T.DirectionalLight("#ff9a58", 2.4); sun.position.set(-26, 11, -72); sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -40, right: 40, top: 40, bottom: -40, near: 1, far: 170 }); sun.shadow.bias = -0.0004; scene.add(sun);
+  scene.add(new T.HemisphereLight("#8f86b8", "#4a3028", 0.3));
+
+  /* ---------------- materiais com textura de verdade ---------------- */
+  const texCache = new Map();
+  const tx = (name, f, rep, srgb) => { const key = name + f + rep; if (texCache.has(key)) return texCache.get(key); const t = texL.load(`/cidade/tex/${name}_${f}.jpg`); t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(rep[0], rep[1]); t.anisotropy = 8; if (srgb) t.encoding = T.sRGBEncoding; texCache.set(key, t); return t; };
+  function pbr(name, rep, extra) {
+    const arm = tx(name, "arm", rep);
+    return new T.MeshStandardMaterial(Object.assign({ map: tx(name, "diff", rep, true), normalMap: tx(name, "nor", rep), roughnessMap: arm, metalnessMap: arm, metalness: 1, roughness: 1 }, extra || {}));
+  }
+
+  /* ---------------- a rua ---------------- */
+  const LEN = 170, RW = 5.2, SW = 1.6; // comprimento, largura da pista, calçada
+  const road = new T.Mesh(new T.PlaneGeometry(RW, LEN), pbr("asphalt_02", [RW / 4, LEN / 4])); road.rotation.x = -Math.PI / 2; road.receiveShadow = true; scene.add(road);
+  for (const sd of [-1, 1]) {
+    const walk = new T.Mesh(new T.BoxGeometry(SW, 0.12, LEN), pbr("brick_pavement_02", [SW / 2, LEN / 2])); walk.position.set(sd * (RW / 2 + SW / 2), 0.06, 0); walk.receiveShadow = true; scene.add(walk);
+    const curb = new T.Mesh(new T.BoxGeometry(0.14, 0.14, LEN), pbr("concrete", [0.2, LEN / 2])); curb.position.set(sd * (RW / 2 + 0.07), 0.07, 0); curb.receiveShadow = true; scene.add(curb);
+    // a faixa branca da beira da pista, típica das ruas japonesas
+    const line = new T.Mesh(new T.PlaneGeometry(0.12, LEN), new T.MeshStandardMaterial({ color: "#e8e6e0", roughness: 0.6 })); line.rotation.x = -Math.PI / 2; line.position.set(sd * (RW / 2 - 0.45), 0.005, 0); scene.add(line);
+  }
+  // 止まれ pintado no chão, perto da câmera
+  { const c = document.createElement("canvas"); c.width = 512; c.height = 256; const g = c.getContext("2d"); g.fillStyle = "rgba(240,238,232,0.92)"; g.font = "900 190px 'Hiragino Sans', 'Noto Sans JP', sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("止まれ", 256, 128);
+    const t = new T.CanvasTexture(c); t.encoding = T.sRGBEncoding; const m = new T.Mesh(new T.PlaneGeometry(2.4, 3.4), new T.MeshStandardMaterial({ map: t, transparent: true, roughness: 0.7 })); m.rotation.x = -Math.PI / 2; m.position.set(0, 0.006, 13); scene.add(m); }
+
+  /* ---------------- prédios montados com o kit de fachada ---------------- */
+  const shadowOn = (o) => o.traverse((m) => { if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } });
+  let KIT = null;
+  const piece = (name) => { const o = KIT.getObjectByName(name); if (!o) { console.warn("sem peça", name); return new T.Group(); } const c = o.clone(true); c.position.set(0, 0, 0); c.rotation.set(0, 0, 0); return c; };
+  const greyCache = new Map();
+  function greyMap(t) { if (!t || !t.image) return t; if (greyCache.has(t)) return greyCache.get(t); const im = t.image, c = document.createElement("canvas"); c.width = im.width; c.height = im.height; const g = c.getContext("2d"); g.drawImage(im, 0, 0);
+    const d = g.getImageData(0, 0, c.width, c.height), a = d.data; for (let i = 0; i < a.length; i += 4) { const l = (a[i] * 0.3 + a[i + 1] * 0.59 + a[i + 2] * 0.11); const v = 150 + (l - 150) * 0.9; a[i] = a[i + 1] = a[i + 2] = Math.max(0, Math.min(255, v + 40)); } g.putImageData(d, 0, 0);
+    const nt = new T.CanvasTexture(c); nt.encoding = T.sRGBEncoding; nt.wrapS = t.wrapS; nt.wrapT = t.wrapT; nt.flipY = t.flipY; nt.repeat.copy(t.repeat); nt.offset.copy(t.offset); greyCache.set(t, nt); return nt; }
+  const H = {}; // altura de cada camada, medida no próprio modelo
+  const measure = (name) => { const c = piece(name); const b = new T.Box3().setFromObject(c); return b; };
+  function building(x0, z0, side, bays, floors, kinds) {
+    const g = new T.Group(); g.position.set(x0, 0.12, z0); g.rotation.y = side < 0 ? Math.PI / 2 : -Math.PI / 2; scene.add(g);
+    const tint = new T.Color(kinds.tint || "#ffffff"), mats = {};
+    const retint = (o) => o.traverse((m) => { if (!m.isMesh) return; const n = m.material.name || "";
+      if (/plaster/.test(n)) { if (!mats.p) { mats.p = m.material.clone(); mats.p.map = greyMap(m.material.map); mats.p.color.copy(tint); } m.material = mats.p; }
+      else if (/glass/.test(n)) { const lit = rnd() < (kinds.lit == null ? 0.45 : kinds.lit); const gm = m.material.clone(); if (lit) { gm.emissive = new T.Color(["#ffcf8a", "#ffe2b0", "#fff0d8", "#cfe4ff"][Math.floor(rnd() * 4)]); gm.emissiveIntensity = 0.55 + rnd() * 0.6; } m.material = gm; } });
+    const BW = 3, FH = H.wall;
+    for (let i = 0; i < bays; i++) {
+      const x = (i + 1) * BW;
+      const add = (name, y) => { const p = piece(name); retint(p); p.position.set(x, y, 0); g.add(p); return p; };
+      add("base_standard_01", 0);
+      let y = H.base;
+      // térreo
+      const gk = kinds.ground[i % kinds.ground.length];
+      if (gk === "porta") { add("dado_door_centered_large_01", y); add("wall_door_centered_large_01", y); add("door_centered_large_01", y); }
+      else if (gk === "loja") { add("dado_door_centered_large_01", y); add("wall_door_centered_large_01", y); const sh = SH && SH.clone(true); if (sh) { sh.position.set(x - 1.5, y, 0.05); sh.scale.set(1.9, 1.17, 1); g.add(sh); } }
+      else { add("dado_standard_standard_01", y); add("wall_window_centered_large_01", y + H.dado); add("window_centered_large_01", y + H.dado); }
+      y += gk === "porta" ? FH : H.dado + FH;
+      for (let f = 1; f < floors; f++) { const wk = kinds.win[(i + f) % kinds.win.length]; add("wall_window_" + wk + "_01", y); add("window_" + wk + "_01", y);
+        if (kinds.balc && (i + f) % 2 === kinds.balc - 1) balcony(g, x - BW / 2, y, tint);
+        else if (rnd() < 0.3) { const a = acUnit(); a.position.set(x - BW + 0.55, y + 0.35, 0.38); a.userData.bracket = true; g.add(a); bracket(g, x - BW + 0.55, y + 0.35); }
+        y += FH; }
+      add("cornice_standard_standard_01", y);
+    }
+    for (let i = 0; i <= bays; i++) { const x = i * BW; let y = H.base; for (let f = 0; f < floors; f++) { const p = piece("wall_pier_standard_01"); retint(p); p.position.set(x, y, 0); g.add(p); y += FH; } }
+    // o corpo do prédio atrás da fachada (para não ver o vazio de lado)
+    const top = H.base + H.dado + FH * floors + 0.3, body = new T.Mesh(new T.BoxGeometry(bays * BW, top, 9), bodyMat(tint));
+    body.position.set(bays * BW / 2, top / 2, -4.75); g.add(body);
+    roof(g, bays * BW, top);
+    g.userData = { bays, floors, top, BW };
+    shadowOn(g); return g;
+  }
+  // as laterais e o fundo do prédio: concreto de verdade, um tom abaixo da fachada
+  const bodyMats = new Map();
+  const bodyMat = (tint) => { const k = tint.getHexString(); if (!bodyMats.has(k)) bodyMats.set(k, pbr("concrete", [3, 3], { color: tint.clone().multiplyScalar(0.62), metalness: 0 })); return bodyMats.get(k); };
+  // varanda: laje fina, guarda-corpo de barras de alumínio e, às vezes, o ar-condicionado e roupa no varal
+  const railTex = canvasTex(256, 128, (c, W, Hh) => { c.clearRect(0, 0, W, Hh); c.fillStyle = "#fff"; c.fillRect(0, 0, W, 10); c.fillRect(0, Hh - 8, W, 8); for (let x = 4; x < W; x += 12) c.fillRect(x, 0, 4, Hh); });
+  railTex.wrapS = T.RepeatWrapping; railTex.repeat.set(3, 1);
+  const railMat = new T.MeshStandardMaterial({ color: "#9a9ca0", map: railTex, alphaTest: 0.5, side: T.DoubleSide, metalness: 0.6, roughness: 0.45 });
+  const slabMat = new T.MeshStandardMaterial({ color: "#8e8a84", roughness: 0.9 });
+  function balcony(g, cx, y, tint) {
+    const D = 0.95, W = 2.9;
+    const slab = new T.Mesh(new T.BoxGeometry(W, 0.14, D), bodyMat(tint)); slab.position.set(cx, y + 0.02, D / 2 + 0.1); g.add(slab);
+    const front = new T.Mesh(new T.PlaneGeometry(W, 1.0), railMat); front.position.set(cx, y + 0.6, D + 0.08); g.add(front);
+    for (const s of [-1, 1]) { const side = new T.Mesh(new T.PlaneGeometry(D, 1.0), railMat); side.rotation.y = Math.PI / 2; side.position.set(cx + s * (W / 2 - 0.02), y + 0.6, D / 2 + 0.1); g.add(side); }
+    const capM = new T.MeshStandardMaterial({ color: "#7a7c80", metalness: 0.7, roughness: 0.4 }); const cap = new T.Mesh(new T.BoxGeometry(W, 0.05, 0.06), capM); cap.position.set(cx, y + 1.12, D + 0.08); g.add(cap);
+    if (rnd() < 0.65) { const a = acUnit(); a.position.set(cx + (rnd() < 0.5 ? -1 : 1) * 0.85, y + 0.37, 0.45); g.add(a); }
+    if (rnd() < 0.45) laundry(g, cx, y + 1.85, D - 0.15);
+  }
+  // unidade externa do ar-condicionado: caixa clara com a grade do ventilador
+  const acTex = canvasTex(256, 192, (c, W, Hh) => { c.fillStyle = "#e4e2dc"; c.fillRect(0, 0, W, Hh); c.fillStyle = "#3a3c40"; c.beginPath(); c.arc(W * 0.38, Hh / 2, Hh * 0.38, 0, 7); c.fill(); c.strokeStyle = "#cfcdc6"; c.lineWidth = 3; for (let r = 10; r < Hh * 0.38; r += 9) { c.beginPath(); c.arc(W * 0.38, Hh / 2, r, 0, 7); c.stroke(); } c.beginPath(); c.moveTo(W * 0.38 - Hh * 0.38, Hh / 2); c.lineTo(W * 0.38 + Hh * 0.38, Hh / 2); c.stroke(); c.fillStyle = "#c8c6be"; for (let y = 20; y < Hh - 20; y += 10) c.fillRect(W * 0.76, y, W * 0.18, 4); });
+  const acSide = new T.MeshStandardMaterial({ color: "#d8d6d0", roughness: 0.6 }), acFront = new T.MeshStandardMaterial({ map: acTex, roughness: 0.6 });
+  function acUnit() { const g = new T.Group(); const b = new T.Mesh(new T.BoxGeometry(0.8, 0.56, 0.28), [acSide, acSide, acSide, acSide, acFront, acSide]); g.add(b); const pipe = new T.Mesh(new T.CylinderGeometry(0.03, 0.03, 0.5, 6), new T.MeshStandardMaterial({ color: "#efece4", roughness: 0.7 })); pipe.position.set(0.43, 0.1, -0.1); g.add(pipe); return g; }
+  function bracket(g, x, y) { const m = new T.MeshStandardMaterial({ color: "#5a5c60", metalness: 0.6, roughness: 0.5 }); for (const s of [-0.3, 0.3]) { const b = new T.Mesh(new T.BoxGeometry(0.04, 0.04, 0.4), m); b.position.set(x + s, y - 0.3, 0.32); g.add(b); } }
+  // roupa no varal da varanda
+  const clothCols = ["#f2f0ea", "#c8d4e4", "#e8c8b8", "#4a5a7a", "#f0e2a8", "#d8d8d8", "#9a3a3a"];
+  function laundry(g, cx, y, z) {
+    const pole = new T.Mesh(new T.CylinderGeometry(0.015, 0.015, 2.6, 6), new T.MeshStandardMaterial({ color: "#b8bcc2", metalness: 0.6, roughness: 0.4 })); pole.rotation.z = Math.PI / 2; pole.position.set(cx, y, z); g.add(pole);
+    let x = cx - 1.1; while (x < cx + 1.0) { const w = 0.3 + rnd() * 0.4, h = 0.4 + rnd() * 0.5; const c = new T.Mesh(new T.PlaneGeometry(w, h), new T.MeshStandardMaterial({ color: clothCols[Math.floor(rnd() * clothCols.length)], side: T.DoubleSide, roughness: 0.95 })); c.position.set(x + w / 2, y - h / 2 - 0.02, z); c.rotation.y = (rnd() - 0.5) * 0.3; g.add(c); norens.push({ m: c, ph: rnd() * 6, k: 0.5 }); x += w + 0.08 + rnd() * 0.2; }
+  }
+  // telhado: mureta, caixa d'água e ar-condicionados
+  const tankMat = new T.MeshStandardMaterial({ color: "#c8c4b8", roughness: 0.7, metalness: 0.2 });
+  function roof(g, W, top) {
+    if (rnd() < 0.5) { const t = new T.Group(); const c = new T.Mesh(new T.CylinderGeometry(0.7, 0.7, 1.4, 20), tankMat); c.position.y = 0.7 + 0.5; t.add(c); for (const [a, b] of [[-0.5, -0.5], [0.5, -0.5], [-0.5, 0.5], [0.5, 0.5]]) { const l = new T.Mesh(new T.BoxGeometry(0.06, 0.5, 0.06), tankMat); l.position.set(a, 0.25, b); t.add(l); } t.position.set(W * (0.3 + rnd() * 0.4), top, -3 - rnd() * 3); g.add(t); }
+    const n = Math.floor(rnd() * 3); for (let k = 0; k < n; k++) { const a = acUnit(); a.position.set(0.8 + rnd() * (W - 1.6), top + 0.28, -1.2 - rnd() * 5); a.rotation.y = rnd() < 0.5 ? 0 : Math.PI; g.add(a); }
+  }
+  const WALL_X = RW / 2 + SW; // fachadas encostadas na calçada
+  let SH = null;
+  // placas: vertical (tate-kanban) presa na fachada, e a de cima da porta
+  function canvasTex(w, h, draw) { const c = document.createElement("canvas"); c.width = w; c.height = h; draw(c.getContext("2d"), w, h); const t = new T.CanvasTexture(c); t.encoding = T.sRGBEncoding; t.anisotropy = 8; return t; }
+  const JP = "'Hiragino Mincho ProN', 'Yu Mincho', 'Noto Serif JP', serif", JPS = "'Hiragino Sans', 'Noto Sans JP', sans-serif";
+  function vsign(text, bg, fg, w, h) {
+    const tex = canvasTex(128, 128 * h / w, (g, W, Hh) => { g.fillStyle = bg; g.fillRect(0, 0, W, Hh); g.strokeStyle = fg; g.globalAlpha = 0.35; g.lineWidth = 4; g.strokeRect(6, 6, W - 12, Hh - 12); g.globalAlpha = 1;
+      g.fillStyle = fg; const n = [...text].length, fs = Math.min(W * 0.72, (Hh - 30) / n * 0.92); g.font = `700 ${fs}px ${JPS}`; g.textAlign = "center"; g.textBaseline = "middle"; [...text].forEach((ch, i) => g.fillText(ch, W / 2, 15 + (i + 0.5) * (Hh - 30) / n)); });
+    const m = new T.MeshStandardMaterial({ map: tex, emissiveMap: tex, emissive: new T.Color("#ffffff"), emissiveIntensity: 0.55, roughness: 0.4 });
+    const fr = new T.MeshStandardMaterial({ color: "#2a2a2e", roughness: 0.5, metalness: 0.4 });
+    const box = new T.Mesh(new T.BoxGeometry(w, h, 0.14), [fr, fr, fr, fr, m, m]); return box;
+  }
+  function hsign(text, bg, fg, w, h) {
+    const tex = canvasTex(512, 512 * h / w, (g, W, Hh) => { g.fillStyle = bg; g.fillRect(0, 0, W, Hh); g.fillStyle = fg; g.font = `700 ${Hh * 0.62}px ${JPS}`; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(text, W / 2, Hh / 2 + 2, W * 0.92); });
+    return new T.Mesh(new T.BoxGeometry(w, h, 0.1), [0, 0, 0, 0, 1, 0].map((k) => k ? new T.MeshStandardMaterial({ map: tex, emissiveMap: tex, emissive: new T.Color("#ffffff"), emissiveIntensity: 0.4, roughness: 0.5 }) : new T.MeshStandardMaterial({ color: "#222226" })));
+  }
+  // noren: a cortina curta de pano na porta, em três folhas que balançam
+  const norens = [];
+  function noren(text, col, w) {
+    const g = new T.Group(); const tex = canvasTex(512, 256, (c, W, Hh) => { c.fillStyle = col; c.fillRect(0, 0, W, Hh); c.fillStyle = "#f4efe4"; c.font = `700 120px ${JP}`; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(text, W / 2, Hh / 2 + 8); });
+    for (let k = 0; k < 3; k++) { const geo = new T.PlaneGeometry(w / 3 - 0.02, 0.62, 2, 6); const uv = geo.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setX(i, (k + uv.getX(i)) / 3); const m = new T.Mesh(geo, new T.MeshStandardMaterial({ map: tex, side: T.DoubleSide, roughness: 0.9 })); m.position.set(-w / 2 + (k + 0.5) * w / 3, -0.31, 0); g.add(m); norens.push({ m, ph: rnd() * 6 }); }
+    const rod = new T.Mesh(new T.CylinderGeometry(0.015, 0.015, w + 0.2, 8), new T.MeshStandardMaterial({ color: "#6a4a2a" })); rod.rotation.z = Math.PI / 2; g.add(rod); return g;
+  }
+  // lanterna de papel vermelha (chōchin), acesa por dentro
+  const lanterns = [];
+  function chochin(text) {
+    const tex = canvasTex(256, 256, (c, W, Hh) => { c.fillStyle = "#c8281e"; c.fillRect(0, 0, W, Hh); c.fillStyle = "#1a1210"; c.font = `700 92px ${JP}`; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(text, W / 2, Hh / 2 + 4); c.strokeStyle = "rgba(0,0,0,0.25)"; for (let y = 10; y < Hh; y += 18) { c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); } });
+    const pts = []; for (let i = 0; i <= 16; i++) { const t = i / 16; pts.push(new T.Vector2(0.2 * Math.sin(Math.PI * (0.08 + t * 0.84)) + 0.02, -0.28 + t * 0.56)); }
+    const g = new T.Group(); const body = new T.Mesh(new T.LatheGeometry(pts, 24), new T.MeshStandardMaterial({ map: tex, emissiveMap: tex, emissive: new T.Color("#ffb070"), emissiveIntensity: 1.3, roughness: 0.8 })); g.add(body);
+    for (const y of [-0.29, 0.29]) { const c = new T.Mesh(new T.CylinderGeometry(0.09, 0.09, 0.05, 16), new T.MeshStandardMaterial({ color: "#151212" })); c.position.y = y; g.add(c); }
+    const l = new T.PointLight("#ff9a5a", 0.8, 5, 2); g.add(l); lanterns.push({ g, l, ph: rnd() * 6 }); return g;
+  }
+  // máquina de bebidas: caixa com a frente iluminada, fileiras de latas e botões
+  function vending(col) {
+    const g = new T.Group(); const tex = canvasTex(256, 512, (c, W, Hh) => { c.fillStyle = "#f4f6f8"; c.fillRect(0, 0, W, Hh); c.fillStyle = col; c.fillRect(0, 0, W, 46); c.fillStyle = "#fff"; c.font = `700 30px ${JPS}`; c.textAlign = "center"; c.fillText("つめた〜い", W / 2, 32);
+      const cols = ["#d8332a", "#2a6ad8", "#f2c230", "#3aa85a", "#8a5a3a", "#e8e8e8", "#1a1a1a", "#e87a2a"];
+      for (let r = 0; r < 4; r++) { c.fillStyle = "#dfe6ea"; c.fillRect(10, 60 + r * 74, W - 20, 64); for (let k = 0; k < 6; k++) { c.fillStyle = cols[(r * 3 + k) % cols.length]; c.fillRect(18 + k * 38, 66 + r * 74, 26, 44); c.fillStyle = "#fff"; c.fillRect(22 + k * 38, 72 + r * 74, 18, 6); c.fillStyle = r < 2 ? "#2a7ad8" : "#d83a2a"; c.fillRect(20 + k * 38, 114 + r * 74, 22, 6); } }
+      c.fillStyle = "#2a2e34"; c.fillRect(20, 370, W - 40, 110); c.fillStyle = "#101214"; c.fillRect(40, 440, W - 80, 30); c.fillStyle = "#3aff7a"; c.font = "600 22px monospace"; c.fillText("¥130", W / 2, 400); });
+    const front = new T.MeshStandardMaterial({ map: tex, emissiveMap: tex, emissive: new T.Color("#ffffff"), emissiveIntensity: 0.45, roughness: 0.3 }), shell = new T.MeshStandardMaterial({ color: col, roughness: 0.4, metalness: 0.2 });
+    const box = new T.Mesh(new T.BoxGeometry(1.0, 1.83, 0.75), [shell, shell, shell, shell, front, shell]); box.position.y = 0.915; g.add(box);
+    const glow = new T.PointLight("#e8f4ff", 0.7, 3.5, 2); glow.position.set(0, 1.1, 0.8); g.add(glow); shadowOn(g); return g;
+  }
+
+  /* ---------------- a rua montada ---------------- */
+  const TINTS = ["#f2ede2", "#e8e2d6", "#d8dcd8", "#ece4d2", "#cfd2d6", "#e6d8c6", "#f4f0e8", "#d6cfc4"];
+  const WINS = ["centered_large", "centered_double", "centered_small", "offset_small"];
+  const SHOPS = [["喫茶", "#2a3a5a", "#f4efe4", "珈琲"], ["書店", "#f4efe4", "#1a1a1a", "本"], ["らーめん", "#c8281e", "#fff4e0", "麺"], ["居酒屋", "#1a1a1a", "#ffd27a", "酒"], ["薬", "#2a7a4a", "#ffffff", "薬"], ["古本", "#5a3a22", "#f4e8d0", "本"], ["定食", "#f2c230", "#1a1a1a", "食"], ["たばこ", "#d8332a", "#ffffff", "煙"], ["美容室", "#f4efe4", "#c8281e", "髪"], ["銭湯", "#2a4a8a", "#ffffff", "湯"]];
+  const buildings = [];
+  function street() {
+    let k = 0;
+    for (const side of [-1, 1]) {
+      let z = side < 0 ? 24 : 22;
+      while (z > -60) {
+        const bays = 2 + Math.floor(rnd() * 3), floors = 2 + Math.floor(rnd() * 3), w = bays * 3, shop = SHOPS[k % SHOPS.length]; k++;
+        const ground = Array.from({ length: bays }, (_, i) => (i === 0 ? (rnd() < 0.5 ? "loja" : "porta") : rnd() < 0.35 ? "porta" : rnd() < 0.25 ? "loja" : "janela"));
+        // lado esquerdo: o kit cresce para -z; lado direito: para +z
+        const zStart = side < 0 ? z : z - w;
+        const b = building(side * WALL_X, zStart, side, bays, floors, { ground, win: WINS.slice(Math.floor(rnd() * 3)), tint: TINTS[Math.floor(rnd() * TINTS.length)], lit: 0.5, balc: rnd() < 0.6 ? 1 + Math.floor(rnd() * 2) : 0 });
+        buildings.push({ b, side, z0: z, z1: z - w, shop, bays, floors });
+        // a placa vertical na quina, acesa
+        const vs = vsign(shop[0], shop[1], shop[2], 0.55, Math.min(2.6, 0.75 * [...shop[0]].length + 0.4)); vs.position.set(side * (WALL_X - 0.42), 0.12 + H.base + H.dado + 3 + 1.5, z - 0.4); scene.add(vs); shadowOn(vs);
+        // a placa de cima da porta
+        const hs = hsign(shop[0], shop[1], shop[2], 2.6, 0.5); hs.position.set(side * (WALL_X - 0.12), 0.12 + H.base + H.dado + 2.62, z - 1.5); hs.rotation.y = side < 0 ? Math.PI / 2 : -Math.PI / 2; scene.add(hs);
+        // noren na porta, e lanternas vermelhas em alguns
+        if (rnd() < 0.7) { const n = noren(shop[3], shop[1] === "#f4efe4" ? "#2a3a5a" : shop[1], 1.7); n.position.set(side * (WALL_X - 0.2), 0.12 + H.base + H.dado + 2.25, z - 1.5); n.rotation.y = side < 0 ? Math.PI / 2 : -Math.PI / 2; scene.add(n); }
+        if (rnd() < 0.5) for (const dz of [-0.2, -2.8]) { const l = chochin(shop[3]); l.position.set(side * (WALL_X - 0.35), 0.12 + H.base + H.dado + 2.1, z + dz); scene.add(l); }
+        z -= w + (rnd() < 0.35 ? 1.2 + rnd() * 1.2 : 0); // às vezes um beco entre um prédio e outro
+      }
+    }
+    // duas máquinas de bebida lado a lado, perto da câmera
+    for (const [dz, col] of [[0, "#d8332a"], [-1.05, "#2a6ad8"]]) { const v = vending(col); v.position.set(-(WALL_X - 0.5), 0.12, 14.6 + dz); v.rotation.y = Math.PI / 2; scene.add(v); }
+  }
+  /* a cidade lá no fundo: prédios mais altos recortados contra o pôr do sol, com janelas acesas */
+  function skyline() {
+    const winTex = (seedc) => canvasTex(128, 256, (c, W, Hh) => { c.fillStyle = "#6a5262"; c.fillRect(0, 0, W, Hh); for (let y = 8; y < Hh - 8; y += 14) for (let x = 6; x < W - 6; x += 12) { const r = rnd(); c.fillStyle = r < 0.22 ? ["#ffcf8a", "#ffe6c0", "#cfe0ff"][Math.floor(rnd() * 3)] : "#624c5c"; c.fillRect(x, y, 7, 8); } });
+    const texs = [winTex(), winTex(), winTex()];
+    for (let k = 0; k < 46; k++) {
+      const z = -72 - rnd() * 90, side = rnd() < 0.5 ? -1 : 1, x = side * (6 + rnd() * 60), w = 6 + rnd() * 12, d = 6 + rnd() * 10, h = 10 + rnd() * (Math.abs(x) < 20 ? 18 : 34);
+      const t = texs[k % 3].clone(); t.needsUpdate = true; t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(w / 10, h / 20);
+      const m = new T.MeshStandardMaterial({ color: "#000000", map: t, emissiveMap: t, emissive: new T.Color("#ffffff"), emissiveIntensity: 0.62, roughness: 0.9, fog: false, envMapIntensity: 0.25 });
+      const b = new T.Mesh(new T.BoxGeometry(w, h, d), m); b.position.set(x, h / 2, z); scene.add(b);
+      if (rnd() < 0.3) { const l = new T.Mesh(new T.SphereGeometry(0.25, 8, 6), new T.MeshBasicMaterial({ color: "#ff3a2a" })); l.position.set(x, h + 0.4, z); scene.add(l); blinkers.push(l); }
+    }
+  }
+  const blinkers = [];
+
+  /* postes com fiação, luminárias e as miudezas da calçada */
+  const wires = [];
+  function props(M) {
+    const poleZ = []; for (let z = 22; z > -60; z -= 13) poleZ.push(z);
+    let preset = null;
+    if (M.poles) { const grp = new T.Group(); const kids = [...M.poles.children]; for (const c of kids) if (/^preset_01_/.test(c.name)) grp.add(c.clone(true)); if (!grp.children.length) for (const c of kids) if (/^preset_0\d_/.test(c.name)) grp.add(c.clone(true)); const b = new T.Box3().setFromObject(grp), cx = (b.min.x + b.max.x) / 2, cz = (b.min.z + b.max.z) / 2; grp.children.forEach((c) => { c.position.x -= cx; c.position.z -= cz; }); preset = { grp, top: b.max.y }; }
+    const tops = { "-1": [], "1": [] };
+    for (const side of [-1, 1]) poleZ.forEach((z, i) => {
+      const zz = z - (side > 0 ? 6 : 0); const x = side * (RW / 2 + 0.35);
+      if (preset) { const p = preset.grp.clone(true); p.position.set(x, 0.12, zz); p.rotation.y = side < 0 ? 0 : Math.PI; scene.add(p); shadowOn(p); tops[side].push(V3(x, preset.top - 0.4, zz)); }
+      if (M.lamp && i % 2 === 0) { const l = M.lamp.clone(true); const b = new T.Box3().setFromObject(l), k = 0.55 / (b.max.y - b.min.y); l.scale.setScalar(k); l.position.set(x - side * 0.3, 4.3, zz); l.rotation.y = side < 0 ? Math.PI / 2 : -Math.PI / 2; l.traverse((o) => { if (o.isMesh && /glass|bulb/i.test(o.material.name || "")) { o.material = o.material.clone(); o.material.emissive = new T.Color("#fff2d8"); o.material.emissiveIntensity = 1.5; } }); scene.add(l); const pl = new T.SpotLight("#ffe8c8", 3.5, 14, 0.9, 0.6, 1.5); pl.position.set(x - side * 0.45, 4.15, zz); pl.target.position.set(x - side * 2.2, 0, zz); scene.add(pl, pl.target); }
+    });
+    // fios: vários por vão, com barriga, de poste em poste e atravessando a rua
+    const wm = new T.MeshStandardMaterial({ color: "#16161a", roughness: 0.6 });
+    const span = (a, b, sag, r) => { const pts = []; for (let k = 0; k <= 14; k++) { const t = k / 14; pts.push(a.clone().lerp(b, t).add(V3(0, -Math.sin(t * Math.PI) * sag, 0))); } const m = new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(pts), 20, r, 4), wm); scene.add(m); wires.push(m); };
+    for (const side of [-1, 1]) { const t = tops[side]; for (let i = 0; i < t.length - 1; i++) for (let k = 0; k < 6; k++) { const off = V3(0, -k * 0.28 - (k > 2 ? 0.5 : 0), ((k % 3) - 1) * 0.35); span(t[i].clone().add(off), t[i + 1].clone().add(off), 0.35 + rnd() * 0.5, k > 2 ? 0.018 : 0.011); } }
+    for (let i = 0; i < Math.min(tops["-1"].length, tops["1"].length); i += 2) { span(tops["-1"][i].clone().add(V3(0, -0.9, 0)), tops["1"][i].clone().add(V3(0, -0.9, 6)), 0.6, 0.012); span(tops["-1"][i].clone().add(V3(0, -1.3, 0)), tops["1"][i].clone().add(V3(0, -1.2, 6)), 0.8, 0.012); }
+    // fios até as fachadas
+    for (const B of buildings) if (rnd() < 0.6) { const t = tops[B.side]; if (!t.length) continue; const near = t.reduce((a, b) => (Math.abs(b.z - B.z0) < Math.abs(a.z - B.z0) ? b : a)); span(near.clone().add(V3(0, -1.1, 0)), V3(B.side * (WALL_X - 0.1), 0.12 + H.base + H.dado + 3 * Math.min(2, B.floors) - 0.4, B.z0 - 1.2), 0.3, 0.01); }
+    // miudezas: caixas de luz, lixeiras, vasos, engradados, tampas de bueiro
+    const place = (m, x, z, ry = 0, s = 1) => { if (!m) return; const o = m.clone(true); o.position.set(x, 0.12, z); o.rotation.y = ry; o.scale.setScalar(s); scene.add(o); shadowOn(o); return o; };
+    for (const B of buildings) {
+      const x = B.side * (WALL_X - 0.45), r = B.side < 0 ? Math.PI / 2 : -Math.PI / 2;
+      if (rnd() < 0.55) place(rnd() < 0.5 ? M.pot1 : M.pot2, x, B.z0 - 0.3 - rnd() * 0.4, rnd() * 6, 0.8);
+      if (rnd() < 0.45) place(M.pot3, x - B.side * 0.05, B.z0 - 2.9, 0, 1.2);
+      if (rnd() < 0.3) place(M.planter, x, B.z1 + 1.2, r);
+      if (rnd() < 0.35) { place(M.crate, x, B.z1 + 0.6, rnd()); if (rnd() < 0.6) { const c = place(M.crate, x, B.z1 + 0.6, rnd()); if (c) c.position.y += 0.3; } }
+      if (rnd() < 0.3) place(rnd() < 0.5 ? M.ubox1 : M.ubox2, B.side * (WALL_X - 0.3), B.z1 + 2.2, r);
+      if (rnd() < 0.25) place(M.trash, x, B.z1 + 1.6, rnd());
+    }
+    for (let z = 18; z > -55; z -= 11) { const m = place(M.man, 0.6 * (rnd() < 0.5 ? -1 : 1), z, rnd() * 6); if (m) m.position.y = 0.002; }
+  }
+
+  /* ---------------- câmera ---------------- */
+  const cam = { pos: V3(0.6, 1.65, 26), tgt: V3(-0.4, 3.2, -10) };
+  if (Q.get("debug") === "predio") { cam.pos.set(6, 5, 16); cam.tgt.set(6, 5, 0); }
+  function resize() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.fov = w / h < 0.8 ? 66 : 48; camera.updateProjectionMatrix(); }
+  addEventListener("resize", resize); resize();
+
+  /* ---------------- carregar e montar ---------------- */
+  (async () => {
+    KIT = await load("modular_urban_apartments_facade");
+    if (KIT) {
+      H.base = measure("base_standard_01").max.y; H.dado = measure("dado_standard_standard_01").max.y; H.wall = measure("wall_pier_standard_01").max.y; H.cornice = measure("cornice_standard_standard_01").max.y;
+      console.log("alturas", JSON.stringify(H));
+      if (Q.get("debug") === "predio") { const b = building(0, 0, 1, 4, 3, { ground: ["porta", "janela"], win: ["centered_large", "centered_double", "centered_small"] }); b.rotation.y = 0; }
+    }
+    SH = await load("rollershutter_door"); if (SH) { const gr = SH.getObjectByName("rollershutter_door_graffiti"); if (gr) gr.parent.remove(gr); }
+    if (KIT && !Q.get("debug")) { street(); skyline(); }
+    const [poles, lamp0, ubox1, ubox2, trash, crate, pot1, pot2, planter, man, pot3] = await Promise.all(["modular_electricity_poles", "security_light", "utility_box_01", "utility_box_02", "metal_trash_can", "plastic_crate_01", "potted_plant_01", "potted_plant_02", "planter_box_01", "water_manhole_cover", "planter_pot_clay"].map(load));
+    props({ poles, lamp: lamp0, ubox1, ubox2, trash, crate, pot1, pot2, planter, man, pot3 });
+    window.cidadePronta = true;
+  })();
+
+  const clock = new T.Clock();
+  function frame() {
+    const t = clock.getElapsedTime();
+    camera.position.copy(cam.pos).add(V3(Math.sin(t * 0.13) * 0.08, Math.sin(t * 0.21) * 0.03, 0)); camera.lookAt(cam.tgt);
+    for (const n of norens) n.m.rotation.x = Math.sin(t * 1.3 + n.ph) * 0.06 * (n.k || 1);
+    for (const l of lanterns) { l.g.rotation.z = Math.sin(t * 0.9 + l.ph) * 0.04; l.l.intensity = 0.8 * (0.92 + 0.08 * Math.sin(t * 7 + l.ph)); }
+    for (let i = 0; i < blinkers.length; i++) blinkers[i].visible = Math.sin(t * 2 + i) > 0;
+    renderer.render(scene, camera); requestAnimationFrame(frame);
+  }
+  frame();
+})();

@@ -63,9 +63,9 @@
       .pp .bd{overflow:auto;padding:18px 26px 40px;flex:1;-webkit-overflow-scrolling:touch}
       .pp .card{display:flex;gap:14px;align-items:center;padding:12px;margin:0 0 10px;border-radius:6px;background:rgba(255,255,255,.55);border:1px solid rgba(60,40,30,.1);cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit}
       .pp .card:hover,.pp .card:focus-visible{background:#fff;border-color:rgba(181,48,27,.45);outline:none}
-      .pp .card img{width:64px;height:64px;object-fit:cover;border-radius:4px;flex:none;background:#ddd}
+      .pp .card img{width:64px;height:64px;object-fit:contain;border-radius:4px;flex:none;background:#e6dcc8}
       .pp .card b{display:block;font-size:15px}.pp .card span{font-size:12.5px;opacity:.7}
-      .pp .hero{width:100%;max-height:260px;object-fit:cover;border-radius:6px;margin:0 0 14px;background:#ddd}
+      .pp .hero{width:100%;max-height:340px;object-fit:contain;border-radius:6px;margin:0 0 14px;background:#e6dcc8}
       .pp h3{font-size:20px;margin:0 0 2px}.pp .sub{font-size:13px;opacity:.7;margin:0 0 14px}
       .pp h4{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#b5301b;margin:18px 0 6px}
       .pp p{margin:0 0 10px;white-space:pre-line}

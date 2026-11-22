@@ -187,18 +187,27 @@
       camada.appendChild(b); const m = { b, p, alcance, on: false }; marcas.push(m); return m; };
     // os nomes dentro da sala atual (lojas.js chama ao entrar e ao sair)
     M.marcasSala = (lista) => { for (let i = marcas.length - 1; i >= 0; i--) if (marcas[i].sala) { marcas[i].b.remove(); marcas.splice(i, 1); }
-      for (const a of lista) { const nm = a.nome.length > 30 ? a.nome.slice(0, 28).trim() + "…" : a.nome; const m = marcador(nm, a.topo, a.acao, 30); m.sala = true; m.b.title = a.nome; } };
+      for (const a of lista) { const nm = a.nome.length > 30 ? a.nome.slice(0, 28).trim() + "…" : a.nome; const m = marcador(nm, a.topo, a.acao, 30); m.sala = true; m.b.title = a.nome; m.obj = a.obj; m.ver = a.ver || a.topo; m.oculto = false; } };
+    /* dentro da loja, um nome só aparece se a coisa estiver à vista: um raio da câmera até ela, se bater antes em
+       outra coisa (o balcão, a divisória, uma estante), o nome some. Testa um nome por quadro, em rodízio. */
+    const rcSala = new T.Raycaster(), dirS = new T.Vector3(); let vez = 0;
+    const dela = (o, alvo) => { for (let p = o; p; p = p.parent) if (p === alvo) return true; return false; };
+    const tapa = (o) => o.visible && o.material && !o.material.transparent && o.material.visible !== false;
+    function testaOculto(cam) { const ms = marcas.filter((m) => m.sala); if (!ms.length) return; const m = ms[vez++ % ms.length];
+      dirS.copy(m.ver).sub(cam.position); const dist = dirS.length(); rcSala.set(cam.position, dirS.normalize()); rcSala.far = dist - 0.08;
+      const hs = rcSala.intersectObject(M.dentro.scene, true); m.oculto = hs.some((h) => h.object.isMesh && tapa(h.object) && !dela(h.object, m.obj)); }
     const pv = new T.Vector3();
     const postos = [];
     M.ticks.push(() => {
       const fechado = !aberto && !document.body.classList.contains("apresentando");
       const cam = M.dentro ? M.dentro.camera : camera, naSala = !!M.dentro;
+      if (naSala) { testaOculto(cam); testaOculto(cam); }
       // do mais perto para o mais longe; um nome que cairia em cima de outro já posto fica escondido
       for (const m of marcas) { m.d = m.p.distanceTo(cam.position); }
       postos.length = 0;
       for (const m of [...marcas].sort((a, b) => a.d - b.d)) {
         pv.copy(m.p).project(cam);
-        let ver = fechado && !!m.sala === naSala && m.d < m.alcance && pv.z < 1 && Math.abs(pv.x) < 1.02 && Math.abs(pv.y) < 1.02;
+        let ver = fechado && !!m.sala === naSala && !(m.sala && m.oculto) && m.d < m.alcance && pv.z < 1 && Math.abs(pv.x) < 1.02 && Math.abs(pv.y) < 1.02;
         const x = (pv.x * 0.5 + 0.5) * innerWidth, y = (-pv.y * 0.5 + 0.5) * innerHeight, w = m.w || (m.w = m.b.offsetWidth || 160);
         if (ver) for (const q of postos) if (Math.abs(q.x - x) < (q.w + w) / 2 + 6 && Math.abs(q.y - y) < 34) { ver = false; break; }
         if (ver) { postos.push({ x, y, w }); m.b.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) translate(-50%, -100%)`; m.b.style.opacity = Math.min(1, (m.alcance - m.d) / 6).toFixed(2); }

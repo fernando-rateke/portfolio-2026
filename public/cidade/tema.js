@@ -42,6 +42,7 @@
       for (const m of emissivos) if (m.userData.janela === "acesa") m.emissiveIntensity = m.userData.ei * (nome === "noite" ? c.janela[1] : 1);
       if (M.estrelas) M.estrelas.material.uniforms.uCol.value.set(c.estrelas).multiplyScalar(nome === "noite" ? 1.6 : 1);
       if (M.toroLuz) M.toroLuz.userData.k = nome === "noite" ? 1.6 : 1;
+      if (M.aoTema) M.aoTema();
     }
     M.aplicarTema = aplicar;
 

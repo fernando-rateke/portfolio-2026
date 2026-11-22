@@ -2,7 +2,8 @@
    Humanas, Ciências da Natureza e a loja maior do curso técnico, com um computador para cada matéria.
    Móveis e objetos são prontos (Poly Haven, CC0); as estruturas da sala (balcão, divisória com cortina, janela com
    o céu lá fora, porta do banheiro, vigas, tatame, painéis de papel) são montadas com texturas de verdade.
-   A luz principal vem da janela; luminárias quentes e fracas fazem a luz de apoio. Cada sala tem dois ou três
+   De dia o sol entra pela porta de vidro e o resto fica na penumbra; à noite acendem as pendentes e os spots em
+   cima dos quadros. Só aparecem os nomes das coisas que estão à vista. Cada sala tem dois ou três
    pontos de vista (setas embaixo, ou as setas do teclado). As atividades ficam em quadros com a imagem inteira
    (sem cortar), num passe-partout de papel; tocar no quadro (ou no nome aceso) abre a atividade.
    Cada sala só é baixada na primeira vez que alguém entra. */
@@ -34,24 +35,58 @@
       const piso = new T.Mesh(new T.PlaneGeometry(W, D), M.pbr(cfg.piso, [W / 2, D / 2], { metalness: 0, color: cfg.corPiso || "#ffffff" })); piso.rotation.x = -Math.PI / 2; g.add(piso);
       const pm = M.pbr(cfg.parede, [W / 2.5, H / 2.5], { metalness: 0, color: cfg.corParede || "#ffffff" });
       const parede = (w, x, z, ry) => { const p = new T.Mesh(new T.PlaneGeometry(w, H), pm); p.position.set(x, H / 2, z); p.rotation.y = ry; g.add(p); };
-      parede(W, 0, -D / 2, 0); parede(D, -W / 2, 0, Math.PI / 2); parede(D, W / 2, 0, -Math.PI / 2); parede(W, 0, D / 2, Math.PI);
+      parede(W, 0, -D / 2, 0); parede(D, -W / 2, 0, Math.PI / 2); parede(D, W / 2, 0, -Math.PI / 2);
+      // a parede da frente tem o vão da porta de vidro (por onde o sol entra)
+      const px = cfg.portaX, pw = 1.15, ph = 2.25, ee = px - pw / 2 + W / 2, dd = W / 2 - (px + pw / 2);
+      const pf = (w, h, x, y) => { const p = new T.Mesh(new T.PlaneGeometry(w, h), pm); p.position.set(x, y, D / 2); p.rotation.y = Math.PI; g.add(p); };
+      pf(ee, H, -W / 2 + ee / 2, H / 2); pf(dd, H, W / 2 - dd / 2, H / 2); pf(pw, H - ph, px, ph + (H - ph) / 2);
       const teto = new T.Mesh(new T.PlaneGeometry(W, D), M.pbr("japanese_cedar_planks", [W / 2, D / 2], { metalness: 0, color: "#6a5040" })); teto.rotation.x = Math.PI / 2; teto.position.y = H; g.add(teto);
       // vigas de madeira no teto
       for (let x = -W / 2 + 1.2; x < W / 2 - 0.5; x += 1.6) box(g, 0.16, 0.2, D, ESCURA(), x, H - 0.1, 0);
       // rodapé e a faixa de madeira na altura da mão, nas quatro paredes
       for (const [w, x, z, ry] of [[W, 0, -D / 2 + 0.02, 0], [D, -W / 2 + 0.02, 0, Math.PI / 2], [D, W / 2 - 0.02, 0, -Math.PI / 2], [W, 0, D / 2 - 0.02, Math.PI]])
         for (const [y, hh] of [[0.08, 0.16], [0.92, 0.05]]) box(g, w, hh, 0.04, ESCURA(), x, y, z, ry);
+      portaVidro(g, cfg);
       return g;
     }
     // janela: moldura, vidro e o céu lá fora (do tema atual); a luz da janela entra na sala
     function janela(g, x, z, ry, w = 1.4, h = 1.05, y = 1.55) {
       const j = new T.Group(); j.position.set(x, y, z); j.rotation.y = ry; g.add(j);
       const ceu = (M.ceu[M.tema === "noite" ? "noite" : "entardecer"] || M.ceu.entardecer || {}).fundo;
-      const fora = new T.MeshBasicMaterial({ color: "#ffffff" }); if (ceu) { const t = ceu.clone(); t.needsUpdate = true; t.mapping = T.UVMapping; t.repeat.set(0.1, 0.2); t.offset.set(0.16, 0.44); fora.map = t; }
+      const fora = new T.MeshBasicMaterial({ color: M.tema === "noite" ? "#6a7898" : "#b8a8a0" }); if (ceu) { const t = ceu.clone(); t.needsUpdate = true; t.mapping = T.UVMapping; t.repeat.set(0.1, 0.2); t.offset.set(0.16, 0.44); fora.map = t; }
       const vidro = new T.Mesh(new T.PlaneGeometry(w, h), fora); vidro.position.z = 0.01; j.add(vidro);
       for (const [bw, bh, bx, by] of [[w + 0.16, 0.08, 0, h / 2 + 0.04], [w + 0.16, 0.1, 0, -h / 2 - 0.05], [0.08, h, -w / 2 - 0.04, 0], [0.08, h, w / 2 + 0.04, 0], [0.04, h, 0, 0], [w, 0.03, 0, 0]]) box(j, bw, bh, 0.08, ESCURA(), bx, by, 0.04);
       box(j, w + 0.3, 0.05, 0.2, ESCURA(), 0, -h / 2 - 0.12, 0.1); // peitoril
       return j;
+    }
+    // a porta de vidro da frente: batente de madeira, vidro com quadradinhos e a rua lá fora (céu do tema)
+    function portaVidro(g, cfg) {
+      const { D } = cfg, px = cfg.portaX, pw = 1.15, ph = 2.25, z = D / 2;
+      for (const [w, h, x, y] of [[pw + 0.1, 0.1, px, ph], [0.08, ph, px - pw / 2, ph / 2], [0.08, ph, px + pw / 2, ph / 2], [pw, 0.06, px, 0.95], [0.05, ph, px, ph / 2], [pw, 0.05, px, 1.6]]) box(g, w, h, 0.1, ESCURA(), x, y, z - 0.02);
+      const vidro = new T.Mesh(new T.PlaneGeometry(pw - 0.08, ph - 0.1), mat("vidro", () => new T.MeshStandardMaterial({ color: "#c8d8e0", transparent: true, opacity: 0.16, roughness: 0.05, metalness: 0.4, depthWrite: false })));
+      vidro.position.set(px, ph / 2, z - 0.01); vidro.rotation.y = Math.PI; vidro.castShadow = false; g.add(vidro); vidro.userData.semSombra = true;
+      const fora = new T.MeshBasicMaterial({ color: "#ffffff" }); const lado = new T.Mesh(new T.PlaneGeometry(4, 3.4), fora); lado.position.set(px, 1.5, z + 0.9); lado.rotation.y = Math.PI; lado.userData.semSombra = true; g.add(lado);
+      g.userData.fora = fora; ceuLaFora(fora);
+    }
+    function ceuLaFora(fora) { const ceu = (M.ceu[M.tema === "noite" ? "noite" : "entardecer"] || M.ceu.entardecer || {}).fundo; if (!ceu) return; const t = ceu.clone(); t.needsUpdate = true; t.mapping = T.UVMapping; t.repeat.set(0.18, 0.42); t.offset.set(0.12, 0.3); fora.map = t; fora.color.set(M.tema === "noite" ? "#8090b0" : "#ffffff"); fora.needsUpdate = true; }
+    // luminária pendente de verdade (modelo pronto) com uma luz quente e curta logo abaixo
+    async function pendente(cena, g, x, z, H, lista, modeloL = "hanging_industrial_lamp", esc = 0.5) {
+      const o = await por(g, modeloL, x, H, z, 0, esc);
+      if (o) o.traverse((c) => { if (c.isMesh) { c.userData.semSombra = true; if (/glass/i.test(c.material.name || "")) { c.material.emissive = new T.Color("#ffd49a"); c.material.emissiveIntensity = 1.5; lista.vidros.push(c.material); } } });
+      const yb = o ? new T.Box3().setFromObject(o).min.y : H - 0.9; const l = new T.PointLight("#ffb766", 0.5, 3.4, 2); l.position.set(x, yb - 0.12, z); cena.add(l); lista.luzes.push(l);
+    }
+    // divisória vazada: meia-parede de madeira e, em cima, um painel de quadrados com vidro âmbar (como blocos de vidro)
+    const grade = M.canvasTex(512, 512, (c, w, h) => { c.clearRect(0, 0, w, h); c.fillStyle = "rgba(255,206,140,0.38)"; c.fillRect(0, 0, w, h); c.fillStyle = "#4a3426"; const n = 6, b = 10; for (let i = 0; i <= n; i++) { c.fillRect(i * (w - b) / n, 0, b, h); c.fillRect(0, i * (h - b) / n, w, b); } });
+    function divisoriaVazada(g, x, z, comp, ry, alt = 2.35) {
+      const d = new T.Group(); d.position.set(x, 0, z); d.rotation.y = ry; g.add(d);
+      box(d, comp, 1.0, 0.16, MADEIRA(), 0, 0.5, 0); box(d, comp + 0.04, 0.05, 0.22, ESCURA(), 0, 1.02, 0);
+      const pn = new T.Mesh(new T.PlaneGeometry(comp, alt - 1.05), mat("grade", () => new T.MeshStandardMaterial({ map: grade, transparent: true, side: T.DoubleSide, roughness: 0.3, emissive: new T.Color("#ffd8a0"), emissiveMap: grade, emissiveIntensity: 0.12, depthWrite: false })));
+      pn.position.y = 1.05 + (alt - 1.05) / 2; d.add(pn);
+      // a sombra do sol passa pelos quadradinhos de vidro e desenha a grade no chão
+      pn.customDepthMaterial = new T.MeshDepthMaterial({ depthPacking: T.RGBADepthPacking, map: grade, alphaTest: 0.6, side: T.DoubleSide });
+      for (const sx of [-1, 1]) box(d, 0.08, alt - 1.05, 0.12, ESCURA(), sx * comp / 2, 1.05 + (alt - 1.05) / 2, 0);
+      box(d, comp + 0.08, 0.08, 0.12, ESCURA(), 0, alt, 0);
+      return d;
     }
     // porta (do banheiro, do depósito...) com plaquinha
     function porta(g, x, z, ry, texto) {
@@ -133,28 +168,34 @@
       await Promise.all(sub.acts.map(async (a, i) => { const v = vagas[i % vagas.length]; if (!v) return; const [x, y, z, ry, s] = v; const q = await por(g, v[5] || modeloQ, x, y, z, ry, s || esc0); if (!q) return;
         trocar(q, /artwork|canvas/, (c) => imagemNoQuadro(c, a.img, a.t, a.r)); trocar(q, /glass/, (c) => { c.visible = false; });
         q.updateMatrixWorld(true); const bb = new T.Box3().setFromObject(q);
-        alvos.push({ obj: q, nome: a.t, acao: () => M.abrirAtividade(id, i), topo: V3((bb.min.x + bb.max.x) / 2, bb.max.y + 0.1, (bb.min.z + bb.max.z) / 2) }); }));
+        const c = bb.getCenter(V3()), nrm = V3(0, 0, 1).applyAxisAngle(V3(0, 1, 0), ry);
+        alvos.push({ obj: q, nome: a.t, acao: () => M.abrirAtividade(id, i), topo: V3(c.x, bb.max.y + 0.1, c.z), ver: c.clone(), foco: [c.clone().addScaledVector(nrm, 0.75).setY(9), c] }); }));
     }
-    // luminária de apoio: luz quente, fraca e de alcance curto (as fontes visíveis da sala)
-    const apoio = (cena, x, y, z, i = 0.7, d = 4.5, cor = "#ffb468") => { const l = new T.PointLight(cor, i, d, 2); l.position.set(x, y, z); cena.add(l); return l; };
+    // ventilador de teto girando devagar
+    const girando = [];
+    async function ventilador(g, x, z, H) { const v = await por(g, "ceiling_fan", x, H, z, 0, 1); if (v) { v.traverse((c) => { if (c.isMesh) c.userData.semSombra = true; }); girando.push(v); } }
 
     /* ---------- as salas ---------- */
     const SALAS = {
       perfil: { titulo: "A cafeteria", W: 6.4, D: 5.6, H: 2.9, piso: "wood_floor", corPiso: "#c8b0a0", parede: "beige_wall_001", corParede: "#d8c0a4",
-        vistas: [[V3(-0.3, 1.6, 2.2), V3(0, 1.35, -2.8)], [V3(-2.4, 1.5, 1.6), V3(2.2, 1.1, -1.2)], [V3(1.2, 1.55, 1.0), V3(-1.2, 1.5, -2.8)]],
-        janela: [-3.18, -0.4, Math.PI / 2], apoio: [[0.9, 2.3, -1.2], [-1.6, 2.2, 0.3]],
-        async montar(g, sub, alvos, P) {
+        vistas: [[V3(1.1, 1.6, 2.3), V3(-0.7, 1.3, -2.8)], [V3(-2.4, 1.5, 1.8), V3(2.2, 1.1, -1.2)], [V3(0.6, 1.55, -1.5), V3(0.3, 1.0, 2.8)]],
+        portaX: 0.4,
+        async montar(g, sub, alvos, P, L) {
+          // a divisória vazada separa as mesas do corredor do balcão; pendentes sobre o balcão e o ventilador no teto
+          divisoriaVazada(g, -0.3, 0.75, 1.9, Math.PI / 2);
+          await Promise.all([L.pend(1.9, -1.7), L.pend(1.9, -0.8), L.pend(1.9, 0.1), L.pend(-1.8, 0.3), ventilador(g, -1.5, -1.5, 2.9)]);
           balcao(g, 1.9, -0.9, 2.6, Math.PI / 2, 1.0); porta(g, 2.55, -2.78, 0, "お手洗い"); janela(g, -3.18, -0.4, Math.PI / 2);
           await Promise.all([por(g, "CoffeeCart_01", 2.85, 0, 0.9, -Math.PI / 2, 0.75), por(g, "CashRegister_01", 1.95, 1.0, -1.7, -Math.PI / 2, 0.75), por(g, "vintage_electric_kettle", 1.9, 1.0, -0.3, -1.2, 1),
             por(g, "bar_chair_round_01", 1.25, 0, -1.6, 1.2, 1), por(g, "bar_chair_round_01", 1.25, 0, -0.6, 1.8, 1), por(g, "bar_chair_round_01", 1.25, 0, 0.3, 1.4, 1),
             por(g, "round_wooden_table_01", -1.8, 0, 0.3, 0, 0.72), por(g, "tea_set_01", -1.8, 0.72, 0.3, 0.6, 0.85), por(g, "chinese_armchair", -2.4, 0, 1.3, 2.4, 0.9), por(g, "chinese_armchair", -1.0, 0, -0.5, -0.6, 0.9),
-            por(g, "chinese_chandelier", -1.8, 2.9, 0.3, 0, 0.8), por(g, "potted_plant_04", -2.95, 1.05, -0.4, 0, 1.6), por(g, "ceramic_vase_01", -2.9, 0, 2.4, 0, 2)]);
+            por(g, "potted_plant_04", -2.95, 1.05, -0.4, 0, 1.6), por(g, "ceramic_vase_01", -2.9, 0, 2.4, 0, 2)]);
           await quadros(g, "perfil", sub, alvos, [P.fundo(-1.4, 1.6), P.fundo(0.4, 1.6)], "hanging_picture_frame_01", 1.5);
         } },
       matematica: { titulo: "A sala de Matemática", W: 6.4, D: 5.6, H: 2.9, piso: "dark_wooden_planks", corPiso: "#b8a090", parede: "white_plaster_02", corParede: "#d8d2c4",
-        vistas: [[V3(0.3, 1.6, 2.2), V3(-0.4, 1.3, -2.8)], [V3(2.4, 1.5, 1.6), V3(-2.4, 1.2, -1.4)], [V3(-1.6, 1.55, 0.6), V3(3.2, 1.5, -0.6)]],
-        janela: [-3.18, 0.2, Math.PI / 2], apoio: [[0, 2.3, -0.6], [-1.6, 2.2, -1.6]],
-        async montar(g, sub, alvos, P) {
+        vistas: [[V3(0.3, 1.6, 2.2), V3(-0.4, 1.3, -2.8)], [V3(2.4, 1.5, 1.6), V3(-2.4, 1.2, -1.4)], [V3(-1.6, 1.55, 0.6), V3(3.2, 1.5, -0.6)], [V3(-0.8, 1.55, -1.0), V3(1.4, 0.9, 2.8)]],
+        portaX: 1.4,
+        async montar(g, sub, alvos, P, L) {
+          await Promise.all([L.pend(-0.1, -0.3, "modern_ceiling_lamp_01", 0.9), L.pend(0.8, -0.3, "modern_ceiling_lamp_01", 0.9), L.pend(-1.4, -1.4, "modern_ceiling_lamp_01", 0.9)]);
           porta(g, 2.4, -2.78, 0, "準備室"); janela(g, -3.18, 0.4, Math.PI / 2);
           const lousa = await por(g, "standing_chalkboard_01", -1.4, 0, -2.0, 0.25, 1.35); trocar(lousa, /board/, (c) => { uvPlano(c); c.material = new T.MeshStandardMaterial({ map: giz(), roughness: 0.9, side: T.DoubleSide }); });
           await Promise.all([por(g, "painted_wooden_table", 0.3, 0, -0.3, 0, 0.75), por(g, "chess_set", -0.1, 0.72, -0.3, 0.3, 0.9), por(g, "binder_notebook", 0.75, 0.72, -0.4, -0.2, 1), por(g, "stationery_supplies", 0.95, 0.79, -0.15, 0.4, 1),
@@ -164,9 +205,10 @@
           await quadros(g, "matematica", sub, alvos, [P.fundo(0.6), P.dir(0.4), P.dir(1.8), P.fundo(1.2, 2.2)]);
         } },
       linguagens: { titulo: "A livraria de Linguagens", W: 6.4, D: 6.0, H: 2.9, piso: "wood_floor", corPiso: "#b8a090", parede: "painted_plaster_wall", corParede: "#d4c4ae",
-        vistas: [[V3(0, 1.6, 2.4), V3(0, 1.35, -3)], [V3(0.6, 1.55, -1.2), V3(-0.4, 1.2, -3)], [V3(-0.6, 1.6, 0.4), V3(1.2, 1.5, 3)]],
-        janela: [-3.18, -2.2, Math.PI / 2], apoio: [[1.4, 2.2, 1.6], [-0.8, 2.2, -2.2], [0, 2.2, 0.6]],
-        async montar(g, sub, alvos, P) {
+        vistas: [[V3(0, 1.6, 2.4), V3(0, 1.35, -3)], [V3(0.6, 1.55, -1.2), V3(-0.4, 1.2, -3)], [V3(0.6, 1.6, -0.6), V3(-0.3, 1.0, 3)]],
+        portaX: -0.4,
+        async montar(g, sub, alvos, P, L) {
+          await Promise.all([L.pend(1.9, 1.6), L.pend(-1.0, -2.2), L.pend(0.2, 0.3)]);
           const pm = M.pbr("painted_plaster_wall", [2, 1.2], { metalness: 0, color: "#c8b8a0" });
           divisoria(g, 6.4, -1.0, 2.9, 0.4, 1.3, pm, "文", "#3a4a5a"); janela(g, -3.18, -2.1, Math.PI / 2, 1.1, 0.9); porta(g, 2.4, -2.98, 0, "お手洗い");
           balcao(g, 1.9, 1.6, 1.6, 0, 1.0);
@@ -175,25 +217,27 @@
           for (const [x, z, ry] of [[-2.85, 0.2, Math.PI / 2], [-2.85, 1.6, Math.PI / 2], [2.85, -0.1, -Math.PI / 2]]) for (const y of [0.4, 0.86, 1.32]) for (const dz of [-0.33, 0.24]) await por(g, "book_encyclopedia_set_01", x, y, z + dz, ry, 0.95);
           await Promise.all([por(g, "CashRegister_01", 1.6, 1.0, 1.55, Math.PI, 0.7), por(g, "vintage_oil_lamp", 2.4, 1.0, 1.55, 0, 0.6), por(g, "book_encyclopedia_set_01", 1.95, 1.0, 1.5, 0.3, 0.8),
             por(g, "ArmChair_01", -1.4, 0, -2.2, 0.7, 1), por(g, "side_table_01", -0.6, 0, -2.5, 0, 1), por(g, "desk_lamp_arm_01", -0.6, 0.55, -2.5, 0.8, 0.8), por(g, "potted_plant_04", 1.4, 0, -2.6, 0, 2.6)]);
-          await quadros(g, "linguagens", sub, alvos, [P.fundo(-0.9), P.fundo(1.0), [-1.9, 1.6, -0.93, 0], [1.9, 1.6, -0.93, 0], P.frente(-1.6), P.frente(0.4), P.dir(1.3)], "hanging_picture_frame_02", 1.35);
+          await quadros(g, "linguagens", sub, alvos, [P.fundo(-0.9), P.fundo(1.0), [-1.9, 1.6, -0.93, 0], [1.9, 1.6, -0.93, 0], P.frente(-1.9), P.frente(1.0), P.dir(1.3)], "hanging_picture_frame_02", 1.35);
         } },
       humanas: { titulo: "O antiquário de Ciências Humanas", W: 6.4, D: 5.6, H: 2.9, piso: "tatami_mat", corPiso: "#c8bca0", parede: "beige_wall_001", corParede: "#c8b498",
-        vistas: [[V3(0, 1.6, 2.2), V3(0, 1.3, -2.8)], [V3(-2.3, 1.45, 1.4), V3(1.6, 1.1, -1.6)], [V3(1.4, 1.5, 0.8), V3(-3.2, 1.4, -0.2)]],
-        janela: null, apoio: [[0, 2.3, -1.4], [-1.8, 2.0, 1.0], [2.0, 2.0, 0.4]],
-        async montar(g, sub, alvos, P) {
+        vistas: [[V3(0, 1.6, 2.2), V3(0, 1.3, -2.8)], [V3(-2.3, 1.45, 1.4), V3(1.6, 1.1, -1.6)], [V3(1.4, 1.5, 0.8), V3(-3.2, 1.4, -0.2)], [V3(1.0, 1.5, -0.8), V3(-0.6, 0.9, 2.8)]],
+        portaX: -0.2,
+        async montar(g, sub, alvos, P, L) {
+          await Promise.all([L.pend(0, -0.6, "chinese_chandelier", 0.8), L.pend(1.4, 1.4), ventilador(g, -1.3, 0.6, 2.9)]);
           // um estrado de tatame no fundo, painéis de papel acesos na parede esquerda e a porta do depósito
           box(g, 6.36, 0.3, 1.6, M.pbr("tatami_mat", [3, 1], { metalness: 0, color: "#d8cca8" }), 0, 0.15, -2.0); box(g, 6.36, 0.06, 0.08, ESCURA(), 0, 0.31, -1.2);
           for (const z of [-1.0, 0.0, 1.0, 2.0]) shoji(g, -3.16, z, 0.95, 1.9, Math.PI / 2, 0.15); porta(g, 2.6, 2.78, Math.PI, "倉庫");
           await Promise.all([por(g, "chinese_cabinet", -2.6, 0.3, -2.45, 0.2, 0.75), por(g, "chinese_cabinet", 2.6, 0.3, -2.45, -0.2, 0.75), por(g, "chinese_commode", 0, 0.3, -2.15, 0, 0.42),
             por(g, "marble_bust_01", -0.5, 1.15, -2.15, 0.3, 1.2), por(g, "mantel_clock_01", 0.35, 1.15, -2.15, -0.2, 1.3), por(g, "seadogs_compass", 0.75, 1.15, -2.05, 0.6, 2), por(g, "antique_ceramic_vase_01", -0.95, 1.15, -2.1, 0, 1.2),
             por(g, "vintage_binocular", 0.95, 1.17, -2.25, 0.4, 1.4), por(g, "vintage_suitcase", -1.6, 0, 1.4, 0.4, 0.8), por(g, "chinese_armchair", 2.2, 0, 1.0, -2.4, 0.9), por(g, "chinese_tea_table", 1.4, 0, 1.4, 0.2, 0.9),
-            por(g, "chinese_chandelier", 0, 2.9, -0.6, 0, 0.8), por(g, "vintage_oil_lamp", 1.4, 0.45, 1.4, 0, 0.7)]);
-          await quadros(g, "humanas", sub, alvos, [P.dir(-1.4), P.dir(-0.1), P.dir(1.2), P.fundo(-1.6, 1.9), P.fundo(1.6, 1.9), P.frente(-1.2)], "fancy_picture_frame_01", 1.9);
+            por(g, "vintage_oil_lamp", 1.4, 0.45, 1.4, 0, 0.7)]);
+          await quadros(g, "humanas", sub, alvos, [P.dir(-1.4), P.dir(-0.1), P.dir(1.2), P.fundo(-1.6, 1.9), P.fundo(1.6, 1.9), P.frente(-2.0)], "fancy_picture_frame_01", 1.9);
         } },
       natureza: { titulo: "O laboratório de Ciências da Natureza", W: 6.4, D: 5.6, H: 2.9, piso: "wood_floor", corPiso: "#c0b4a4", parede: "white_plaster_02", corParede: "#d4dcd0",
-        vistas: [[V3(0, 1.6, 2.2), V3(0, 1.2, -2.8)], [V3(-2.2, 1.5, 1.5), V3(2.0, 1.3, -1.4)], [V3(1.4, 1.55, 0.6), V3(-3.2, 1.5, -0.6)]],
-        janela: [-3.18, -0.6, Math.PI / 2], apoio: [[0, 2.2, -1.9], [1.8, 2.2, 0.4]],
-        async montar(g, sub, alvos, P) {
+        vistas: [[V3(0, 1.6, 2.2), V3(0, 1.2, -2.8)], [V3(-2.2, 1.5, 1.5), V3(2.0, 1.3, -1.4)], [V3(1.4, 1.55, 0.6), V3(-3.2, 1.5, -0.6)], [V3(-0.6, 1.55, -1.2), V3(1.5, 0.9, 2.8)]],
+        portaX: 1.5,
+        async montar(g, sub, alvos, P, L) {
+          await Promise.all([L.pend(0.4, 0.4), L.pend(-1.2, -2.25), L.pend(0.6, -2.25)]);
           // a bancada do laboratório no fundo, a janela com plantas e a porta da sala de amostras
           balcao(g, -0.4, -2.45, 4.0, 0, 0.92); janela(g, -3.18, -0.6, Math.PI / 2); porta(g, 2.55, -2.78, 0, "標本室");
           await Promise.all([por(g, "vintage_microscope", -1.4, 0.92, -2.4, 0.5, 1.4), por(g, "wicker_basket_02", -0.6, 0.92, -2.35, 0.2, 1.2), por(g, "potted_plant_04", 0.1, 0.92, -2.45, 0, 1.5),
@@ -205,23 +249,27 @@
           await quadros(g, "natureza", sub, alvos, [P.dir(-1.4), P.dir(-0.2), P.dir(2.0, 1.7), P.frente(-1.5), P.frente(0.3), P.esq(1.4), P.esq(2.5), P.fundo(1.0, 2.0)], "hanging_picture_frame_02", 1.3);
         } },
       tecnico: { titulo: "O laboratório do curso técnico", W: 9, D: 6.6, H: 3.1, piso: "wood_floor", corPiso: "#a8a4a0", parede: "white_plaster_02", corParede: "#cdd2d8", tech: true,
-        vistas: [[V3(0, 1.65, 2.8), V3(0, 1.1, -3.3)], [V3(-3.2, 1.55, 1.6), V3(2.6, 1.0, -2.2)], [V3(3.2, 1.55, 1.6), V3(-2.6, 1.0, -2.2)]],
-        janela: [-4.48, 0.6, Math.PI / 2], apoio: [[-2.4, 2.9, -1.4], [2.4, 2.9, -1.4], [0, 2.9, 1.2]], corApoio: "#dce8ff",
-        async montar(g, sub, alvos, P) {
+        vistas: [[V3(0, 1.65, 2.8), V3(0, 1.1, -3.3)], [V3(-3.2, 1.55, 1.6), V3(2.6, 1.0, -2.2)], [V3(3.2, 1.55, 1.6), V3(-2.6, 1.0, -2.2)], [V3(-0.6, 1.6, -1.2), V3(2.4, 0.9, 3.3)]],
+        portaX: 2.4, tech: true,
+        async montar(g, sub, alvos, P, L) {
           janela(g, -4.48, 0.8, Math.PI / 2, 1.6, 1.1); porta(g, 3.4, -3.28, 0, "サーバー室");
           // as mesas em arco, viradas para quem entra; cada computador mostra a sua matéria
           const olhoT = V3(0, 0, 2.8), mesas = [[-3.2, -0.9], [-1.7, -2.5], [0, -3.0], [1.7, -2.5], [3.2, -0.9]].map(([x, z]) => [x, z, Math.atan2(olhoT.x - x, olhoT.z - z)]);
           await Promise.all(sub.subs.map(async (s, i) => { const [x, z, ry] = mesas[i]; const d = await por(g, "metal_office_desk", x, 0, z, ry, 0.85);
             const off = V3(0, 0, 0.08).applyAxisAngle(V3(0, 1, 0), ry); const pc = await por(g, "classic_laptop", x + off.x, 0.67, z + off.z, ry, 1.15);
             const [kj, cor] = KANJI[s.id] || ["技", "#7fe0ff"]; trocar(pc, /screen/, (c) => { uvPlano(c); const t = telaPC(s.name, kj, cor); c.material = new T.MeshStandardMaterial({ map: t, emissiveMap: t, emissive: new T.Color("#ffffff"), emissiveIntensity: 0.9 }); });
+            // a tela acende a mesa com a cor da matéria
+            const fr = V3(0, 0, 0.45).applyAxisAngle(V3(0, 1, 0), ry); const lt = new T.PointLight(cor, 0.35, 1.8, 2); lt.position.set(x + fr.x, 1.0, z + fr.z); L.cena.add(lt); L.telas.push(lt);
             const st = V3(0.6, 0, -0.65).applyAxisAngle(V3(0, 1, 0), ry); await por(g, "metal_stool_01", x + st.x, 0, z + st.z, ry, 0.9);
-            alvos.push({ obj: d, nome: s.name, acao: () => M.abrir(s.id), topo: V3(x, 1.55, z) }); if (pc) alvos.push({ obj: pc, nome: s.name, acao: () => M.abrir(s.id) }); }));
+            alvos.push({ obj: d, nome: s.name, acao: () => M.abrir(s.id), topo: V3(x, i % 2 ? 1.95 : 1.55, z), ver: V3(x, 1.35, z) }); if (pc) alvos.push({ obj: pc, nome: s.name, acao: () => M.abrir(s.id) }); }));
           const iot = mesas[3], dI = V3(0.5, 0, 0).applyAxisAngle(V3(0, 1, 0), iot[2]);
           await Promise.all([por(g, "circuit_board", iot[0] + dI.x, 0.68, iot[1] + dI.z, 0.3, 0.9), por(g, "retro_multimeter", iot[0] - dI.x, 0.67, iot[1] - dI.z, iot[2], 1.1),
             por(g, "security_camera_01", 4.3, 2.75, -3.1, -0.8, 1.1), por(g, "power_box_01", -4.4, 1.6, 2.4, Math.PI / 2, 1),
             por(g, "steel_frame_shelves_01", -3.7, 0, -3.0, 0, 0.09), por(g, "steel_frame_shelves_01", 2.0, 0, -3.0, 0, 0.09),
             por(g, "potted_plant_04", 4.1, 0, 2.6, 0, 3)]);
-          for (const x of [-2.4, 0, 2.4]) for (const z of [-1.8, 1.0]) await por(g, "mounted_fluorescent_lights", x, 3.08, z, 0, 1.2);
+          for (const x of [-2.4, 0, 2.4]) for (const z of [-1.8, 1.0]) { const f = await por(g, "mounted_fluorescent_lights", x, 3.08, z, 0, 1.2);
+            trocar(f, /glass/, (c) => { c.material = c.material.clone(); c.material.emissive = new T.Color("#e8f0ff"); c.material.emissiveIntensity = 1.2; L.vidros.push(c.material); }); f && f.traverse((c) => { c.userData.semSombra = true; });
+            const l = new T.PointLight("#dce8ff", 0.5, 4.2, 2); l.position.set(x, 2.7, z); L.cena.add(l); L.luzes.push(l); }
         } },
     };
 
@@ -243,29 +291,66 @@
       const cfg = SALAS[id], sub = M.secao(id); if (!cfg || !sub) return null;
       const scene = new T.Scene(), g = sala(cfg); scene.add(g); const alvos = [];
       scene.background = new T.Color("#0a0806");
-      // luz de leve: um céu interno bem fraco, a luz da janela e luminárias quentes de apoio
-      const hemi = new T.HemisphereLight("#ffe8d0", "#1a120c", 0.16); scene.add(hemi);
-      const luzJanela = new T.SpotLight("#ffb070", 1.8, 12, 0.9, 0.8, 1.2);
-      if (cfg.janela) { const [jx, jz, ry] = cfg.janela; const dir = V3(0, 0, 1).applyAxisAngle(V3(0, 1, 0), ry); luzJanela.position.set(jx - dir.x * 0.6, 2.4, jz - dir.z * 0.6); luzJanela.target.position.set(jx + dir.x * 3.5, 0.2, jz + dir.z * 3.5); scene.add(luzJanela, luzJanela.target); }
-      for (const [x, y, z] of cfg.apoio) apoio(scene, x, y, z, cfg.tech ? 0.55 : 0.75, cfg.tech ? 6 : 4.5, cfg.corApoio || "#ffb468");
-      await cfg.montar(g, sub, alvos, PAR(cfg.W, cfg.D));
-      // o que tem textura com reflexo usa o céu do tema, bem fraco
+      /* a luz: quase nada de ambiente. De dia, o sol entra pela porta de vidro e desenha um retângulo quente no chão
+         (com a sombra do batente e da divisória); o resto fica na penumbra, com as pendentes fracas.
+         À noite o sol some e quem ilumina são as pendentes e os spots em cima de cada quadro. */
+      const hemi = new T.HemisphereLight("#ffe8d0", "#1a120c", 0.05); scene.add(hemi);
+      const { D, portaX: px } = cfg;
+      const sol = new T.SpotLight("#ffb070", 6, 14, 0.42, 0.35, 1.2); sol.position.set(px + 2.2, 3.4, D / 2 + 3.2); sol.target.position.set(px - 1.0, 0, D / 2 - 2.6); scene.add(sol, sol.target);
+      if (!M.leve) { sol.castShadow = true; sol.shadow.mapSize.set(1024, 1024); sol.shadow.camera.near = 1; sol.shadow.camera.far = 14; sol.shadow.bias = -0.0006; sol.shadow.radius = 3; }
+      const facho = feixe(cfg, sol); scene.add(facho);
+      const L = { cena: scene, vidros: [], luzes: [], telas: [], focos: [] };
+      L.pend = (x, z, m, e) => pendente(scene, g, x, z, cfg.H, L, m, e);
+      await cfg.montar(g, sub, alvos, PAR(cfg.W, cfg.D), L);
+      // um spot no teto em cima de cada quadro, com o disquinho aceso no forro
+      const disco = mat("spot", () => new T.MeshStandardMaterial({ color: "#fff2dc", emissive: new T.Color("#ffd8a0"), emissiveIntensity: 1.2 }));
+      for (const a of alvos) if (a.foco) { const [de, para] = a.foco; de.y = cfg.H - 0.02; const sp = new T.SpotLight("#ffd29a", 0.5, 4, 0.42, 0.8, 2); sp.position.copy(de); sp.target.position.copy(para); scene.add(sp, sp.target); L.focos.push(sp);
+        const dk = new T.Mesh(new T.CircleGeometry(0.055, 16), disco); dk.rotation.x = Math.PI / 2; dk.position.copy(de).setY(cfg.H - 0.004); g.add(dk); }
+      // sombras: tudo projeta e recebe, menos vidros, lâmpadas e o lado de fora
+      g.traverse((o) => { if (o.isMesh) { o.receiveShadow = true; o.castShadow = !o.userData.semSombra; } });
+      // o reflexo do céu fica bem fraco (senão ele vira uma luz ambiente que clareia tudo)
       scene.environment = (M.ceu[M.tema === "noite" ? "noite" : "entardecer"] || {}).env || null;
-      g.traverse((o) => { if (o.isMesh && o.material && o.material.envMapIntensity != null) o.material.envMapIntensity = 0.35; });
+      g.traverse((o) => { if (o.isMesh && o.material && o.material.envMapIntensity != null) o.material.envMapIntensity = 0.1; });
       const camera = new T.PerspectiveCamera(58, innerWidth / innerHeight, 0.05, 60);
       const rc = new T.Raycaster(), ptr = new T.Vector2();
       const pick = (x, y) => { ptr.set((x / innerWidth) * 2 - 1, -(y / innerHeight) * 2 + 1); rc.setFromCamera(ptr, camera); let melhor = null, dm = 1e9;
         for (const a of alvos) { const h = rc.intersectObject(a.obj, true)[0]; if (h && h.distance < dm) { dm = h.distance; melhor = a; } } return melhor ? { nome: melhor.nome, acao: melhor.acao } : null; };
-      return { scene, camera, alvos, pick, cfg, sub, id, hemi, luzJanela, vista: 0, olho: cfg.vistas[0][0].clone(), mira: cfg.vistas[0][1].clone() };
+      return { scene, camera, alvos, pick, cfg, sub, id, hemi, sol, facho, L, fora: g.userData.fora, vista: 0, olho: cfg.vistas[0][0].clone(), mira: cfg.vistas[0][1].clone() };
     }
     // a janela e a luz mudam com o tema: noite é luar azulado, entardecer é sol laranja
-    function luzDoTema(d) { const n = M.tema === "noite"; d.luzJanela.color.set(n ? "#8aa0e8" : "#ffb070"); d.luzJanela.intensity = n ? 0.7 : 1.8; d.hemi.intensity = n ? 0.1 : 0.16; }
+    function luzDoTema(d) {
+      const n = M.tema === "noite", L = d.L;
+      d.sol.visible = !n; d.facho.visible = !n; d.hemi.intensity = n ? 0.03 : 0.05;
+      for (const l of L.luzes) l.intensity = n ? (d.cfg.tech ? 1.0 : 1.25) : (d.cfg.tech ? 0.35 : 0.55);
+      for (const l of L.focos) l.intensity = n ? 1.3 : 0.8;
+      for (const l of L.telas) l.intensity = n ? 0.6 : 0.25;
+      for (const m of L.vidros) m.emissiveIntensity = n ? 1.8 : 0.9;
+      if (d.fora) ceuLaFora(d.fora);
+      d.scene.environment = (M.ceu[n ? "noite" : "entardecer"] || {}).env || null;
+    }
+    // o raio de sol visível no ar: a porta "arrastada" na direção do sol até o chão, bem fraco e somado à cena
+    const fachoTex = M.canvasTex(64, 128, (c, w, h) => { const gr = c.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "rgba(255,255,255,1)"); gr.addColorStop(1, "rgba(255,255,255,0.15)"); c.fillStyle = gr; c.fillRect(0, 0, w, h);
+      const lx = c.createLinearGradient(0, 0, w, 0); lx.addColorStop(0, "rgba(0,0,0,1)"); lx.addColorStop(0.25, "rgba(0,0,0,0)"); lx.addColorStop(0.75, "rgba(0,0,0,0)"); lx.addColorStop(1, "rgba(0,0,0,1)"); c.globalCompositeOperation = "destination-out"; c.fillStyle = lx; c.fillRect(0, 0, w, h); });
+    function feixe(cfg, sol) {
+      const { D } = cfg, px = cfg.portaX, pw = 1.0, ph = 2.15, z = D / 2 - 0.05;
+      const dir = sol.target.position.clone().sub(sol.position).normalize();
+      const chao = (p) => p.clone().addScaledVector(dir, p.y / -dir.y);
+      const A = V3(px - pw / 2, ph, z), B = V3(px + pw / 2, ph, z), C = V3(px - pw / 2, 0.1, z), E = V3(px + pw / 2, 0.1, z);
+      const pos = [], uv = [];
+      const quad = (p0, p1, q0, q1) => { for (const [p, u, v] of [[p0, 0, 0], [p1, 1, 0], [q1, 1, 1], [p0, 0, 0], [q1, 1, 1], [q0, 0, 1]]) { pos.push(p.x, p.y, p.z); uv.push(u, v); } };
+      quad(A, B, chao(A), chao(B)); quad(A, C, chao(A), chao(C)); quad(B, E, chao(B), chao(E));
+      const geo = new T.BufferGeometry(); geo.setAttribute("position", new T.Float32BufferAttribute(pos, 3)); geo.setAttribute("uv", new T.Float32BufferAttribute(uv, 2));
+      const m = new T.Mesh(geo, new T.MeshBasicMaterial({ map: fachoTex, color: "#ffb878", transparent: true, opacity: 0.07, blending: T.AdditiveBlending, depthWrite: false, side: T.DoubleSide, fog: false }));
+      m.frustumCulled = false; return m;
+    }
     let ox = 0, oy = 0, arr = null;
     addEventListener("pointermove", (e) => { if (!M.dentro) return; if (e.pointerType === "mouse") { ox = (e.clientX / innerWidth - 0.5) * 1.1; oy = (e.clientY / innerHeight - 0.5) * 0.5; } else if (arr) { ox = Math.max(-1, Math.min(1, ox - (e.clientX - arr[0]) / innerWidth * 2)); oy = Math.max(-0.4, Math.min(0.4, oy - (e.clientY - arr[1]) / innerHeight)); arr = [e.clientX, e.clientY]; } });
     addEventListener("pointerdown", (e) => { if (M.dentro && e.pointerType !== "mouse") arr = [e.clientX, e.clientY]; });
     addEventListener("pointerup", () => { arr = null; });
     const tmp = new T.Vector3();
-    M.ticks.push((t) => { const d = M.dentro; if (!d) return; const [a, b] = d.cfg.vistas[d.vista];
+    const EXP = 1.0;
+    M.ticks.push((t, dt) => { const d = M.dentro; if (!d) return; const [a, b] = d.cfg.vistas[d.vista];
+      for (const v of girando) if (v.parent && v.parent.parent === d.scene) v.rotation.y += 0.025;
       d.olho.lerp(a, 0.06); d.mira.lerp(b, 0.06); d.camera.position.copy(d.olho); d.camera.position.y += Math.sin(t * 0.6) * 0.008;
       tmp.copy(d.mira).sub(d.olho).applyAxisAngle(V3(0, 1, 0), -ox * 0.8); tmp.y -= oy * tmp.length() * 0.6; d.camera.lookAt(tmp.add(d.olho)); });
     addEventListener("resize", () => { if (M.dentro) { M.dentro.camera.aspect = innerWidth / innerHeight; M.dentro.camera.updateProjectionMatrix(); } });
@@ -275,13 +360,14 @@
     M.vistaSala = mudarVista;
 
     let expFora = null;
+    M.aoTema = () => { const d = M.dentro; if (!d) return; expFora = renderer.toneMappingExposure; luzDoTema(d); renderer.toneMappingExposure = EXP; };
     async function entrar(id) {
       if (!SALAS[id] || M.dentro) return;
       veu.classList.add("on"); M.fechar && M.fechar(); await new Promise((r) => setTimeout(r, 420));
       if (!prontas[id]) prontas[id] = construir(id);
       const d = await prontas[id]; if (!d) { veu.classList.remove("on"); return; }
       d.camera.aspect = innerWidth / innerHeight; d.camera.updateProjectionMatrix(); ox = oy = 0; d.vista = 0; d.olho.copy(d.cfg.vistas[0][0]); d.mira.copy(d.cfg.vistas[0][1]);
-      luzDoTema(d); expFora = renderer.toneMappingExposure; renderer.toneMappingExposure = 0.85;
+      luzDoTema(d); expFora = renderer.toneMappingExposure; renderer.toneMappingExposure = EXP;
       M.dentro = d; document.body.classList.add("dentro"); rotulo();
       M.marcasSala && M.marcasSala(d.alvos.filter((a) => a.topo));
       setTimeout(() => veu.classList.remove("on"), 120);

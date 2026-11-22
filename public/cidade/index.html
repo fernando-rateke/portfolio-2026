@@ -33,7 +33,7 @@
   // a barra de carregamento acompanha todos os modelos e texturas
   (() => { const bar = document.querySelector("#abertura .linha i"); let max = 0;
     THREE.DefaultLoadingManager.onProgress = (u, a, b) => { const p = Math.max(max, a / Math.max(b, 1)); max = p; bar.style.width = (p * 100).toFixed(0) + "%"; };
-    const fim = () => { const ab = document.getElementById("abertura"); if (!ab) return; bar.style.width = "100%"; ab.querySelector(".dica").textContent = matchMedia("(pointer: coarse)").matches ? "Deslize para andar" : "Role, use as setas ou os botões para andar"; setTimeout(() => ab.classList.add("fim"), 1600); };
+    const fim = () => { const ab = document.getElementById("abertura"); if (!ab) return; bar.style.width = "100%"; ab.querySelector(".dica").textContent = matchMedia("(pointer: coarse)").matches ? "Deslize para andar. Toque nos nomes acesos para abrir." : "Role ou use as setas para andar. Clique nos nomes acesos para abrir."; setTimeout(() => ab.classList.add("fim"), 1600); };
     const w = setInterval(() => { if (window.cidadePronta) { clearInterval(w); fim(); } }, 200);
     // Leve ou Completo (a mesma regra de cidade.js): trocar aqui recomeça o carregamento já no modo escolhido
     const Q = new URLSearchParams(location.search); let salvo = null; try { salvo = localStorage.getItem("cidade-peso"); } catch (e) { /* sem storage */ }
@@ -56,5 +56,6 @@
 <script src="/cidade/magia.js"></script>
 <script src="/cidade/conteudo.js"></script>
 <script src="/cidade/apresentacao.js"></script>
+<script src="/cidade/tema.js"></script>
 </body>
 </html>

@@ -10,7 +10,7 @@
     const byName = Object.fromEntries(meta.map((m) => [m.n, m]));
 
     /* ---------- árvores-imagem (billboards cilíndricos), todas numa única malha instanciada ---------- */
-    const U = T.UniformsUtils.merge([T.UniformsLib.fog, { map: { value: null }, uTime: { value: 0 }, uSun: { value: new T.Color("#ffb27a") }, uSky: { value: new T.Color("#8a86a8") } }]);
+    const U = (M.bbU = T.UniformsUtils.merge([T.UniformsLib.fog, { map: { value: null }, uTime: { value: 0 }, uSun: { value: new T.Color("#ffb27a") }, uSky: { value: new T.Color("#8a86a8") } }]));
     U.map.value = atlas;
     const bbMat = new T.ShaderMaterial({
       uniforms: U, fog: true, alphaToCoverage: true,
@@ -127,7 +127,7 @@
       // cada nuvem de flores é um quadrado sempre virado para a câmera (instanciado: sem limite de tamanho de ponto)
       const mats = [], m4 = new T.Matrix4();
       for (const m of S) { const sc = m.getMaxScaleOnAxis(); for (const p of pts) { v.copy(p).applyMatrix4(m); const t = (1.1 + rnd() * 0.9) * sc / 0.3; mats.push(new T.Matrix4().makeScale(t, t, t).setPosition(v)); } }
-      const U2 = T.UniformsUtils.merge([T.UniformsLib.fog, { map: { value: null }, uSun: { value: new T.Color("#ffc8a0") }, uSky: { value: new T.Color("#9a8ab8") } }]); U2.map.value = flor;
+      const U2 = (M.florU = T.UniformsUtils.merge([T.UniformsLib.fog, { map: { value: null }, uSun: { value: new T.Color("#ffc8a0") }, uSky: { value: new T.Color("#9a8ab8") } }])); U2.map.value = flor;
       const mt = new T.ShaderMaterial({ uniforms: U2, fog: true, alphaToCoverage: true,
         vertexShader: `varying vec2 vUv; varying vec3 vC;
           #include <fog_pars_vertex>

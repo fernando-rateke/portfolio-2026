@@ -15,7 +15,7 @@
   const renderer = new T.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, leve ? 1 : toque ? 1.25 : 1.5));
   renderer.outputEncoding = T.sRGBEncoding;
-  renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.68;
+  renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.78;
   renderer.shadowMap.enabled = !leve; renderer.shadowMap.type = T.PCFSoftShadowMap;
   const scene = new T.Scene();
   const camera = new T.PerspectiveCamera(48, 1, 0.1, 600);
@@ -26,15 +26,16 @@
   const load = (f) => new Promise((ok) => loader.load("/cidade/modelos/" + f + ".glb", (g) => ok(g.scene), undefined, () => ok(null)));
   let seed = 9; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
 
+  const M0 = (window.MUNDO = window.MUNDO || {}); M0.ceu = M0.ceu || {}; const M = M0;
   /* ---------------- céu e luz ---------------- */
   texL.load("/cidade/tex/sky.jpg", (t) => {
     t.mapping = T.EquirectangularReflectionMapping; t.encoding = T.sRGBEncoding;
-    scene.background = t; const pm = new T.PMREMGenerator(renderer); scene.environment = pm.fromEquirectangular(t).texture;
+    const pm = new T.PMREMGenerator(renderer); M.ceu.entardecer = { fundo: t, env: pm.fromEquirectangular(t).texture }; if (!M.tema || M.tema === "entardecer") { scene.background = t; scene.environment = M.ceu.entardecer.env; }
   });
   scene.fog = new T.FogExp2("#b98a7a", leve ? 0.0082 : 0.0068);
   const sun = new T.DirectionalLight("#ff9a58", 2.4); sun.position.set(-26, 11, -72); sun.castShadow = true;
   sun.shadow.mapSize.set(toque ? 1024 : 2048, toque ? 1024 : 2048); Object.assign(sun.shadow.camera, { left: -32, right: 32, top: 32, bottom: -32, near: 1, far: 95 }); sun.shadow.bias = -0.0004; scene.add(sun);
-  scene.add(new T.HemisphereLight("#8f86b8", "#4a3028", 0.3));
+  const hemi = new T.HemisphereLight("#8f86b8", "#4a3028", 0.42); scene.add(hemi);
 
   /* ---------------- materiais com textura de verdade ---------------- */
   const texCache = new Map();
@@ -108,7 +109,7 @@
     const retint = (o) => o.traverse((m) => { if (!m.isMesh) return; const n = m.material.name || "";
       if (/plaster/.test(n)) { const k = "p" + tint.getHexString(); if (!matCache[k]) { matCache[k] = m.material.clone(); matCache[k].map = greyMap(m.material.map); matCache[k].color.copy(tint); } m.material = matCache[k]; }
       else if (/glass/.test(n)) { const lit = rnd() < (kinds.lit == null ? 0.45 : kinds.lit) ? 1 + Math.floor(rnd() * 4) : 0, k = "g" + lit + n;
-        if (!matCache[k]) { const gm = (matCache[k] = m.material.clone()); if (lit) { gm.emissive = new T.Color(["#ffcf8a", "#ffe2b0", "#fff0d8", "#cfe4ff"][lit - 1]); gm.emissiveIntensity = 0.75; } } m.material = matCache[k]; } });
+        if (!matCache[k]) { const gm = (matCache[k] = m.material.clone()); gm.userData.janela = lit ? "acesa" : "apagada"; if (lit) { gm.emissive = new T.Color(["#ffcf8a", "#ffe2b0", "#fff0d8", "#cfe4ff"][lit - 1]); gm.emissiveIntensity = 0.75; } } m.material = matCache[k]; } });
     const BW = 3, FH = H.wall;
     for (let i = 0; i < bays; i++) {
       const x = (i + 1) * BW;
@@ -235,7 +236,10 @@
         z -= w + (rnd() < 0.35 ? 1.2 + rnd() * 1.2 : 0); // às vezes um beco entre um prédio e outro
       }
     }
-    [...lotes].sort((a, b) => b.z - a.z).forEach((l, i) => { l.shop = i < SHOPS.length ? SHOPS[i] : EXTRA[(i - SHOPS.length) % EXTRA.length]; });
+    // as matérias ficam nos lotes à frente da câmera nos dois primeiros lugares do passeio (z de 16 a -50); os outros
+    // lotes ganham lojas comuns
+    const meio = lotes.filter((l) => l.z <= 16).sort((a, b) => b.z - a.z), resto = lotes.filter((l) => !meio.slice(0, SHOPS.length).includes(l));
+    meio.slice(0, SHOPS.length).forEach((l, i) => { l.shop = SHOPS[i]; }); resto.forEach((l, i) => { l.shop = EXTRA[i % EXTRA.length]; });
     for (const { side, z, w, bays, floors, kinds, shop } of lotes) {
         const zStart = side < 0 ? z : z - w; // lado esquerdo: o kit cresce para -z; lado direito: para +z
         const b = building(side * WALL_X, zStart, side, bays, floors, kinds);
@@ -287,7 +291,7 @@
 
   /* ---------------- o resto do mundo (outros arquivos) usa estas peças ---------------- */
   const ticks = [];
-  const M = window.MUNDO = Object.assign(window.MUNDO || {}, { leve, peso, T, scene, renderer, camera, sun, V3, rnd, load, pbr, tx, canvasTex, shadowOn, texL, Q, ticks, JP, JPS, chochin, norens, lojas, juntar, longe, lerF });
+  Object.assign(M, { leve, peso, hemi, T, scene, renderer, camera, sun, V3, rnd, load, pbr, tx, canvasTex, shadowOn, texL, Q, ticks, JP, JPS, chochin, norens, lojas, juntar, longe, lerF });
 
   /* ---------------- câmera ---------------- */
   camera.position.set(0.6, 1.65, 26); camera.lookAt(-0.4, 3.2, -10); // até o passeio assumir

@@ -12,15 +12,16 @@
     const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
     const css = document.createElement("style");
     css.textContent = `
-      .som{position:fixed;z-index:6;top:max(16px,env(safe-area-inset-top));right:16px;width:40px;height:40px;border-radius:50%;border:1px solid rgba(246,238,226,.45);background:rgba(20,14,18,.28);color:#f6eee2;cursor:pointer;display:grid;place-items:center;backdrop-filter:blur(4px)}
+      .cantos{position:fixed;z-index:6;top:max(16px,env(safe-area-inset-top));right:16px;display:flex;gap:8px;align-items:center}
+      .som{width:40px;height:40px;border-radius:50%;border:1px solid rgba(246,238,226,.45);background:rgba(20,14,18,.28);color:#f6eee2;cursor:pointer;display:grid;place-items:center;backdrop-filter:blur(4px)}
       .som svg{width:20px;height:20px}.som .x{display:inline}.som .w1,.som .w2{display:none}
       .som[aria-pressed="true"] .x{display:none}.som[aria-pressed="true"] .w1,.som[aria-pressed="true"] .w2{display:inline}
       .apr{position:fixed;z-index:6;top:max(16px,env(safe-area-inset-top));left:16px;padding:9px 14px;border-radius:999px;border:1px solid rgba(246,238,226,.35);background:rgba(20,14,18,.28);color:#f6eee2;font:13px "Noto Serif JP",Georgia,serif;cursor:pointer;opacity:.7;backdrop-filter:blur(4px)}
       .apr:hover{opacity:1}@media (pointer:coarse){.apr{display:none}}
-      .qual{position:fixed;z-index:6;top:max(16px,env(safe-area-inset-top));right:66px;height:40px;padding:0 14px;display:inline-flex;align-items:center;gap:8px;border-radius:999px;border:1px solid rgba(246,238,226,.45);background:rgba(20,14,18,.28);color:#f6eee2;font:13px "Noto Serif JP",Georgia,serif;cursor:pointer;backdrop-filter:blur(4px)}
+      .qual{height:40px;padding:0 14px;display:inline-flex;align-items:center;gap:8px;border-radius:999px;border:1px solid rgba(246,238,226,.45);background:rgba(20,14,18,.28);color:#f6eee2;font:13px "Noto Serif JP",Georgia,serif;cursor:pointer;backdrop-filter:blur(4px)}
       .qual svg{width:16px;height:16px}.qual svg rect{opacity:.3}.qual[data-peso="leve"] svg rect:nth-child(1),.qual[data-peso="completo"] svg rect{opacity:1}
       @media (max-width:520px){.qual span{display:none}.qual{padding:0 12px}}
-      body.apresentando .som,body.apresentando .apr,body.apresentando .qual{opacity:0;pointer-events:none}
+      body.apresentando .cantos,body.apresentando .apr{opacity:0;pointer-events:none}
       .veu{position:fixed;inset:0;z-index:30;display:grid;place-items:center;background:radial-gradient(ellipse at 50% 40%,rgba(30,18,24,.94),rgba(6,3,5,.98));color:#f2e8dc;font-family:"Noto Serif JP",Georgia,serif;opacity:0;pointer-events:none;transition:opacity .5s}
       .veu.on{opacity:1;pointer-events:auto}.veu-in{text-align:center;display:grid;gap:12px;justify-items:center;padding:24px}
       .veu small{font-size:12px;letter-spacing:.3em;color:#e8a070}.veu b{font-size:clamp(22px,3vw,34px);font-weight:500}
@@ -40,6 +41,7 @@
     document.head.appendChild(css);
     const html = (s) => { const d = document.createElement("div"); d.innerHTML = s.trim(); const el = d.firstChild; document.body.appendChild(el); return el; };
     const limpo = M.Q.has("limpo");
+    const cantos = (M.cantos = document.createElement("div")); cantos.className = "cantos"; if (!limpo) document.body.appendChild(cantos);
 
     /* ---------- música ---------- */
     const somBtn = html(`<button class="som" type="button" aria-pressed="false" title="Ligar a música" aria-label="Música"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.2L12 5.5v13l-4.8-4H4z" fill="currentColor"/><path class="w1" d="M15.5 9a4 4 0 0 1 0 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path class="w2" d="M18 6.5a7.5 7.5 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path class="x" d="M15.5 9.5l5 5m0-5l-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>`);
@@ -61,6 +63,7 @@
     /* ---------- Leve ou Completo: trocar recarrega a página no mesmo lugar do passeio ---------- */
     const pesoBtn = html(`<button class="qual" type="button"><svg viewBox="0 0 18 18" fill="currentColor" aria-hidden="true"><rect x="2" y="11" width="3.4" height="5" rx="1"/><rect x="7.3" y="7" width="3.4" height="9" rx="1"/><rect x="12.6" y="3" width="3.4" height="13" rx="1"/></svg><span></span></button>`);
     if (limpo) pesoBtn.style.display = "none";
+    cantos.append(pesoBtn, somBtn);
     pesoBtn.dataset.peso = M.peso; pesoBtn.querySelector("span").textContent = M.leve ? "Leve" : "Completo";
     pesoBtn.title = M.leve ? "Modo Leve. Trocar para o Completo (sombras, reflexo no lago e mais detalhes)" : "Modo Completo. Trocar para o Leve (para celular e computador simples)";
     pesoBtn.addEventListener("click", (e) => {

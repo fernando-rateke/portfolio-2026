@@ -76,6 +76,13 @@
       .pp .btn{justify-self:start;padding:10px 18px;border-radius:999px;border:0;background:#b5301b;color:#fff;font:inherit;cursor:pointer}
       .pp .nota{font-size:12.5px;opacity:.75;margin:0}
       .pp .ema{padding:12px 14px;margin:0 0 10px;border-radius:6px;background:#e9d8b8;border:1px solid rgba(90,60,30,.25)}.pp .ema b{display:block;color:#7a2a22}.pp .ema span{font-size:12px;opacity:.65}
+      .marcas{position:fixed;inset:0;pointer-events:none;z-index:4}
+      .marca{position:absolute;left:0;top:0;display:flex;align-items:center;gap:7px;padding:5px 12px 5px 5px;border-radius:999px;border:1px solid rgba(255,214,160,.55);background:rgba(28,16,20,.62);color:#fff2e2;font:500 13px "Noto Serif JP",Georgia,serif;white-space:nowrap;cursor:pointer;pointer-events:auto;opacity:0;visibility:hidden;backdrop-filter:blur(3px);box-shadow:0 0 18px rgba(255,170,90,.25)}
+      .marca.on{visibility:visible}.marca:hover,.marca:focus-visible{background:rgba(181,48,27,.85);outline:none}
+      .marca i{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:12px;color:#2a1610;background:radial-gradient(circle,#ffe6b8 0 40%,#ffb060 75%);animation:marcaPulso 2.4s ease-in-out infinite}
+      .marca::after{content:"";position:absolute;left:50%;bottom:-7px;width:1px;height:7px;background:rgba(255,214,160,.6)}
+      @keyframes marcaPulso{50%{box-shadow:0 0 0 6px rgba(255,176,96,0)}0%{box-shadow:0 0 0 0 rgba(255,176,96,.55)}}
+      @media (prefers-reduced-motion:reduce){.marca i{animation:none}}
       .dica3d{position:fixed;z-index:15;pointer-events:none;padding:5px 10px;border-radius:4px;background:rgba(20,14,18,.72);color:#f6eee2;font:13px "Noto Serif JP",Georgia,serif;transform:translate(-50%,-140%);opacity:0;transition:opacity .2s;white-space:nowrap}
       @media (max-width:600px){.pp{top:auto;bottom:0;height:82vh;width:100vw;transform:translateY(105%);border-radius:14px 14px 0 0}.pp.on{transform:none}}`;
     document.head.appendChild(css);
@@ -164,14 +171,43 @@
     /* ---------- o que se clica na cidade ---------- */
     const alvos = [];
     const marca = (o, nome, acao) => { o.userData.acao = { nome, acao }; alvos.push(o); };
+    /* marcadores: o nome de cada coisa que abre, aceso e flutuando no lugar, para ninguém ter de adivinhar.
+       Aparecem quando a câmera está perto (alcance) e somem com o painel aberto; tocar no nome também abre. */
+    const camada = document.createElement("div"); camada.className = "marcas"; if (!M.Q.has("limpo")) document.body.appendChild(camada);
+    const marcas = [];
+    const marcador = (nome, p, acao, alcance = 30, kanji = "") => { const b = document.createElement("button"); b.type = "button"; b.className = "marca";
+      b.innerHTML = `<i>${esc([...kanji][0] || "")}</i><span>${esc(nome)}</span>`; b.addEventListener("click", (e) => { e.stopPropagation(); acao(); });
+      camada.appendChild(b); marcas.push({ b, p, alcance, on: false }); };
+    const pv = new T.Vector3();
+    const postos = [];
+    M.ticks.push(() => {
+      const fechado = !aberto && !document.body.classList.contains("apresentando");
+      // do mais perto para o mais longe; um nome que cairia em cima de outro já posto fica escondido
+      for (const m of marcas) { m.d = m.p.distanceTo(camera.position); }
+      postos.length = 0;
+      for (const m of [...marcas].sort((a, b) => a.d - b.d)) {
+        pv.copy(m.p).project(camera);
+        let ver = fechado && m.d < m.alcance && pv.z < 1 && Math.abs(pv.x) < 1.02 && Math.abs(pv.y) < 1.02;
+        const x = (pv.x * 0.5 + 0.5) * innerWidth, y = (-pv.y * 0.5 + 0.5) * innerHeight, w = m.w || (m.w = m.b.offsetWidth || 160);
+        if (ver) for (const q of postos) if (Math.abs(q.x - x) < (q.w + w) / 2 + 6 && Math.abs(q.y - y) < 34) { ver = false; break; }
+        if (ver) { postos.push({ x, y, w }); m.b.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) translate(-50%, -100%)`; m.b.style.opacity = Math.min(1, (m.alcance - m.d) / 6).toFixed(2); }
+        if (ver !== m.on) { m.on = ver; m.b.classList.toggle("on", ver); if (ver) m.w = m.b.offsetWidth || m.w; }
+      }
+    });
     const caixa = (w, h, d, x, y, z, ry = 0) => { const b = new T.Mesh(new T.BoxGeometry(w, h, d), new T.MeshBasicMaterial({ visible: false, side: T.DoubleSide })); b.position.set(x, y, z); b.rotation.y = ry; scene.add(b); return b; };
     const nomes = Object.fromEntries(Object.entries(byId).map(([k, v]) => [k, v.name]));
-    for (const l of M.lojas || []) { const go = () => abrir(l.id, l); for (const o of l.alvos) marca(o, nomes[l.id], go); marca(caixa(0.2, 3.2, 3.6, l.porta.x, 1.7, l.porta.z), nomes[l.id], go); }
+    for (const l of M.lojas || []) { const go = () => abrir(l.id, l); for (const o of l.alvos) marca(o, nomes[l.id], go); marca(caixa(0.2, 3.2, 3.6, l.porta.x, 1.7, l.porta.z), nomes[l.id], go);
+      marcador(nomes[l.id], new T.Vector3(l.porta.x - l.side * 0.9, 3.35, l.porta.z), go, 42, l.kanji); }
     if (M.L) {
       const L = M.L, YT = L.Y_TOPO;
       // os pilares dos torii da escadaria levam as inscrições: os certificados
       // as lanternas de pedra da escadaria guardam os certificados
       for (const t of M.torosEscada || []) marca(caixa(1.1, 2.2, 1.1, t.position.x, t.position.y + 1.0, t.position.z), "Certificados", () => abrir("certificados"));
+      { const ts = M.torosEscada || []; const t = ts.reduce((a, b) => (b.position.x > 0 && Math.abs(b.position.z + 99) < Math.abs(a.position.z + 99) ? b : a), ts[0]); if (t) marcador("Certificados", t.position.clone().add(new T.Vector3(0, 2.5, 0)), () => abrir("certificados"), 26, "証"); }
+      if (M.haiden) marcador("Agradecimentos", new T.Vector3(M.haiden.position.x, YT + 5.4, M.haiden.position.z + 4.4), () => abrir("agradecimentos"), 34, "感謝");
+      if (quadro.children.length) marcador("Quadro de emas", new T.Vector3(quadro.position.x, YT + 2.6, quadro.position.z), abrirEmas, 26, "絵馬");
+      if (M.casa) marcador("A jornada", new T.Vector3(M.casa.position.x, M.casa.position.y + 8.2, M.casa.position.z), () => abrir("jornada"), 46, "旅");
+      if (M.toriiLago) marcador("O futuro", new T.Vector3(M.toriiLago.position.x, L.Y_AGUA + 12.5, M.toriiLago.position.z), () => abrir("futuro"), 60, "未来");
       if (M.haiden) marca(caixa(11, 6, 8, M.haiden.position.x, YT + 3, M.haiden.position.z), "Agradecimentos", () => abrir("agradecimentos"));
       if (quadro.children.length) marca(caixa(3, 2.4, 0.6, quadro.position.x, YT + 1.2, quadro.position.z, quadro.rotation.y), "Quadro de emas", abrirEmas);
       if (M.casa) marca(caixa(9, 7, 13, M.casa.position.x, M.casa.position.y + 3.5, M.casa.position.z), "A jornada", () => abrir("jornada"));

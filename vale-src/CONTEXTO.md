@@ -50,6 +50,11 @@ Modos Leve e Completo: escolhidos na abertura ou no botão do canto (guardado em
 sem escolha, celular começa no Leve; `?leve=1` e `?completo=1` forçam). Leve: sem sombras, lago sem o reflexo da
 cena (só o céu), resolução 1x, névoa um pouco mais perto e menos plantas, flores, pétalas e vaga-lumes (`M.leve`).
 
+Tema Entardecer ou Noite (`tema.js`, botão de sol/lua no canto, `localStorage` "cidade-tema", `?tema=noite`):
+a noite troca o céu (`tex/ceu-noite.jpg`), vira o sol em luar e multiplica o brilho de tudo que tem luz própria.
+Marcadores (`conteudo.js`, `marcador`): o nome de cada coisa que abre flutua no lugar quando a câmera está perto;
+nomes que se sobrepõem ficam escondidos (vence o mais próximo).
+
 Para testar sem placa de vídeo, use `?pausa=1` (só desenha depois de carregar), `?limpo=1` (sem interface) e
 `?s=N` (começa no lugar N). `MUNDO.pular(N)` no console troca de lugar na hora.
 

@@ -72,15 +72,15 @@
       camera.getWorldDirection(fv);
       const nota = (f) => { const d = f.w.distanceTo(pos); const frente = f.w.clone().sub(pos).dot(fv) > -4 ? 0 : 25; return d + frente; };
       const ps = fontes.p.map((f) => [nota(f), f]).sort((a, b) => a[0] - b[0]);
-      poolP.forEach((l, k) => { const e = ps[k]; if (!e || e[0] > 70) { l.intensity = 0; return; } const f = e[1]; l.position.copy(f.w); l.color.copy(f.c); l.distance = f.d; l.decay = f.dec; l.intensity = (f.live ? f.live() : f.i) * Math.min(1, (70 - e[0]) / 20); });
+      poolP.forEach((l, k) => { const e = ps[k]; if (!e || e[0] > 70) { l.intensity = 0; return; } const f = e[1]; l.position.copy(f.w); l.color.copy(f.c); l.distance = f.d; l.decay = f.dec; l.intensity = (f.live ? f.live() : f.i) * (M.luzK || 1) * Math.min(1, (70 - e[0]) / 20); });
       const ss = fontes.s.map((f) => [nota(f), f]).sort((a, b) => a[0] - b[0]);
-      poolS.forEach((l, k) => { const e = ss[k]; if (!e || e[0] > 60) { l.intensity = 0; return; } const f = e[1]; l.position.copy(f.w); l.target.position.copy(f.tg); l.color.copy(f.c); l.distance = f.d; l.angle = f.ang; l.penumbra = f.pen; l.intensity = f.i * Math.min(1, (60 - e[0]) / 15); });
+      poolS.forEach((l, k) => { const e = ss[k]; if (!e || e[0] > 60) { l.intensity = 0; return; } const f = e[1]; l.position.copy(f.w); l.target.position.copy(f.tg); l.color.copy(f.c); l.distance = f.d; l.angle = f.ang; l.penumbra = f.pen; l.intensity = f.i * (M.luzK || 1) * Math.min(1, (60 - e[0]) / 15); });
     }
 
     let lastNome = "";
     const look = new T.Vector3(), pos = new T.Vector3(), tmp = new T.Vector3();
     scene.add(sun.target);
-    const sunOff = sun.position.clone().setLength(45); // perto: a sombra só precisa cobrir os arredores da câmera
+    const sunOff = (M.sunOff = sun.position.clone().setLength(45)); // perto: a sombra só precisa cobrir os arredores da câmera; à noite, a lua
     let prevT = 0;
     M.camTick = (t) => {
       const dt = Math.min(0.05, t - prevT); prevT = t;

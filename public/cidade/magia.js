@@ -27,7 +27,7 @@
     const renderer = () => M.renderer;
 
     /* 1. lanternas de pedra: acesas, com chama que respira; as mais próximas iluminam o chão de verdade */
-    if (M.toroLuz) { M.toroLuz.emissiveIntensity = 1.4; ticks.push((t) => { M.toroLuz.emissiveIntensity = 1.3 + Math.sin(t * 2.3) * 0.08 + Math.sin(t * 7.1) * 0.05; }); }
+    if (M.toroLuz) { M.toroLuz.emissiveIntensity = 1.4; ticks.push((t) => { M.toroLuz.emissiveIntensity = (1.3 + Math.sin(t * 2.3) * 0.08 + Math.sin(t * 7.1) * 0.05) * (M.toroLuz.userData.k || 1); }); }
     for (const t of M.toros || []) { const w = new T.Vector3(); t.getWorldPosition(w); w.y += 1.5 * t.scale.y; M.luzFonte && M.luzFonte(w, "#ffa860", 0.9, 6); }
     if (M.haidenLuz) { const w = M.haiden.position.clone().add(V3(0, 2.5, 4.6)); M.luzFonte && M.luzFonte(w, "#ffbe78", 1.6, 12); }
     if (M.casa) { const w = M.casa.position.clone().add(V3(4.6, 2, 0)); M.luzFonte && M.luzFonte(w, "#ffb468", 1.4, 10); }
@@ -79,7 +79,7 @@
     }
 
     /* 7. as primeiras estrelas, só no alto do céu, aparecendo e sumindo devagar */
-    luzinhas(700, () => { const a = rnd() * 6.28, el = 0.35 + rnd() * 1.1; const r = 480; return V3(Math.cos(a) * Math.cos(el) * r, Math.sin(el) * r, Math.sin(a) * Math.cos(el) * r - 200); }, { cor: "#fff4e8", tam: 0.55, deriva: 0, pisca: 0.7 });
+    M.estrelas = luzinhas(700, () => { const a = rnd() * 6.28, el = 0.35 + rnd() * 1.1; const r = 480; return V3(Math.cos(a) * Math.cos(el) * r, Math.sin(el) * r, Math.sin(a) * Math.cos(el) * r - 200); }, { cor: "#fff4e8", tam: 0.55, deriva: 0, pisca: 0.7 });
 
     /* 8. raios de sol entre as árvores da floresta */
     {

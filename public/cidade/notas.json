@@ -9,7 +9,7 @@
     "A cafeteria é o Quem sou."
   ],
   "perfil": [
-    "Quem sou: interesses, valores e o que me move."
+    "Quem sou: de onde eu sou, o que me move (tecnologia, jogos, música e arte) e o caminho que quero construir. Cada quadro da cafeteria abre uma parte."
   ],
   "natureza": [
     "Ciências da Natureza: contexto, aprendizagens, competências e importância das duas atividades."
@@ -49,11 +49,12 @@
     "Infomatrix 2025, DUAL 2025 e 2026, FEBRACE 2026, FEBIC 2026 (2º lugar) e a Iniciação Científica."
   ],
   "santuario": [
-    "O santuário guarda os agradecimentos.",
+    "O santuário guarda os agradecimentos. À direita da entrada, o mural com os nomes de quem veio junto, em quatro grupos: família, professores, Iniciação Científica e amigos.",
+    "As quatro lanternas na frente do santuário abrem cada grupo. À noite elas acendem uma por vez.",
     "Ao lado fica o quadro de emas: convide a plateia a deixar um recado."
   ],
   "agradecimentos": [
-    "Agradeça a quem fez parte da jornada."
+    "Agradeça a quem fez parte da jornada: a família, a professora Natali, o professor Wagner, a equipe do AcousticBuild, os colegas da IC e os amigos."
   ],
   "emas": [
     "O quadro de emas: quem passou deixou um recado aqui. Pelo celular, quem está assistindo pode deixar um também."
@@ -68,17 +69,18 @@
     "Do alto da floresta aparecem os arrozais e o lago."
   ],
   "arrozal": [
-    "A casa do arrozal guarda a jornada: 1º e 2º ano, o que veio antes deste ano."
+    "A casa do arrozal guarda a jornada: 1º e 2º ano, o que veio antes deste ano.",
+    "Na entrada, a plaquinha com o nome da família (ラテケ) abre o agradecimento à família."
   ],
   "jornada": [
     "1º e 2º ano: o que veio antes deste ano."
   ],
   "lago": [
-    "O torii do lago guarda as perspectivas para o futuro.",
-    "Fim do passeio: agradeça e abra para perguntas."
+    "O torii do lago guarda as perspectivas para o futuro: 2027, as universidades nos Estados Unidos e a indústria de jogos.",
+    "Siga em frente (seta ou controle: Créditos finais) para os créditos, com a cidade à noite. Depois, abra para perguntas."
   ],
   "futuro": [
-    "Objetivos e futuro: para onde eu vou depois do 3º ano."
+    "2027 de transição e preparação, as universidades nos Estados Unidos e, no longo prazo, a indústria de desenvolvimento de jogos."
   ],
   "tecnico": [
     "O laboratório do curso técnico: um computador para cada matéria. Clique em um para abrir as atividades daquela matéria."

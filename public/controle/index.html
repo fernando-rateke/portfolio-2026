@@ -112,7 +112,7 @@ button:disabled { opacity: 0.35; }
   <div class="opts" id="targets"><button type="button" data-m="10">10 min</button><button type="button" data-m="13" class="on">13 min</button><button type="button" data-m="15">15 min</button></div>
   <p style="margin:8px 0 0;font:500 0.6rem var(--f-label);letter-spacing:.16em;text-transform:uppercase;color:var(--ink-2)">Velocidade do cursor</p>
   <div class="opts" id="speeds"><button type="button" data-s="0.8">Lenta</button><button type="button" data-s="1.25" class="on">Normal</button><button type="button" data-s="1.8">Rápida</button></div>
-  <div class="opts" style="margin-top:8px"><button type="button" id="bHome">Voltar à entrada</button><button type="button" id="bReset">Zerar cronômetro</button><button type="button" id="bBye">Desconectar</button></div>
+  <div class="opts" style="margin-top:8px"><button type="button" id="bCred">Créditos finais</button><button type="button" id="bHome">Voltar à entrada</button><button type="button" id="bReset">Zerar cronômetro</button><button type="button" id="bBye">Desconectar</button></div>
 </div>
 <script>
 (() => {
@@ -176,6 +176,7 @@ button:disabled { opacity: 0.35; }
   tap("bSpot", () => setSpot(!spotOn));
   tap("bMusic", () => send({ t: "music" }));
   tap("bMore", () => $("more").classList.add("on")); tap("moreX", () => $("more").classList.remove("on"));
+  tap("bCred", () => { send({ t: "creditos" }); $("more").classList.remove("on"); });
   tap("bHome", () => { send({ t: "home" }); $("more").classList.remove("on"); });
   tap("bBye", () => { send({ t: "bye" }); paired = false; $("gate").hidden = false; $("gateT").textContent = "Desconectado"; $("gateP").textContent = "Recarregue esta página para conectar de novo."; $("more").classList.remove("on"); });
   $("speeds").addEventListener("click", (e) => { const b = e.target.closest("button[data-s]"); if (!b) return; speed = +b.dataset.s; [...$("speeds").children].forEach((x) => x.classList.toggle("on", x === b)); });

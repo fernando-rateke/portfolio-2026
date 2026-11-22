@@ -54,6 +54,7 @@
       if (!music) { music = new Audio("/cidade/audio/tema.mp3"); music.loop = true; music.volume = 0; music.addEventListener("play", setSomBtn); music.addEventListener("pause", setSomBtn); }
       if (music.paused) music.play().then(() => fadeTo(0.5, 3000)).catch(() => {});
     }
+    M.musica = () => { musicWant = true; musicOn(); };
     const musicOff = () => { if (music && !music.paused) fadeTo(0, 700, () => music.pause()); };
     function toggleMusic() { musicWant = !(music && !music.paused); try { localStorage.setItem("cidade-som", musicWant ? "1" : "0"); } catch (e) { /* sem storage */ } if (musicWant) musicOn(); else musicOff(); }
     somBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleMusic(); });
@@ -147,6 +148,7 @@
         case "scroll": if (painel()) painel().scrollBy(0, m.dy); else M.olhar(0, m.dy * 0.004); break;
         case "back": if (M.dentro) M.sair(); else M.anterior(); break;
         case "go": M.irPara(m.i); break;
+        case "creditos": if (M.creditos) M.creditos(); break;
         case "home": case "fim": M.irPara(0); break;
         case "close": M.fechar(); light.classList.remove("on"); break;
         case "zoom": zoom(!!m.on); break;

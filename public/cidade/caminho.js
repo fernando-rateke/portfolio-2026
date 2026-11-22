@@ -15,7 +15,7 @@
       { p: V3(0, 1.7, -53), o: V3(0, 7.5, -75), id: "torii", g: "O santuário", nome: "O grande torii", jp: "鳥居" },
       { p: at(0, -78, 1.6), o: V3(0, yEsc(-96) + 2, -96) },
       { p: at(0.2, -94.5, 1.6), o: V3(4.6, yEsc(-104) + 2.0, -104), id: "escadaria", g: "O santuário", nome: "A escadaria das cerejeiras", jp: "桜の石段" },
-      { p: at(0, -111, 1.65), o: V3(0, L.Y_TOPO + 3, -140) },
+      { p: at(0, -111, 1.65), o: V3(4, L.Y_TOPO + 2.6, -134) },
       { p: at(0, -119, 1.65), o: V3(0, L.Y_TOPO + 3.5, -140), id: "santuario", g: "O santuário", nome: "O santuário", jp: "神社" },
       { p: at(-2.2, -121.5, 1.65), o: V3(-11, L.Y_TOPO + 3.2, -128), id: "arvore", g: "O santuário", nome: "A árvore sagrada", jp: "御神木" },
       { p: at(-10.5, -137, 1.65), o: V3(-9, L.Y_TOPO, -152) },
@@ -36,7 +36,8 @@
     M.irPara = (k) => { alvo = lugares[Math.max(0, Math.min(lugares.length - 1, k))]; };
     M.pular = (k) => { s = alvo = lugares[Math.max(0, Math.min(lugares.length - 1, k))]; };
     const atual = () => { let k = 0; for (let j = 0; j < lugares.length; j++) if (lugares[j] <= alvo + 0.01) k = j; return k; };
-    M.proximo = () => M.irPara(atual() + 1); M.anterior = () => M.irPara(atual() - 1); M.lugarAtual = atual;
+    // no último lugar (o lago), seguir em frente abre os créditos do fim
+    M.proximo = () => { if (atual() === lugares.length - 1 && Math.abs(alvo - s) < 0.05 && M.creditos) M.creditos(); else M.irPara(atual() + 1); }; M.anterior = () => M.irPara(atual() - 1); M.lugarAtual = atual;
 
     /* interface mínima: nome do lugar e duas setas */
     const css = document.createElement("style");
@@ -84,6 +85,9 @@
     let prevT = 0;
     M.camTick = (t) => {
       const dt = Math.min(0.05, t - prevT); prevT = t;
+      // uma câmera de fora (os créditos do fim, ou um teste com M.camFix = [olho, alvo]) toma o lugar do passeio
+      if (M.cinema || M.camFix) { if (M.cinema) M.cinema(t, dt, camera); else { camera.position.set(...M.camFix[0]); camera.lookAt(...M.camFix[1]); }
+        sun.target.position.copy(camera.position); sun.position.copy(camera.position).add(sunOff); luzes(camera.position); return; }
       // desliza até o alvo; a velocidade cresce com a distância e é suave nas pontas
       const d = alvo - s; s += Math.sign(d) * Math.min(Math.abs(d), (0.25 + Math.abs(d) * 0.9) * dt * 1.4);
       const u = Math.max(0, Math.min(1, s / last));
@@ -98,7 +102,7 @@
       luzes(pos);
       const k = atual(); const n = N[lugares[k]];
       if (n.nome !== lastNome) { nm.innerHTML = `${n.nome}<span class="jp">${n.jp}</span>`; lastNome = n.nome; }
-      bA.disabled = k === 0 && Math.abs(d) < 0.01; bP.disabled = k === lugares.length - 1;
+      bA.disabled = k === 0 && Math.abs(d) < 0.01; bP.disabled = k === lugares.length - 1 && !M.creditos; bP.title = k === lugares.length - 1 ? "Créditos" : "";
     };
   });
 })();

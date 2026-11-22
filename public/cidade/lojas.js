@@ -171,6 +171,11 @@
         const c = bb.getCenter(V3()), nrm = V3(0, 0, 1).applyAxisAngle(V3(0, 1, 0), ry);
         alvos.push({ obj: q, nome: a.t, acao: () => M.abrirAtividade(id, i), topo: V3(c.x, bb.max.y + 0.1, c.z), ver: c.clone(), foco: [c.clone().addScaledVector(nrm, 0.75).setY(9), c] }); }));
     }
+    // um bilhete de agradecimento emoldurado (abre o agradecimento completo, que fica no santuário)
+    async function bilhete(g, alvos, v, titulo, corpo, acao, nomeMarca) { const [x, y, z, ry] = v; const q = await por(g, "hanging_picture_frame_01", x, y, z, ry, 1.05); if (!q) return;
+      trocar(q, /artwork|canvas/, (c) => imagemNoQuadro(c, "", titulo, corpo)); trocar(q, /glass/, (c) => { c.visible = false; });
+      q.updateMatrixWorld(true); const bb = new T.Box3().setFromObject(q), c = bb.getCenter(V3()), nrm = V3(0, 0, 1).applyAxisAngle(V3(0, 1, 0), ry);
+      alvos.push({ obj: q, nome: nomeMarca, acao, topo: V3(c.x, bb.max.y + 0.1, c.z), ver: c.clone(), foco: [c.clone().addScaledVector(nrm, 0.75).setY(9), c] }); }
     // ventilador de teto girando devagar
     const girando = [];
     async function ventilador(g, x, z, H) { const v = await por(g, "ceiling_fan", x, H, z, 0, 1); if (v) { v.traverse((c) => { if (c.isMesh) c.userData.semSombra = true; }); girando.push(v); } }
@@ -189,7 +194,7 @@
             por(g, "bar_chair_round_01", 1.25, 0, -1.6, 1.2, 1), por(g, "bar_chair_round_01", 1.25, 0, -0.6, 1.8, 1), por(g, "bar_chair_round_01", 1.25, 0, 0.3, 1.4, 1),
             por(g, "round_wooden_table_01", -1.8, 0, 0.3, 0, 0.72), por(g, "tea_set_01", -1.8, 0.72, 0.3, 0.6, 0.85), por(g, "chinese_armchair", -2.4, 0, 1.3, 2.4, 0.9), por(g, "chinese_armchair", -1.0, 0, -0.5, -0.6, 0.9),
             por(g, "potted_plant_04", -2.95, 1.05, -0.4, 0, 1.6), por(g, "ceramic_vase_01", -2.9, 0, 2.4, 0, 2)]);
-          await quadros(g, "perfil", sub, alvos, [P.fundo(-1.4, 1.6), P.fundo(0.4, 1.6)], "hanging_picture_frame_01", 1.5);
+          await quadros(g, "perfil", sub, alvos, [P.fundo(-1.0, 1.6), P.fundo(0.5, 1.6), P.fundo(-2.45, 1.6)], "hanging_picture_frame_01", 1.4);
         } },
       matematica: { titulo: "A sala de Matemática", W: 6.4, D: 5.6, H: 2.9, piso: "dark_wooden_planks", corPiso: "#b8a090", parede: "white_plaster_02", corParede: "#d8d2c4",
         vistas: [[V3(0.3, 1.6, 2.2), V3(-0.4, 1.3, -2.8)], [V3(2.4, 1.5, 1.6), V3(-2.4, 1.2, -1.4)], [V3(-1.6, 1.55, 0.6), V3(3.2, 1.5, -0.6)], [V3(-0.8, 1.55, -1.0), V3(1.4, 0.9, 2.8)]],
@@ -203,6 +208,7 @@
             por(g, "book_encyclopedia_set_01", 3.05, 1.02, -1.6, -Math.PI / 2, 1), por(g, "book_encyclopedia_set_01", 3.05, 1.5, -1.6, -Math.PI / 2, 1),
             por(g, "desk_lamp_arm_01", 1.05, 0.72, -0.5, -0.6, 1), por(g, "potted_plant_04", -2.95, 1.05, 0.4, 0, 1.6)]);
           await quadros(g, "matematica", sub, alvos, [P.fundo(0.6), P.dir(0.4), P.dir(1.8), P.fundo(1.2, 2.2)]);
+          await bilhete(g, alvos, P.esq(1.8), "Obrigado, professor Wagner", "Sou grato pela confiança, pelas oportunidades e por ter contribuído tanto para minha formação acadêmica e pessoal.", () => M.abrirAtividade("agradecimentos", 3), "Obrigado, prof. Wagner");
         } },
       linguagens: { titulo: "A livraria de Linguagens", W: 6.4, D: 6.0, H: 2.9, piso: "wood_floor", corPiso: "#b8a090", parede: "painted_plaster_wall", corParede: "#d4c4ae",
         vistas: [[V3(0, 1.6, 2.4), V3(0, 1.35, -3)], [V3(0.6, 1.55, -1.2), V3(-0.4, 1.2, -3)], [V3(0.6, 1.6, -0.6), V3(-0.3, 1.0, 3)]],
@@ -217,7 +223,8 @@
           for (const [x, z, ry] of [[-2.85, 0.2, Math.PI / 2], [-2.85, 1.6, Math.PI / 2], [2.85, -0.1, -Math.PI / 2]]) for (const y of [0.4, 0.86, 1.32]) for (const dz of [-0.33, 0.24]) await por(g, "book_encyclopedia_set_01", x, y, z + dz, ry, 0.95);
           await Promise.all([por(g, "CashRegister_01", 1.6, 1.0, 1.55, Math.PI, 0.7), por(g, "vintage_oil_lamp", 2.4, 1.0, 1.55, 0, 0.6), por(g, "book_encyclopedia_set_01", 1.95, 1.0, 1.5, 0.3, 0.8),
             por(g, "ArmChair_01", -1.4, 0, -2.2, 0.7, 1), por(g, "side_table_01", -0.6, 0, -2.5, 0, 1), por(g, "desk_lamp_arm_01", -0.6, 0.55, -2.5, 0.8, 0.8), por(g, "potted_plant_04", 1.4, 0, -2.6, 0, 2.6)]);
-          await quadros(g, "linguagens", sub, alvos, [P.fundo(-0.9), P.fundo(1.0), [-1.9, 1.6, -0.93, 0], [1.9, 1.6, -0.93, 0], P.frente(-1.9), P.frente(1.0), P.dir(1.3)], "hanging_picture_frame_02", 1.35);
+          await quadros(g, "linguagens", sub, alvos, [P.fundo(-0.9), P.fundo(1.0), [-1.9, 1.6, -0.93, 0], [1.9, 1.6, -0.93, 0], P.frente(-1.9), P.frente(1.0)], "hanging_picture_frame_02", 1.35);
+          await bilhete(g, alvos, P.dir(1.3), "Obrigado, professora Natali", "Por despertar em mim uma paixão que eu ainda não tinha compreendido por completo: a criação de jogos e narrativas interativas.", () => M.abrirAtividade("agradecimentos", 2), "Obrigado, prof.ª Natali");
         } },
       humanas: { titulo: "O antiquário de Ciências Humanas", W: 6.4, D: 5.6, H: 2.9, piso: "tatami_mat", corPiso: "#c8bca0", parede: "beige_wall_001", corParede: "#c8b498",
         vistas: [[V3(0, 1.6, 2.2), V3(0, 1.3, -2.8)], [V3(-2.3, 1.45, 1.4), V3(1.6, 1.1, -1.6)], [V3(1.4, 1.5, 0.8), V3(-3.2, 1.4, -0.2)], [V3(1.0, 1.5, -0.8), V3(-0.6, 0.9, 2.8)]],

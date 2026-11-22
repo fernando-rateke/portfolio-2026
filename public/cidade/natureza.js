@@ -48,6 +48,7 @@
     const longeDoCaminho = (x, z) => {
       if (z > -63) return Math.abs(x) > 16; // atrás dos prédios da rua
       if (z <= L.Z_ESC0 + 4 && z >= L.Z_ESC1 - 2 && Math.abs(x) < 5.5) return false; // escadaria
+      if (Math.hypot(x - L.KOSATSU.x, z - L.KOSATSU.z) < 7) return false; // o terraço do mural
       if (z < L.Z_ESC1 + 1 && z > L.Z_PLAT1 + 1 && Math.abs(x) < 23 && !(Math.abs(x) > 19)) return false; // pátio do santuário
       if (z <= L.Z_PLAT1 + 3 && z > L.Z_VALE - 30 && Math.abs(x - M.trilhaX(z)) < 4.2) return false; // trilha
       const e = Math.pow((x - L.LAGO.x) / L.LAGO.rx, 2) + Math.pow((z - L.LAGO.z) / L.LAGO.rz, 2); if (e < 1.12) return false; // lago
@@ -106,7 +107,7 @@
       scene.add(M.J.shimenawaAnel(c, r, 5, new T.Vector3(1, 0, 0.6).normalize())); }
     // cerejeiras 3D onde a câmera passa perto: dos dois lados da escadaria (um arco rosa sobre os degraus), na praça e no pátio
     const S = [];
-    for (let z = L.Z_ESC0 - 2.5, k = 0; z > L.Z_ESC1 + 1; z -= 6.2, k++) for (const sd of [-1, 1]) { const zz = z + sd * 1.5 + (rnd() - 0.5); S.push(pos(sd * (5.4 + rnd() * 1.2), zz, 0.26 + rnd() * 0.05)); }
+    for (let z = L.Z_ESC0 - 2.5, k = 0; z > L.Z_ESC1 + 1; z -= 6.2, k++) for (const sd of [-1, 1]) { const zz = z + sd * 1.5 + (rnd() - 0.5); const xx = sd * (5.4 + rnd() * 1.2), sc = 0.26 + rnd() * 0.05; const pp = pos(xx, zz, sc); if (Math.hypot(xx - L.KOSATSU.x, zz - L.KOSATSU.z) > 4.2) S.push(pp); }
     for (const [x, z, sc] of [[6.6, -66.8, 0.3], [-7, -67.6, 0.28], [13, -126, 0.42], [15.5, -143, 0.36], [-16, -146, 0.38], [-14.5, -117, 0.33], [12.5, -116, 0.33]]) S.push(pos(x, z, sc));
     if (sak) sak.traverse((o) => { if (o.isMesh && /leaves/.test(o.material.name || "")) o.userData.soFolhas = true; });
     const semFolhas = sak && sak.clone(true); if (semFolhas) { const fora = []; semFolhas.traverse((o) => { if (o.userData.soFolhas) fora.push(o); }); fora.forEach((o) => o.parent.remove(o)); }
@@ -158,6 +159,7 @@
     const livre = (x, z, dt) => {
       if (z > -70) return false;
       if (z <= L.Z_ESC0 + 5 && z >= L.Z_ESC1 - 3 && Math.abs(x) < 4.2) return false;
+      if (Math.hypot(x - L.KOSATSU.x, z - L.KOSATSU.z) < 4.6) return false;
       if (z < L.Z_ESC1 + 2 && z > L.Z_PLAT1 - 1 && Math.abs(x) < 24) return false;
       if (z <= L.Z_PLAT1 + 3 && z > L.Z_VALE - 30 && Math.abs(x - M.trilhaX(z)) < dt) return false;
       const e = Math.pow((x - L.LAGO.x) / L.LAGO.rx, 2) + Math.pow((z - L.LAGO.z) / L.LAGO.rz, 2); if (e < 1.12) return false;

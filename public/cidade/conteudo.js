@@ -220,10 +220,30 @@
       marcador(nomes[l.id], new T.Vector3(l.porta.x - l.side * 0.9, 3.35, l.porta.z), go, 42, l.kanji); }
     if (M.L) {
       const L = M.L, YT = L.Y_TOPO;
-      // os pilares dos torii da escadaria levam as inscrições: os certificados
-      // as lanternas de pedra da escadaria guardam os certificados
-      for (const t of M.torosEscada || []) marca(caixa(1.1, 2.2, 1.1, t.position.x, t.position.y + 1.0, t.position.z), "Certificados", () => abrir("certificados"));
-      { const ts = M.torosEscada || []; const t = ts.reduce((a, b) => (b.position.x > 0 && Math.abs(b.position.z + 99) < Math.abs(a.position.z + 99) ? b : a), ts[0]); if (t) marcador("Certificados", t.position.clone().add(new T.Vector3(0, 2.5, 0)), () => abrir("certificados"), 26, "証"); }
+      /* os certificados ficam num kōsatsu (o mural de avisos com telhado dos antigos vilarejos), num terraço de pedra
+         ao lado da escadaria. Cada certificado é uma folha pendurada; tocar numa folha abre aquele certificado. */
+      if (M.J && L.KOSATSU.y != null) {
+        const K = L.KOSATSU, J = M.J, MD = J.MADEIRA_ESC(), HK = J.HINOKI(), mural = new T.Group();
+        const pb = (w, h, d, m, x, y, z) => { const o = new T.Mesh(new T.BoxGeometry(w, h, d), m); o.position.set(x, y, z); o.castShadow = o.receiveShadow = true; mural.add(o); return o; };
+        for (const x of [-1.85, 1.85]) pb(0.16, 2.9, 0.16, MD, x, 1.45, 0);
+        pb(3.5, 1.86, 0.06, HK, 0, 1.63, -0.02); pb(3.62, 0.08, 0.1, MD, 0, 2.6, 0); pb(3.62, 0.08, 0.1, MD, 0, 0.68, 0);
+        for (const s of [-1, 1]) { const r = pb(4.3, 0.06, 0.62, MD, 0, 3.0, s * 0.27); r.rotation.x = s * 0.5; }
+        pb(4.4, 0.08, 0.08, MD, 0, 3.15, 0);
+        const folha = (c) => M.canvasTex(512, 364, (x, w, h) => {
+          x.fillStyle = "#f4ead6"; x.fillRect(0, 0, w, h); x.strokeStyle = "#b5301b"; x.lineWidth = 7; x.strokeRect(16, 16, w - 32, h - 32); x.strokeStyle = "#c8a24a"; x.lineWidth = 2; x.strokeRect(28, 28, w - 56, h - 56);
+          x.fillStyle = "#8a6a3a"; x.font = `600 17px ${M.JPS}`; x.textAlign = "center"; x.fillText("C E R T I F I C A D O", w / 2, 66);
+          x.fillStyle = "#2a1c14"; let fs = 40; x.font = `700 ${fs}px ${M.JPS}`; while (x.measureText(c.t).width > w - 90 && fs > 22) x.font = `700 ${(fs -= 2)}px ${M.JPS}`; x.fillText(c.t, w / 2, 130);
+          x.fillStyle = "#4a3a2e"; x.font = `18px ${M.JPS}`; const pal = c.s.split(" "); let lin = "", y = 180; for (const p of pal) { const t = lin ? lin + " " + p : p; if (x.measureText(t).width > w - 120) { x.fillText(lin, w / 2, y); y += 26; lin = p; } else lin = t; } if (lin) x.fillText(lin, w / 2, y);
+          x.fillStyle = "#b5301b"; x.beginPath(); x.arc(w - 82, h - 78, 30, 0, 7); x.fill(); x.fillStyle = "#f4ead6"; x.font = `700 30px ${M.JP}`; x.textBaseline = "middle"; x.fillText("証", w - 82, h - 76); });
+        CERTIFICADOS.acts.forEach((c, i) => { const tex = folha(c); const m = new T.Mesh(new T.PlaneGeometry(1.0, 0.71), new T.MeshStandardMaterial({ map: tex, emissiveMap: tex, emissive: new T.Color("#ffe8c8"), emissiveIntensity: 0.18, roughness: 0.85 }));
+          m.position.set(-1.1 + (i % 3) * 1.1, 2.06 - Math.floor(i / 3) * 0.86, 0.025); m.rotation.z = (((i * 7) % 5) - 2) * 0.006; m.receiveShadow = true; mural.add(m);
+          marca(m, c.t, () => M.abrirAtividade("certificados", i)); });
+        // duas lanternas pequenas na frente, que acendem à noite
+        for (const s of [-1, 1]) { const t = J.toro(0.6); t.position.set(s * 2.05, 0, 0.6); mural.add(t); (M.toros = M.toros || []).push(t); }
+        mural.position.set(K.x + 0.6, K.y, K.z); mural.rotation.y = -1.05; scene.add(mural);
+        marca(caixa(4.4, 3.2, 0.6, K.x + 0.6, K.y + 1.6, K.z, -1.05), "Certificados", () => abrir("certificados"));
+        marcador("Certificados", new T.Vector3(K.x + 0.6, K.y + 3.6, K.z), () => abrir("certificados"), 30, "証");
+      }
       if (M.haiden) marcador("Agradecimentos", new T.Vector3(M.haiden.position.x, YT + 5.4, M.haiden.position.z + 4.4), () => abrir("agradecimentos"), 34, "感謝");
       if (quadro.children.length) marcador("Quadro de emas", new T.Vector3(quadro.position.x, YT + 2.6, quadro.position.z), abrirEmas, 26, "絵馬");
       if (M.casa) marcador("A jornada", new T.Vector3(M.casa.position.x, M.casa.position.y + 8.2, M.casa.position.z), () => abrir("jornada"), 46, "旅");

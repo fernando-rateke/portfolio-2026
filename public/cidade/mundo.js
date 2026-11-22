@@ -14,7 +14,7 @@
 
   // o mapa, em metros: a rua vai de z=24 a z=-60; a escada sobe de z=-70 a z=-112; o santuário fica em -112..-150;
   // a floresta desce até -205; os arrozais vão até -262; o lago tem centro em z=-305.
-  const L = M.L = { Z_ESC0: -70, Z_ESC1: -112, Y_TOPO: 18, Z_PLAT1: -150, Z_VALE: -205, Y_VALE: 3, LAGO: { x: 0, z: -305, rx: 74, rz: 42 }, Y_AGUA: 2.0 };
+  const L = M.L = { Z_ESC0: -70, Z_ESC1: -112, Y_TOPO: 18, Z_PLAT1: -150, Z_VALE: -205, Y_VALE: 3, LAGO: { x: 0, z: -305, rx: 74, rz: 42 }, Y_AGUA: 2.0, KOSATSU: { x: 6.2, z: -101 } };
   function trilhaX(z) { return z > L.Z_PLAT1 ? 0 : -9 * smooth(L.Z_PLAT1, L.Z_PLAT1 - 25, z) + 9 * smooth(L.Z_VALE + 5, L.Z_VALE - 20, z) - 3 * Math.sin(z * 0.08) * smooth(L.Z_PLAT1, L.Z_PLAT1 - 15, z) * (1 - smooth(L.Z_VALE, L.Z_VALE - 15, z)); }
   M.trilhaX = trilhaX;
   function h(x, z) {
@@ -38,6 +38,8 @@
     if (z < L.Z_PLAT1 + 2 && z > L.Z_VALE - 20) { const d = Math.abs(x - trilhaX(z)); const base = L.Y_TOPO - (L.Y_TOPO - L.Y_VALE) * smooth(L.Z_PLAT1, L.Z_VALE, z); y = mix(base, y, smooth(1.8, 6, d)); }
     // o pátio do santuário é plano (com uma borda suave até a floresta)
     if (z < L.Z_ESC1 + 0.5) { const dx = Math.max(0, Math.abs(x) - 21), dz = Math.max(0, L.Z_PLAT1 + 1 - z); y = mix(L.Y_TOPO - 0.05, y, smooth(0, 6, Math.hypot(dx, dz))); }
+    // o terraço do mural dos certificados, ao lado da escadaria, é plano
+    { const K = L.KOSATSU, d = Math.hypot(Math.max(0, Math.abs(x - K.x) - 2.6), Math.max(0, Math.abs(z - K.z) - 2.1)); if (d < 5) y = mix(L.Y_TOPO * (L.Z_ESC0 - K.z) / (L.Z_ESC0 - L.Z_ESC1) - 0.25, y, smooth(0, 4, d)); }
     // cidade e praça ficam no zero
     if (z > -62) y *= 0; else if (z > -68 && ax < 30) y = Math.min(y, mix(0, y, smooth(-62, -68, z)));
     return y;
@@ -201,9 +203,15 @@
     // três torii espaçados na subida (as cerejeiras dos lados vêm do arquivo de vegetação)
     const pequeno = merge(J.torii(3.7, 4.1, { r: 0.14, noBase: true }));
     scene.add(instances(pequeno, [-77, -92, -107].map((z) => TRS(0, yEsc(z) - 0.05, z))));
-    // lanternas ao longo da subida: cada par guarda um certificado
+    // lanternas ao longo da subida
     M.toros = M.toros || []; M.torosEscada = [];
-    for (let z = z0 - 6; z > z1; z -= 7.5) for (const s of [-1, 1]) { const t = J.toro(0.85); t.position.set(s * 2.75, yEsc(z) + 0.1, z); est.add(t); M.toros.push(t); M.torosEscada.push(t); }
+    for (let z = z0 - 6; z > z1; z -= 7.5) for (const s of [-1, 1]) { if (s > 0 && Math.abs(z - L.KOSATSU.z) < 3.5) continue; const t = J.toro(0.85); t.position.set(s * 2.75, yEsc(z) + 0.1, z); est.add(t); M.toros.push(t); M.torosEscada.push(t); }
+    // o terraço de pedra ao lado da escada, onde fica o mural dos certificados (o mural vem de conteudo.js)
+    { const K = L.KOSATSU, yk = yEsc(K.z); K.y = yk + 0.12;
+      const muro = new T.Mesh(new T.BoxGeometry(5.6, 2.4, 4.6), pbr("japanese_stone_wall", [2.2, 1], { metalness: 0 })); muro.position.set(K.x + 0.3, yk - 1.08, K.z); muro.receiveShadow = true; est.add(muro);
+      const piso = new T.Mesh(new T.PlaneGeometry(5.6, 4.6), pbr("stone_pathway", [1.4, 1.15], { metalness: 0 })); piso.rotation.x = -Math.PI / 2; piso.position.set(K.x + 0.3, yk + 0.125, K.z); piso.receiveShadow = true; est.add(piso);
+      // a passagem de pedra que liga o degrau ao terraço
+      const pas = new T.Mesh(new T.BoxGeometry(2.1, 0.3, 1.5), pbr("stone_pathway", [0.4, 0.4], { metalness: 0 })); pas.position.set(2.7, yk - 0.03, K.z); pas.receiveShadow = true; est.add(pas); }
 
     /* ---------- o santuário no alto ---------- */
     const YT = L.Y_TOPO;

@@ -14,7 +14,7 @@
       { p: V3(0.3, 1.65, -14), o: V3(0, 3.6, -60), id: "lojas", g: "A cidade", nome: "As lojas", jp: "商店街" },
       { p: V3(0, 1.7, -53), o: V3(0, 7.5, -75), id: "torii", g: "O santuário", nome: "O grande torii", jp: "鳥居" },
       { p: at(0, -78, 1.6), o: V3(0, yEsc(-96) + 2, -96) },
-      { p: at(0, -94, 1.6), o: V3(0, yEsc(-112) + 2.2, -112), id: "escadaria", g: "O santuário", nome: "A escadaria das cerejeiras", jp: "桜の石段" },
+      { p: at(0.2, -94.5, 1.6), o: V3(4.6, yEsc(-104) + 2.0, -104), id: "escadaria", g: "O santuário", nome: "A escadaria das cerejeiras", jp: "桜の石段" },
       { p: at(0, -111, 1.65), o: V3(0, L.Y_TOPO + 3, -140) },
       { p: at(0, -119, 1.65), o: V3(0, L.Y_TOPO + 3.5, -140), id: "santuario", g: "O santuário", nome: "O santuário", jp: "神社" },
       { p: at(-2.2, -121.5, 1.65), o: V3(-11, L.Y_TOPO + 3.2, -128), id: "arvore", g: "O santuário", nome: "A árvore sagrada", jp: "御神木" },

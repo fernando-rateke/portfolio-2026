@@ -145,7 +145,7 @@
         case "click": clickHere(); break;
         case "look": M.olhar(m.dx * 0.009, m.dy * 0.0085); break;
         case "scroll": if (painel()) painel().scrollBy(0, m.dy); else M.olhar(0, m.dy * 0.004); break;
-        case "back": M.anterior(); break;
+        case "back": if (M.dentro) M.sair(); else M.anterior(); break;
         case "go": M.irPara(m.i); break;
         case "home": case "fim": M.irPara(0); break;
         case "close": M.fechar(); light.classList.remove("on"); break;

@@ -6,9 +6,19 @@ water_manhole_cover, island_tree_01/02/03, jacaranda_tree (cerejeiras, recolorid
 recoloridos), pine_tree_01, fir_tree_01, fern_02, grass_medium_01/02, shrub_02/04, rock_moss_set_01/02,
 boulder_01, tree_stump_01.
 
+Dentro das lojas: CoffeeCart_01, CashRegister_01, round_wooden_table_01, tea_set_01, bar_chair_round_01, chinese_tea_table,
+chinese_armchair, chinese_cabinet, chinese_commode, chinese_chandelier, vintage_electric_kettle, standing_chalkboard_01,
+SchoolChair_01, painted_wooden_table, chess_set, binder_notebook, stationery_supplies, Shelf_01, book_encyclopedia_set_01,
+wooden_bookshelf_worn, ArmChair_01, side_table_01, vintage_oil_lamp, desk_lamp_arm_01, marble_bust_01, mantel_clock_01,
+seadogs_compass, vintage_binocular, antique_ceramic_vase_01, vintage_suitcase, wooden_display_shelves_01, vintage_microscope,
+planter_box_02, ceramic_vase_01/03, wicker_basket_02, potted_plant_04, metal_office_desk, classic_laptop, metal_stool_01,
+circuit_board, retro_multimeter, security_camera_01, power_box_01, steel_frame_shelves_01, mounted_fluorescent_lights,
+wall_clock, hanging_picture_frame_01/02/03, fancy_picture_frame_01.
+
 Texturas: asphalt_02, brick_pavement_02, concrete, japanese_stone_wall, hinoki_planks, japanese_cedar_planks,
 grey_roof_tiles, thatch_roof_angled, mossy_rock, leaves_forest_ground, gravel_floor, stone_pathway, farm_soil,
-brown_mud, leafy_grass, rock_wall_10, stair_planks.
+brown_mud, leafy_grass, rock_wall_10, stair_planks, tatami_mat, wood_floor, beige_wall_001, painted_plaster_wall, dark_wooden_planks,
+white_plaster_02.
 
 Céu: belfast_sunset_puresky, com as cores ajustadas para o pôr do sol.
 

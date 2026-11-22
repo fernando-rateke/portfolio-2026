@@ -24,7 +24,7 @@ const nextConfig: NextConfig = {
     const cache = [{ key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" }];
     return [
       { source: "/vale/three.min.js", headers: cache },
-      { source: "/cidade/:dir(modelos|tex|audio|vendor)/:file*", headers: cache },
+      { source: "/cidade/:dir(modelos|tex|audio|vendor|interior)/:file*", headers: cache },
       { source: "/cidade/meshopt.js", headers: cache },
       { source: "/vale/:dir(audio|nos|perfil|grim|trem|modelos)/:file*", headers: cache },
     ];

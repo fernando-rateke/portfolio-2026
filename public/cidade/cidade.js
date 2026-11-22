@@ -220,7 +220,7 @@
   const WINS = ["centered_large", "centered_double", "centered_small", "offset_small"];
   // as lojas que guardam o portfólio: cada placa é uma matéria (em japonês), a cafeteria é o "Quem sou"
   const SHOPS = [["喫茶", "#2a3a5a", "#f4efe4", "珈琲", "perfil"], ["理科", "#2a6a46", "#ffffff", "理", "natureza"], ["社会", "#5a3a22", "#f4e8d0", "史", "humanas"], ["国語", "#f4efe4", "#1a1a1a", "文", "linguagens"], ["数学", "#2a4a8a", "#ffffff", "数", "matematica"],
-    ["設計", "#1a1a1a", "#ffd27a", "図", "modelagem"], ["開発", "#c8281e", "#fff4e0", "技", "desenvolvimento"], ["アプリ", "#f2c230", "#1a1a1a", "携", "programacao-aplicativos"], ["電子", "#3a2a6a", "#ece4ff", "電", "iot"], ["データ", "#f4efe4", "#c8281e", "庫", "banco"]];
+    ["技術", "#10181e", "#7fe8ff", "技", "tecnico"]];
   const EXTRA = [["らーめん", "#c8281e", "#fff4e0", "麺"], ["居酒屋", "#1a1a1a", "#ffd27a", "酒"], ["銭湯", "#2a4a8a", "#ffffff", "湯"], ["定食", "#f2c230", "#1a1a1a", "食"], ["美容室", "#f4efe4", "#c8281e", "髪"], ["たばこ", "#d8332a", "#ffffff", "煙"]];
   const lojas = []; // placas clicáveis
   const buildings = [];
@@ -238,16 +238,22 @@
     }
     // as matérias ficam nos lotes à frente da câmera nos dois primeiros lugares do passeio (z de 16 a -50); os outros
     // lotes ganham lojas comuns
-    const meio = lotes.filter((l) => l.z <= 16).sort((a, b) => b.z - a.z), resto = lotes.filter((l) => !meio.slice(0, SHOPS.length).includes(l));
-    meio.slice(0, SHOPS.length).forEach((l, i) => { l.shop = SHOPS[i]; }); resto.forEach((l, i) => { l.shop = EXTRA[i % EXTRA.length]; });
+    // espaçadas ao longo da rua: as primeiras aparecem do começo da rua, as outras do ponto "As lojas"
+    const meio = lotes.filter((l) => l.z <= 16 && l.z >= -52).sort((a, b) => b.z - a.z), passo = meio.length / SHOPS.length;
+    const escolhidos = SHOPS.map((_, i) => meio[Math.floor(i * passo)]), resto = lotes.filter((l) => !escolhidos.includes(l));
+    escolhidos.forEach((l, i) => { l.shop = SHOPS[i]; }); resto.forEach((l, i) => { l.shop = EXTRA[i % EXTRA.length]; });
+    // a loja do curso técnico fica no prédio mais largo entre os das matérias
+    { const cand = escolhidos, maior = cand.reduce((a, b) => (b.bays > a.bays ? b : a), cand[0]), tec = cand.find((l) => l.shop[4] === "tecnico");
+      if (maior && tec && maior !== tec) { const t = tec.shop; tec.shop = maior.shop; maior.shop = t; } }
     for (const { side, z, w, bays, floors, kinds, shop } of lotes) {
         const zStart = side < 0 ? z : z - w; // lado esquerdo: o kit cresce para -z; lado direito: para +z
         const b = building(side * WALL_X, zStart, side, bays, floors, kinds);
         buildings.push({ b, side, z0: z, z1: z - w, shop, bays, floors });
         // a placa vertical na quina, acesa
-        const vs = vsign(shop[0], shop[1], shop[2], 0.55, Math.min(2.6, 0.75 * [...shop[0]].length + 0.4)); vs.position.set(side * (WALL_X - 0.42), 0.12 + H.base + H.dado + 3 + 1.5, z - 0.4); cidadeG.add(vs); shadowOn(vs);
+        const grande = shop[4] === "tecnico";
+        const vs = vsign(shop[0], shop[1], shop[2], grande ? 0.8 : 0.55, grande ? 2.4 : Math.min(2.6, 0.75 * [...shop[0]].length + 0.4)); vs.position.set(side * (WALL_X - 0.42), 0.12 + H.base + H.dado + 3 + 1.5, z - 0.4); cidadeG.add(vs); shadowOn(vs);
         // a placa de cima da porta
-        const hs = hsign(shop[0], shop[1], shop[2], 2.6, 0.5); hs.position.set(side * (WALL_X - 0.12), 0.12 + H.base + H.dado + 2.62, z - 1.5); hs.rotation.y = side < 0 ? Math.PI / 2 : -Math.PI / 2; cidadeG.add(hs);
+        const hs = hsign(grande ? "技術 · Curso Técnico" : shop[0], shop[1], shop[2], grande ? 4.6 : 2.6, grande ? 0.62 : 0.5); hs.position.set(side * (WALL_X - 0.12), 0.12 + H.base + H.dado + 2.62, z - 1.5); hs.rotation.y = side < 0 ? Math.PI / 2 : -Math.PI / 2; cidadeG.add(hs);
         if (shop[4]) lojas.push({ id: shop[4], kanji: shop[0], cor: shop[1], alvos: [vs, hs], porta: V3(side * (WALL_X - 0.2), 1.6, z - 1.5), side });
         // noren na porta, e lanternas vermelhas em alguns
         if (shop[4] || rnd() < 0.7) { const n = noren(shop[3], shop[1] === "#f4efe4" ? "#2a3a5a" : shop[1], 1.7); n.position.set(side * (WALL_X - 0.2), 0.12 + H.base + H.dado + 2.25, z - 1.5); n.rotation.y = side < 0 ? Math.PI / 2 : -Math.PI / 2; scene.add(n); if (shop[4]) lojas[lojas.length - 1].alvos.push(...n.children); }
@@ -321,7 +327,7 @@
     for (const f of ticks) f(t);
     for (const n of norens) n.m.rotation.x = Math.sin(t * 1.3 + n.ph) * 0.06 * (n.k || 1);
     // ?pausa=1: não desenha enquanto carrega (para testes num computador sem placa de vídeo)
-    if (!(Q.has("pausa") && !window.cidadePronta)) renderer.render(scene, camera);
+    if (!(Q.has("pausa") && !window.cidadePronta)) { if (M.dentro) renderer.render(M.dentro.scene, M.dentro.camera); else renderer.render(scene, camera); }
     requestAnimationFrame(frame);
   }
   frame();

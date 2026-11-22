@@ -5,7 +5,8 @@
     "Cada loja da rua é uma matéria; a placa em japonês diz qual."
   ],
   "lojas": [
-    "Clique numa loja para abrir as atividades daquela matéria. A cafeteria é o Quem sou."
+    "Cada loja é uma matéria: Matemática, Linguagens, Ciências Humanas, Ciências da Natureza e a loja maior do curso técnico. Clique no nome para entrar.",
+    "A cafeteria é o Quem sou."
   ],
   "perfil": [
     "Quem sou: interesses, valores e o que me move."
@@ -78,5 +79,8 @@
   ],
   "futuro": [
     "Objetivos e futuro: para onde eu vou depois do 3º ano."
+  ],
+  "tecnico": [
+    "O laboratório do curso técnico: um computador para cada matéria. Clique em um para abrir as atividades daquela matéria."
   ]
 }

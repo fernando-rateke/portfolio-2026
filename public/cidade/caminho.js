@@ -48,11 +48,11 @@
     if (!M.Q.has("limpo")) document.body.appendChild(ui);
     const [bA, nm, bP] = [ui.children[0], ui.children[1], ui.children[2]];
     bA.onclick = () => M.anterior(); bP.onclick = () => M.proximo();
-    addEventListener("keydown", (e) => { if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return; if (["ArrowRight", "ArrowDown", "PageDown", " "].includes(e.key)) { M.proximo(); e.preventDefault(); } if (["ArrowLeft", "ArrowUp", "PageUp"].includes(e.key)) { M.anterior(); e.preventDefault(); } });
+    addEventListener("keydown", (e) => { if (M.dentro || (e.target && /INPUT|TEXTAREA/.test(e.target.tagName))) return; if (["ArrowRight", "ArrowDown", "PageDown", " "].includes(e.key)) { M.proximo(); e.preventDefault(); } if (["ArrowLeft", "ArrowUp", "PageUp"].includes(e.key)) { M.anterior(); e.preventDefault(); } });
     let wheelAcc = 0, wheelT = 0;
-    addEventListener("wheel", (e) => { const now = performance.now(); if (now - wheelT > 450) wheelAcc = 0; wheelT = now; wheelAcc += e.deltaY; if (Math.abs(wheelAcc) > 60) { (wheelAcc > 0 ? M.proximo : M.anterior)(); wheelAcc = 0; wheelT = now + 500; } }, { passive: true });
+    addEventListener("wheel", (e) => { if (M.dentro) return; const now = performance.now(); if (now - wheelT > 450) wheelAcc = 0; wheelT = now; wheelAcc += e.deltaY; if (Math.abs(wheelAcc) > 60) { (wheelAcc > 0 ? M.proximo : M.anterior)(); wheelAcc = 0; wheelT = now + 500; } }, { passive: true });
     let ty = null; addEventListener("touchstart", (e) => { ty = [e.touches[0].clientX, e.touches[0].clientY]; }, { passive: true });
-    addEventListener("touchend", (e) => { if (!ty) return; const t = e.changedTouches[0], dx = t.clientX - ty[0], dy = t.clientY - ty[1]; if (Math.max(Math.abs(dx), Math.abs(dy)) > 40) ((Math.abs(dy) > Math.abs(dx) ? dy < 0 : dx < 0) ? M.proximo : M.anterior)(); ty = null; }, { passive: true });
+    addEventListener("touchend", (e) => { if (!ty || M.dentro) { ty = null; return; } const t = e.changedTouches[0], dx = t.clientX - ty[0], dy = t.clientY - ty[1]; if (Math.max(Math.abs(dx), Math.abs(dy)) > 40) ((Math.abs(dy) > Math.abs(dx) ? dy < 0 : dx < 0) ? M.proximo : M.anterior)(); ty = null; }, { passive: true });
     // olhar um pouco em volta com o mouse
     let mx = 0, my = 0, ox = 0, oy = 0; M.olhar = (dx, dy) => { ox = Math.max(-1.2, Math.min(1.2, ox + dx)); oy = Math.max(-0.8, Math.min(0.8, oy + dy)); }; addEventListener("pointermove", (e) => { if (e.pointerType === "mouse") { mx = e.clientX / innerWidth - 0.5; my = e.clientY / innerHeight - 0.5; } });
 

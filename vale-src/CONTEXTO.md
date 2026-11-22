@@ -55,6 +55,12 @@ a noite troca o céu (`tex/ceu-noite.jpg`), vira o sol em luar e multiplica o br
 Marcadores (`conteudo.js`, `marcador`): o nome de cada coisa que abre flutua no lugar quando a câmera está perto;
 nomes que se sobrepõem ficam escondidos (vence o mais próximo).
 
+Dentro das lojas (`lojas.js`): clicar numa loja entra na sala dela (cena própria, baixada na primeira entrada,
+modelos em `public/cidade/interior/`, todos do Poly Haven). Cafeteria (perfil), Matemática, Linguagens, Ciências
+Humanas, Ciências da Natureza e a loja maior do técnico ("tecnico"), com um computador por matéria do curso técnico.
+As atividades ficam em quadros com a imagem delas (UV recalculada no plano da superfície, `uvPlano`); sem imagem,
+um cartão com o título e o texto. "Sair da loja" ou Esc volta para a rua.
+
 Para testar sem placa de vídeo, use `?pausa=1` (só desenha depois de carregar), `?limpo=1` (sem interface) e
 `?s=N` (começa no lugar N). `MUNDO.pular(N)` no console troca de lugar na hora.
 

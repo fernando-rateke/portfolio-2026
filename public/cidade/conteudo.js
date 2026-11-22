@@ -45,6 +45,9 @@
     let subjects = [];
     try { subjects = await fetch("/cidade/atividades.json").then((r) => (r.ok ? r.json() : [])); } catch (e) { subjects = []; }
     const byId = Object.fromEntries(subjects.map((s) => [s.id, s])); for (const x of [PERFIL, JORNADA, CERTIFICADOS, AGRADECIMENTOS, FUTURO]) byId[x.id] = x;
+    // a loja do curso técnico reúne as matérias do técnico (cada uma com o seu computador lá dentro)
+    byId.tecnico = { id: "tecnico", name: "Curso Técnico", desc: "Técnico em Desenvolvimento de Sistemas: as matérias do curso", acts: [], subs: subjects.filter((x) => x.cat === "curso-tecnico") };
+    M.secao = (id) => byId[id];
 
     /* ---------- o painel ---------- */
     const css = document.createElement("style");
@@ -93,6 +96,8 @@
       return `<header><div class="kj" style="background:${esc(loja ? loja.cor : "#b5301b")}">${esc(loja ? loja.kanji : "")}</div><div><h2>${esc(sub.name)}</h2><p class="ds">${esc(sub.desc || "")}</p></div><button class="x" aria-label="Fechar">×</button></header>`;
     }
     function lista(sub, loja) {
+      if (sub.subs) { pp.innerHTML = cabeca(sub, loja) + `<div class="bd">${sub.subs.map((x) => `<button class="card" data-id="${esc(x.id)}"><div><b>${esc(x.name)}</b><span>${x.acts.length} ${x.acts.length === 1 ? "atividade" : "atividades"}</span></div></button>`).join("")}</div>`;
+        pp.querySelectorAll(".card").forEach((b) => (b.onclick = () => abrir(b.dataset.id))); ligar(); return; }
       pp.innerHTML = cabeca(sub, loja) + `<div class="bd">${sub.acts.map((a, i) => `<button class="card" data-i="${i}">${a.img ? `<img src="${esc(imgUrl(a.img))}" alt="" loading="lazy">` : ""}<div><b>${esc(a.t)}</b><span>${esc(a.s || "")}</span></div></button>`).join("") || "<p>Em breve.</p>"}</div>`;
       pp.querySelectorAll(".card").forEach((b) => (b.onclick = () => detalhe(sub, loja, +b.dataset.i)));
       ligar(sub, loja);
@@ -109,10 +114,12 @@
       ligar(sub, loja);
     }
     function ligar() { pp.querySelector(".x").onclick = fechar; }
-    function abrir(id, loja) { const sub = byId[id]; if (!sub) return; aberto = id; if (!loja && SELO[id]) loja = { kanji: SELO[id][0], cor: SELO[id][1] }; lista(sub, loja); mostrar(); }
+    function abrir(id, loja) { const sub = byId[id]; if (!sub) return; aberto = id; if (!loja) { const k = (M.KANJI || {})[id] || SELO[id]; if (k) loja = { kanji: k[0], cor: k[1] }; } lista(sub, loja); mostrar(); }
     function mostrar() { pp.classList.add("on"); pp.setAttribute("aria-hidden", "false"); setTimeout(() => { const x = pp.querySelector(".x"); if (aberto && x) x.focus(); }, 60); }
     function fechar() { if (pp.contains(document.activeElement)) document.activeElement.blur(); pp.classList.remove("on"); pp.setAttribute("aria-hidden", "true"); aberto = null; }
     M.abrir = abrir; M.fechar = fechar; M.painelAberto = () => aberto;
+    const seloDe = (id) => { const k = (M.KANJI || {})[id] || SELO[id]; return k ? { kanji: k[0], cor: k[1] } : null; };
+    M.abrirAtividade = (id, i) => { const sub = byId[id]; if (!sub || !sub.acts[i]) return; aberto = id; detalhe(sub, seloDe(id), i, sub.acts.length === 1); mostrar(); };
     addEventListener("keydown", (e) => { if (e.key === "Escape" && aberto) fechar(); }, true);
     // as setas e a roda do mouse não andam pela cidade enquanto o painel está aberto
     pp.addEventListener("wheel", (e) => e.stopPropagation(), { passive: true });
@@ -177,17 +184,21 @@
     const marcas = [];
     const marcador = (nome, p, acao, alcance = 30, kanji = "") => { const b = document.createElement("button"); b.type = "button"; b.className = "marca";
       b.innerHTML = `<i>${esc([...kanji][0] || "")}</i><span>${esc(nome)}</span>`; b.addEventListener("click", (e) => { e.stopPropagation(); acao(); });
-      camada.appendChild(b); marcas.push({ b, p, alcance, on: false }); };
+      camada.appendChild(b); const m = { b, p, alcance, on: false }; marcas.push(m); return m; };
+    // os nomes dentro da sala atual (lojas.js chama ao entrar e ao sair)
+    M.marcasSala = (lista) => { for (let i = marcas.length - 1; i >= 0; i--) if (marcas[i].sala) { marcas[i].b.remove(); marcas.splice(i, 1); }
+      for (const a of lista) { const nm = a.nome.length > 30 ? a.nome.slice(0, 28).trim() + "…" : a.nome; const m = marcador(nm, a.topo, a.acao, 30); m.sala = true; m.b.title = a.nome; } };
     const pv = new T.Vector3();
     const postos = [];
     M.ticks.push(() => {
       const fechado = !aberto && !document.body.classList.contains("apresentando");
+      const cam = M.dentro ? M.dentro.camera : camera, naSala = !!M.dentro;
       // do mais perto para o mais longe; um nome que cairia em cima de outro já posto fica escondido
-      for (const m of marcas) { m.d = m.p.distanceTo(camera.position); }
+      for (const m of marcas) { m.d = m.p.distanceTo(cam.position); }
       postos.length = 0;
       for (const m of [...marcas].sort((a, b) => a.d - b.d)) {
-        pv.copy(m.p).project(camera);
-        let ver = fechado && m.d < m.alcance && pv.z < 1 && Math.abs(pv.x) < 1.02 && Math.abs(pv.y) < 1.02;
+        pv.copy(m.p).project(cam);
+        let ver = fechado && !!m.sala === naSala && m.d < m.alcance && pv.z < 1 && Math.abs(pv.x) < 1.02 && Math.abs(pv.y) < 1.02;
         const x = (pv.x * 0.5 + 0.5) * innerWidth, y = (-pv.y * 0.5 + 0.5) * innerHeight, w = m.w || (m.w = m.b.offsetWidth || 160);
         if (ver) for (const q of postos) if (Math.abs(q.x - x) < (q.w + w) / 2 + 6 && Math.abs(q.y - y) < 34) { ver = false; break; }
         if (ver) { postos.push({ x, y, w }); m.b.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) translate(-50%, -100%)`; m.b.style.opacity = Math.min(1, (m.alcance - m.d) / 6).toFixed(2); }
@@ -196,7 +207,7 @@
     });
     const caixa = (w, h, d, x, y, z, ry = 0) => { const b = new T.Mesh(new T.BoxGeometry(w, h, d), new T.MeshBasicMaterial({ visible: false, side: T.DoubleSide })); b.position.set(x, y, z); b.rotation.y = ry; scene.add(b); return b; };
     const nomes = Object.fromEntries(Object.entries(byId).map(([k, v]) => [k, v.name]));
-    for (const l of M.lojas || []) { const go = () => abrir(l.id, l); for (const o of l.alvos) marca(o, nomes[l.id], go); marca(caixa(0.2, 3.2, 3.6, l.porta.x, 1.7, l.porta.z), nomes[l.id], go);
+    for (const l of M.lojas || []) { const go = () => (M.temSala && M.temSala(l.id) ? M.entrar(l.id) : abrir(l.id, l)); for (const o of l.alvos) marca(o, nomes[l.id], go); marca(caixa(0.2, 3.2, 3.6, l.porta.x, 1.7, l.porta.z), nomes[l.id], go);
       marcador(nomes[l.id], new T.Vector3(l.porta.x - l.side * 0.9, 3.35, l.porta.z), go, 42, l.kanji); }
     if (M.L) {
       const L = M.L, YT = L.Y_TOPO;
@@ -214,7 +225,8 @@
       if (M.toriiLago) marca(caixa(10, 13, 2, M.toriiLago.position.x, L.Y_AGUA + 5, M.toriiLago.position.z), "Perspectivas para o futuro", () => abrir("futuro"));
     }
     const rc = new T.Raycaster(), ptr = new T.Vector2();
-    const pick = (x, y) => { ptr.set((x / innerWidth) * 2 - 1, -(y / innerHeight) * 2 + 1); rc.setFromCamera(ptr, camera); rc.far = 60; const h = rc.intersectObjects(alvos, false)[0]; return h ? h.object.userData.acao : null; };
+    const pick = (x, y) => (M.dentro ? M.dentro.pick(x, y) : pickCidade(x, y));
+    const pickCidade = (x, y) => { ptr.set((x / innerWidth) * 2 - 1, -(y / innerHeight) * 2 + 1); rc.setFromCamera(ptr, camera); rc.far = 60; const h = rc.intersectObjects(alvos, false)[0]; return h ? h.object.userData.acao : null; };
     M.pick = pick; M.clicar = (x, y) => { const a = pick(x, y); if (a) a.acao(); return !!a; };
     const cv = M.renderer.domElement; let down = null;
     cv.addEventListener("pointerdown", (e) => { down = [e.clientX, e.clientY, performance.now()]; });

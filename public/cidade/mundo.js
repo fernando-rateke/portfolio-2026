@@ -134,8 +134,11 @@
        mistura esse reflexo com a cor funda, ondulando de leve (como o Reflector do three.js, escrito aqui) */
     function espelho(geo) {
       // o reflexo é desenhado em baixa resolução (a água ondula e borra mesmo) e só a cada dois quadros
-      const k = 0.28, tam = () => [Math.max(256, Math.min(640, innerWidth * k)), Math.max(160, Math.min(400, innerHeight * k))];
-      const rt = new T.WebGLRenderTarget(...tam()); M.lagoRT = rt; // cidade.js também compila os shaders do reflexo antes de mostrar
+      const k = 0.4, tam = () => [Math.max(256, Math.min(800, innerWidth * k)), Math.max(160, Math.min(480, innerHeight * k))];
+      /* a textura guarda a cor já pronta para a tela (sRGB), como a tela: assim o reflexo usa os mesmos shaders da cena
+         (desenhar numa textura comum pediria uma segunda versão de cada um). O formato fica RGBA8 comum e a água
+         desfaz o sRGB ao ler (pow 2.2) */
+      const rt = new T.WebGLRenderTarget(...tam()); rt.texture.encoding = T.sRGBEncoding; rt.texture.internalFormat = "RGBA8"; rt.isXRRenderTarget = true;
       addEventListener("resize", () => rt.setSize(...tam()));
       const tm = new T.Matrix4(), vc = new T.PerspectiveCamera();
       const mat = new T.ShaderMaterial({ fog: true, transparent: false,
@@ -150,7 +153,7 @@
           void main(){ vec2 p = vW.xz;
             vec2 d = vec2(sin(p.x * 0.9 + uT * 0.8) + sin(p.y * 1.3 - uT * 0.6) * 0.6 + sin((p.x + p.y) * 2.7 + uT * 1.7) * 0.3,
                           cos(p.y * 0.8 + uT * 0.7) + cos(p.x * 1.6 - uT * 0.9) * 0.5 + cos((p.x - p.y) * 3.1 + uT * 1.4) * 0.3) * 0.006;
-            vec3 r = texture2DProj(tRefl, vR + vec4(d * vR.w, 0., 0.)).rgb;
+            vec3 r = pow(texture2DProj(tRefl, vR + vec4(d * vR.w, 0., 0.)).rgb, vec3(2.2));
             vec3 v = normalize(cameraPosition - vW); float fr = 0.25 + 0.75 * pow(1. - max(v.y, 0.), 3.);
             vec3 col = mix(uFundo, r, fr);
             // o reflexo já sai com o tom final; aqui só converte a cor para a tela

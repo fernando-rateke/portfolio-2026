@@ -51,7 +51,17 @@ de cada quadro (`resolucao` em cidade.js, entre 0,55x e 1x); a sombra do sol só
 um degrau de 5 m ou o tema muda (`sombra` em caminho.js; `shadowMap.autoUpdate` é false, quem muda algo que projeta
 sombra chama `M.refazSombra()`); o lago reflete em ~28% da tela e a cada dois quadros; 3 luzes pontuais e 1 spot
 de verdade na cidade; nas lojas, só o sol da porta, duas pendentes, os spots dos destaques e a lâmpada do estoque.
-Todos os shaders (inclusive os do reflexo) são compilados no carregamento, para não travar ao chegar num lugar novo.
+Carregamento sem travar: nada é desenhado até `cidadePronta` (desenhar durante o carregamento obrigava o navegador a
+compilar e enviar tudo na hora e a página parava de responder); no fim, `M.prepararGPU(cena, câmera)` sobe as texturas
+poucas de cada vez e pede todos os shaders de uma vez, esperando o driver compilar em paralelo
+(KHR_parallel_shader_compile) sem bloquear. `renderer.debug.checkShaderErrors` fica desligado (`?debug` liga). O
+reflexo do lago desenha numa textura marcada como sRGB (`isXRRenderTarget`, formato RGBA8) para usar os mesmos
+shaders da cena: 44 programas em vez de 82.
+
+Animações (`anim.js`): tudo o que se mexe se mexe no shader, com um relógio só (`M.anim.U.uT`). `M.anim.vento(mat,
+{flex, altura})` faz um material balançar com o vento (todos dividem um shader); `M.anim.particulas({geo, mat, n,
+attrs, mover})` faz um InstancedMesh em que cada cópia anda sozinha pelo GLSL de `mover`. As pétalas e as lanternas
+do lago já usam isso (antes eram 566 matrizes recalculadas por quadro no processador e 46 sprites).
 
 Tema Entardecer ou Noite (`tema.js`, botão de sol/lua no canto, `localStorage` "cidade-tema", `?tema=noite`):
 a noite troca o céu (`tex/ceu-noite.jpg`), vira o sol em luar e multiplica o brilho de tudo que tem luz própria.

@@ -9,6 +9,8 @@
      e a cada dois quadros, e há poucas luzes de verdade ao mesmo tempo. */
   const renderer = new T.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
   const PR_MAX = Math.min(devicePixelRatio || 1, 1); let pr = PR_MAX; renderer.setPixelRatio(pr);
+  // sem conferir erro de shader: conferir obriga o navegador a esperar cada compilação terminar (?debug liga de novo)
+  renderer.debug.checkShaderErrors = Q.has("debug");
   renderer.outputEncoding = T.sRGBEncoding;
   renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.78;
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFShadowMap; renderer.shadowMap.autoUpdate = false; renderer.shadowMap.needsUpdate = true;
@@ -311,14 +313,28 @@
     props({ poles, lamp: lamp0, ubox1, ubox2, trash, crate, pot1, pot2, planter, man, pot3 });
     scene.add(cidadeG); juntar(cidadeG, 48);
     for (const b of M.builders || []) { try { await b(M); } catch (e) { console.error("mundo:", e); } }
-    // compila todos os shaders de uma vez, antes de mostrar (senão cada coisa nova que aparece trava a tela um instante)
-    // (o compile pula o que está invisível: tudo aparece por um instante, menos as luzes, que mudariam a conta de luzes)
-    { const esc = []; scene.traverse((o) => { if (!o.visible && !o.isLight) { esc.push(o); o.visible = true; } });
-      try { renderer.compile(scene, camera); // e de novo para o reflexo do lago (desenhar numa textura usa outra versão de cada shader)
-        if (M.lagoRT) { renderer.setRenderTarget(M.lagoRT); renderer.compile(scene, camera); renderer.setRenderTarget(null); } } catch (e) { /* segue */ }
-      for (const o of esc) o.visible = false; }
+    await prepararGPU(scene, camera);
     renderer.shadowMap.needsUpdate = true; window.cidadePronta = true;
   })();
+
+  /* Antes de mostrar a cidade, tudo vai para a placa de vídeo sem travar a página: as texturas sobem poucas de cada vez
+     (com uma pausa entre elas) e os shaders são pedidos todos juntos e compilados pelo driver em paralelo
+     (KHR_parallel_shader_compile); a página só espera, sem bloquear, até o último ficar pronto. Também serve às lojas. */
+  const folga = () => new Promise((r) => setTimeout(r, 0));
+  async function prepararGPU(cena, cam) {
+    const tex = new Set(), pega = (v) => { if (v && v.isTexture && v.image) tex.add(v); };
+    cena.traverse((o) => { for (const m of [].concat(o.material || [])) { for (const k in m) pega(m[k]); if (m.uniforms) for (const k in m.uniforms) pega(m.uniforms[k].value); } });
+    pega(cena.background); pega(cena.environment);
+    let n = 0; for (const t of tex) { try { renderer.initTexture(t); } catch (e) { /* segue */ } if (++n % 3 === 0) await folga(); }
+    // o compile pula o que está invisível: tudo aparece por um instante, menos as luzes (mudariam a conta de luzes)
+    const esc = []; cena.traverse((o) => { if (!o.visible && !o.isLight) { esc.push(o); o.visible = true; } });
+    try { renderer.compile(cena, cam); } catch (e) { /* segue */ } for (const o of esc) o.visible = false;
+    const gl = renderer.getContext(), ext = gl.getExtension("KHR_parallel_shader_compile");
+    if (ext) { const t0 = performance.now(); const falta = () => renderer.info.programs.some((p) => !gl.getProgramParameter(p.program, ext.COMPLETION_STATUS_KHR));
+      while (performance.now() - t0 < 30000 && falta()) await new Promise((r) => setTimeout(r, 40)); }
+    await folga();
+  }
+  M.prepararGPU = prepararGPU;
 
   /* resolução automática: se os quadros demoram, desenha menos pixels; se sobra folga, volta a subir (até a nativa,
      no máximo 1x). Muda devagar e só de vez em quando, para não ficar piscando. */
@@ -335,8 +351,9 @@
     cortaLonge();
     for (const f of ticks) f(t);
     for (const n of norens) n.m.rotation.x = Math.sin(t * 1.3 + n.ph) * 0.06 * (n.k || 1);
-    // ?pausa=1: não desenha enquanto carrega (para testes num computador sem placa de vídeo)
-    if (!(Q.has("pausa") && !window.cidadePronta)) { if (M.dentro) renderer.render(M.dentro.scene, M.dentro.camera); else renderer.render(scene, camera); }
+    // nada é desenhado enquanto carrega (a tela de abertura cobre tudo): desenhar no meio do carregamento obriga o
+    // navegador a compilar e enviar tudo para a placa na hora, e a página para de responder
+    if (window.cidadePronta) { if (M.dentro) renderer.render(M.dentro.scene, M.dentro.camera); else renderer.render(scene, camera); }
     requestAnimationFrame(frame);
   }
   frame();

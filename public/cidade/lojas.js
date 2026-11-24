@@ -410,7 +410,7 @@
         for (const a of alvos) { const h = rc.intersectObject(a.obj, true)[0]; if (h && h.distance < dm) { dm = h.distance; melhor = a; } } return melhor ? { nome: melhor.nome, acao: melhor.acao } : null; };
       const d = { scene, camera, alvos, pick, cfg, sub, id, hemi, sol, facho, L, fora: g.userData.fora, vista: 0, olho: cfg.vistas[0][0].clone(), mira: cfg.vistas[0][1].clone() };
       // os shaders da sala compilam aqui, ainda atrás do véu, e não no primeiro quadro dentro dela
-      luzDoTema(d); try { renderer.compile(scene, camera); } catch (e) { /* segue */ }
+      luzDoTema(d); if (M.prepararGPU) await M.prepararGPU(scene, camera);
       return d;
     }
     // a janela e a luz mudam com o tema: noite é luar azulado, entardecer é sol laranja

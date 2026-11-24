@@ -42,14 +42,16 @@
     /* 4. pétalas de cerejeira caindo no pátio do santuário e na beira do lago */
     {
       const N = 520, geo = new T.PlaneGeometry(0.05, 0.035); const m = new T.MeshStandardMaterial({ color: "#f8c8d4", emissive: new T.Color("#ff9ab8"), emissiveIntensity: 0.12, side: T.DoubleSide, roughness: 0.8 });
-      const im = new T.InstancedMesh(geo, m, N); im.frustumCulled = false; im.layers.set(1); scene.add(im);
-      // pátio do santuário, a cerejeira grande do pátio, a beira do lago e, a maior parte, a escadaria das cerejeiras
+      // cada pétala anda sozinha na placa de vídeo (anim.js): cai 9 m girando e volta ao alto, em ciclo
       const P = []; const zonas = [[0, L.Y_TOPO, -132, 22, 18], [13, L.Y_TOPO, -126, 7, 9], [0, L.Y_AGUA, -268, 40, 8], [0, null, (L.Z_ESC0 + L.Z_ESC1) / 2, 6, 21], [0, null, (L.Z_ESC0 + L.Z_ESC1) / 2, 6, 21]];
       for (let i = 0; i < N; i++) { const zz = zonas[i % zonas.length]; const z = zz[2] + (rnd() - 0.5) * zz[4] * 2; P.push({ c: zz, gy: zz[1] == null ? M.yEsc(z) : zz[1], x: zz[0] + (rnd() - 0.5) * zz[3] * 2, z, y0: rnd(), ph: rnd() * 6.28, sp: 0.25 + rnd() * 0.35 }); }
-      const m4 = new T.Matrix4(), q = new T.Quaternion(), e = new T.Euler(), sc = new T.Vector3(1, 1, 1), p = new T.Vector3();
-      ticks.push((t) => { for (let i = 0; i < N; i++) { const a = P[i], H = 9; const k = ((a.y0 * H + t * a.sp) % H);
-        const gy = a.gy; p.set(a.x + Math.sin(t * 0.6 + a.ph) * 0.8 + k * 0.25, gy + H - k, a.z + Math.cos(t * 0.5 + a.ph) * 0.6);
-        e.set(t * 1.7 + a.ph, t * 1.1 + a.ph, t * 0.7); q.setFromEuler(e); m4.compose(p, q, sc); im.setMatrixAt(i, m4); } im.instanceMatrix.needsUpdate = true; });
+      const aP = new Float32Array(N * 4), aQ = new Float32Array(N * 2);
+      P.forEach((a, i) => { aP.set([a.x, a.z, a.gy, a.ph], i * 4); aQ.set([a.y0, a.sp], i * 2); });
+      const im = M.anim.particulas({ geo, mat: m, n: N, chave: "petala", attrs: { aP: [aP, 4], aQ: [aQ, 2] },
+        mover: `float H = 9., k = mod(aQ.x * H + uT * aQ.y, H);
+          desl = vec3(aP.x + sin(uT * 0.6 + aP.w) * 0.8 + k * 0.25, aP.z + H - k, aP.y + cos(uT * 0.5 + aP.w) * 0.6);
+          giro = rotX(uT * 1.7 + aP.w) * rotY(uT * 1.1 + aP.w) * rotZ(uT * 0.7);` });
+      im.layers.set(1); scene.add(im);
     }
 
     /* 5. lanternas de papel subindo do lago, bem devagar, e seus reflexos na água */
@@ -57,16 +59,23 @@
       const pts = []; for (let i = 0; i <= 10; i++) { const t = i / 10; pts.push(new T.Vector2(0.16 + Math.sin(t * Math.PI) * 0.06 - t * 0.04, t * 0.42)); }
       const geo = new T.LatheGeometry(pts, 12);
       const m = new T.MeshStandardMaterial({ color: "#ffc890", emissive: new T.Color("#ff8a30"), emissiveIntensity: 1.25, roughness: 0.9, transparent: true, opacity: 0.95, side: T.DoubleSide });
-      const N = 46, im = new T.InstancedMesh(geo, m, N); im.frustumCulled = false; scene.add(im);
+      // as lanternas e os halos andam na placa de vídeo (anim.js), pelo mesmo caminho: sobem 60 m devagar, balançando
+      const N = 46;
       const A = []; for (let i = 0; i < N; i++) { const a = rnd() * 6.28, r = Math.sqrt(rnd()); A.push({ x: L.LAGO.x + Math.cos(a) * r * L.LAGO.rx * 0.8, z: L.LAGO.z + Math.sin(a) * r * L.LAGO.rz * 0.8 - 6, h0: rnd(), sp: 0.18 + rnd() * 0.12, ph: rnd() * 6.28 }); }
-      const halo = new T.Sprite(new T.SpriteMaterial({ map: glowTex, color: "#ffb070", transparent: true, depthWrite: false, blending: T.AdditiveBlending, opacity: 0.5 }));
-      const halos = A.map(() => { const s = halo.clone(); s.scale.setScalar(1.6); scene.add(s); return s; });
-      const m4 = new T.Matrix4(), p = new T.Vector3(), q = new T.Quaternion(), s1 = new T.Vector3(1, 1, 1);
-      ticks.push((t) => { for (let i = 0; i < N; i++) { const a = A[i], H = 60, k = (a.h0 * H + t * a.sp) % H; const y = L.Y_AGUA + 0.3 + k;
-        p.set(a.x + Math.sin(t * 0.2 + a.ph) * 1.5 * (k / H), y, a.z + Math.cos(t * 0.17 + a.ph) * 1.2 * (k / H)); q.setFromAxisAngle(V3(0, 0, 1), Math.sin(t * 0.8 + a.ph) * 0.06);
-        m4.compose(p, q, s1); im.setMatrixAt(i, m4); halos[i].position.copy(p).add(V3(0, 0.2, 0)); halos[i].material.opacity = 0.45 * Math.min(1, k / 3);
-        }
-        im.instanceMatrix.needsUpdate = true; });
+      const aL = new Float32Array(N * 4), aS = new Float32Array(N); A.forEach((a, i) => { aL.set([a.x, a.z, a.h0, a.ph], i * 4); aS[i] = a.sp; });
+      const CAMINHO = `float H = 60., k = mod(aL.z * H + uT * aS, H);
+          desl = vec3(aL.x + sin(uT * 0.2 + aL.w) * 1.5 * (k / H), ${(L.Y_AGUA + 0.3).toFixed(3)} + k, aL.y + cos(uT * 0.17 + aL.w) * 1.2 * (k / H));`;
+      const im = M.anim.particulas({ geo, mat: m, n: N, chave: "lanterna", attrs: { aL: [aL, 4], aS: [aS, 1] }, mover: CAMINHO + "\n giro = rotZ(sin(uT * 0.8 + aL.w) * 0.06);" });
+      scene.add(im);
+      // os halos: um ponto de luz por lanterna, todos num desenho só
+      const hg = new T.BufferGeometry(); hg.setAttribute("position", new T.BufferAttribute(new Float32Array(N * 3), 3)); hg.setAttribute("aL", new T.BufferAttribute(aL, 4)); hg.setAttribute("aS", new T.BufferAttribute(aS, 1));
+      const hm = new T.ShaderMaterial({ transparent: true, depthWrite: false, blending: T.AdditiveBlending, uniforms: { uT: M.anim.U.uT, uMap: { value: glowTex }, uPx: { value: 1 }, uH: { value: innerHeight } },
+        vertexShader: `attribute vec4 aL; attribute float aS; uniform float uT, uPx, uH; varying float vA;
+          void main(){ vec3 desl; ${CAMINHO} vA = 0.45 * min(1., k / 3.);
+            vec4 mv = modelViewMatrix * vec4(desl + vec3(0., 0.2, 0.), 1.); gl_Position = projectionMatrix * mv; gl_PointSize = 1.6 * uH * projectionMatrix[1][1] * 0.5 / -mv.z; }`,
+        fragmentShader: `uniform sampler2D uMap; varying float vA; void main(){ float a = texture2D(uMap, gl_PointCoord).a * vA; gl_FragColor = vec4(vec3(1., .69, .44) * a, a); }` });
+      addEventListener("resize", () => { hm.uniforms.uH.value = innerHeight * M.renderer.getPixelRatio(); }); hm.uniforms.uH.value = innerHeight * M.renderer.getPixelRatio();
+      const halos = new T.Points(hg, hm); halos.frustumCulled = false; scene.add(halos);
     }
 
     /* 6. o torii do lago: um anel de luz muito suave na água, respirando */

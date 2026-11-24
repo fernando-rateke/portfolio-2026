@@ -66,8 +66,8 @@
       if (o.isSpotLight) { f.tg = new T.Vector3(); o.target.getWorldPosition(f.tg); f.ang = o.angle; f.pen = o.penumbra; fontes.s.push(f); } else fontes.p.push(f); });
     for (const f of [...fontes.p, ...fontes.s]) { f.src.parent && f.src.parent.remove(f.src); if (f.src.target && f.src.target.parent) f.src.target.parent.remove(f.src.target); }
     M.luzFonte = (w, c, i, d) => fontes.p.push({ w, c: new T.Color(c), i, d, dec: 2 });
-    const poolP = Array.from({ length: M.leve ? 3 : 4 }, () => { const l = new T.PointLight("#fff", 0, 5, 2); scene.add(l); return l; });
-    const poolS = Array.from({ length: 2 }, () => { const l = new T.SpotLight("#fff", 0, 14, 0.9, 0.6, 1.5); scene.add(l, l.target); return l; });
+    const poolP = Array.from({ length: 3 }, () => { const l = new T.PointLight("#fff", 0, 5, 2); scene.add(l); return l; });
+    const poolS = Array.from({ length: 1 }, () => { const l = new T.SpotLight("#fff", 0, 14, 0.9, 0.6, 1.5); scene.add(l, l.target); return l; });
     const fv = new T.Vector3();
     function luzes(pos) {
       camera.getWorldDirection(fv);
@@ -82,12 +82,19 @@
     const look = new T.Vector3(), pos = new T.Vector3(), tmp = new T.Vector3();
     scene.add(sun.target);
     const sunOff = (M.sunOff = sun.position.clone().setLength(45)); // perto: a sombra só precisa cobrir os arredores da câmera; à noite, a lua
+    /* a sombra do sol cobre um quadrado em volta da câmera. Em vez de refazer o mapa de sombra a cada quadro, o centro
+       anda em degraus de 5 m (e quando o tema muda a direção do sol): parado ou olhando em volta, a sombra não custa nada */
+    const sc0 = new T.Vector3(1e9, 0, 0), sDir = new T.Vector3();
+    function sombra(p) { const x = Math.round(p.x / 5) * 5, z = Math.round(p.z / 5) * 5, y = Math.round(p.y / 5) * 5;
+      if (x === sc0.x && y === sc0.y && z === sc0.z && sDir.equals(sunOff)) return; sc0.set(x, y, z); sDir.copy(sunOff);
+      sun.target.position.copy(sc0); sun.position.copy(sc0).add(sunOff); sun.target.updateMatrixWorld(); M.renderer.shadowMap.needsUpdate = true; }
+    M.refazSombra = () => { sc0.x = 1e9; };
     let prevT = 0;
     M.camTick = (t) => {
       const dt = Math.min(0.05, t - prevT); prevT = t;
       // uma câmera de fora (os créditos do fim, ou um teste com M.camFix = [olho, alvo]) toma o lugar do passeio
       if (M.cinema || M.camFix) { if (M.cinema) M.cinema(t, dt, camera); else { camera.position.set(...M.camFix[0]); camera.lookAt(...M.camFix[1]); }
-        sun.target.position.copy(camera.position); sun.position.copy(camera.position).add(sunOff); luzes(camera.position); return; }
+        sombra(camera.position); luzes(camera.position); return; }
       // desliza até o alvo; a velocidade cresce com a distância e é suave nas pontas
       const d = alvo - s; s += Math.sign(d) * Math.min(Math.abs(d), (0.25 + Math.abs(d) * 0.9) * dt * 1.4);
       const u = Math.max(0, Math.min(1, s / last));
@@ -98,8 +105,7 @@
       tmp.copy(look).sub(pos); const yaw = -(mx + ox) * 0.35, pitch = -(my + oy) * 0.18; ox *= 0.995; oy *= 0.995;
       tmp.applyAxisAngle(V3(0, 1, 0), yaw); tmp.y += pitch * tmp.length();
       camera.lookAt(tmp.add(pos));
-      sun.target.position.copy(pos); sun.position.copy(pos).add(sunOff);
-      luzes(pos);
+      sombra(pos); luzes(pos);
       const k = atual(); const n = N[lugares[k]];
       if (n.nome !== lastNome) { nm.innerHTML = `${n.nome}<span class="jp">${n.jp}</span>`; lastNome = n.nome; }
       bA.disabled = k === 0 && Math.abs(d) < 0.01; bP.disabled = k === lugares.length - 1 && !M.creditos; bP.title = k === lugares.length - 1 ? "Créditos" : "";

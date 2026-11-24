@@ -10,7 +10,6 @@
 
     /* pontos de luz com brilho próprio: tamanho em perspectiva, piscar suave e deriva */
     function luzinhas(n, gen, opt) {
-      if (M.leve) n = Math.round(n * 0.5);
       const pos = new Float32Array(n * 3), ph = new Float32Array(n), base = [];
       for (let i = 0; i < n; i++) { const p = gen(i); base.push(p); pos.set([p.x, p.y, p.z], i * 3); ph[i] = rnd() * 100; }
       const g = new T.BufferGeometry(); g.setAttribute("position", new T.BufferAttribute(pos, 3)); g.setAttribute("ph", new T.BufferAttribute(ph, 1));
@@ -42,7 +41,7 @@
 
     /* 4. pétalas de cerejeira caindo no pátio do santuário e na beira do lago */
     {
-      const N = M.leve ? 300 : 520, geo = new T.PlaneGeometry(0.05, 0.035); const m = new T.MeshStandardMaterial({ color: "#f8c8d4", emissive: new T.Color("#ff9ab8"), emissiveIntensity: 0.12, side: T.DoubleSide, roughness: 0.8 });
+      const N = 520, geo = new T.PlaneGeometry(0.05, 0.035); const m = new T.MeshStandardMaterial({ color: "#f8c8d4", emissive: new T.Color("#ff9ab8"), emissiveIntensity: 0.12, side: T.DoubleSide, roughness: 0.8 });
       const im = new T.InstancedMesh(geo, m, N); im.frustumCulled = false; im.layers.set(1); scene.add(im);
       // pátio do santuário, a cerejeira grande do pátio, a beira do lago e, a maior parte, a escadaria das cerejeiras
       const P = []; const zonas = [[0, L.Y_TOPO, -132, 22, 18], [13, L.Y_TOPO, -126, 7, 9], [0, L.Y_AGUA, -268, 40, 8], [0, null, (L.Z_ESC0 + L.Z_ESC1) / 2, 6, 21], [0, null, (L.Z_ESC0 + L.Z_ESC1) / 2, 6, 21]];

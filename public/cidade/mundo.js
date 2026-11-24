@@ -133,11 +133,10 @@
     /* o lago é um espelho de verdade: a cena é desenhada de novo, vista de baixo da água, numa textura; a água
        mistura esse reflexo com a cor funda, ondulando de leve (como o Reflector do three.js, escrito aqui) */
     function espelho(geo) {
-      // no modo Leve a água só reflete o céu (sem desenhar a cena uma segunda vez)
-      if (M.leve) return new T.Mesh(geo, new T.MeshStandardMaterial({ color: "#16202a", roughness: 0.06, metalness: 1, envMapIntensity: 0.75 }));
-      const pr = M.renderer.getPixelRatio(), k = M.leve ? 0.3 : 0.42;
-      const rt = new T.WebGLRenderTarget(Math.max(256, innerWidth * pr * k), Math.max(256, innerHeight * pr * k));
-      addEventListener("resize", () => rt.setSize(Math.max(256, innerWidth * pr * k), Math.max(256, innerHeight * pr * k)));
+      // o reflexo é desenhado em baixa resolução (a água ondula e borra mesmo) e só a cada dois quadros
+      const k = 0.28, tam = () => [Math.max(256, Math.min(640, innerWidth * k)), Math.max(160, Math.min(400, innerHeight * k))];
+      const rt = new T.WebGLRenderTarget(...tam()); M.lagoRT = rt; // cidade.js também compila os shaders do reflexo antes de mostrar
+      addEventListener("resize", () => rt.setSize(...tam()));
       const tm = new T.Matrix4(), vc = new T.PerspectiveCamera();
       const mat = new T.ShaderMaterial({ fog: true, transparent: false,
         uniforms: T.UniformsUtils.merge([T.UniformsLib.fog, { tRefl: { value: null }, tMat: { value: tm }, uT: { value: 0 }, uFundo: { value: new T.Color("#0e1418") } }]),
@@ -162,9 +161,9 @@
       mat.uniforms.tRefl.value = rt.texture; mat.uniforms.tMat.value = tm;
       const mesh = new T.Mesh(geo, mat);
       const wp = new T.Vector3(), cp = new T.Vector3(), nrm = new T.Vector3(), rot = new T.Matrix4(), look = new T.Vector3(), tgt = new T.Vector3(), view = new T.Vector3(), plane = new T.Plane(), clip = new T.Vector4(), q = new T.Vector4();
-      let ocupado = false;
+      let ocupado = false, vez = 0;
       mesh.onBeforeRender = (renderer, sc, camera) => {
-        if (ocupado) return; mat.uniforms.uT.value = performance.now() / 1000;
+        if (ocupado) return; mat.uniforms.uT.value = performance.now() / 1000; if (vez++ & 1) return;
         // longe do lago a névoa esconde tudo: não vale a pena desenhar a cena de novo
         if (camera.position.distanceTo(mesh.position) > 170) return;
         wp.setFromMatrixPosition(mesh.matrixWorld); cp.setFromMatrixPosition(camera.matrixWorld); rot.extractRotation(mesh.matrixWorld); nrm.set(0, 0, 1).applyMatrix4(rot);
@@ -177,7 +176,7 @@
         const e = vc.projectionMatrix.elements; q.set((Math.sign(clip.x) + e[8]) / e[0], (Math.sign(clip.y) + e[9]) / e[5], -1, (1 + e[10]) / e[14]);
         clip.multiplyScalar(2 / clip.dot(q)); e[2] = clip.x; e[6] = clip.y; e[10] = clip.z + 1 - 0.003; e[14] = clip.w;
         ocupado = true; mesh.visible = false; const prev = renderer.getRenderTarget(), sau = renderer.shadowMap.autoUpdate; renderer.shadowMap.autoUpdate = false;
-        renderer.setRenderTarget(rt); renderer.state.buffers.depth.setMask(true); if (renderer.autoClear === false) renderer.clear(); const nv = sc.fog; sc.fog = null; renderer.render(sc, vc); sc.fog = nv;
+        renderer.setRenderTarget(rt); renderer.state.buffers.depth.setMask(true); if (renderer.autoClear === false) renderer.clear(); renderer.render(sc, vc);
         renderer.shadowMap.autoUpdate = sau; renderer.setRenderTarget(prev); mesh.visible = true; ocupado = false;
       };
       return mesh;
@@ -258,7 +257,7 @@
         vec4 ip = instanceMatrix * vec4(0., 0., 0., 1.); float w = sin(uT * 1.3 + ip.x * 0.35 + ip.z * 0.2) * 0.5 + sin(uT * 2.1 + ip.x * 0.9) * 0.2;
         transformed.x += w * 0.09 * position.y * position.y * 4.; transformed.z += w * 0.04 * position.y;`); };
       const pts = [];
-      for (const a of M.arrozais) { if (!a.cheio) continue; for (let x = -5.6; x <= 5.6; x += M.leve ? 0.7 : 0.48) for (let z = -5.3; z <= 5.3; z += M.leve ? 0.7 : 0.48) pts.push(TRS(a.x + x + (rnd() - 0.5) * 0.08, a.y - 0.02, a.z + z + (rnd() - 0.5) * 0.08, rnd() * 6.28, 0.85 + rnd() * 0.35)); }
+      for (const a of M.arrozais) { if (!a.cheio) continue; for (let x = -5.6; x <= 5.6; x += 0.48) for (let z = -5.3; z <= 5.3; z += 0.48) pts.push(TRS(a.x + x + (rnd() - 0.5) * 0.08, a.y - 0.02, a.z + z + (rnd() - 0.5) * 0.08, rnd() * 6.28, 0.85 + rnd() * 0.35)); }
       M.instPedacos(new T.Mesh(tou, arrozM), pts, { cell: 26, camada: 1, longe: 170 });
     }
     // a casa de fazenda, de frente para a trilha

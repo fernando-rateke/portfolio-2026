@@ -8,9 +8,9 @@
   M.builders.push(async (M) => {
     const { T, scene, renderer, sun, hemi } = M;
     const TEMAS = {
-      entardecer: { exp: 0.78, fog: "#b98a7a", dens: M.leve ? 0.0082 : 0.0068, sol: ["#ff9a58", 2.4], hemi: ["#8f86b8", "#4a3028", 0.42], dir: [-26, 11, -72],
+      entardecer: { exp: 0.78, fog: "#b98a7a", dens: 0.0068, sol: ["#ff9a58", 2.4], hemi: ["#8f86b8", "#4a3028", 0.42], dir: [-26, 11, -72],
         bb: ["#ffb27a", "#8a86a8"], flor: ["#ffc8a0", "#9a8ab8"], luz: 1, emis: 1, janela: [0, 0], estrelas: "#fff4e8" },
-      noite: { exp: 0.95, fog: "#141a30", dens: M.leve ? 0.0095 : 0.0078, sol: ["#a8bcff", 0.55], hemi: ["#30406e", "#120c16", 0.5], dir: [-10.4, 16.9, -40.4],
+      noite: { exp: 0.95, fog: "#141a30", dens: 0.0078, sol: ["#a8bcff", 0.55], hemi: ["#30406e", "#120c16", 0.5], dir: [-10.4, 16.9, -40.4],
         bb: ["#7a88b8", "#28304e"], flor: ["#c8b8e8", "#4a4a78"], luz: 2.2, emis: 1.9, janela: [0.22, 1.7], estrelas: "#ffffff" },
     };
     // materiais com luz própria (o valor de dia fica guardado para voltar)

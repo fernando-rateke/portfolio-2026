@@ -46,9 +46,12 @@ vão em pedaços instanciados com esfera de limite (`M.instPedacos`), o que pass
 seguem a câmera. As cerejeiras 3D são só tronco e galhos; a copa são quadrados de flores (textura desenhada em
 natureza.js). Referência: rua ~2,8 milhões de triângulos e ~1.000 chamadas por quadro, contando a sombra.
 
-Modos Leve e Completo: escolhidos na abertura ou no botão do canto (guardado em `localStorage` "cidade-peso";
-sem escolha, celular começa no Leve; `?leve=1` e `?completo=1` forçam). Leve: sem sombras, lago sem o reflexo da
-cena (só o céu), resolução 1x, névoa um pouco mais perto e menos plantas, flores, pétalas e vaga-lumes (`M.leve`).
+Um modo só (não há mais Leve/Completo). O que deixa leve: resolução no máximo 1x e ajustada sozinha pelo tempo
+de cada quadro (`resolucao` em cidade.js, entre 0,55x e 1x); a sombra do sol só é refeita quando o centro dela anda
+um degrau de 5 m ou o tema muda (`sombra` em caminho.js; `shadowMap.autoUpdate` é false, quem muda algo que projeta
+sombra chama `M.refazSombra()`); o lago reflete em ~28% da tela e a cada dois quadros; 3 luzes pontuais e 1 spot
+de verdade na cidade; nas lojas, só o sol da porta, duas pendentes, os spots dos destaques e a lâmpada do estoque.
+Todos os shaders (inclusive os do reflexo) são compilados no carregamento, para não travar ao chegar num lugar novo.
 
 Tema Entardecer ou Noite (`tema.js`, botão de sol/lua no canto, `localStorage` "cidade-tema", `?tema=noite`):
 a noite troca o céu (`tex/ceu-noite.jpg`), vira o sol em luar e multiplica o brilho de tudo que tem luz própria.

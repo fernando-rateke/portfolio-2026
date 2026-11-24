@@ -105,10 +105,12 @@
     }
     function ceuLaFora(fora) { const ceu = (M.ceu[M.tema === "noite" ? "noite" : "entardecer"] || M.ceu.entardecer || {}).fundo; if (!ceu) return; const t = ceu.clone(); t.needsUpdate = true; t.mapping = T.UVMapping; t.repeat.set(0.18, 0.42); t.offset.set(0.12, 0.3); fora.map = t; fora.color.set(M.tema === "noite" ? "#8090b0" : "#ffffff"); fora.needsUpdate = true; }
     // luminária pendente de verdade (modelo pronto) com uma luz quente e curta logo abaixo
-    async function pendente(cena, g, x, z, H, lista, modeloL = "hanging_industrial_lamp", esc = 0.5) {
+    async function pendente(cena, g, x, z, H, lista, modeloL = "hanging_industrial_lamp", esc = 0.5, forcar = false) {
+      // só as duas primeiras pendentes de cada sala acendem uma luz de verdade (as outras brilham, mas não iluminam): luz custa caro
+      const comLuz = forcar || (lista.np = (lista.np || 0) + 1) <= 2;
       const o = await por(g, modeloL, x, H, z, 0, esc);
       if (o) o.traverse((c) => { if (c.isMesh) { c.userData.semSombra = true; if (/glass/i.test(c.material.name || "")) { c.material.emissive = new T.Color("#ffd49a"); c.material.emissiveIntensity = 1.5; lista.vidros.push(c.material); } } });
-      const yb = o ? new T.Box3().setFromObject(o).min.y : H - 0.9; const l = new T.PointLight("#ffb766", 0.5, 3.4, 2); l.position.set(x, yb - 0.12, z); cena.add(l); lista.luzes.push(l);
+      if (!comLuz) return; const yb = o ? new T.Box3().setFromObject(o).min.y : H - 0.9; const l = new T.PointLight("#ffb766", 0.5, 4.6, 2); l.position.set(x, yb - 0.12, z); cena.add(l); lista.luzes.push(l);
     }
     // divisória vazada: meia-parede de madeira e, em cima, um painel de quadrados com vidro âmbar (como blocos de vidro)
     const grade = M.canvasTex(512, 512, (c, w, h) => { c.clearRect(0, 0, w, h); c.fillStyle = "rgba(255,206,140,0.38)"; c.fillRect(0, 0, w, h); c.fillStyle = "#4a3426"; const n = 6, b = 10; for (let i = 0; i <= n; i++) { c.fillRect(i * (w - b) / n, 0, b, h); c.fillRect(0, i * (h - b) / n, w, b); } });
@@ -165,7 +167,7 @@
     // a imagem cabe inteira (nada é cortado), com uma margem de papel em volta, como um passe-partout
     function imagemNoQuadro(mesh, url, titulo, corpo) {
       const fa = uvPlano(mesh), Wc = 1024, Hc = Math.round(Wc / fa);
-      const pronto = (tex) => { tex.encoding = T.sRGBEncoding; tex.anisotropy = 4; mesh.material = new T.MeshStandardMaterial({ map: tex, roughness: 0.65, emissive: new T.Color("#ffffff"), emissiveMap: tex, emissiveIntensity: 0.06 }); };
+      const pronto = (tex) => { tex.encoding = T.sRGBEncoding; tex.anisotropy = 4; mesh.material = new T.MeshStandardMaterial({ map: tex, roughness: 0.65, emissive: new T.Color("#ffffff"), emissiveMap: tex, emissiveIntensity: 0.1 }); };
       const comCartao = () => pronto(cartao(titulo, corpo, fa));
       if (!url) return comCartao();
       const img = new Image(); img.crossOrigin = "anonymous";
@@ -239,10 +241,10 @@
         if (k < 3) { q.rotation.order = "YXZ"; q.rotation.x = -0.13; }
         trocar(q, /artwork|canvas/, (c) => imagemNoQuadro(c, a.img, a.t, a.r)); trocar(q, /glass/, (c) => { c.visible = false; });
         q.updateMatrixWorld(true); const bb = new T.Box3().setFromObject(q), c = bb.getCenter(V3()), nrm = V3(0, 0, 1).applyAxisAngle(V3(0, 1, 0), ry);
-        alvos.push({ obj: q, nome: a.t, acao, topo: V3(c.x, bb.max.y + 0.1, c.z), ver: c.clone(), foco: [c.clone().addScaledVector(nrm, 0.7).setY(9), c] }); }));
+        alvos.push({ obj: q, nome: a.t, acao, topo: V3(c.x, bb.max.y + 0.1, c.z), ver: c.clone() }); }));
       // uma lâmpada pendurada no meio do estoque
-      const [lx, , lz] = W2(cx, 0, -E / 2); await L.pend(lx, lz, "hanging_industrial_lamp", 0.45);
-      const lamp = L.luzes.pop(); lamp.distance = 5; L.focos.push(lamp); // acende como os spots (mais forte que as pendentes)
+      const [lx, , lz] = W2(cx, 0, -E / 2); await L.pend(lx, lz, "hanging_industrial_lamp", 0.45, true);
+      const lamp = L.luzes.pop(); lamp.distance = 5; lamp.userData.k = 1.5; L.focos.push(lamp); // a única luz do estoque, mais forte que as pendentes
       // a vista de dentro do estoque (entra com um corte, não atravessando a parede)
       const cfg = SALAS[id]; if (!cfg.vistas.some((v) => v[2])) { const o = W2(cx, 1.6, -0.12), m = W2(cx, 1.0, -E); cfg.vistas.push([V3(o[0], o[1], o[2]), V3(m[0], m[1], m[2]), true]); }
     }
@@ -250,7 +252,7 @@
     async function bilhete(g, alvos, v, titulo, corpo, acao, nomeMarca) { const [x, y, z, ry] = v; const q = await por(g, "hanging_picture_frame_01", x, y, z, ry, 1.05); if (!q) return;
       trocar(q, /artwork|canvas/, (c) => imagemNoQuadro(c, "", titulo, corpo)); trocar(q, /glass/, (c) => { c.visible = false; });
       q.updateMatrixWorld(true); const bb = new T.Box3().setFromObject(q), c = bb.getCenter(V3()), nrm = V3(0, 0, 1).applyAxisAngle(V3(0, 1, 0), ry);
-      alvos.push({ obj: q, nome: nomeMarca, acao, topo: V3(c.x, bb.max.y + 0.1, c.z), ver: c.clone(), foco: [c.clone().addScaledVector(nrm, 0.75).setY(9), c] }); }
+      alvos.push({ obj: q, nome: nomeMarca, acao, topo: V3(c.x, bb.max.y + 0.1, c.z), ver: c.clone() }); }
     // ventilador de teto girando devagar
     const girando = [];
     async function ventilador(g, x, z, H) { const v = await por(g, "ceiling_fan", x, H, z, 0, 1); if (v) { v.traverse((c) => { if (c.isMesh) c.userData.semSombra = true; }); girando.push(v); } }
@@ -350,7 +352,6 @@
               const pf = rot(dx, 0.415); plaquinha(g, V3(x + pf.x, 0.56, z + pf.z), ry, 0.62);
               if (pc) alvos.push({ obj: pc, nome: a.t, acao: () => M.abrirAtividade(s.id, k) }); return pc; }));
             // a tela acende a mesa com a cor da matéria
-            const fr = V3(0, 0, 0.45).applyAxisAngle(V3(0, 1, 0), ry); const lt = new T.PointLight(cor, 0.35, 1.8, 2); lt.position.set(x + fr.x, 1.0, z + fr.z); L.cena.add(lt); L.telas.push(lt);
             const st = V3(0.6, 0, -0.65).applyAxisAngle(V3(0, 1, 0), ry); await por(g, "metal_stool_01", x + st.x, 0, z + st.z, ry, 0.9);
             alvos.push({ obj: d, nome: s.name, acao: () => M.abrir(s.id), topo: V3(x, i % 2 ? 1.95 : 1.55, z), ver: V3(x, 1.35, z) }); }));
           await Promise.all([por(g, "security_camera_01", 4.3, 2.75, -3.1, -0.8, 1.1), por(g, "power_box_01", -4.4, 1.6, 2.4, Math.PI / 2, 1),
@@ -358,7 +359,9 @@
             por(g, "potted_plant_04", 4.1, 0, 2.6, 0, 3)]);
           for (const x of [-2.4, 0, 2.4]) for (const z of [-1.8, 1.0]) { const f = await por(g, "mounted_fluorescent_lights", x, 3.08, z, 0, 1.2);
             trocar(f, /glass/, (c) => { c.material = c.material.clone(); c.material.emissive = new T.Color("#e8f0ff"); c.material.emissiveIntensity = 1.2; L.vidros.push(c.material); }); f && f.traverse((c) => { c.userData.semSombra = true; });
-            const l = new T.PointLight("#dce8ff", 0.5, 4.2, 2); l.position.set(x, 2.7, z); L.cena.add(l); L.luzes.push(l); }
+          }
+          // as seis luminárias brilham, mas só duas luzes iluminam a sala (uma de cada lado)
+          for (const x of [-1.8, 1.8]) { const l = new T.PointLight("#dce8ff", 0.5, 7, 1.6); l.position.set(x, 2.7, -0.6); L.cena.add(l); L.luzes.push(l); }
         } },
     };
 
@@ -386,10 +389,10 @@
       const hemi = new T.HemisphereLight("#ffe8d0", "#1a120c", 0.05); scene.add(hemi);
       const { D, portaX: px } = cfg;
       const sol = new T.SpotLight("#ffb070", 6, 14, 0.42, 0.35, 1.2); sol.position.set(px + 2.2, 3.4, D / 2 + 3.2); sol.target.position.set(px - 1.0, 0, D / 2 - 2.6); scene.add(sol, sol.target);
-      if (!M.leve) { sol.castShadow = true; sol.shadow.mapSize.set(1024, 1024); sol.shadow.camera.near = 1; sol.shadow.camera.far = 14; sol.shadow.bias = -0.0006; sol.shadow.radius = 3; }
+      { sol.castShadow = true; sol.shadow.mapSize.set(1024, 1024); sol.shadow.camera.near = 1; sol.shadow.camera.far = 14; sol.shadow.bias = -0.0006; sol.shadow.radius = 3; }
       const facho = feixe(cfg, sol); scene.add(facho);
-      const L = { cena: scene, vidros: [], luzes: [], telas: [], focos: [] };
-      L.pend = (x, z, m, e) => pendente(scene, g, x, z, cfg.H, L, m, e);
+      const L = { cena: scene, vidros: [], luzes: [], focos: [] };
+      L.pend = (x, z, m, e, f) => pendente(scene, g, x, z, cfg.H, L, m, e, f);
       await cfg.montar(g, sub, alvos, PAR(cfg.W, cfg.D), L);
       const resto = restoDe(sub); if (cfg.estoque && resto.length) await guardar(g, id, resto, alvos, L);
       // um spot no teto em cima de cada quadro, com o disquinho aceso no forro
@@ -405,15 +408,17 @@
       const rc = new T.Raycaster(), ptr = new T.Vector2();
       const pick = (x, y) => { ptr.set((x / innerWidth) * 2 - 1, -(y / innerHeight) * 2 + 1); rc.setFromCamera(ptr, camera); let melhor = null, dm = 1e9;
         for (const a of alvos) { const h = rc.intersectObject(a.obj, true)[0]; if (h && h.distance < dm) { dm = h.distance; melhor = a; } } return melhor ? { nome: melhor.nome, acao: melhor.acao } : null; };
-      return { scene, camera, alvos, pick, cfg, sub, id, hemi, sol, facho, L, fora: g.userData.fora, vista: 0, olho: cfg.vistas[0][0].clone(), mira: cfg.vistas[0][1].clone() };
+      const d = { scene, camera, alvos, pick, cfg, sub, id, hemi, sol, facho, L, fora: g.userData.fora, vista: 0, olho: cfg.vistas[0][0].clone(), mira: cfg.vistas[0][1].clone() };
+      // os shaders da sala compilam aqui, ainda atrás do véu, e não no primeiro quadro dentro dela
+      luzDoTema(d); try { renderer.compile(scene, camera); } catch (e) { /* segue */ }
+      return d;
     }
     // a janela e a luz mudam com o tema: noite é luar azulado, entardecer é sol laranja
     function luzDoTema(d) {
       const n = M.tema === "noite", L = d.L;
-      d.sol.visible = !n; d.facho.visible = !n; d.hemi.intensity = n ? 0.03 : 0.05;
-      for (const l of L.luzes) l.intensity = n ? (d.cfg.tech ? 1.0 : 1.25) : (d.cfg.tech ? 0.35 : 0.55);
-      for (const l of L.focos) l.intensity = n ? 1.3 : 0.8;
-      for (const l of L.telas) l.intensity = n ? 0.6 : 0.25;
+      d.sol.intensity = n ? 0 : 6; d.facho.visible = !n; // intensidade 0, e não invisível: o número de luzes não muda e nada recompila d.hemi.intensity = n ? 0.03 : 0.05;
+      for (const l of L.luzes) l.intensity = n ? (d.cfg.tech ? 1.7 : 1.4) : (d.cfg.tech ? 0.6 : 0.62);
+      for (const l of L.focos) l.intensity = (n ? 1.3 : 0.8) * (l.userData.k || 1);
       for (const m of L.vidros) m.emissiveIntensity = n ? 1.8 : 0.9;
       if (d.fora) ceuLaFora(d.fora);
       d.scene.environment = (M.ceu[n ? "noite" : "entardecer"] || {}).env || null;
@@ -454,7 +459,7 @@
     M.vistaSala = mudarVista;
 
     let expFora = null;
-    M.aoTema = () => { const d = M.dentro; if (!d) return; expFora = renderer.toneMappingExposure; luzDoTema(d); renderer.toneMappingExposure = EXP; };
+    M.aoTema = () => { const d = M.dentro; if (!d) return; expFora = renderer.toneMappingExposure; luzDoTema(d); renderer.toneMappingExposure = EXP; renderer.shadowMap.needsUpdate = true; };
     async function entrar(id) {
       if (!SALAS[id] || M.dentro) return;
       veu.classList.add("on"); M.fechar && M.fechar(); await new Promise((r) => setTimeout(r, 420));
@@ -462,11 +467,11 @@
       const d = await prontas[id]; if (!d) { veu.classList.remove("on"); return; }
       d.camera.aspect = innerWidth / innerHeight; d.camera.updateProjectionMatrix(); ox = oy = 0; d.vista = 0; d.olho.copy(d.cfg.vistas[0][0]); d.mira.copy(d.cfg.vistas[0][1]);
       luzDoTema(d); expFora = renderer.toneMappingExposure; renderer.toneMappingExposure = EXP;
-      M.dentro = d; document.body.classList.add("dentro"); rotulo();
+      M.dentro = d; document.body.classList.add("dentro"); rotulo(); renderer.shadowMap.needsUpdate = true; // a sombra da sala é feita uma vez (nada nela se mexe)
       M.marcasSala && M.marcasSala(d.alvos.filter((a) => a.topo));
       setTimeout(() => veu.classList.remove("on"), 120);
     }
-    async function sairDaLoja() { if (!M.dentro) return; veu.classList.add("on"); await new Promise((r) => setTimeout(r, 380)); M.fechar && M.fechar(); M.dentro = null; if (expFora != null) renderer.toneMappingExposure = expFora; document.body.classList.remove("dentro"); M.marcasSala && M.marcasSala([]); setTimeout(() => veu.classList.remove("on"), 120); }
+    async function sairDaLoja() { if (!M.dentro) return; veu.classList.add("on"); await new Promise((r) => setTimeout(r, 380)); M.fechar && M.fechar(); M.dentro = null; if (expFora != null) renderer.toneMappingExposure = expFora; M.refazSombra && M.refazSombra(); document.body.classList.remove("dentro"); M.marcasSala && M.marcasSala([]); setTimeout(() => veu.classList.remove("on"), 120); }
     M.entrar = entrar; M.sair = sairDaLoja; M.temSala = (id) => !!SALAS[id];
     sair.addEventListener("click", sairDaLoja);
     addEventListener("keydown", (e) => { if (!M.dentro || (M.painelAberto && M.painelAberto())) return; if (e.key === "Escape") sairDaLoja(); else if (["ArrowRight", "ArrowDown", "PageDown"].includes(e.key)) mudarVista(1); else if (["ArrowLeft", "ArrowUp", "PageUp"].includes(e.key)) mudarVista(-1); });

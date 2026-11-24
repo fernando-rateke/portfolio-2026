@@ -57,7 +57,7 @@
       return true;
     };
     function espalhar(n, x0, x1, z0, z1, escolhe, dens = 1) {
-      for (let i = 0; i < n * (M.leve ? 0.6 : 1); i++) { const x = x0 + rnd() * (x1 - x0), z = z1 + rnd() * (z0 - z1); if (!longeDoCaminho(x, z)) continue; escolhe(x, z); }
+      for (let i = 0; i < n; i++) { const x = x0 + rnd() * (x1 - x0), z = z1 + rnd() * (z0 - z1); if (!longeDoCaminho(x, z)) continue; escolhe(x, z); }
     }
     // o morro da escadaria e do santuário: floresta escura de coníferas, com cerejeiras perto do alto
     espalhar(1300, -150, 150, -62, -152, (x, z) => { const ax = Math.abs(x); if (ax < 28 && rnd() < (z < -100 ? 0.3 : 0.4)) addBB("jacaranda_tree_0", x, z, 0.34 + rnd() * 0.12, pinkSak());
@@ -124,7 +124,7 @@
         c.globalAlpha = 1; });
       const pts = []; sak.updateMatrixWorld(true); const v = new T.Vector3();
       sak.traverse((o) => { if (!o.isMesh || !/leaves/.test(o.material.name || "")) return; const P = M.lerF(o.geometry.attributes.position); const n = P.length / 3;
-        for (let i = 0; i < (M.leve ? 110 : 200); i++) { const k = (rnd() * n) | 0; pts.push(new T.Vector3(P[k * 3], P[k * 3 + 1], P[k * 3 + 2]).applyMatrix4(o.matrixWorld)); } });
+        for (let i = 0; i < 200; i++) { const k = (rnd() * n) | 0; pts.push(new T.Vector3(P[k * 3], P[k * 3 + 1], P[k * 3 + 2]).applyMatrix4(o.matrixWorld)); } });
       // cada nuvem de flores é um quadrado sempre virado para a câmera (instanciado: sem limite de tamanho de ponto)
       const mats = [], m4 = new T.Matrix4();
       for (const m of S) { const sc = m.getMaxScaleOnAxis(); for (const p of pts) { v.copy(p).applyMatrix4(m); const t = (1.1 + rnd() * 0.9) * sc / 0.3; mats.push(new T.Matrix4().makeScale(t, t, t).setPosition(v)); } }
@@ -169,7 +169,7 @@
     };
     const [fern, grass, shrub2, shrub4, rock1, rock2, boulder, stump] = await Promise.all(["fern_02", "grass_medium_02", "shrub_02", "shrub_04", "rock_moss_set_01", "rock_moss_set_02", "boulder_01", "tree_stump_01"].map(load));
     duplaFace(fern); duplaFace(grass); duplaFace(shrub2); duplaFace(shrub4);
-    const em = (n, gen) => { const out = []; const alvo = M.leve ? n >> 1 : n; for (let i = 0, t = 0; i < alvo && t < n * 8; t++) { const r = gen(); if (r) { out.push(TRS(r[0], h(r[0], r[1]) - 0.05, r[1], rnd() * 6.28, r[2])); i++; } } return out; };
+    const em = (n, gen) => { const out = []; const alvo = n; for (let i = 0, t = 0; i < alvo && t < n * 8; t++) { const r = gen(); if (r) { out.push(TRS(r[0], h(r[0], r[1]) - 0.05, r[1], rnd() * 6.28, r[2])); i++; } } return out; };
     // perto do caminho: na escadaria a distância é medida do eixo x=0, na floresta da trilha
     const perto = (spread, z0, z1, minD, dt, sc0, sc1) => () => { const z = z1 + rnd() * (z0 - z1); const x = (z < L.Z_ESC0 && z > L.Z_ESC1 ? 0 : M.trilhaX(z)) + (rnd() < 0.5 ? -1 : 1) * (minD + rnd() * spread); return livre(x, z, dt) ? [x, z, sc0 + rnd() * sc1] : null; };
     const det = { camada: 1, cell: 30, longe: 110 };

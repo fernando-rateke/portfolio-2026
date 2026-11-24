@@ -4,19 +4,14 @@
   const T = window.THREE;
   const canvas = document.getElementById("c");
   const Q = new URLSearchParams(location.search);
-  /* modo Leve ou Completo: escolhido na abertura ou no botão do canto e guardado no navegador; sem escolha,
-     celular e tablet começam no Leve. ?leve e ?completo na URL forçam um dos dois.
-     Leve: sem sombras, sem o reflexo de verdade no lago, menos plantas, flores e vaga-lumes, resolução menor e a
-     névoa um pouco mais perto (o que some nela não é desenhado). Completo: tudo ligado. */
-  const toque = matchMedia("(pointer: coarse)").matches;
-  let pesoSalvo = null; try { pesoSalvo = localStorage.getItem("cidade-peso"); } catch (e) { /* sem storage */ }
-  const peso = Q.has("leve") ? "leve" : Q.has("completo") ? "completo" : pesoSalvo === "leve" || pesoSalvo === "completo" ? pesoSalvo : toque ? "leve" : "completo";
-  const leve = peso === "leve";
-  const renderer = new T.WebGLRenderer({ canvas, antialias: true });
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, leve ? 1 : toque ? 1.25 : 1.5));
+  /* um modo só. O que pesa foi cortado na fonte: a resolução se ajusta sozinha ao computador (resolucao, lá embaixo),
+     a sombra do sol só é refeita quando a câmera anda alguns metros (caminho.js), o lago reflete em baixa resolução
+     e a cada dois quadros, e há poucas luzes de verdade ao mesmo tempo. */
+  const renderer = new T.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
+  const PR_MAX = Math.min(devicePixelRatio || 1, 1); let pr = PR_MAX; renderer.setPixelRatio(pr);
   renderer.outputEncoding = T.sRGBEncoding;
   renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.78;
-  renderer.shadowMap.enabled = !leve; renderer.shadowMap.type = T.PCFSoftShadowMap;
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFShadowMap; renderer.shadowMap.autoUpdate = false; renderer.shadowMap.needsUpdate = true;
   const scene = new T.Scene();
   const camera = new T.PerspectiveCamera(48, 1, 0.1, 600);
   camera.layers.enable(1); // camada 1: detalhes do chão que ficam fora do reflexo do lago
@@ -32,9 +27,9 @@
     t.mapping = T.EquirectangularReflectionMapping; t.encoding = T.sRGBEncoding;
     const pm = new T.PMREMGenerator(renderer); M.ceu.entardecer = { fundo: t, env: pm.fromEquirectangular(t).texture }; if (!M.tema || M.tema === "entardecer") { scene.background = t; scene.environment = M.ceu.entardecer.env; }
   });
-  scene.fog = new T.FogExp2("#b98a7a", leve ? 0.0082 : 0.0068);
+  scene.fog = new T.FogExp2("#b98a7a", 0.0068);
   const sun = new T.DirectionalLight("#ff9a58", 2.4); sun.position.set(-26, 11, -72); sun.castShadow = true;
-  sun.shadow.mapSize.set(toque ? 1024 : 2048, toque ? 1024 : 2048); Object.assign(sun.shadow.camera, { left: -32, right: 32, top: 32, bottom: -32, near: 1, far: 95 }); sun.shadow.bias = -0.0004; scene.add(sun);
+  sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -32, right: 32, top: 32, bottom: -32, near: 1, far: 95 }); sun.shadow.bias = -0.0004; scene.add(sun);
   const hemi = new T.HemisphereLight("#8f86b8", "#4a3028", 0.42); scene.add(hemi);
 
   /* ---------------- materiais com textura de verdade ---------------- */
@@ -102,7 +97,7 @@
   const cidadeG = new T.Group(), matCache = {};
   // o que passa de ~300 m some na névoa: não vale desenhar (as malhas juntadas e os pedaços instanciados entram aqui)
   const longe = [], LONGE = 300, cv = new T.Vector3();
-  function cortaLonge() { for (const o of longe) { const s = o.geometry.boundingSphere; if (!s) continue; cv.copy(s.center).applyMatrix4(o.matrixWorld); o.visible = cv.distanceTo(camera.position) - s.radius < (o.userData.longe || LONGE) * (leve ? 0.7 : 1); } }
+  function cortaLonge() { for (const o of longe) { const s = o.geometry.boundingSphere; if (!s) continue; cv.copy(s.center).applyMatrix4(o.matrixWorld); o.visible = cv.distanceTo(camera.position) - s.radius < (o.userData.longe || LONGE); } }
   function building(x0, z0, side, bays, floors, kinds) {
     const g = new T.Group(); g.position.set(x0, 0.12, z0); g.rotation.y = side < 0 ? Math.PI / 2 : -Math.PI / 2; cidadeG.add(g);
     const tint = new T.Color(kinds.tint || "#ffffff");
@@ -297,7 +292,7 @@
 
   /* ---------------- o resto do mundo (outros arquivos) usa estas peças ---------------- */
   const ticks = [];
-  Object.assign(M, { leve, peso, hemi, T, scene, renderer, camera, sun, V3, rnd, load, pbr, tx, canvasTex, shadowOn, texL, Q, ticks, JP, JPS, chochin, norens, lojas, juntar, longe, lerF });
+  Object.assign(M, { hemi, T, scene, renderer, camera, sun, V3, rnd, load, pbr, tx, canvasTex, shadowOn, texL, Q, ticks, JP, JPS, chochin, norens, lojas, juntar, longe, lerF });
 
   /* ---------------- câmera ---------------- */
   camera.position.set(0.6, 1.65, 26); camera.lookAt(-0.4, 3.2, -10); // até o passeio assumir
@@ -316,12 +311,26 @@
     props({ poles, lamp: lamp0, ubox1, ubox2, trash, crate, pot1, pot2, planter, man, pot3 });
     scene.add(cidadeG); juntar(cidadeG, 48);
     for (const b of M.builders || []) { try { await b(M); } catch (e) { console.error("mundo:", e); } }
-    window.cidadePronta = true;
+    // compila todos os shaders de uma vez, antes de mostrar (senão cada coisa nova que aparece trava a tela um instante)
+    // (o compile pula o que está invisível: tudo aparece por um instante, menos as luzes, que mudariam a conta de luzes)
+    { const esc = []; scene.traverse((o) => { if (!o.visible && !o.isLight) { esc.push(o); o.visible = true; } });
+      try { renderer.compile(scene, camera); // e de novo para o reflexo do lago (desenhar numa textura usa outra versão de cada shader)
+        if (M.lagoRT) { renderer.setRenderTarget(M.lagoRT); renderer.compile(scene, camera); renderer.setRenderTarget(null); } } catch (e) { /* segue */ }
+      for (const o of esc) o.visible = false; }
+    renderer.shadowMap.needsUpdate = true; window.cidadePronta = true;
   })();
 
-  const clock = new T.Clock();
+  /* resolução automática: se os quadros demoram, desenha menos pixels; se sobra folga, volta a subir (até a nativa,
+     no máximo 1x). Muda devagar e só de vez em quando, para não ficar piscando. */
+  let media = 1 / 60, ultimoAjuste = 0;
+  function resolucao(t, dt) {
+    if (dt <= 0 || dt > 0.5) return; media += (dt - media) * 0.05; if (t - ultimoAjuste < 2.5) return;
+    let novo = pr; if (media > 1 / 38) novo = Math.max(0.55, pr - 0.1); else if (media < 1 / 55) novo = Math.min(PR_MAX, pr + 0.05);
+    if (Math.abs(novo - pr) > 0.01) { pr = novo; renderer.setPixelRatio(pr); resize(); ultimoAjuste = t; }
+  }
+  const clock = new T.Clock(); let tPrev = 0;
   function frame() {
-    const t = clock.getElapsedTime();
+    const t = clock.getElapsedTime(); if (window.cidadePronta && !Q.has("pausa")) resolucao(t, t - tPrev); tPrev = t;
     if (M.camTick) M.camTick(t);
     cortaLonge();
     for (const f of ticks) f(t);

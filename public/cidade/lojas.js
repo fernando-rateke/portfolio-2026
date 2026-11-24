@@ -35,7 +35,8 @@
       const piso = new T.Mesh(new T.PlaneGeometry(W, D), M.pbr(cfg.piso, [W / 2, D / 2], { metalness: 0, color: cfg.corPiso || "#ffffff" })); piso.rotation.x = -Math.PI / 2; g.add(piso);
       const pm = M.pbr(cfg.parede, [W / 2.5, H / 2.5], { metalness: 0, color: cfg.corParede || "#ffffff" });
       const parede = (w, x, z, ry) => { const p = new T.Mesh(new T.PlaneGeometry(w, H), pm); p.position.set(x, H / 2, z); p.rotation.y = ry; g.add(p); };
-      parede(W, 0, -D / 2, 0); parede(D, -W / 2, 0, Math.PI / 2); parede(D, W / 2, 0, -Math.PI / 2);
+      const pe = cfg.estoque && cfg.estoque.parede;
+      if (pe !== "fundo") parede(W, 0, -D / 2, 0); if (pe !== "esq") parede(D, -W / 2, 0, Math.PI / 2); if (pe !== "dir") parede(D, W / 2, 0, -Math.PI / 2);
       // a parede da frente tem o vão da porta de vidro (por onde o sol entra)
       const px = cfg.portaX, pw = 1.15, ph = 2.25, ee = px - pw / 2 + W / 2, dd = W / 2 - (px + pw / 2);
       const pf = (w, h, x, y) => { const p = new T.Mesh(new T.PlaneGeometry(w, h), pm); p.position.set(x, y, D / 2); p.rotation.y = Math.PI; g.add(p); };
@@ -44,9 +45,10 @@
       // vigas de madeira no teto
       for (let x = -W / 2 + 1.2; x < W / 2 - 0.5; x += 1.6) box(g, 0.16, 0.2, D, ESCURA(), x, H - 0.1, 0);
       // rodapé e a faixa de madeira na altura da mão, nas quatro paredes
-      for (const [w, x, z, ry] of [[W, 0, -D / 2 + 0.02, 0], [D, -W / 2 + 0.02, 0, Math.PI / 2], [D, W / 2 - 0.02, 0, -Math.PI / 2], [W, 0, D / 2 - 0.02, Math.PI]])
-        for (const [y, hh] of [[0.08, 0.16], [0.92, 0.05]]) box(g, w, hh, 0.04, ESCURA(), x, y, z, ry);
+      for (const [w, x, z, ry, nm] of [[W, 0, -D / 2 + 0.02, 0, "fundo"], [D, -W / 2 + 0.02, 0, Math.PI / 2, "esq"], [D, W / 2 - 0.02, 0, -Math.PI / 2, "dir"], [W, 0, D / 2 - 0.02, Math.PI]])
+        if (nm !== pe) for (const [y, hh] of [[0.08, 0.16], [0.92, 0.05]]) box(g, w, hh, 0.04, ESCURA(), x, y, z, ry);
       portaVidro(g, cfg);
+      if (cfg.estoque) estoque(g, cfg, pm);
       return g;
     }
     // janela: moldura, vidro e o céu lá fora (do tema atual); a luz da janela entra na sala
@@ -67,6 +69,39 @@
       vidro.position.set(px, ph / 2, z - 0.01); vidro.rotation.y = Math.PI; vidro.castShadow = false; g.add(vidro); vidro.userData.semSombra = true;
       const fora = new T.MeshBasicMaterial({ color: "#ffffff" }); const lado = new T.Mesh(new T.PlaneGeometry(4, 3.4), fora); lado.position.set(px, 1.5, z + 0.9); lado.rotation.y = Math.PI; lado.userData.semSombra = true; g.add(lado);
       g.userData.fora = fora; ceuLaFora(fora);
+    }
+    /* o estoque nos fundos: um cômodo atrás de uma das paredes, com passagem e cortina (noren).
+       Quem entra na loja só vê os dois destaques; o resto das atividades fica guardado aqui.
+       Tudo é montado num grupo "na parede": x local corre ao longo dela (u), z local negativo é o fundo do estoque. */
+    function estoque(g, cfg, pm) {
+      const e = cfg.estoque, { W, D, H } = cfg, vw = 1.05, vh = 2.05, Wa = e.w || 3.6, E = e.d || 2.8;
+      const [wx, wz, ry, comp] = e.parede === "dir" ? [W / 2, 0, -Math.PI / 2, D] : e.parede === "esq" ? [-W / 2, 0, Math.PI / 2, D] : [0, -D / 2, 0, W];
+      const grp = new T.Group(); grp.position.set(wx, 0, wz); grp.rotation.y = ry; g.add(grp);
+      const u = e.u, cx = u + (e.off || 0);
+      const pl = (w, h, x, y, z, r, m) => { if (w < 0.01) return; const p = new T.Mesh(new T.PlaneGeometry(w, h), m); p.position.set(x, y, z); p.rotation.y = r; grp.add(p); return p; };
+      // o lado da loja: parede com o vão, rodapé e faixa interrompidos na passagem
+      const a = u - vw / 2 + comp / 2, b = comp / 2 - (u + vw / 2);
+      pl(a, H, -comp / 2 + a / 2, H / 2, 0, 0, pm); pl(b, H, comp / 2 - b / 2, H / 2, 0, 0, pm); pl(vw, H - vh, u, vh + (H - vh) / 2, 0, 0, pm);
+      for (const [y, hh] of [[0.08, 0.16], [0.92, 0.05]]) { box(grp, a, hh, 0.04, ESCURA(), -comp / 2 + a / 2, y, 0.02); box(grp, b, hh, 0.04, ESCURA(), comp / 2 - b / 2, y, 0.02); }
+      // o batente e a cortina com o nome do cômodo
+      for (const sx of [-1, 1]) box(grp, 0.08, vh, 0.18, ESCURA(), u + sx * vw / 2, vh / 2, 0); box(grp, vw + 0.16, 0.08, 0.18, ESCURA(), u, vh + 0.02, 0);
+      const t = M.canvasTex(512, 800, (c, w, h) => { c.fillStyle = e.cor || "#3a3a44"; c.fillRect(0, 0, w, h); c.fillStyle = "rgba(0,0,0,.18)"; c.fillRect(0, h - 70, w, 70);
+        c.fillStyle = "#f4efe4"; c.font = `700 ${e.nome.length > 2 ? 104 : 130}px ${M.JP}`; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(e.nome, w / 2, 190); });
+      // a cortina é comprida (quase até o chão): de dentro da loja não se vê o que está guardado
+      for (let k = 0; k < 2; k++) { const geo = new T.PlaneGeometry(vw / 2 - 0.03, 1.6); const uv = geo.attributes.uv; for (let i = 0; i < uv.count; i++) { uv.setX(i, (k + uv.getX(i)) / 2); }
+        const n = new T.Mesh(geo, new T.MeshStandardMaterial({ map: t, side: T.DoubleSide, roughness: 0.9 })); n.position.set(u - vw / 4 + k * vw / 2, vh - 0.8, 0.1); n.rotation.x = 0.03; n.userData.semSombra = true; grp.add(n); }
+      // o cômodo: piso, forro, paredes de reboco simples, o verso da parede com o vão
+      const pa = M.pbr("white_plaster_02", [Wa / 2.5, H / 2.5], { metalness: 0, color: "#a8a092" }), pp = M.pbr("dark_wooden_planks", [Wa / 2, E / 2], { metalness: 0, color: "#9a8878" });
+      const piso = new T.Mesh(new T.PlaneGeometry(Wa, E), pp); piso.rotation.x = -Math.PI / 2; piso.position.set(cx, 0.001, -E / 2); grp.add(piso);
+      const teto = new T.Mesh(new T.PlaneGeometry(Wa, E), pa); teto.rotation.x = Math.PI / 2; teto.position.set(cx, H, -E / 2); grp.add(teto);
+      pl(Wa, H, cx, H / 2, -E, 0, pa); pl(E, H, cx - Wa / 2, H / 2, -E / 2, Math.PI / 2, pa); pl(E, H, cx + Wa / 2, H / 2, -E / 2, -Math.PI / 2, pa);
+      const a2 = (u - vw / 2) - (cx - Wa / 2), b2 = (cx + Wa / 2) - (u + vw / 2);
+      pl(a2, H, cx - Wa / 2 + a2 / 2, H / 2, -0.01, Math.PI, pa); pl(b2, H, cx + Wa / 2 - b2 / 2, H / 2, -0.01, Math.PI, pa); pl(vw, H - vh, u, vh + (H - vh) / 2, -0.01, Math.PI, pa);
+      box(grp, Wa, 0.14, 0.03, ESCURA(), cx, 0.07, -E + 0.015);
+      // posições no estoque em coordenadas da sala: [x, y, z, ry]
+      grp.updateMatrixWorld(true);
+      const W2 = (x, y, z, r = 0) => { const p = grp.localToWorld(V3(x, y, z)); return [p.x, p.y, p.z, ry + r]; };
+      g.userData.est = { grp, W2, cx, E, Wa, u, ry };
     }
     function ceuLaFora(fora) { const ceu = (M.ceu[M.tema === "noite" ? "noite" : "entardecer"] || M.ceu.entardecer || {}).fundo; if (!ceu) return; const t = ceu.clone(); t.needsUpdate = true; t.mapping = T.UVMapping; t.repeat.set(0.18, 0.42); t.offset.set(0.12, 0.3); fora.map = t; fora.color.set(M.tema === "noite" ? "#8090b0" : "#ffffff"); fora.needsUpdate = true; }
     // luminária pendente de verdade (modelo pronto) com uma luz quente e curta logo abaixo
@@ -164,12 +199,45 @@
     M.KANJI = KANJI;
     // as paredes de uma sala W x D (para posicionar quadros): costas, esquerda, direita, frente
     const PAR = (W, D) => ({ fundo: (x, y = 1.6) => [x, y, -D / 2 + 0.05, 0], esq: (z, y = 1.6) => [-W / 2 + 0.05, y, z, Math.PI / 2], dir: (z, y = 1.6) => [W / 2 - 0.05, y, z, -Math.PI / 2], frente: (x, y = 1.6) => [x, y, D / 2 - 0.05, Math.PI] });
+    // quando a matéria tem destaques, as vagas da loja recebem só os dois destaques (o resto vai para o estoque, ver guardar)
     async function quadros(g, id, sub, alvos, vagas, modeloQ = "hanging_picture_frame_02", esc0 = 1.5) {
-      await Promise.all(sub.acts.map(async (a, i) => { const v = vagas[i % vagas.length]; if (!v) return; const [x, y, z, ry, s] = v; const q = await por(g, v[5] || modeloQ, x, y, z, ry, s || esc0); if (!q) return;
+      const temDest = sub.acts.some((a) => a.dest);
+      await Promise.all(sub.acts.map(async (a, i) => { if (temDest && !a.dest) return; const v = vagas[i % vagas.length]; if (!v) return; const [x, y, z, ry, s, mq, incl] = v; const q = await por(g, mq || modeloQ, x, y, z, ry, s || esc0); if (!q) return;
+        if (incl) { q.rotation.order = "YXZ"; q.rotation.x = -incl; }
         trocar(q, /artwork|canvas/, (c) => imagemNoQuadro(c, a.img, a.t, a.r)); trocar(q, /glass/, (c) => { c.visible = false; });
         q.updateMatrixWorld(true); const bb = new T.Box3().setFromObject(q);
         const c = bb.getCenter(V3()), nrm = V3(0, 0, 1).applyAxisAngle(V3(0, 1, 0), ry);
-        alvos.push({ obj: q, nome: a.t, acao: () => M.abrirAtividade(id, i), topo: V3(c.x, bb.max.y + 0.1, c.z), ver: c.clone(), foco: [c.clone().addScaledVector(nrm, 0.75).setY(9), c] }); }));
+        if (a.dest) plaquinha(g, V3(c.x, bb.min.y - 0.1, c.z).addScaledVector(nrm, 0.02), ry);
+        const alto = a.dest && sub.acts.slice(0, i).some((b) => b.dest) ? 0.5 : 0; // o segundo destaque tem o nome um pouco mais alto, para os dois não se taparem
+        alvos.push({ obj: q, nome: a.t, acao: () => M.abrirAtividade(id, i), topo: V3(c.x, bb.max.y + 0.1 + alto, c.z), ver: c.clone(), foco: [c.clone().addScaledVector(nrm, 0.75).setY(9), c] }); }));
+    }
+    // a plaquinha de "recomendado" que as lojas japonesas penduram nos produtos em destaque
+    const popTex = M.canvasTex(320, 128, (c, w, h) => { c.fillStyle = "#b5301b"; c.fillRect(0, 0, w, h); c.strokeStyle = "#f4e2c4"; c.lineWidth = 4; c.strokeRect(8, 8, w - 16, h - 16);
+      c.fillStyle = "#fff4e0"; c.textAlign = "center"; c.textBaseline = "middle"; c.font = `700 52px ${M.JP}`; c.fillText("おすすめ", w / 2, 52); c.font = `500 22px ${M.JPS}`; c.fillText("DESTAQUE", w / 2, 98); });
+    function plaquinha(g, p, ry) { const m = new T.Mesh(new T.PlaneGeometry(0.34, 0.136), mat("pop", () => new T.MeshStandardMaterial({ map: popTex, emissiveMap: popTex, emissive: new T.Color("#ffffff"), emissiveIntensity: 0.12, roughness: 0.7 })));
+      m.position.copy(p); m.rotation.y = ry; m.rotation.z = 0.04; m.userData.semSombra = true; g.add(m); }
+    /* o estoque: caixotes, caixas de papelão e uma estante; as outras atividades ficam encostadas na parede do fundo
+       e em cima dos caixotes, cada uma ainda com o seu quadro (dá para tocar e abrir) */
+    async function guardar(g, id, sub, alvos, L) {
+      const est = g.userData.est; if (!est) return; const { W2, cx, E, Wa } = est, H = SALAS[id].H;
+      const resto = sub.acts.map((a, i) => [a, i]).filter(([a]) => !a.dest);
+      // três caixotes encostados no fundo (os quadros ficam em cima, apoiados na parede) e caixas de papelão perto da passagem
+      const fz = -E + 0.3, cx3 = [cx, cx - 1.15, cx + 1.15];
+      await Promise.all([...cx3.map((x) => por(g, "wooden_crate_01", ...W2(x, 0, fz))),
+        por(g, "cardboard_box_01", ...W2(cx - Wa / 2 + 0.3, 0, -0.45, 0.3)), por(g, "cardboard_box_01", ...W2(cx - Wa / 2 + 0.3, 0.34, -0.47, 0.1)),
+        por(g, "wooden_crate_02", ...W2(cx + Wa / 2 - 0.32, 0, -0.75, 0)), por(g, "cardboard_box_01", ...W2(cx + Wa / 2 - 0.32, 0.46, -0.5, 0.4))]);
+      // onde os quadros ficam: em cima dos caixotes (do meio para os lados) e, os que sobram, pendurados mais alto no fundo
+      const vagas = [...cx3.map((x) => W2(x, 0.35 + 0.33, fz - 0.06, 0)), W2(cx - 0.58, 1.6, -E + 0.03, 0), W2(cx + 0.58, 1.6, -E + 0.03, 0)];
+      await Promise.all(resto.map(async ([a, i], k) => { const v = vagas[k % vagas.length]; const [x, y, z, ry] = v; const q = await por(g, "hanging_picture_frame_02", x, y, z, ry, k < 3 ? 1.25 : 1.1); if (!q) return;
+        if (k < 3) { q.rotation.order = "YXZ"; q.rotation.x = -0.13; }
+        trocar(q, /artwork|canvas/, (c) => imagemNoQuadro(c, a.img, a.t, a.r)); trocar(q, /glass/, (c) => { c.visible = false; });
+        q.updateMatrixWorld(true); const bb = new T.Box3().setFromObject(q), c = bb.getCenter(V3()), nrm = V3(0, 0, 1).applyAxisAngle(V3(0, 1, 0), ry);
+        alvos.push({ obj: q, nome: a.t, acao: () => M.abrirAtividade(id, i), topo: V3(c.x, bb.max.y + 0.1, c.z), ver: c.clone(), foco: [c.clone().addScaledVector(nrm, 0.7).setY(9), c] }); }));
+      // uma lâmpada pendurada no meio do estoque
+      const [lx, , lz] = W2(cx, 0, -E / 2); await L.pend(lx, lz, "hanging_industrial_lamp", 0.45);
+      const lamp = L.luzes.pop(); lamp.distance = 5; L.focos.push(lamp); // acende como os spots (mais forte que as pendentes)
+      // a vista de dentro do estoque (entra com um corte, não atravessando a parede)
+      const cfg = SALAS[id]; if (!cfg.vistas.some((v) => v[2])) { const o = W2(cx, 1.6, -0.12), m = W2(cx, 1.0, -E); cfg.vistas.push([V3(o[0], o[1], o[2]), V3(m[0], m[1], m[2]), true]); }
     }
     // um bilhete de agradecimento emoldurado (abre o agradecimento completo, que fica no santuário)
     async function bilhete(g, alvos, v, titulo, corpo, acao, nomeMarca) { const [x, y, z, ry] = v; const q = await por(g, "hanging_picture_frame_01", x, y, z, ry, 1.05); if (!q) return;
@@ -198,62 +266,62 @@
         } },
       matematica: { titulo: "A sala de Matemática", W: 6.4, D: 5.6, H: 2.9, piso: "dark_wooden_planks", corPiso: "#b8a090", parede: "white_plaster_02", corParede: "#d8d2c4",
         vistas: [[V3(0.3, 1.6, 2.2), V3(-0.4, 1.3, -2.8)], [V3(2.4, 1.5, 1.6), V3(-2.4, 1.2, -1.4)], [V3(-1.6, 1.55, 0.6), V3(3.2, 1.5, -0.6)], [V3(-0.8, 1.55, -1.0), V3(1.4, 0.9, 2.8)]],
-        portaX: 1.4,
+        portaX: 1.4, estoque: { parede: "fundo", u: 2.55, off: -0.6, nome: "準備室", cor: "#2a4a8a" },
         async montar(g, sub, alvos, P, L) {
           await Promise.all([L.pend(-0.1, -0.3, "modern_ceiling_lamp_01", 0.9), L.pend(0.8, -0.3, "modern_ceiling_lamp_01", 0.9), L.pend(-1.4, -1.4, "modern_ceiling_lamp_01", 0.9)]);
-          porta(g, 2.4, -2.78, 0, "準備室"); janela(g, -3.18, 0.4, Math.PI / 2);
-          const lousa = await por(g, "standing_chalkboard_01", -1.4, 0, -2.0, 0.25, 1.35); trocar(lousa, /board/, (c) => { uvPlano(c); c.material = new T.MeshStandardMaterial({ map: giz(), roughness: 0.9, side: T.DoubleSide }); });
+          janela(g, -3.18, 0.4, Math.PI / 2);
+          const lousa = await por(g, "standing_chalkboard_01", -1.75, 0, -2.0, 0.3, 1.35); trocar(lousa, /board/, (c) => { uvPlano(c); c.material = new T.MeshStandardMaterial({ map: giz(), roughness: 0.9, side: T.DoubleSide }); });
           await Promise.all([por(g, "painted_wooden_table", 0.3, 0, -0.3, 0, 0.75), por(g, "chess_set", -0.1, 0.72, -0.3, 0.3, 0.9), por(g, "binder_notebook", 0.75, 0.72, -0.4, -0.2, 1), por(g, "stationery_supplies", 0.95, 0.79, -0.15, 0.4, 1),
             por(g, "SchoolChair_01", -0.3, 0, 0.7, Math.PI, 1), por(g, "SchoolChair_01", 0.9, 0, 0.7, Math.PI + 0.2, 1), por(g, "Shelf_01", 3.05, 0, -1.4, -Math.PI / 2, 1),
             por(g, "book_encyclopedia_set_01", 3.05, 1.02, -1.6, -Math.PI / 2, 1), por(g, "book_encyclopedia_set_01", 3.05, 1.5, -1.6, -Math.PI / 2, 1),
             por(g, "desk_lamp_arm_01", 1.05, 0.72, -0.5, -0.6, 1), por(g, "potted_plant_04", -2.95, 1.05, 0.4, 0, 1.6)]);
-          await quadros(g, "matematica", sub, alvos, [P.fundo(0.6), P.dir(0.4), P.dir(1.8), P.fundo(1.2, 2.2)]);
+          await quadros(g, "matematica", sub, alvos, [[...P.fundo(-0.25, 1.65), 1.7], [...P.fundo(1.2, 1.65), 1.7]]);
           await bilhete(g, alvos, P.esq(1.8), "Obrigado, professor Wagner", "Sou grato pela confiança, pelas oportunidades e por ter contribuído tanto para minha formação acadêmica e pessoal.", () => M.abrirAtividade("agradecimentos", 3), "Obrigado, prof. Wagner");
         } },
       linguagens: { titulo: "A livraria de Linguagens", W: 6.4, D: 6.0, H: 2.9, piso: "wood_floor", corPiso: "#b8a090", parede: "painted_plaster_wall", corParede: "#d4c4ae",
         vistas: [[V3(0, 1.6, 2.4), V3(0, 1.35, -3)], [V3(0.6, 1.55, -1.2), V3(-0.4, 1.2, -3)], [V3(0.6, 1.6, -0.6), V3(-0.3, 1.0, 3)]],
-        portaX: -0.4,
+        portaX: -0.4, estoque: { parede: "fundo", u: 2.3, off: -0.5, nome: "在庫", cor: "#3a4a5a" },
         async montar(g, sub, alvos, P, L) {
           await Promise.all([L.pend(1.9, 1.6), L.pend(-1.0, -2.2), L.pend(0.2, 0.3)]);
           const pm = M.pbr("painted_plaster_wall", [2, 1.2], { metalness: 0, color: "#c8b8a0" });
-          divisoria(g, 6.4, -1.0, 2.9, 0.4, 1.3, pm, "文", "#3a4a5a"); janela(g, -3.18, -2.1, Math.PI / 2, 1.1, 0.9); porta(g, 2.4, -2.98, 0, "お手洗い");
+          divisoria(g, 6.4, -1.0, 2.9, 0.4, 1.3, pm, "文", "#3a4a5a"); janela(g, -3.18, -2.1, Math.PI / 2, 1.1, 0.9);
           balcao(g, 1.9, 1.6, 1.6, 0, 1.0);
           const est = [por(g, "wooden_bookshelf_worn", -2.85, 0, 0.2, Math.PI / 2, 0.95), por(g, "wooden_bookshelf_worn", -2.85, 0, 1.6, Math.PI / 2, 0.95), por(g, "wooden_bookshelf_worn", 2.85, 0, -0.1, -Math.PI / 2, 0.95)];
           await Promise.all(est);
           for (const [x, z, ry] of [[-2.85, 0.2, Math.PI / 2], [-2.85, 1.6, Math.PI / 2], [2.85, -0.1, -Math.PI / 2]]) for (const y of [0.4, 0.86, 1.32]) for (const dz of [-0.33, 0.24]) await por(g, "book_encyclopedia_set_01", x, y, z + dz, ry, 0.95);
           await Promise.all([por(g, "CashRegister_01", 1.6, 1.0, 1.55, Math.PI, 0.7), por(g, "vintage_oil_lamp", 2.4, 1.0, 1.55, 0, 0.6), por(g, "book_encyclopedia_set_01", 1.95, 1.0, 1.5, 0.3, 0.8),
             por(g, "ArmChair_01", -1.4, 0, -2.2, 0.7, 1), por(g, "side_table_01", -0.6, 0, -2.5, 0, 1), por(g, "desk_lamp_arm_01", -0.6, 0.55, -2.5, 0.8, 0.8), por(g, "potted_plant_04", 1.4, 0, -2.6, 0, 2.6)]);
-          await quadros(g, "linguagens", sub, alvos, [P.fundo(-0.9), P.fundo(1.0), [-1.9, 1.6, -0.93, 0], [1.9, 1.6, -0.93, 0], P.frente(-1.9), P.frente(1.0)], "hanging_picture_frame_02", 1.35);
+          await quadros(g, "linguagens", sub, alvos, [[-1.75, 1.62, -0.93, 0], [1.75, 1.62, -0.93, 0]], "hanging_picture_frame_02", 1.6);
           await bilhete(g, alvos, P.dir(1.3), "Obrigado, professora Natali", "Por despertar em mim uma paixão que eu ainda não tinha compreendido por completo: a criação de jogos e narrativas interativas.", () => M.abrirAtividade("agradecimentos", 2), "Obrigado, prof.ª Natali");
         } },
       humanas: { titulo: "O antiquário de Ciências Humanas", W: 6.4, D: 5.6, H: 2.9, piso: "tatami_mat", corPiso: "#c8bca0", parede: "beige_wall_001", corParede: "#c8b498",
         vistas: [[V3(0, 1.6, 2.2), V3(0, 1.3, -2.8)], [V3(-2.3, 1.45, 1.4), V3(1.6, 1.1, -1.6)], [V3(1.4, 1.5, 0.8), V3(-3.2, 1.4, -0.2)], [V3(1.0, 1.5, -0.8), V3(-0.6, 0.9, 2.8)]],
-        portaX: -0.2,
+        portaX: -0.2, estoque: { parede: "dir", u: 0.3, off: 0.2, nome: "倉庫", cor: "#5a3a22" },
         async montar(g, sub, alvos, P, L) {
           await Promise.all([L.pend(0, -0.6, "chinese_chandelier", 0.8), L.pend(1.4, 1.4), ventilador(g, -1.3, 0.6, 2.9)]);
           // um estrado de tatame no fundo, painéis de papel acesos na parede esquerda e a porta do depósito
           box(g, 6.36, 0.3, 1.6, M.pbr("tatami_mat", [3, 1], { metalness: 0, color: "#d8cca8" }), 0, 0.15, -2.0); box(g, 6.36, 0.06, 0.08, ESCURA(), 0, 0.31, -1.2);
-          for (const z of [-1.0, 0.0, 1.0, 2.0]) shoji(g, -3.16, z, 0.95, 1.9, Math.PI / 2, 0.15); porta(g, 2.6, 2.78, Math.PI, "倉庫");
+          for (const z of [-1.0, 0.0, 1.0, 2.0]) shoji(g, -3.16, z, 0.95, 1.9, Math.PI / 2, 0.15);
           await Promise.all([por(g, "chinese_cabinet", -2.6, 0.3, -2.45, 0.2, 0.75), por(g, "chinese_cabinet", 2.6, 0.3, -2.45, -0.2, 0.75), por(g, "chinese_commode", 0, 0.3, -2.15, 0, 0.42),
             por(g, "marble_bust_01", -0.5, 1.15, -2.15, 0.3, 1.2), por(g, "mantel_clock_01", 0.35, 1.15, -2.15, -0.2, 1.3), por(g, "seadogs_compass", 0.75, 1.15, -2.05, 0.6, 2), por(g, "antique_ceramic_vase_01", -0.95, 1.15, -2.1, 0, 1.2),
             por(g, "vintage_binocular", 0.95, 1.17, -2.25, 0.4, 1.4), por(g, "vintage_suitcase", -1.6, 0, 1.4, 0.4, 0.8), por(g, "chinese_armchair", 2.2, 0, 1.0, -2.4, 0.9), por(g, "chinese_tea_table", 1.4, 0, 1.4, 0.2, 0.9),
             por(g, "vintage_oil_lamp", 1.4, 0.45, 1.4, 0, 0.7)]);
-          await quadros(g, "humanas", sub, alvos, [P.dir(-1.4), P.dir(-0.1), P.dir(1.2), P.fundo(-1.6, 1.9), P.fundo(1.6, 1.9), P.frente(-2.0)], "fancy_picture_frame_01", 1.9);
+          await quadros(g, "humanas", sub, alvos, [P.fundo(-1.5, 1.95), P.fundo(1.5, 1.95)], "fancy_picture_frame_01", 2.2);
         } },
       natureza: { titulo: "O laboratório de Ciências da Natureza", W: 6.4, D: 5.6, H: 2.9, piso: "wood_floor", corPiso: "#c0b4a4", parede: "white_plaster_02", corParede: "#d4dcd0",
         vistas: [[V3(0, 1.6, 2.2), V3(0, 1.2, -2.8)], [V3(-2.2, 1.5, 1.5), V3(2.0, 1.3, -1.4)], [V3(1.4, 1.55, 0.6), V3(-3.2, 1.5, -0.6)], [V3(-0.6, 1.55, -1.2), V3(1.5, 0.9, 2.8)]],
-        portaX: 1.5,
+        portaX: 1.5, estoque: { parede: "fundo", u: 2.55, off: -0.6, nome: "標本室", cor: "#2a6a46" },
         async montar(g, sub, alvos, P, L) {
-          await Promise.all([L.pend(0.4, 0.4), L.pend(-1.2, -2.25), L.pend(0.6, -2.25)]);
+          await Promise.all([L.pend(0.4, 0.4), L.pend(-2.1, -2.25), L.pend(1.55, -2.25)]);
           // a bancada do laboratório no fundo, a janela com plantas e a porta da sala de amostras
-          balcao(g, -0.4, -2.45, 4.0, 0, 0.92); janela(g, -3.18, -0.6, Math.PI / 2); porta(g, 2.55, -2.78, 0, "標本室");
+          balcao(g, -0.4, -2.45, 4.0, 0, 0.92); janela(g, -3.18, -0.6, Math.PI / 2);
           await Promise.all([por(g, "vintage_microscope", -1.4, 0.92, -2.4, 0.5, 1.4), por(g, "wicker_basket_02", -0.6, 0.92, -2.35, 0.2, 1.2), por(g, "potted_plant_04", 0.1, 0.92, -2.45, 0, 1.5),
             por(g, "ceramic_vase_03", 0.6, 0.92, -2.45, 0, 0.7), por(g, "ceramic_vase_01", 0.95, 0.92, -2.4, 0, 0.7), por(g, "desk_lamp_arm_01", -2.0, 0.92, -2.45, 0.5, 0.9),
             por(g, "planter_box_02", -2.8, 0, -0.6, Math.PI / 2, 0.9), por(g, "painted_wooden_table", 0.4, 0, 0.4, 0, 0.7), por(g, "potted_plant_04", 0.1, 0.67, 0.4, 0, 1.4), por(g, "vintage_microscope", 0.7, 0.67, 0.35, -0.4, 1.2),
             por(g, "wooden_display_shelves_01", 2.95, 0, 0.9, Math.PI, 1.1)]);
           for (const dz of [-0.35, 0, 0.35]) await por(g, "potted_plant_04", -2.8 + (rnd() - 0.5) * 0.1, 0.4, -0.6 + dz, rnd() * 6, 1.9);
           for (const dz of [-0.3, 0.3]) await por(g, "potted_plant_04", 2.95, 1.72, 0.9 + dz, rnd() * 6, 1.6);
-          await quadros(g, "natureza", sub, alvos, [P.dir(-1.4), P.dir(-0.2), P.dir(2.0, 1.7), P.frente(-1.5), P.frente(0.3), P.esq(1.4), P.esq(2.5), P.fundo(1.0, 2.0)], "hanging_picture_frame_02", 1.3);
+          await quadros(g, "natureza", sub, alvos, [P.fundo(-1.05, 1.98), P.fundo(0.55, 1.98)], "hanging_picture_frame_02", 1.45);
         } },
       tecnico: { titulo: "O laboratório do curso técnico", W: 9, D: 6.6, H: 3.1, piso: "wood_floor", corPiso: "#a8a4a0", parede: "white_plaster_02", corParede: "#cdd2d8", tech: true,
         vistas: [[V3(0, 1.65, 2.8), V3(0, 1.1, -3.3)], [V3(-3.2, 1.55, 1.6), V3(2.6, 1.0, -2.2)], [V3(3.2, 1.55, 1.6), V3(-2.6, 1.0, -2.2)], [V3(-0.6, 1.6, -1.2), V3(2.4, 0.9, 3.3)]],
@@ -309,6 +377,7 @@
       const L = { cena: scene, vidros: [], luzes: [], telas: [], focos: [] };
       L.pend = (x, z, m, e) => pendente(scene, g, x, z, cfg.H, L, m, e);
       await cfg.montar(g, sub, alvos, PAR(cfg.W, cfg.D), L);
+      if (cfg.estoque && sub.acts.some((a) => a.dest)) await guardar(g, id, sub, alvos, L);
       // um spot no teto em cima de cada quadro, com o disquinho aceso no forro
       const disco = mat("spot", () => new T.MeshStandardMaterial({ color: "#fff2dc", emissive: new T.Color("#ffd8a0"), emissiveIntensity: 1.2 }));
       for (const a of alvos) if (a.foco) { const [de, para] = a.foco; de.y = cfg.H - 0.02; const sp = new T.SpotLight("#ffd29a", 0.5, 4, 0.42, 0.8, 2); sp.position.copy(de); sp.target.position.copy(para); scene.add(sp, sp.target); L.focos.push(sp);
@@ -356,13 +425,17 @@
     addEventListener("pointerup", () => { arr = null; });
     const tmp = new T.Vector3();
     const EXP = 1.0;
-    M.ticks.push((t, dt) => { const d = M.dentro; if (!d) return; const [a, b] = d.cfg.vistas[d.vista];
+    M.ticks.push((t, dt) => { const d = M.dentro; if (!d || d.corte) return; const [a, b] = d.cfg.vistas[d.vista];
       for (const v of girando) if (v.parent && v.parent.parent === d.scene) v.rotation.y += 0.025;
       d.olho.lerp(a, 0.06); d.mira.lerp(b, 0.06); d.camera.position.copy(d.olho); d.camera.position.y += Math.sin(t * 0.6) * 0.008;
       tmp.copy(d.mira).sub(d.olho).applyAxisAngle(V3(0, 1, 0), -ox * 0.8); tmp.y -= oy * tmp.length() * 0.6; d.camera.lookAt(tmp.add(d.olho)); });
     addEventListener("resize", () => { if (M.dentro) { M.dentro.camera.aspect = innerWidth / innerHeight; M.dentro.camera.updateProjectionMatrix(); } });
-    const rotulo = () => { const d = M.dentro; if (!d) return; nome.innerHTML = `${esc(d.cfg.titulo)}<small>${esc(d.sub.name)} · vista ${d.vista + 1} de ${d.cfg.vistas.length} · toque nos quadros para abrir</small>`; };
-    const mudarVista = (k) => { const d = M.dentro; if (!d) return; d.vista = (d.vista + k + d.cfg.vistas.length) % d.cfg.vistas.length; ox = oy = 0; rotulo(); };
+    const rotulo = () => { const d = M.dentro; if (!d) return; const noEst = d.cfg.vistas[d.vista][2];
+      nome.innerHTML = `${esc(noEst ? "O estoque, nos fundos" : d.cfg.titulo)}<small>${esc(d.sub.name)} · vista ${d.vista + 1} de ${d.cfg.vistas.length} · toque nos quadros para abrir</small>`; };
+    const mudarVista = (k) => { const d = M.dentro; if (!d || d.corte) return; const de = d.cfg.vistas[d.vista]; d.vista = (d.vista + k + d.cfg.vistas.length) % d.cfg.vistas.length; ox = oy = 0; rotulo();
+      const para = d.cfg.vistas[d.vista]; if (!de[2] && !para[2]) return;
+      // entrar ou sair do estoque é um corte (a câmera não atravessa a parede)
+      d.corte = true; veu.classList.add("on"); setTimeout(() => { d.olho.copy(para[0]); d.mira.copy(para[1]); d.corte = false; setTimeout(() => veu.classList.remove("on"), 60); }, 400); };
     ui.children[0].onclick = () => mudarVista(-1); ui.children[2].onclick = () => mudarVista(1);
     M.vistaSala = mudarVista;
 

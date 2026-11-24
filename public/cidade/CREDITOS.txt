@@ -13,7 +13,7 @@ wooden_bookshelf_worn, ArmChair_01, side_table_01, vintage_oil_lamp, desk_lamp_a
 seadogs_compass, vintage_binocular, antique_ceramic_vase_01, vintage_suitcase, wooden_display_shelves_01, vintage_microscope,
 planter_box_02, ceramic_vase_01/03, wicker_basket_02, potted_plant_04, metal_office_desk, classic_laptop, metal_stool_01,
 circuit_board, retro_multimeter, security_camera_01, power_box_01, steel_frame_shelves_01, mounted_fluorescent_lights,
-hanging_industrial_lamp, modern_ceiling_lamp_01, ceiling_fan, hanging_picture_frame_01/02/03, fancy_picture_frame_01.
+hanging_industrial_lamp, modern_ceiling_lamp_01, ceiling_fan, hanging_picture_frame_01/02/03, fancy_picture_frame_01, cardboard_box_01, wooden_crate_01, wooden_crate_02.
 
 Texturas: asphalt_02, brick_pavement_02, concrete, japanese_stone_wall, hinoki_planks, japanese_cedar_planks,
 grey_roof_tiles, thatch_roof_angled, mossy_rock, leaves_forest_ground, gravel_floor, stone_pathway, farm_soil,

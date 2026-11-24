@@ -60,6 +60,10 @@ modelos em `public/cidade/interior/`, todos do Poly Haven). Cafeteria (perfil), 
 Humanas, Ciências da Natureza e a loja maior do técnico ("tecnico"), com um computador por matéria do curso técnico.
 As atividades ficam em quadros com a imagem delas (UV recalculada no plano da superfície, `uvPlano`); sem imagem,
 um cartão com o título e o texto. "Sair da loja" ou Esc volta para a rua.
+Nas quatro lojas de matéria só duas atividades ficam à vista, em destaque (com a plaquinha おすすめ); o resto fica no
+estoque, um cômodo atrás de uma passagem com cortina comprida (`cfg.estoque`), que tem a última vista da sala. Quem
+escolhe os destaques é `DESTAQUE` em `conteudo.js` (por título). O jogo Nós entra em Linguagens só na cidade (`NOS`
+em `conteudo.js`); o `atividades.json` continua vindo do vale pelo `build.py`.
 
 Para testar sem placa de vídeo, use `?pausa=1` (só desenha depois de carregar), `?limpo=1` (sem interface) e
 `?s=N` (começa no lugar N). `MUNDO.pular(N)` no console troca de lugar na hora.

@@ -52,6 +52,12 @@
   const FUTURO = { id: "futuro", name: "Perspectivas para o futuro", desc: "O que vem depois", acts: [{ t: "Perspectivas para o futuro", s: "2027, os Estados Unidos e os jogos", r: "Ao concluir o Ensino Médio, pretendo dedicar 2027 a um período de transição e preparação acadêmica, conciliando uma experiência profissional com os estudos necessários para os processos seletivos de universidades nos Estados Unidos. Meu objetivo é ampliar minha formação em um ambiente que me permita aprofundar meus conhecimentos em tecnologia e programação, além de entrar em contato com novas perspectivas, culturas e oportunidades.\n\nAcredito que estudar nos Estados Unidos representa uma oportunidade de crescimento que vai além da formação acadêmica. Quero estar em contato com um ecossistema de inovação, desenvolver minha capacidade de trabalhar em ambientes diversos e ampliar minha visão sobre as possibilidades da tecnologia.\n\nNo longo prazo, pretendo direcionar minha carreira para a indústria de desenvolvimento de jogos, uma área que reúne alguns dos meus maiores interesses: programação, criatividade, arte e construção de narrativas. É um campo desafiador e competitivo, mas que representa uma das minhas maiores motivações profissionais.\n\nSei que esse caminho exige preparação, dedicação e disposição para enfrentar desafios. Por isso, vejo os próximos anos não apenas como uma etapa de formação, mas como uma oportunidade de construir as bases necessárias para transformar meus objetivos em realidade." }] };
   const SELO = { perfil: ["喫茶", "#2a3a5a"], jornada: ["旅", "#3a5a3a"], certificados: ["証", "#b5301b"], agradecimentos: ["感謝", "#7a2a22"], futuro: ["未来", "#2a4a6a"], emas: ["絵馬", "#8a5a2a"] };
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  // provisório: os dois destaques de cada matéria (o Fernando ainda vai escolher)
+  const DESTAQUE = { linguagens: ["Nós", "A Paixão Segundo G.H."], matematica: ["Hollow Depths", "Existe uma crise silenciosa"], humanas: ["Imperialismo", "Tropicália"], natureza: ["Meme: Evolucionismo", "Combustíveis Fósseis"] };
+  const NOS = { t: "Nós", s: "Jogo autoral · narrativa interativa · em desenvolvimento", img: "nos/capa.jpg",
+    r: "Um jogo narrativo sobre Liam, que desperta dentro de uma casa construída pelo próprio coma.",
+    ctx: "Liam desperta dentro de uma casa construída pelo próprio coma, sem saber o que aconteceu na noite do incêndio nem por que as lembranças da família não se encaixam. Escondido sob o assoalho, o Tear desloca para alguém aquilo que impediria a família de continuar unida. Esse alguém é o Nó: Liam. A obra discute que crianças não devem carregar os conflitos dos adultos, que o controle pode se disfarçar de cuidado, que o perdão não é obrigação e que a memória não é posse. A abertura já é jogável, feita em TypeScript e Canvas, sobre um roteiro completo de seis capítulos e quatro finais. Criação e desenvolvimento narrativo: Fernando Rateke Neto e Luana Lupi Vergara. Arte: Luana Lupi Vergara.",
+    l: [["Jogar a demonstração", "https://nos-brown-psi.vercel.app/"], ["Ler o roteiro", "https://github.com/Rateke/NOS"]] };
   const imgUrl = (u) => (!u ? "" : /^https?:|^\//.test(u) ? u : "/vale/" + u);
   const safeHref = (u) => (/^(https?:\/\/|\/)/.test(u || "") ? u : "#");
 
@@ -59,6 +65,10 @@
     const { T, camera, scene } = M;
     let subjects = [];
     try { subjects = await fetch("/cidade/atividades.json").then((r) => (r.ok ? r.json() : [])); } catch (e) { subjects = []; }
+    // o Nós entra na livraria de Linguagens (só na cidade; o vale continua como está)
+    const lg = subjects.find((x) => x.id === "linguagens"); if (lg && !lg.acts.some((a) => a.t === NOS.t)) lg.acts.unshift(NOS);
+    // cada loja de matéria mostra duas atividades em destaque na frente; o resto fica no estoque, nos fundos
+    for (const x of subjects) { const d = DESTAQUE[x.id]; if (!d) continue; x.acts.forEach((a) => { a.dest = d.some((t) => a.t.startsWith(t)); }); x.acts.sort((a, b) => b.dest - a.dest); }
     const byId = Object.fromEntries(subjects.map((s) => [s.id, s])); for (const x of [PERFIL, JORNADA, CERTIFICADOS, AGRADECIMENTOS, FUTURO]) byId[x.id] = x;
     // a loja do curso técnico reúne as matérias do técnico (cada uma com o seu computador lá dentro)
     byId.tecnico = { id: "tecnico", name: "Curso Técnico", desc: "Técnico em Desenvolvimento de Sistemas: as matérias do curso", acts: [], subs: subjects.filter((x) => x.cat === "curso-tecnico") };
@@ -79,6 +89,8 @@
       .pp .card{display:flex;gap:14px;align-items:center;padding:12px;margin:0 0 10px;border-radius:6px;background:rgba(255,255,255,.55);border:1px solid rgba(60,40,30,.1);cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit}
       .pp .card:hover,.pp .card:focus-visible{background:#fff;border-color:rgba(181,48,27,.45);outline:none}
       .pp .card img{width:64px;height:64px;object-fit:contain;border-radius:4px;flex:none;background:#e6dcc8}
+      .pp .sec{margin:6px 0 8px;font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;opacity:.6}.pp .card + .sec{margin-top:18px}
+      .pp .card.dest{border-color:rgba(181,48,27,.35);background:rgba(255,250,240,.85)}
       .pp .card b{display:block;font-size:15px}.pp .card span{font-size:12.5px;opacity:.7}
       .pp .hero{width:100%;max-height:340px;object-fit:contain;border-radius:6px;margin:0 0 14px;background:#e6dcc8}
       .pp h3{font-size:20px;margin:0 0 2px}.pp .sub{font-size:13px;opacity:.7;margin:0 0 14px}
@@ -113,7 +125,8 @@
     function lista(sub, loja) {
       if (sub.subs) { pp.innerHTML = cabeca(sub, loja) + `<div class="bd">${sub.subs.map((x) => `<button class="card" data-id="${esc(x.id)}"><div><b>${esc(x.name)}</b><span>${x.acts.length} ${x.acts.length === 1 ? "atividade" : "atividades"}</span></div></button>`).join("")}</div>`;
         pp.querySelectorAll(".card").forEach((b) => (b.onclick = () => abrir(b.dataset.id))); ligar(); return; }
-      pp.innerHTML = cabeca(sub, loja) + `<div class="bd">${sub.acts.map((a, i) => `<button class="card" data-i="${i}">${a.img ? `<img src="${esc(imgUrl(a.img))}" alt="" loading="lazy">` : ""}<div><b>${esc(a.t)}</b><span>${esc(a.s || "")}</span></div></button>`).join("") || "<p>Em breve.</p>"}</div>`;
+      const temDest = sub.acts.some((a) => a.dest), secao = (a, i) => !temDest ? "" : i === 0 ? `<p class="sec">Em destaque na loja</p>` : !a.dest && sub.acts[i - 1].dest ? `<p class="sec">No estoque, nos fundos</p>` : "";
+      pp.innerHTML = cabeca(sub, loja) + `<div class="bd">${sub.acts.map((a, i) => `${secao(a, i)}<button class="card${a.dest ? " dest" : ""}" data-i="${i}">${a.img ? `<img src="${esc(imgUrl(a.img))}" alt="" loading="lazy">` : ""}<div><b>${esc(a.t)}</b><span>${esc(a.s || "")}</span></div></button>`).join("") || "<p>Em breve.</p>"}</div>`;
       pp.querySelectorAll(".card").forEach((b) => (b.onclick = () => detalhe(sub, loja, +b.dataset.i)));
       ligar(sub, loja);
       // com uma atividade só, abre direto nela

@@ -259,17 +259,17 @@
     const SALAS = {
       perfil: { titulo: "A cafeteria", W: 6.4, D: 5.6, H: 2.9, piso: "wood_floor", corPiso: "#c8b0a0", parede: "beige_wall_001", corParede: "#d8c0a4",
         vistas: [[V3(1.1, 1.6, 2.3), V3(-0.7, 1.3, -2.8)], [V3(-2.4, 1.5, 1.8), V3(2.2, 1.1, -1.2)], [V3(0.6, 1.55, -1.5), V3(0.3, 1.0, 2.8)]],
-        portaX: 0.4,
+        portaX: 0.4, estoque: { parede: "fundo", u: 2.55, off: -0.8, nome: "倉庫", cor: "#2a3a5a" },
         async montar(g, sub, alvos, P, L) {
           // a divisória vazada separa as mesas do corredor do balcão; pendentes sobre o balcão e o ventilador no teto
           divisoriaVazada(g, -0.3, 0.75, 1.9, Math.PI / 2);
           await Promise.all([L.pend(1.9, -1.7), L.pend(1.9, -0.8), L.pend(1.9, 0.1), L.pend(-1.8, 0.3), ventilador(g, -1.5, -1.5, 2.9)]);
-          balcao(g, 1.9, -0.9, 2.6, Math.PI / 2, 1.0); porta(g, 2.55, -2.78, 0, "お手洗い"); janela(g, -3.18, -0.4, Math.PI / 2);
+          balcao(g, 1.9, -0.9, 2.6, Math.PI / 2, 1.0); janela(g, -3.18, -0.4, Math.PI / 2);
           await Promise.all([por(g, "CoffeeCart_01", 2.85, 0, 0.9, -Math.PI / 2, 0.75), por(g, "CashRegister_01", 1.95, 1.0, -1.7, -Math.PI / 2, 0.75), por(g, "vintage_electric_kettle", 1.9, 1.0, -0.3, -1.2, 1),
             por(g, "bar_chair_round_01", 1.25, 0, -1.6, 1.2, 1), por(g, "bar_chair_round_01", 1.25, 0, -0.6, 1.8, 1), por(g, "bar_chair_round_01", 1.25, 0, 0.3, 1.4, 1),
             por(g, "round_wooden_table_01", -1.8, 0, 0.3, 0, 0.72), por(g, "tea_set_01", -1.8, 0.72, 0.3, 0.6, 0.85), por(g, "chinese_armchair", -2.4, 0, 1.3, 2.4, 0.9), por(g, "chinese_armchair", -1.0, 0, -0.5, -0.6, 0.9),
             por(g, "potted_plant_04", -2.95, 1.05, -0.4, 0, 1.6), por(g, "ceramic_vase_01", -2.9, 0, 2.4, 0, 2)]);
-          await quadros(g, "perfil", sub, alvos, [P.fundo(-1.0, 1.6), P.fundo(0.5, 1.6), P.fundo(-2.45, 1.6)], "hanging_picture_frame_01", 1.4);
+          await quadros(g, "perfil", sub, alvos, [P.fundo(-1.05, 1.6), P.fundo(0.55, 1.6)], "hanging_picture_frame_01", 1.6);
         } },
       matematica: { titulo: "A sala de Matemática", W: 6.4, D: 5.6, H: 2.9, piso: "dark_wooden_planks", corPiso: "#b8a090", parede: "white_plaster_02", corParede: "#d8d2c4",
         vistas: [[V3(0.3, 1.6, 2.2), V3(-0.4, 1.3, -2.8)], [V3(2.4, 1.5, 1.6), V3(-2.4, 1.2, -1.4)], [V3(-1.6, 1.55, 0.6), V3(3.2, 1.5, -0.6)], [V3(-0.8, 1.55, -1.0), V3(1.4, 0.9, 2.8)]],

@@ -60,7 +60,7 @@ modelos em `public/cidade/interior/`, todos do Poly Haven). Cafeteria (perfil), 
 Humanas, Ciências da Natureza e a loja maior do técnico ("tecnico"), com um computador por matéria do curso técnico.
 As atividades ficam em quadros com a imagem delas (UV recalculada no plano da superfície, `uvPlano`); sem imagem,
 um cartão com o título e o texto. "Sair da loja" ou Esc volta para a rua.
-Nas quatro lojas de matéria só duas atividades ficam à vista, em destaque (com a plaquinha おすすめ); o resto fica no
+Na cafeteria e nas quatro lojas de matéria só duas atividades ficam à vista, em destaque (com a plaquinha おすすめ); o resto fica no
 estoque, um cômodo atrás de uma passagem com cortina comprida (`cfg.estoque`), que tem a última vista da sala. Quem
 escolhe os destaques é `DESTAQUE` em `conteudo.js` (por título). No laboratório do técnico é igual por matéria: cada
 mesa tem um computador por destaque (até dois, com a atividade na tela) e o resto vai para a サーバー室. O jogo Nós entra em Linguagens só na cidade (`NOS`

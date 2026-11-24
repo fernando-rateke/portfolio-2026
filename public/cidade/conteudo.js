@@ -53,7 +53,7 @@
   const SELO = { perfil: ["喫茶", "#2a3a5a"], jornada: ["旅", "#3a5a3a"], certificados: ["証", "#b5301b"], agradecimentos: ["感謝", "#7a2a22"], futuro: ["未来", "#2a4a6a"], emas: ["絵馬", "#8a5a2a"] };
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   // provisório: os dois destaques de cada matéria (o Fernando ainda vai escolher)
-  const DESTAQUE = { linguagens: ["Nós", "A Paixão Segundo G.H."], matematica: ["Hollow Depths", "Existe uma crise silenciosa"], humanas: ["Imperialismo", "Tropicália"], natureza: ["Meme: Evolucionismo", "Combustíveis Fósseis"],
+  const DESTAQUE = { perfil: ["Quem sou", "O que me move"], linguagens: ["Nós", "A Paixão Segundo G.H."], matematica: ["Hollow Depths", "Existe uma crise silenciosa"], humanas: ["Imperialismo", "Tropicália"], natureza: ["Meme: Evolucionismo", "Combustíveis Fósseis"],
     // no laboratório do técnico, cada matéria do curso é uma mesa: os destaques vão para os computadores dela
     modelagem: ["Hackathon: Cibersegurança"], desenvolvimento: ["AcousticBuild"], "programacao-aplicativos": ["AcousticBuild"], iot: ["Atividade 2 — Semáforo", "Atividade 1 — Acender LED"], banco: ["Hackathon: Modelagem SQL"] };
   const NOS = { t: "Nós", s: "Jogo autoral · narrativa interativa · em desenvolvimento", img: "nos/capa.jpg",
@@ -70,7 +70,7 @@
     // o Nós entra na livraria de Linguagens (só na cidade; o vale continua como está)
     const lg = subjects.find((x) => x.id === "linguagens"); if (lg && !lg.acts.some((a) => a.t === NOS.t)) lg.acts.unshift(NOS);
     // cada loja de matéria mostra duas atividades em destaque na frente; o resto fica no estoque, nos fundos
-    for (const x of subjects) { const d = DESTAQUE[x.id]; if (!d) continue; x.acts.forEach((a) => { a.dest = d.some((t) => a.t.startsWith(t)); }); x.acts.sort((a, b) => b.dest - a.dest); }
+    for (const x of [...subjects, PERFIL]) { const d = DESTAQUE[x.id]; if (!d) continue; x.acts.forEach((a) => { a.dest = d.some((t) => a.t.startsWith(t)); }); x.acts.sort((a, b) => b.dest - a.dest); }
     const byId = Object.fromEntries(subjects.map((s) => [s.id, s])); for (const x of [PERFIL, JORNADA, CERTIFICADOS, AGRADECIMENTOS, FUTURO]) byId[x.id] = x;
     // a loja do curso técnico reúne as matérias do técnico (cada uma com o seu computador lá dentro)
     byId.tecnico = { id: "tecnico", name: "Curso Técnico", desc: "Técnico em Desenvolvimento de Sistemas: as matérias do curso", acts: [], subs: subjects.filter((x) => x.cat === "curso-tecnico") };

@@ -53,7 +53,9 @@
   const SELO = { perfil: ["喫茶", "#2a3a5a"], jornada: ["旅", "#3a5a3a"], certificados: ["証", "#b5301b"], agradecimentos: ["感謝", "#7a2a22"], futuro: ["未来", "#2a4a6a"], emas: ["絵馬", "#8a5a2a"] };
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   // provisório: os dois destaques de cada matéria (o Fernando ainda vai escolher)
-  const DESTAQUE = { linguagens: ["Nós", "A Paixão Segundo G.H."], matematica: ["Hollow Depths", "Existe uma crise silenciosa"], humanas: ["Imperialismo", "Tropicália"], natureza: ["Meme: Evolucionismo", "Combustíveis Fósseis"] };
+  const DESTAQUE = { linguagens: ["Nós", "A Paixão Segundo G.H."], matematica: ["Hollow Depths", "Existe uma crise silenciosa"], humanas: ["Imperialismo", "Tropicália"], natureza: ["Meme: Evolucionismo", "Combustíveis Fósseis"],
+    // no laboratório do técnico, cada matéria do curso é uma mesa: os destaques vão para os computadores dela
+    modelagem: ["Hackathon: Cibersegurança"], desenvolvimento: ["AcousticBuild"], "programacao-aplicativos": ["AcousticBuild"], iot: ["Atividade 2 — Semáforo", "Atividade 1 — Acender LED"], banco: ["Hackathon: Modelagem SQL"] };
   const NOS = { t: "Nós", s: "Jogo autoral · narrativa interativa · em desenvolvimento", img: "nos/capa.jpg",
     r: "Um jogo narrativo sobre Liam, que desperta dentro de uma casa construída pelo próprio coma.",
     ctx: "Liam desperta dentro de uma casa construída pelo próprio coma, sem saber o que aconteceu na noite do incêndio nem por que as lembranças da família não se encaixam. Escondido sob o assoalho, o Tear desloca para alguém aquilo que impediria a família de continuar unida. Esse alguém é o Nó: Liam. A obra discute que crianças não devem carregar os conflitos dos adultos, que o controle pode se disfarçar de cuidado, que o perdão não é obrigação e que a memória não é posse. A abertura já é jogável, feita em TypeScript e Canvas, sobre um roteiro completo de seis capítulos e quatro finais. Criação e desenvolvimento narrativo: Fernando Rateke Neto e Luana Lupi Vergara. Arte: Luana Lupi Vergara.",

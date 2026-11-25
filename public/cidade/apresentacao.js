@@ -137,6 +137,7 @@
         case "back": if (M.dentro) M.sair(); else M.anterior(); break;
         case "go": M.irPara(m.i); break;
         case "creditos": if (M.creditos) M.creditos(); break;
+        case "mapa": if (M.dentro) M.sair(); else if (M.mapa) M.mapa(); break;
         case "home": case "fim": M.irPara(0); break;
         case "close": M.fechar(); light.classList.remove("on"); break;
         case "zoom": zoom(!!m.on); break;

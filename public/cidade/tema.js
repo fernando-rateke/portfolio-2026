@@ -30,7 +30,7 @@
       const c = TEMAS[nome]; M.tema = nome; document.body.dataset.tema = nome;
       const ceu = nome === "noite" ? await ceuNoite() : M.ceu.entardecer;
       if (ceu) { scene.background = ceu.fundo; scene.environment = ceu.env; }
-      renderer.toneMappingExposure = c.exp; scene.fog.color.set(c.fog); scene.fog.density = c.dens;
+      renderer.toneMappingExposure = c.exp; scene.fog.color.set(c.fog); scene.fog.density = c.dens; M.fogDens = c.dens;
       sun.color.set(c.sol[0]); sun.intensity = c.sol[1]; if (M.sunOff) M.sunOff.set(...c.dir).setLength(45);
       if (hemi) { hemi.color.set(c.hemi[0]); hemi.groundColor.set(c.hemi[1]); hemi.intensity = c.hemi[2]; }
       if (M.bbU) { M.bbU.uSun.value.set(c.bb[0]); M.bbU.uSky.value.set(c.bb[1]); }

@@ -29,7 +29,7 @@
     t.mapping = T.EquirectangularReflectionMapping; t.encoding = T.sRGBEncoding;
     const pm = new T.PMREMGenerator(renderer); M.ceu.entardecer = { fundo: t, env: pm.fromEquirectangular(t).texture }; if (!M.tema || M.tema === "entardecer") { scene.background = t; scene.environment = M.ceu.entardecer.env; }
   });
-  scene.fog = new T.FogExp2("#b98a7a", 0.0068);
+  scene.fog = new T.FogExp2("#b98a7a", 0.0068); M0.fogDens = 0.0068; // a densidade do tema; o passeio afina a névoa lá no céu
   const sun = new T.DirectionalLight("#ff9a58", 2.4); sun.position.set(-26, 11, -72); sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -32, right: 32, top: 32, bottom: -32, near: 1, far: 95 }); sun.shadow.bias = -0.0004; scene.add(sun);
   const hemi = new T.HemisphereLight("#8f86b8", "#4a3028", 0.42); scene.add(hemi);
@@ -99,7 +99,8 @@
   const cidadeG = new T.Group(), matCache = {};
   // o que passa de ~300 m some na névoa: não vale desenhar (as malhas juntadas e os pedaços instanciados entram aqui)
   const longe = [], LONGE = 300, cv = new T.Vector3();
-  function cortaLonge() { for (const o of longe) { const s = o.geometry.boundingSphere; if (!s) continue; cv.copy(s.center).applyMatrix4(o.matrixWorld); o.visible = cv.distanceTo(camera.position) - s.radius < (o.userData.longe || LONGE); } }
+  // M.semCorte: com a câmera lá no céu (o mapa), nada é cortado pela distância
+  function cortaLonge() { if (M.semCorte) { for (const o of longe) o.visible = true; return; } for (const o of longe) { const s = o.geometry.boundingSphere; if (!s) continue; cv.copy(s.center).applyMatrix4(o.matrixWorld); o.visible = cv.distanceTo(camera.position) - s.radius < (o.userData.longe || LONGE); } }
   function building(x0, z0, side, bays, floors, kinds) {
     const g = new T.Group(); g.position.set(x0, 0.12, z0); g.rotation.y = side < 0 ? Math.PI / 2 : -Math.PI / 2; cidadeG.add(g);
     const tint = new T.Color(kinds.tint || "#ffffff");

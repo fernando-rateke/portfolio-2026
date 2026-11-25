@@ -422,7 +422,7 @@
           const m = new T.Mesh(new T.PlaneGeometry(w, TH), new T.MeshStandardMaterial({ map: tex, emissiveMap: tex, emissive: new T.Color("#ffe6c4"), emissiveIntensity: 0.16, roughness: 0.85 }));
           m.position.set(x0 + w / 2, 1.62, 0.0); m.receiveShadow = true; nomes.add(m); marca(m, `${gr.nome}: ${gr.nomes.length} ${gr.nomes.length > 1 ? "nomes" : "nome"}`, () => M.abrirAtividade("agradecimentos", gr.i));
           // nos professores, cada um abre o seu agradecimento
-          if (gr.i === 2) [2, 3].forEach((ai, k) => { const b = new T.Mesh(new T.PlaneGeometry(TW, TH), new T.MeshBasicMaterial({ visible: false })); b.position.set(x0 + HW + TW * (k + 0.5), 1.62, 0.03); nomes.add(b); marca(b, AGRADECIMENTOS.acts[ai].t, () => M.abrirAtividade("agradecimentos", ai)); });
+          if (gr.i === 2) [2, 3].forEach((ai, k) => { const b = new T.Mesh(new T.PlaneGeometry(TW, TH), new T.MeshBasicMaterial({ visible: false })); b.position.set(x0 + HW + TW * (k + 0.5), 1.62, 0.03); nomes.add(b); marca(b, ai === 2 ? "Professora Natali da Silva Rego" : "Professor Wagner de Sousa Santos", () => M.abrirAtividade("agradecimentos", ai)); });
           x0 += w + gap; });
         const hp = M.haiden.position; nomes.position.set(hp.x + 8.3, YT, hp.z + 17.5); nomes.rotation.y = -1.07; scene.add(nomes);
         marcador("Quem veio junto", new T.Vector3(hp.x + 8.3, YT + 3.6, hp.z + 17.5), () => abrir("agradecimentos"), 24, "縁");
@@ -457,7 +457,7 @@
     const rc = new T.Raycaster(), ptr = new T.Vector2();
     const pick = (x, y) => (M.dentro ? M.dentro.pick(x, y) : pickCidade(x, y));
     const pickCidade = (x, y) => { ptr.set((x / innerWidth) * 2 - 1, -(y / innerHeight) * 2 + 1); rc.setFromCamera(ptr, camera); rc.far = 60; const h = rc.intersectObjects(alvos, false)[0]; return h ? h.object.userData.acao : null; };
-    M.pick = pick; M.clicar = (x, y) => { const a = pick(x, y); if (a) a.acao(); return !!a; };
+    M.pick = pick; M.clicar = (x, y) => { if (M.noCeu && M.noCeu() && !M.dentro) return false; const a = pick(x, y); if (a) a.acao(); return !!a; };
     const cv = M.renderer.domElement; let down = null;
     cv.addEventListener("pointerdown", (e) => { down = [e.clientX, e.clientY, performance.now()]; });
     cv.addEventListener("pointerup", (e) => { if (!down) return; const moved = Math.hypot(e.clientX - down[0], e.clientY - down[1]); const dt = performance.now() - down[2]; down = null; if (moved > 10 || dt > 600) return; M.clicar(e.clientX, e.clientY); });

@@ -50,7 +50,7 @@
       .cred .bts button{padding:10px 18px;border-radius:999px;border:1px solid rgba(246,238,226,.45);background:rgba(20,14,18,.4);color:#f6eee2;font:14px "Noto Serif JP",Georgia,serif;cursor:pointer;backdrop-filter:blur(4px)}
       .cred .pular{position:absolute;right:18px;bottom:18px;padding:7px 14px;border-radius:999px;border:1px solid rgba(246,238,226,.3);background:rgba(20,14,18,.3);color:rgba(246,238,226,.75);font:13px "Noto Serif JP",Georgia,serif;cursor:pointer;transition:opacity .6s}
       .cred-veu{position:fixed;inset:0;z-index:31;background:#05040a;opacity:0;pointer-events:none;transition:opacity .9s}.cred-veu.on{opacity:1}
-      body.creditos .cam-ui,body.creditos .cantos,body.creditos .marcas,body.creditos .apr,body.creditos .dica3d{opacity:0!important;pointer-events:none!important}
+      body.creditos .cam-ui,body.creditos .nav-lugar,body.creditos .nav-mapa,body.creditos .ceu-ui,body.creditos .cantos,body.creditos .marcas,body.creditos .apr,body.creditos .dica3d{opacity:0!important;pointer-events:none!important}
       @media (prefers-reduced-motion:reduce){.cred .fim .pre,.cred .fim .logo{transition:none}}`;
     document.head.appendChild(css);
     const tela = document.createElement("div"); tela.className = "cred"; tela.setAttribute("aria-hidden", "true");

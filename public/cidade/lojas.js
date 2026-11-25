@@ -368,7 +368,7 @@
     /* ---------- entrar, sair e trocar de vista ---------- */
     const css = document.createElement("style");
     css.textContent = `.sair{position:fixed;z-index:7;top:max(16px,env(safe-area-inset-top));left:16px;padding:9px 16px;border-radius:999px;border:1px solid rgba(246,238,226,.5);background:rgba(20,14,18,.55);color:#f6eee2;font:14px "Noto Serif JP",Georgia,serif;cursor:pointer;display:none;backdrop-filter:blur(4px)}
-      body.dentro .sair{display:block}body.dentro .apr,body.dentro .cam-ui{display:none}
+      body.dentro .sair{display:block}body.dentro .apr,body.dentro .cam-ui,body.dentro .nav-lugar,body.dentro .nav-mapa{display:none}
       .sala-ui{position:fixed;z-index:5;left:50%;bottom:18px;transform:translateX(-50%);display:none;align-items:center;gap:14px;color:#f6eee2;font:500 15px "Noto Serif JP",Georgia,serif;text-shadow:0 1px 8px rgba(0,0,0,.6);text-align:center}
       body.dentro .sala-ui{display:flex}.sala-ui small{display:block;font-size:12px;opacity:.75;letter-spacing:.04em;margin-top:3px}
       .sala-ui button{width:42px;height:42px;border-radius:50%;border:1px solid rgba(246,238,226,.45);background:rgba(20,14,18,.35);color:#f6eee2;font-size:18px;cursor:pointer;backdrop-filter:blur(4px)}

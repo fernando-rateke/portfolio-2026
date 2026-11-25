@@ -243,3 +243,11 @@ baixo sobre um véu que escurece e desfoca a cena. O que o painel escreve vai pa
 (Quem sou, futuro, agradecimentos: `EMK`) abrem num emakimono (`.emk`), um rolo horizontal lido de lado em colunas,
 com as fotos no meio; quem abre por um trecho (ANCORA, capítulo) cai nele. Dentro das lojas, abrir um quadro leva a
 câmera para perto dele (`perto`), e fechar volta. Fonte: Shippori Mincho (Google Fonts).
+
+O passeio (`caminho.js`): não há mais "‹ ›" nem rolar de lugar em lugar. A câmera fica num lugar e o visitante olha
+em volta (arrastar, setas ou WASD). O botão "Mapa" (tecla M, pinça no celular, "Mapa do céu" no controle) faz a
+câmera subir num voo até uma vista de drone que corre ao longo da cidade (arrastar ou rolar anda da rua ao lago); cada
+lugar tem um carimbo (hanko, `HANKO`) e uma coluna de luz ao apontar; tocar num carimbo faz a câmera mergulhar até
+ele (curva de Bézier, chegando por cima e por trás). O carimbo 終 abre os créditos. Cada lugar visitado ganha o selo
+no caderno (goshuinchō, `localStorage` "cidade-selos"). No céu, `M.semCorte` desliga o corte por distância e a névoa
+afina. `M.irPara(k)` voa, `M.pular(k)` vai direto (testes), `M.mapa()` sobe ou desce.

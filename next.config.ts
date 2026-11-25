@@ -8,6 +8,8 @@ const nextConfig: NextConfig = {
         { source: "/", destination: "/cidade/index.html" },
         { source: "/cidade", destination: "/cidade/index.html" },
         { source: "/vale", destination: "/vale/index.html" },
+        // o portfólio de Tokyo Ghoul (o 20º distrito), separado e do jeito que era
+        { source: "/tg", destination: "/tg/index.html" },
         // moderação das emas: página estática; a senha é conferida nas rotas /api/admin
         { source: "/admin", destination: "/admin/index.html" },
         // o controle pelo celular do modo apresentação
@@ -27,6 +29,7 @@ const nextConfig: NextConfig = {
       { source: "/cidade/:dir(modelos|tex|audio|vendor|interior)/:file*", headers: cache },
       { source: "/cidade/meshopt.js", headers: cache },
       { source: "/vale/:dir(audio|nos|perfil|grim|trem|modelos)/:file*", headers: cache },
+      { source: "/tg/:dir(audio|modelos)/:file*", headers: cache },
     ];
   },
   // Rotas antigas que eram apenas apelidos de outras páginas
@@ -37,9 +40,6 @@ const nextConfig: NextConfig = {
       // a Biblioteca Infinita saiu; quem tiver o link antigo cai na cidade
       { source: "/biblioteca", destination: "/", permanent: false },
       { source: "/biblioteca/:path*", destination: "/", permanent: false },
-      // o portfólio de Tokyo Ghoul saiu; quem tiver o link antigo cai na capa
-      { source: "/tg/:path*", destination: "/", permanent: false },
-      { source: "/tg", destination: "/", permanent: false },
     ];
   },
 };

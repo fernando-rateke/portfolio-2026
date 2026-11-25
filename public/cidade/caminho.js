@@ -20,10 +20,8 @@
       { p: at(0.2, -94.5, 1.6), o: V3(4.6, yEsc(-104) + 2.0, -104), id: "escadaria", g: "O santuário", nome: "A escadaria das cerejeiras", jp: "桜の石段" },
       { p: at(0, -111, 1.65), o: V3(4, L.Y_TOPO + 2.6, -134) },
       { p: at(0, -119, 1.65), o: V3(0, L.Y_TOPO + 3.5, -140), id: "santuario", g: "O santuário", nome: "O santuário", jp: "神社" },
-      { p: at(-2.2, -121.5, 1.65), o: V3(-11, L.Y_TOPO + 3.2, -128), id: "arvore", g: "O santuário", nome: "A árvore sagrada", jp: "御神木" },
       { p: at(-10.5, -137, 1.65), o: V3(-9, L.Y_TOPO, -152) },
       { p: at(tx(-150), -150, 1.65), o: V3(tx(-165), h(tx(-165), -165) + 1.4, -165) },
-      { p: at(tx(-172), -172, 1.65), o: V3(tx(-188), h(tx(-188), -188) + 1.2, -188), id: "floresta", g: "O campo", nome: "A floresta", jp: "森" },
       { p: at(tx(-196), -196, 3.2), o: V3(0, L.Y_VALE + 1, -290), id: "vale", g: "O campo", nome: "O vale", jp: "谷" },
       { p: at(tx(-222) + 1.5, -222, 1.65), o: V3(-34, L.Y_VALE + 3.5, -226), id: "arrozal", g: "O campo", nome: "O arrozal", jp: "田んぼ" },
       { p: at(tx(-245), -245, 1.65), o: V3(0, L.Y_VALE + 4, -300) },
@@ -34,7 +32,7 @@
     const lugares = N.map((n, i) => (n.nome ? i : -1)).filter((i) => i >= 0);
     // o kanji do carimbo de cada lugar e onde ele flutua no mapa visto do céu
     const HANKO = { rua: ["通", V3(0, 8, 14)], lojas: ["商", V3(0, 10, -26)], torii: ["鳥居", V3(0, 13, -64)], escadaria: ["桜", V3(0, yEsc(-94) + 8, -94)], santuario: ["社", V3(0, L.Y_TOPO + 12, -137)],
-      arvore: ["木", V3(-12, L.Y_TOPO + 15, -127)], floresta: ["森", V3(tx(-178), h(tx(-178), -178) + 13, -178)], vale: ["谷", V3(tx(-198), h(tx(-198), -198) + 10, -198)], arrozal: ["田", V3(-34, L.Y_VALE + 7, -226)], lago: ["湖", V3(0, L.Y_AGUA + 9, -300)] };
+      vale: ["谷", V3(tx(-198), h(tx(-198), -198) + 10, -198)], arrozal: ["田", V3(-34, L.Y_VALE + 7, -226)], lago: ["湖", V3(0, L.Y_AGUA + 9, -300)] };
     M.lugares = lugares.map((i, k) => ({ i: k, id: N[i].id, g: N[i].g, nome: N[i].nome, jp: N[i].jp, kj: (HANKO[N[i].id] || ["印"])[0] }));
     let aqui = 0;
     { const q = M.Q.get("s"); if (q != null) aqui = Math.max(0, Math.min(lugares.length - 1, parseInt(q, 10) || 0)); }

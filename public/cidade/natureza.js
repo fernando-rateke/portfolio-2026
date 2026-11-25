@@ -96,15 +96,6 @@
     [sak, mom, isl1, isl2].forEach(duplaFace);
     const pos = (x, z, s, ry = rnd() * 6.28) => TRS(x, h(x, z) - 0.15, z, ry, s);
     const YT = L.Y_TOPO;
-    // a árvore sagrada: a grande árvore antiga do santuário, abraçada pela corda (a única que é uma cópia inteira)
-    if (isl1) { const o = isl1.clone(true); o.position.set(M.arvoreSagrada.x, h(M.arvoreSagrada.x, M.arvoreSagrada.z) - 0.05, M.arvoreSagrada.z); o.scale.setScalar(2.6); o.rotation.y = 2.2; o.traverse((m) => { if (m.isMesh) { m.castShadow = m.receiveShadow = true; } }); scene.add(o);
-      // mede o tronco na altura da corda para a corda abraçar o tronco de verdade
-      const yC = o.position.y + 1.9; let cx = 0, cz = 0, n = 0; const pts = []; o.updateMatrixWorld(true); const v = new T.Vector3();
-      try { o.traverse((m) => { if (!m.isMesh || /leaves|branches/.test(m.material.name || "")) return; const p = m.geometry.attributes.position; const step = Math.max(1, Math.floor(p.count / 60000));
-        for (let i = 0; i < p.count; i += step) { v.fromBufferAttribute(p, i).applyMatrix4(m.matrixWorld); if (Math.abs(v.y - yC) < 0.12) { pts.push(v.x, v.z); cx += v.x; cz += v.z; n++; } } }); } catch (e) { n = 0; }
-      let c = new T.Vector3(o.position.x, yC, o.position.z), r = 1.1;
-      if (n > 10) { cx /= n; cz /= n; let rr = 0; for (let i = 0; i < pts.length; i += 2) rr = Math.max(rr, Math.hypot(pts[i] - cx, pts[i + 1] - cz)); c.set(cx, yC, cz); r = Math.min(2.2, rr * 0.92 + 0.06); }
-      scene.add(M.J.shimenawaAnel(c, r, 5, new T.Vector3(1, 0, 0.6).normalize())); }
     // cerejeiras 3D onde a câmera passa perto: dos dois lados da escadaria (um arco rosa sobre os degraus), na praça e no pátio
     const S = [];
     for (let z = L.Z_ESC0 - 2.5, k = 0; z > L.Z_ESC1 + 1; z -= 6.2, k++) for (const sd of [-1, 1]) { const zz = z + sd * 1.5 + (rnd() - 0.5); const xx = sd * (5.4 + rnd() * 1.2), sc = 0.26 + rnd() * 0.05; const pp = pos(xx, zz, sc); if (Math.hypot(xx - L.KOSATSU.x, zz - L.KOSATSU.z) > 4.2) S.push(pp); }

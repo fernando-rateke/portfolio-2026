@@ -216,7 +216,7 @@
         const c = bb.getCenter(V3()), nrm = V3(0, 0, 1).applyAxisAngle(V3(0, 1, 0), ry);
         if (a.dest) plaquinha(g, V3(c.x, bb.min.y - 0.1, c.z).addScaledVector(nrm, 0.02), ry);
         const alto = a.dest && sub.acts.slice(0, i).some((b) => b.dest) ? 0.5 : 0; // o segundo destaque tem o nome um pouco mais alto, para os dois não se taparem
-        alvos.push({ obj: q, nome: a.t, acao: () => M.abrirAtividade(id, i), topo: V3(c.x, bb.max.y + 0.1 + alto, c.z), ver: c.clone(), foco: [c.clone().addScaledVector(nrm, 0.75).setY(9), c] }); }));
+        alvos.push({ obj: q, nome: a.t, acao: () => M.abrirAtividade(id, i), topo: V3(c.x, bb.max.y + 0.1 + alto, c.z), ver: c.clone(), foco: [c.clone().addScaledVector(nrm, 0.75).setY(9), c], perto: [c.clone().addScaledVector(nrm, 1.45), c.clone()] }); }));
     }
     // a plaquinha de "recomendado" que as lojas japonesas penduram nos produtos em destaque
     const popTex = M.canvasTex(320, 128, (c, w, h) => { c.fillStyle = "#b5301b"; c.fillRect(0, 0, w, h); c.strokeStyle = "#f4e2c4"; c.lineWidth = 4; c.strokeRect(8, 8, w - 16, h - 16);
@@ -241,7 +241,7 @@
         if (k < 3) { q.rotation.order = "YXZ"; q.rotation.x = -0.13; }
         trocar(q, /artwork|canvas/, (c) => imagemNoQuadro(c, a.img, a.t, a.r)); trocar(q, /glass/, (c) => { c.visible = false; });
         q.updateMatrixWorld(true); const bb = new T.Box3().setFromObject(q), c = bb.getCenter(V3()), nrm = V3(0, 0, 1).applyAxisAngle(V3(0, 1, 0), ry);
-        alvos.push({ obj: q, nome: a.t, acao, topo: V3(c.x, bb.max.y + 0.1, c.z), ver: c.clone() }); }));
+        alvos.push({ obj: q, nome: a.t, acao, topo: V3(c.x, bb.max.y + 0.1, c.z), ver: c.clone(), perto: [c.clone().addScaledVector(nrm, 1.2).setY(c.y + 0.25), c.clone()] }); }));
       // uma lâmpada pendurada no meio do estoque
       const [lx, , lz] = W2(cx, 0, -E / 2); await L.pend(lx, lz, "hanging_industrial_lamp", 0.45, true);
       const lamp = L.luzes.pop(); lamp.distance = 5; lamp.userData.k = 1.5; L.focos.push(lamp); // a única luz do estoque, mais forte que as pendentes
@@ -409,6 +409,8 @@
       const pick = (x, y) => { ptr.set((x / innerWidth) * 2 - 1, -(y / innerHeight) * 2 + 1); rc.setFromCamera(ptr, camera); let melhor = null, dm = 1e9;
         for (const a of alvos) { const h = rc.intersectObject(a.obj, true)[0]; if (h && h.distance < dm) { dm = h.distance; melhor = a; } } return melhor ? { nome: melhor.nome, acao: melhor.acao } : null; };
       const d = { scene, camera, alvos, pick, cfg, sub, id, hemi, sol, facho, L, fora: g.userData.fora, vista: 0, olho: cfg.vistas[0][0].clone(), mira: cfg.vistas[0][1].clone() };
+      // ao abrir uma atividade, a câmera chega perto do quadro dela; ao fechar o pergaminho, volta para a vista
+      for (const a of alvos) if (a.perto) { const ac = a.acao; a.acao = () => { d.perto = a.perto; ac(); }; }
       // os shaders da sala compilam aqui, ainda atrás do véu, e não no primeiro quadro dentro dela
       luzDoTema(d); if (M.prepararGPU) await M.prepararGPU(scene, camera);
       return d;
@@ -444,14 +446,15 @@
     addEventListener("pointerup", () => { arr = null; });
     const tmp = new T.Vector3();
     const EXP = 1.0;
-    M.ticks.push((t, dt) => { const d = M.dentro; if (!d || d.corte) return; const [a, b] = d.cfg.vistas[d.vista];
+    M.aoFecharPainel = () => { if (M.dentro) M.dentro.perto = null; };
+    M.ticks.push((t, dt) => { const d = M.dentro; if (!d || d.corte) return; const [a, b] = d.perto || d.cfg.vistas[d.vista];
       for (const v of girando) if (v.parent && v.parent.parent === d.scene) v.rotation.y += 0.025;
       d.olho.lerp(a, 0.06); d.mira.lerp(b, 0.06); d.camera.position.copy(d.olho); d.camera.position.y += Math.sin(t * 0.6) * 0.008;
       tmp.copy(d.mira).sub(d.olho).applyAxisAngle(V3(0, 1, 0), -ox * 0.8); tmp.y -= oy * tmp.length() * 0.6; d.camera.lookAt(tmp.add(d.olho)); });
     addEventListener("resize", () => { if (M.dentro) { M.dentro.camera.aspect = innerWidth / innerHeight; M.dentro.camera.updateProjectionMatrix(); } });
     const rotulo = () => { const d = M.dentro; if (!d) return; const noEst = d.cfg.vistas[d.vista][2];
       nome.innerHTML = `${esc(noEst ? "O estoque, nos fundos" : d.cfg.titulo)}<small>${esc(d.sub.name)} · vista ${d.vista + 1} de ${d.cfg.vistas.length} · toque nos quadros para abrir</small>`; };
-    const mudarVista = (k) => { const d = M.dentro; if (!d || d.corte) return; const de = d.cfg.vistas[d.vista]; d.vista = (d.vista + k + d.cfg.vistas.length) % d.cfg.vistas.length; ox = oy = 0; rotulo();
+    const mudarVista = (k) => { const d = M.dentro; if (!d || d.corte) return; d.perto = null; const de = d.cfg.vistas[d.vista]; d.vista = (d.vista + k + d.cfg.vistas.length) % d.cfg.vistas.length; ox = oy = 0; rotulo();
       const para = d.cfg.vistas[d.vista]; if (!de[2] && !para[2]) return;
       // entrar ou sair do estoque é um corte (a câmera não atravessa a parede)
       d.corte = true; veu.classList.add("on"); setTimeout(() => { d.olho.copy(para[0]); d.mira.copy(para[1]); d.corte = false; setTimeout(() => veu.classList.remove("on"), 60); }, 400); };

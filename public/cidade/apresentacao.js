@@ -110,7 +110,7 @@
       const t = el.closest("button, a, input, textarea") || el;
       if (/INPUT|TEXTAREA/.test(t.tagName)) t.focus(); else t.click();
     }
-    const painel = () => document.querySelector(".pp.on .bd");
+    const painel = () => document.querySelector(".pp.on .bd, .emk.on .bd");
     function zoom(on) { const img = painel() && painel().querySelector("img"); if (on && img) { light.querySelector("img").src = img.src; light.classList.add("on"); } else light.classList.remove("on"); }
     function sendState() {
       if (!phone) return;
@@ -133,7 +133,7 @@
         case "move": moveTo(pos.x + m.dx * innerWidth, pos.y + m.dy * innerWidth); break;
         case "click": clickHere(); break;
         case "look": M.olhar(m.dx * 0.009, m.dy * 0.0085); break;
-        case "scroll": if (painel()) painel().scrollBy(0, m.dy); else M.olhar(0, m.dy * 0.004); break;
+        case "scroll": if (painel()) { const pn = painel(); if (pn.closest(".emk")) pn.scrollBy(m.dy * 1.4, 0); else pn.scrollBy(0, m.dy); } else M.olhar(0, m.dy * 0.004); break;
         case "back": if (M.dentro) M.sair(); else M.anterior(); break;
         case "go": M.irPara(m.i); break;
         case "creditos": if (M.creditos) M.creditos(); break;

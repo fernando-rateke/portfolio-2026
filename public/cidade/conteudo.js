@@ -77,36 +77,91 @@
     /* ---------- o painel ---------- */
     const css = document.createElement("style");
     css.textContent = `
-      .pp{position:fixed;top:0;right:0;height:100%;width:min(440px,100vw);z-index:20;transform:translateX(105%);transition:transform .55s cubic-bezier(.2,.8,.2,1);
+      /* o pergaminho (kakejiku): moldura de seda na cor da seção, papel washi, bastão em cima e embaixo; desenrola de cima para baixo */
+      .pp-veu{position:fixed;inset:0;z-index:19;background:radial-gradient(ellipse at 50% 45%,rgba(12,8,12,.28),rgba(6,4,8,.72));backdrop-filter:blur(6px) saturate(.8);-webkit-backdrop-filter:blur(6px) saturate(.8);opacity:0;pointer-events:none;transition:opacity .6s}
+      .pp-veu.on{opacity:1;pointer-events:auto}
+      .pp{--cor:#7a2a22;position:fixed;z-index:20;left:50%;top:max(14px,3vh);transform:translateX(-50%);width:min(640px,calc(100vw - 28px));height:min(900px,calc(100vh - max(28px,6vh)));display:flex;flex-direction:column;visibility:hidden;transition:visibility 0s 1s;font:16px/1.7 "Shippori Mincho","Noto Serif JP","Yu Mincho",Georgia,serif;color:#2b211c;filter:drop-shadow(0 22px 40px rgba(0,0,0,.55))}
+      .pp.on{visibility:visible;transition:none}
+      .pp .cordao{height:34px;margin:0 auto -2px;width:46%;background:linear-gradient(to top right,transparent calc(50% - 1px),#c9a46a calc(50% - 1px),#c9a46a calc(50% + 1px),transparent calc(50% + 1px)) left/50% 100% no-repeat,linear-gradient(to top left,transparent calc(50% - 1px),#c9a46a calc(50% - 1px),#c9a46a calc(50% + 1px),transparent calc(50% + 1px)) right/50% 100% no-repeat;opacity:0;transition:opacity .4s .2s}
+      .pp.on .cordao{opacity:1}
+      .pp .haste{position:relative;flex:none;height:14px;margin:0 -6px;border-radius:7px;background:linear-gradient(#6a4630,#3a2216 50%,#1e100a 60%,#4a2c1c);box-shadow:0 3px 6px rgba(0,0,0,.4)}
+      .pp .haste.base{height:22px;margin:0 -2px;border-radius:11px}
+      .pp .haste.base::before,.pp .haste.base::after{content:"";position:absolute;top:-3px;width:30px;height:28px;border-radius:8px;background:linear-gradient(#efe2c4,#c9b48a 45%,#8a7450 60%,#d8c8a0)}
+      .pp .haste.base::before{left:-26px}.pp .haste.base::after{right:-26px}
+      /* desenrolar: a faixa de papel cresce de altura zero até ocupar o pergaminho, e o bastão de baixo desce junto */
+      .pp .rolar{flex:none;height:0;min-height:0;overflow:hidden;transition:height 1s cubic-bezier(.33,.75,.2,1)}
+      .pp.on .rolar{height:calc(100% - 70px)}
+      .pp .rolar>.seda{height:100%;box-sizing:border-box}
+      .pp .seda{min-height:0;overflow:hidden;display:flex;flex-direction:column;padding:30px 20px 38px;background-color:var(--cor);
+        background-image:radial-gradient(rgba(255,220,160,.2) 1px,transparent 1.6px),radial-gradient(rgba(0,0,0,.18) 1px,transparent 1.6px),linear-gradient(90deg,rgba(0,0,0,.25),transparent 12%,transparent 88%,rgba(0,0,0,.25));
+        background-size:9px 9px,9px 9px,100% 100%;background-position:0 0,4.5px 4.5px,0 0}
+      .pp .folha{min-height:0;flex:1;display:flex;flex-direction:column;background:#f2e8d2 var(--washi);border-top:7px solid #c8a868;border-bottom:7px solid #c8a868;
+        border-image:repeating-linear-gradient(90deg,#d8bc7c 0 6px,#a8884c 6px 7px,#e8d49c 7px 12px) 7;box-shadow:inset 0 0 40px rgba(120,80,40,.16)}
+      .pp header{position:relative;padding:28px 30px 14px;display:flex;gap:16px;align-items:flex-start}
+      .pp .kj{order:2;margin-left:auto;margin-right:34px;flex:none;min-width:52px;padding:7px 6px;font:700 19px/1.15 "Shippori Mincho",serif;writing-mode:vertical-rl;letter-spacing:.06em;color:#fff6ea;background:#b5301b;border-radius:4px;transform:rotate(3deg);
+        box-shadow:inset 0 0 0 2px rgba(255,240,220,.35),inset 0 0 12px rgba(80,0,0,.45);text-align:center;opacity:.92}
+      .pp header>div:not(.kj){order:1}
+      .pp h2{margin:0 0 2px;font-size:27px;font-weight:800;line-height:1.2;letter-spacing:.01em}.pp .ds{margin:0;font-size:14px;opacity:.7}
+      .pp .x{order:3;position:absolute;top:10px;right:10px;width:34px;height:34px;border-radius:50%;border:0;background:#1e120c;color:#f2e8d2;font:22px/1 Georgia,serif;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.45)}
+      .pp .x:hover,.pp .x:focus-visible{background:#b5301b;outline:none}
+      .pp .bd{overflow:auto;padding:6px 30px 34px;flex:1;min-height:0;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:rgba(120,80,50,.4) transparent}
+      .pp .card{display:flex;gap:14px;align-items:center;padding:10px 12px;margin:0 0 10px;border-radius:3px;background:rgba(255,252,244,.55);border:1px solid rgba(90,60,40,.16);border-left:3px solid rgba(90,60,40,.25);cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit;transition:border-color .2s,background .2s,transform .2s}
+      .pp .card:hover,.pp .card:focus-visible{background:#fffaf0;border-left-color:#b5301b;outline:none;transform:translateX(3px)}
+      .pp .card img{width:62px;height:62px;object-fit:cover;flex:none;background:#e6dcc8;box-shadow:0 0 0 3px #fff,0 2px 6px rgba(0,0,0,.2)}
+      .pp .card b{display:block;font-size:16px;line-height:1.35}.pp .card span{font-size:13px;opacity:.68}
+      .pp .card.dest{border-left-color:#b5301b}
+      .pp .sec{margin:8px 0 10px;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#8a3a2a}.pp .card + .sec{margin-top:20px}
+      .pp .hero{display:block;width:calc(100% - 20px);max-height:44vh;object-fit:contain;margin:4px auto 20px;padding:10px;background:#fffdf6;box-shadow:0 1px 0 rgba(0,0,0,.08),0 10px 24px rgba(60,30,10,.22);transform:rotate(-.4deg)}
+      .pp h3{font-size:25px;font-weight:800;line-height:1.25;margin:0 0 4px}.pp .sub{font-size:14px;opacity:.68;margin:0 0 16px}
+      .pp h4{font-size:13px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#a32a18;margin:22px 0 6px;display:flex;align-items:center;gap:10px}
+      .pp h4::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(163,42,24,.45),transparent)}
+      .pp p{margin:0 0 12px;white-space:pre-line}
+      .pp ul{padding:0;margin:0;list-style:none}.pp li{margin:0 0 8px;font-size:14.5px}.pp li b{color:#a32a18;margin-right:6px}
+      .pp .lk{display:inline-block;margin:8px 8px 0 0;padding:9px 16px;border-radius:3px;background:#b5301b;color:#fff8ee;text-decoration:none;font-size:14.5px;box-shadow:inset 0 0 0 2px rgba(255,235,210,.3)}
+      .pp .lk:hover,.pp .lk:focus-visible{background:#8a2010;outline:none}
+      .pp .vt{background:none;border:0;color:#a32a18;font:inherit;font-size:14.5px;cursor:pointer;padding:0;margin:0 0 14px}
+      .pp form{display:grid;gap:10px;margin:0 0 22px}.pp label{display:grid;gap:4px;font-size:14px}
+      .pp input,.pp textarea{font:inherit;padding:9px 11px;border-radius:3px;border:1px solid rgba(60,40,30,.3);background:#fffaf2;color:inherit}
+      .pp .trap{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+      .pp .btn{justify-self:start;padding:10px 18px;border-radius:3px;border:0;background:#b5301b;color:#fff;font:inherit;cursor:pointer}
+      .pp .nota{font-size:13px;opacity:.75;margin:0}
+      .pp .ema{padding:12px 14px;margin:0 0 10px;border-radius:3px;background:#e9d8b8;border:1px solid rgba(90,60,30,.25)}.pp .ema b{display:block;color:#7a2a22}.pp .ema span{font-size:12px;opacity:.6}
+      .pp .marca-txt{background:rgba(255,214,150,.55);border-radius:3px}.pp [data-b]{transition:background 1.2s}
+      @media (max-width:600px){.pp{top:10px;width:calc(100vw - 16px);height:calc(100vh - 20px)}.pp .seda{padding:18px 10px 24px}.pp header{padding:22px 18px 10px}.pp .bd{padding:4px 18px 26px}.pp h2{font-size:22px}.pp .x{top:6px;right:6px}.pp .cordao{display:none}.pp.on .rolar{height:calc(100% - 36px)}}
+      @media (prefers-reduced-motion:reduce){.pp .rolar{transition:none}}
+      /* o emakimono (rolo horizontal): os textos longos se leem de lado, coluna por coluna, com as fotos no meio */
+      .emk{--cor:#7a2a22;position:fixed;z-index:20;left:50%;top:50%;transform:translate(-50%,-50%);width:min(1240px,calc(100vw - 28px));height:min(640px,calc(100vh - 60px));display:flex;visibility:hidden;transition:visibility 0s 1.3s;
+        font:16.5px/1.75 "Shippori Mincho","Noto Serif JP","Yu Mincho",Georgia,serif;color:#2b211c;filter:drop-shadow(0 24px 44px rgba(0,0,0,.6))}
+      .emk.on{visibility:visible;transition:none}
+      .emk .eixo{flex:none;position:relative;width:20px;margin:-16px 0;border-radius:10px;background:linear-gradient(90deg,#6a4630,#3a2216 50%,#1e100a 60%,#4a2c1c);box-shadow:3px 0 8px rgba(0,0,0,.4);z-index:2}
+      .emk .eixo::before,.emk .eixo::after{content:"";position:absolute;left:-4px;width:28px;height:24px;border-radius:7px;background:linear-gradient(90deg,#efe2c4,#c9b48a 45%,#8a7450 60%,#d8c8a0)}
+      .emk .eixo::before{top:-18px}.emk .eixo::after{bottom:-18px}
+      .emk .rolo{flex:1;min-width:0;display:grid;grid-template-columns:0fr auto;transition:grid-template-columns 1.3s cubic-bezier(.33,.75,.2,1)}
+      .emk.on .rolo{grid-template-columns:1fr auto}
+      .emk .faixa{min-width:0;overflow:hidden;position:relative;background:linear-gradient(var(--cor),var(--cor)) top/100% 16px no-repeat,linear-gradient(var(--cor),var(--cor)) bottom/100% 16px no-repeat,
+        repeating-linear-gradient(90deg,#d8bc7c 0 6px,#a8884c 6px 7px,#e8d49c 7px 12px) 0 16px/100% 5px no-repeat,repeating-linear-gradient(90deg,#d8bc7c 0 6px,#a8884c 6px 7px,#e8d49c 7px 12px) 0 calc(100% - 16px)/100% 5px no-repeat,
+        #f2e8d2 var(--washi);box-shadow:inset 0 0 60px rgba(120,80,40,.18)}
+      .emk .bd{position:absolute;inset:21px 0;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;scrollbar-color:rgba(120,80,50,.4) transparent;-webkit-overflow-scrolling:touch}
+      .emk .txt{height:100%;box-sizing:border-box;padding:34px 60px 30px;column-width:330px;column-gap:64px;column-fill:auto;column-rule:1px solid rgba(120,80,50,.14)}
+      .emk .abre{break-after:column;height:100%;display:flex;flex-direction:column;justify-content:center;gap:14px}
+      .emk .abre .tate{font:800 64px/1.05 "Shippori Mincho",serif;writing-mode:vertical-rl;color:#2b211c;letter-spacing:.08em;margin:0 auto 4px;max-height:58%}
+      .emk .abre h2{font-size:30px;font-weight:800;margin:0;text-align:center;line-height:1.2}.emk .abre p{text-align:center;margin:0;opacity:.65;font-size:14.5px}
+      .emk .abre .dica{margin-top:18px;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#a32a18;opacity:.9}
+      .emk .cap{break-before:column;margin:0 0 14px}.emk .cap:first-of-type{break-before:auto}
+      .emk .cap .n{display:block;font:800 40px/1 "Shippori Mincho",serif;color:#b5301b;margin-bottom:8px}
+      .emk .cap h3{font-size:25px;font-weight:800;line-height:1.25;margin:0}.emk .cap .s{margin:2px 0 0;font-size:14px;opacity:.65}
+      .emk h4{font-size:13px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#a32a18;margin:18px 0 8px;break-after:avoid}
+      .emk p{margin:0 0 12px;text-align:justify;hyphens:auto}
+      .emk figure{width:fit-content;max-width:100%;box-sizing:border-box;margin:6px auto 18px;break-inside:avoid;padding:9px;background:#fffdf6;box-shadow:0 10px 22px rgba(60,30,10,.22);transform:rotate(-.6deg)}.emk figure img{display:block;width:auto;max-width:100%;max-height:min(230px,30vh);margin:0 auto;object-fit:contain}
+      .emk .fim{break-inside:avoid;margin-top:26px;display:flex;align-items:center;gap:14px;justify-content:flex-end}.emk .fim span{font-size:18px;font-weight:600}
+      .emk .fim i{font:800 15px/1.1 "Shippori Mincho",serif;font-style:normal;writing-mode:vertical-rl;padding:6px 5px;color:#fff6ea;background:#b5301b;border-radius:4px;transform:rotate(-4deg);box-shadow:inset 0 0 10px rgba(80,0,0,.45)}
+      .emk .x{position:absolute;top:-14px;right:-10px;z-index:3;width:38px;height:38px;border-radius:50%;border:0;background:#1e120c;color:#f2e8d2;font:22px/1 Georgia,serif;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.45)}
+      .emk .x:hover,.emk .x:focus-visible{background:#b5301b;outline:none}
+      .emk .marca-txt{background:rgba(255,214,150,.55);border-radius:3px}.emk [data-b]{transition:background 1.2s}
+      @media (max-width:600px){.emk{height:calc(100vh - 40px)}.emk .txt{padding:26px 26px 22px;column-width:calc(100vw - 110px);column-gap:40px}.emk .abre .tate{font-size:46px}}
+      @media (prefers-reduced-motion:reduce){.emk .rolo{transition:none}}
         background:#f3ece0 radial-gradient(circle at 20% 10%,rgba(255,255,255,.55),transparent 60%);color:#2a2220;font:15px/1.55 "Noto Serif JP","Hiragino Mincho ProN",Georgia,serif;
         box-shadow:-18px 0 50px rgba(20,10,10,.35);display:flex;flex-direction:column}
-      .pp.on{transform:none}
-      .pp header{padding:26px 26px 16px;border-bottom:1px solid rgba(60,40,30,.15);display:flex;gap:16px;align-items:flex-start}
-      .pp .kj{font-size:40px;line-height:1;writing-mode:vertical-rl;padding:8px 6px;border-radius:3px;color:#fff;min-height:64px;text-align:center}
-      .pp h2{margin:0 0 4px;font-size:22px;font-weight:600}.pp .ds{margin:0;font-size:13.5px;opacity:.75}
-      .pp .x{margin-left:auto;background:none;border:0;font-size:26px;line-height:1;cursor:pointer;color:#5a4a40;padding:4px 8px}
-      .pp .bd{overflow:auto;padding:18px 26px 40px;flex:1;-webkit-overflow-scrolling:touch}
-      .pp .card{display:flex;gap:14px;align-items:center;padding:12px;margin:0 0 10px;border-radius:6px;background:rgba(255,255,255,.55);border:1px solid rgba(60,40,30,.1);cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit}
-      .pp .card:hover,.pp .card:focus-visible{background:#fff;border-color:rgba(181,48,27,.45);outline:none}
-      .pp .card img{width:64px;height:64px;object-fit:contain;border-radius:4px;flex:none;background:#e6dcc8}
-      .pp .marca-txt{background:rgba(255,214,150,.55);transition:background 1.2s;border-radius:3px}.pp [data-b]{transition:background 1.2s}
-      .pp .sec{margin:6px 0 8px;font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;opacity:.6}.pp .card + .sec{margin-top:18px}
-      .pp .card.dest{border-color:rgba(181,48,27,.35);background:rgba(255,250,240,.85)}
-      .pp .card b{display:block;font-size:15px}.pp .card span{font-size:12.5px;opacity:.7}
-      .pp .hero{width:100%;max-height:340px;object-fit:contain;border-radius:6px;margin:0 0 14px;background:#e6dcc8}
-      .pp h3{font-size:20px;margin:0 0 2px}.pp .sub{font-size:13px;opacity:.7;margin:0 0 14px}
-      .pp h4{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#b5301b;margin:18px 0 6px}
-      .pp p{margin:0 0 10px;white-space:pre-line}
-      .pp ul{padding:0;margin:0;list-style:none}.pp li{margin:0 0 8px;font-size:13.5px}.pp li b{color:#b5301b;margin-right:6px}
-      .pp .lk{display:inline-block;margin:6px 8px 0 0;padding:8px 14px;border:1px solid #b5301b;border-radius:999px;color:#b5301b;text-decoration:none;font-size:13.5px}
-      .pp .lk:hover{background:#b5301b;color:#fff}
-      .pp .vt{background:none;border:0;color:#b5301b;font:inherit;font-size:14px;cursor:pointer;padding:0;margin:0 0 14px}
-      .pp form{display:grid;gap:10px;margin:0 0 22px}.pp label{display:grid;gap:4px;font-size:13px}
-      .pp input,.pp textarea{font:inherit;padding:9px 11px;border-radius:6px;border:1px solid rgba(60,40,30,.25);background:#fffaf2;color:inherit}
-      .pp .trap{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
-      .pp .btn{justify-self:start;padding:10px 18px;border-radius:999px;border:0;background:#b5301b;color:#fff;font:inherit;cursor:pointer}
-      .pp .nota{font-size:12.5px;opacity:.75;margin:0}
-      .pp .ema{padding:12px 14px;margin:0 0 10px;border-radius:6px;background:#e9d8b8;border:1px solid rgba(90,60,30,.25)}.pp .ema b{display:block;color:#7a2a22}.pp .ema span{font-size:12px;opacity:.65}
       .marcas{position:fixed;inset:0;pointer-events:none;z-index:4}
       .marca{position:absolute;left:0;top:0;display:flex;align-items:center;gap:7px;padding:5px 12px 5px 5px;border-radius:999px;border:1px solid rgba(255,214,160,.55);background:rgba(28,16,20,.62);color:#fff2e2;font:500 13px "Noto Serif JP",Georgia,serif;white-space:nowrap;cursor:pointer;pointer-events:auto;opacity:0;visibility:hidden;backdrop-filter:blur(3px);box-shadow:0 0 18px rgba(255,170,90,.25)}
       .marca.on{visibility:visible}.marca:hover,.marca:focus-visible{background:rgba(181,48,27,.85);outline:none}
@@ -114,14 +169,22 @@
       .marca::after{content:"";position:absolute;left:50%;bottom:-7px;width:1px;height:7px;background:rgba(255,214,160,.6)}
       @keyframes marcaPulso{50%{box-shadow:0 0 0 6px rgba(255,176,96,0)}0%{box-shadow:0 0 0 0 rgba(255,176,96,.55)}}
       @media (prefers-reduced-motion:reduce){.marca i{animation:none}}
-      .dica3d{position:fixed;z-index:15;pointer-events:none;padding:5px 10px;border-radius:4px;background:rgba(20,14,18,.72);color:#f6eee2;font:13px "Noto Serif JP",Georgia,serif;transform:translate(-50%,-140%);opacity:0;transition:opacity .2s;white-space:nowrap}
-      @media (max-width:600px){.pp{top:auto;bottom:0;height:82vh;width:100vw;transform:translateY(105%);border-radius:14px 14px 0 0}.pp.on{transform:none}}`;
+      .dica3d{position:fixed;z-index:15;pointer-events:none;padding:5px 10px;border-radius:4px;background:rgba(20,14,18,.72);color:#f6eee2;font:13px "Noto Serif JP",Georgia,serif;transform:translate(-50%,-140%);opacity:0;transition:opacity .2s;white-space:nowrap}`;
     document.head.appendChild(css);
-    const pp = document.createElement("aside"); pp.className = "pp"; pp.setAttribute("aria-hidden", "true"); pp.setAttribute("role", "dialog"); document.body.appendChild(pp);
+    // o papel tem fibras: uma textura pequena desenhada uma vez e usada como fundo da folha
+    { const c = document.createElement("canvas"); c.width = c.height = 220; const g = c.getContext("2d"); let sd = 11; const r = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+      for (let i = 0; i < 2600; i++) { g.fillStyle = `rgba(${r() < 0.5 ? "120,90,60" : "255,255,245"},${0.03 + r() * 0.05})`; g.fillRect(r() * 220, r() * 220, 1 + r() * 1.5, 1 + r() * 1.5); }
+      for (let i = 0; i < 70; i++) { g.strokeStyle = `rgba(140,105,70,${0.05 + r() * 0.08})`; g.lineWidth = 0.6 + r() * 0.6; g.beginPath(); let x = r() * 220, y = r() * 220; g.moveTo(x, y); for (let k = 0; k < 4; k++) { x += (r() - 0.5) * 26; y += (r() - 0.5) * 26; g.lineTo(x, y); } g.stroke(); }
+      document.documentElement.style.setProperty("--washi", `url(${c.toDataURL()})`); }
+    const veuP = document.createElement("div"); veuP.className = "pp-veu"; document.body.appendChild(veuP);
+    const kake = document.createElement("aside"); kake.className = "pp"; kake.setAttribute("aria-hidden", "true"); kake.setAttribute("role", "dialog");
+    kake.innerHTML = `<div class="cordao"></div><div class="haste"></div><div class="rolar"><div class="seda"><div class="folha"></div></div></div><div class="haste base"></div>`; document.body.appendChild(kake);
+    const pp = kake.querySelector(".folha"); // tudo o que o painel escreve vai para a folha do pergaminho
     const dica = document.createElement("div"); dica.className = "dica3d"; document.body.appendChild(dica);
     let aberto = null;
     function cabeca(sub, loja) {
-      return `<header><div class="kj" style="background:${esc(loja ? loja.cor : "#b5301b")}">${esc(loja ? loja.kanji : "")}</div><div><h2>${esc(sub.name)}</h2><p class="ds">${esc(sub.desc || "")}</p></div><button class="x" aria-label="Fechar">×</button></header>`;
+      corAtual = loja ? loja.cor : "#7a2a22";
+      return `<header><div class="kj">${esc(loja ? loja.kanji : "記")}</div><div><h2>${esc(sub.name)}</h2><p class="ds">${esc(sub.desc || "")}</p></div><button class="x" aria-label="Fechar">×</button></header>`;
     }
     function lista(sub, loja) {
       if (sub.subs) { pp.innerHTML = cabeca(sub, loja) + `<div class="bd">${sub.subs.map((x) => `<button class="card" data-id="${esc(x.id)}"><div><b>${esc(x.name)}</b><span>${x.acts.length} ${x.acts.length === 1 ? "atividade" : "atividades"}</span></div></button>`).join("")}</div>`;
@@ -145,17 +208,61 @@
       ligar(sub, loja);
     }
     function ligar() { pp.querySelector(".x").onclick = fechar; }
-    function abrir(id, loja) { const sub = byId[id]; if (!sub) return; aberto = id; if (!loja) { const k = (M.KANJI || {})[id] || SELO[id]; if (k) loja = { kanji: k[0], cor: k[1] }; } lista(sub, loja); mostrar(); }
-    function mostrar() { pp.classList.add("on"); pp.setAttribute("aria-hidden", "false"); setTimeout(() => { const x = pp.querySelector(".x"); if (aberto && x) x.focus(); }, 60); }
-    function fechar() { if (pp.contains(document.activeElement)) document.activeElement.blur(); pp.classList.remove("on"); pp.setAttribute("aria-hidden", "true"); aberto = null; }
+    function abrir(id, loja) { const sub = byId[id]; if (!sub) return; if (EMK[id]) { emaki(id, 0); return; } aberto = id; if (!loja) { const k = (M.KANJI || {})[id] || SELO[id]; if (k) loja = { kanji: k[0], cor: k[1] }; } lista(sub, loja); mostrar(); }
+    function mostrar(cor) {
+      kake.style.setProperty("--cor", cor || corAtual || "#7a2a22");
+      // abre de novo do começo: enrola na hora e desenrola
+      if (!kake.classList.contains("on")) { kake.classList.add("on"); veuP.classList.add("on"); }
+      kake.setAttribute("aria-hidden", "false"); setTimeout(() => { const x = pp.querySelector(".x"); if (aberto && x) x.focus({ preventScroll: true }); }, 60); if (M.aoAbrirPainel) M.aoAbrirPainel(aberto); }
+    function fechar() { if (kake.contains(document.activeElement) || emk.contains(document.activeElement)) document.activeElement.blur(); kake.classList.remove("on"); emk.classList.remove("on"); veuP.classList.remove("on"); kake.setAttribute("aria-hidden", "true"); emk.setAttribute("aria-hidden", "true"); const era = aberto; aberto = null; if (era && M.aoFecharPainel) M.aoFecharPainel(era); }
+    veuP.addEventListener("click", () => fechar());
+
+    /* ---------- os textos longos: o emakimono ---------- */
+    const EMK = { perfil: { tate: "自己紹介", fotos: {} }, futuro: { tate: "未来へ", fotos: {} },
+      agradecimentos: { tate: "感謝", fotos: { "### À minha família": "trem/tias.jpg", "### À Iniciação Científica": "trem/ic-2026.jpg" } } };
+    const NUM = ["一", "二", "三", "四", "五", "六"];
+    const emk = document.createElement("div"); emk.className = "emk"; emk.setAttribute("role", "dialog"); emk.setAttribute("aria-hidden", "true");
+    emk.innerHTML = `<div class="eixo"></div><div class="rolo"><div class="faixa"><div class="bd"><div class="txt"></div></div></div><div class="eixo"></div></div><button class="x" aria-label="Fechar">×</button>`;
+    document.body.appendChild(emk);
+    const emkBd = emk.querySelector(".bd"), emkTxt = emk.querySelector(".txt");
+    emk.querySelector(".x").onclick = () => fechar();
+    // a roda do mouse e as setas andam o rolo para o lado
+    emkBd.addEventListener("wheel", (e) => { e.preventDefault(); e.stopPropagation(); emkBd.scrollLeft += (Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY) * 1.2; }, { passive: false });
+    emk.addEventListener("keydown", (e) => { if (e.key === "ArrowRight" || e.key === "ArrowDown" || e.key === "PageDown") { emkBd.scrollBy({ left: 380, behavior: "smooth" }); e.preventDefault(); }
+      else if (e.key === "ArrowLeft" || e.key === "ArrowUp" || e.key === "PageUp") { emkBd.scrollBy({ left: -380, behavior: "smooth" }); e.preventDefault(); } e.stopPropagation(); });
+    emk.addEventListener("touchstart", (e) => e.stopPropagation(), { passive: true }); emk.addEventListener("touchend", (e) => e.stopPropagation(), { passive: true });
+    function emaki(id, i) {
+      const sub = byId[id], cfg = EMK[id], loja = seloDe(id); if (!sub) return;
+      let k = 0; const bl = (txt, fotos = {}) => String(txt || "").split(/\n\s*\n/).map((b) => { const n = k++;
+        const f = fotos[b] ? `<figure><img src="${esc(imgUrl(fotos[b]))}" alt=""></figure>` : "";
+        return (b.startsWith("### ") ? `<h4 data-b="${n}">${esc(b.slice(4))}</h4>` : `<p data-b="${n}">${esc(b)}</p>`) + f; }).join("");
+      const caps = sub.acts.length > 1 ? sub.acts.map((a, j) => `<div class="cap" data-cap="${j}"><span class="n">${NUM[j] || j + 1}</span><h3>${esc(a.t)}</h3>${a.s ? `<p class="s">${esc(a.s)}</p>` : ""}</div>${a.img ? `<figure><img src="${esc(imgUrl(a.img))}" alt=""></figure>` : ""}${bl(a.r)}`).join("")
+        : bl(sub.acts[0].r, cfg.fotos);
+      emkTxt.innerHTML = `<div class="abre"><div class="tate">${esc(cfg.tate)}</div><h2>${esc(sub.name)}</h2><p>${esc(sub.desc || "")}</p><p class="dica">role para o lado →</p></div>${caps}
+        <div class="fim"><span>Fernando Rateke Neto</span><i>ラテケ</i></div>`;
+      emk.style.setProperty("--cor", loja ? loja.cor : "#7a2a22"); emkBd.scrollLeft = 0;
+      aberto = id; emk.classList.add("on"); veuP.classList.add("on"); emk.setAttribute("aria-hidden", "false");
+      setTimeout(() => emk.querySelector(".x").focus({ preventScroll: true }), 60); if (M.aoAbrirPainel) M.aoAbrirPainel(id);
+      // aberto por um trecho (um capítulo do Quem sou, a família nos agradecimentos...): o rolo anda até ele
+      let alvo = null;
+      if (id === "agradecimentos" && ANCORA[i]) { const n = String(sub.acts[0].r).split(/\n\s*\n/).findIndex((b) => b.startsWith(ANCORA[i])); alvo = emkTxt.querySelector(`[data-b="${n}"]`); }
+      else if (sub.acts.length > 1 && i > 0) alvo = emkTxt.querySelector(`[data-cap="${i}"]`);
+      // (a posição vem da tela: dentro das colunas, offsetLeft não diz em qual coluna o trecho caiu; e só depois de
+      // desenrolar, porque durante a abertura as colunas ainda mudam de largura)
+      if (alvo) { let feito = false; const ir = () => { if (feito) return; feito = true; const x = alvo.getBoundingClientRect().left - emkBd.getBoundingClientRect().left + emkBd.scrollLeft;
+          emkBd.scrollLeft = Math.max(0, x - 50); alvo.classList.add("marca-txt"); setTimeout(() => alvo.classList.remove("marca-txt"), 2400); };
+        // as fotos mudam a altura das colunas quando chegam: espera elas e o fim da abertura
+        const fotos = [...emkTxt.querySelectorAll("img")].map((im) => (im.complete ? null : new Promise((r) => { im.onload = im.onerror = r; }))).filter(Boolean);
+        const abriu = new Promise((r) => { emk.querySelector(".rolo").addEventListener("transitionend", r, { once: true }); setTimeout(r, 2000); });
+        Promise.all([abriu, ...fotos]).then(() => requestAnimationFrame(ir)); setTimeout(ir, 5000); }
+    }
+    let corAtual = null;
     M.abrir = abrir; M.fechar = fechar; M.painelAberto = () => aberto;
     const seloDe = (id) => { const k = (M.KANJI || {})[id] || SELO[id]; return k ? { kanji: k[0], cor: k[1] } : null; };
     M.abrirAtividade = (id, i) => { const sub = byId[id]; if (!sub) return;
-      // os agradecimentos são um texto só: quem chamou com um trecho (família, Natali...) abre o texto já rolado até ele
-      if (id === "agradecimentos") { aberto = id; detalhe(sub, seloDe(id), 0, true); mostrar(); const alvo = ANCORA[i]; if (alvo) irPara(sub.acts[0].r, alvo); return; }
+      // os textos longos (Quem sou, o futuro, os agradecimentos) abrem no emakimono, já no trecho pedido
+      if (EMK[id]) { kake.classList.remove("on"); emaki(id, i); return; }
       if (!sub.acts[i]) return; aberto = id; detalhe(sub, seloDe(id), i, sub.acts.length === 1); mostrar(); };
-    function irPara(txt, inicio) { const k = String(txt).split(/\n\s*\n/).findIndex((b) => b.startsWith(inicio)); const el = k >= 0 && pp.querySelector(`[data-b="${k}"]`); if (!el) return;
-      setTimeout(() => { const bd = pp.querySelector(".bd"); bd.scrollTop = el.offsetTop - bd.offsetTop - 12; el.classList.add("marca-txt"); setTimeout(() => el.classList.remove("marca-txt"), 2200); }, 420); }
     addEventListener("keydown", (e) => { if (e.key === "Escape" && aberto) fechar(); }, true);
     // as setas e a roda do mouse não andam pela cidade enquanto o painel está aberto
     pp.addEventListener("wheel", (e) => e.stopPropagation(), { passive: true });

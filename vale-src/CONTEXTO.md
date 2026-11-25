@@ -236,3 +236,10 @@ Clima real da cidade do visitante, calendário de festas (Tanabata, Obon, neve, 
 
 ## 9. Pendências do dono
 - Links dos modelos baixados em zip (trem, Cabeça de Nabo, Haku, fuligem, barco e balde da Ponyo, ramen, sapatos) para os créditos.
+
+Janelas de conteúdo (`conteudo.js`): as atividades e as listas abrem num pergaminho (kakejiku, `.pp`): moldura de seda
+na cor da seção, papel washi (textura desenhada em canvas, `--washi`), bastões e cordão, desenrolando de cima para
+baixo sobre um véu que escurece e desfoca a cena. O que o painel escreve vai para `.pp .folha`. Os textos longos
+(Quem sou, futuro, agradecimentos: `EMK`) abrem num emakimono (`.emk`), um rolo horizontal lido de lado em colunas,
+com as fotos no meio; quem abre por um trecho (ANCORA, capítulo) cai nele. Dentro das lojas, abrir um quadro leva a
+câmera para perto dele (`perto`), e fechar volta. Fonte: Shippori Mincho (Google Fonts).

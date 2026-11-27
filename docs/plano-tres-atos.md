@@ -112,6 +112,9 @@ Não inventar nada: o que não veio dele fica em branco.
 
 ## A neblina onde não há nada (pedido do Fernando, vale para todos os mapas)
 
-- Cidade (`public/cidade/neblina.js`): bancos de neblina baixa sobre o campo vazio em volta da rua (bonitos vistos do
-  mapa) e uma faixa em pé no horizonte, na cor do céu do tema; nada entra na rua, na escadaria nem no platô do torii.
+- Cidade (`public/cidade/neblina.js`): um tapete de neblina densa (duas camadas) que acompanha o relevo e cobre todo o
+  campo de perto, para o chão vazio não aparecer; a rua, a escadaria e o platô do torii ficam abertos, com bordas
+  suaves. Mais uma faixa em pé no horizonte, na cor do céu do tema.
+- Prédios (`cidade.js`, `fundos`): o fundo e as laterais ganharam janelas (algumas acesas, que brilham mais à noite),
+  ar-condicionados e canos; os telhados ganharam casinha da escada, antenas e mais aparelhos.
 - Ato 3: camadas de neblina no fim da rua, entre as torres e no céu baixo. Ato 2: o mar de nuvens em volta da galeria.

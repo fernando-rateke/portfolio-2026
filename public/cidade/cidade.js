@@ -131,6 +131,7 @@
     const top = H.base + H.dado + FH * floors + 0.3, body = new T.Mesh(new T.BoxGeometry(bays * BW, top, 9), bodyMat(tint));
     body.position.set(bays * BW / 2, top / 2, -4.75); g.add(body);
     roof(g, bays * BW, top);
+    fundos(g, bays * BW, top, floors, FH);
     g.userData = { bays, floors, top, BW };
     shadowOn(g); return g;
   }
@@ -163,11 +164,44 @@
     const pole = new T.Mesh(new T.CylinderGeometry(0.015, 0.015, 2.6, 6), new T.MeshStandardMaterial({ color: "#b8bcc2", metalness: 0.6, roughness: 0.4 })); pole.rotation.z = Math.PI / 2; pole.position.set(cx, y, z); g.add(pole);
     let x = cx - 1.1; while (x < cx + 1.0) { const w = 0.3 + rnd() * 0.4, h = 0.4 + rnd() * 0.5; const c = new T.Mesh(new T.PlaneGeometry(w, h), roupaMat(clothCols[Math.floor(rnd() * clothCols.length)])); c.position.set(x + w / 2, y - h / 2 - 0.02, z); c.rotation.y = (rnd() - 0.5) * 0.3; c.rotation.x = (rnd() - 0.5) * 0.12; g.add(c); x += w + 0.08 + rnd() * 0.2; }
   }
+  // o fundo e as laterais do prédio (o que se vê da capa e do mapa): janelas pequenas, algumas acesas, cano de
+  // descida e ar-condicionados; tudo numa textura só (com recorte), repetida com deslocamento para não parecer igual
+  let fundoMats = null;
+  function fundoMat() { if (fundoMats) return fundoMats;
+    const C = 4, Rr = 4, W = 512, Hh = 512, mw = W / C, mh = Hh / Rr; const acesas = [];
+    for (let k = 0; k < C * Rr; k++) acesas.push(rnd() < 0.32);
+    const mapa = canvasTex(W, Hh, (c) => { c.clearRect(0, 0, W, Hh);
+      for (let k = 0; k < C * Rr; k++) { const x = (k % C) * mw, y = Math.floor(k / C) * mh, ww = mw * 0.46, hh = mh * 0.5, x0 = x + (mw - ww) / 2, y0 = y + mh * 0.2;
+        c.fillStyle = "#b9b4aa"; c.fillRect(x0 - 5, y0 - 5, ww + 10, hh + 12); // moldura e peitoril
+        c.fillStyle = acesas[k] ? "#e8c890" : "#2a3038"; c.fillRect(x0, y0, ww, hh);
+        c.fillStyle = "rgba(255,255,255,.12)"; c.fillRect(x0, y0, ww * 0.45, hh); c.fillStyle = "#8a857c"; c.fillRect(x0 + ww / 2 - 2, y0, 4, hh); // vidro e divisão
+        if (!acesas[k] && rnd() < 0.4) { c.fillStyle = ["#d8cfc0", "#9aa8b8", "#c8a890"][k % 3]; c.fillRect(x0 + 3, y0 + 3, ww * 0.42, hh - 6); } // cortina
+        if (rnd() < 0.22) { c.fillStyle = "#dedbd3"; c.fillRect(x0 + ww * 0.15, y0 + hh + 14, ww * 0.7, mh * 0.16); c.fillStyle = "#3a3c40"; c.beginPath(); c.arc(x0 + ww * 0.4, y0 + hh + 14 + mh * 0.08, mh * 0.06, 0, 7); c.fill(); } } // ar-condicionado
+    });
+    const brilho = canvasTex(W, Hh, (c) => { c.fillStyle = "#000"; c.fillRect(0, 0, W, Hh); for (let k = 0; k < C * Rr; k++) if (acesas[k]) { const x = (k % C) * mw, y = Math.floor(k / C) * mh, ww = mw * 0.46, hh = mh * 0.5; c.fillStyle = "#ffcf8a"; c.fillRect(x + (mw - ww) / 2, y + mh * 0.2, ww, hh); } });
+    for (const t of [mapa, brilho]) { t.wrapS = t.wrapT = T.RepeatWrapping; }
+    const m = new T.MeshStandardMaterial({ map: mapa, emissiveMap: brilho, emissive: new T.Color("#ffffff"), emissiveIntensity: 0.55, alphaTest: 0.5, roughness: 0.7 }); m.userData.janela = "acesa"; m.userData.ei = 0.55;
+    const cano = new T.MeshStandardMaterial({ color: "#8a8c90", metalness: 0.5, roughness: 0.5 });
+    return (fundoMats = { m, cano }); }
+  function fundos(g, W, top, floors, FH) {
+    const { m, cano } = fundoMat(), y0 = H.base + H.dado, alto = FH * floors, D = 9;
+    // a parede: módulos de 1,5 m por andar; o deslocamento sorteado muda quais janelas ficam acesas
+    const parede = (larg, x, z, ry) => { const geo = new T.PlaneGeometry(larg, alto); const uv = geo.attributes.uv, ox = Math.floor(rnd() * 4) / 4, oy = Math.floor(rnd() * 4) / 4;
+      for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * (larg / 1.5) / 4 + ox, uv.getY(i) * floors / 4 + oy);
+      const p = new T.Mesh(geo, m); p.position.set(x, y0 + alto / 2, z); p.rotation.y = ry; g.add(p); };
+    parede(W, W / 2, -0.25 - D - 0.03, Math.PI);
+    parede(D, -0.03, -0.25 - D / 2, -Math.PI / 2); parede(D, W + 0.03, -0.25 - D / 2, Math.PI / 2);
+    // canos de descida no fundo
+    for (const x of [0.4, W - 0.4]) if (rnd() < 0.7) { const c = new T.Mesh(new T.CylinderGeometry(0.06, 0.06, top, 8), cano); c.position.set(x, top / 2, -0.25 - D - 0.1); g.add(c); }
+  }
   // telhado: mureta, caixa d'água e ar-condicionados
   const tankMat = new T.MeshStandardMaterial({ color: "#c8c4b8", roughness: 0.7, metalness: 0.2 });
   function roof(g, W, top) {
     if (rnd() < 0.5) { const t = new T.Group(); const c = new T.Mesh(new T.CylinderGeometry(0.7, 0.7, 1.4, 20), tankMat); c.position.y = 0.7 + 0.5; t.add(c); for (const [a, b] of [[-0.5, -0.5], [0.5, -0.5], [-0.5, 0.5], [0.5, 0.5]]) { const l = new T.Mesh(new T.BoxGeometry(0.06, 0.5, 0.06), tankMat); l.position.set(a, 0.25, b); t.add(l); } t.position.set(W * (0.3 + rnd() * 0.4), top, -3 - rnd() * 3); g.add(t); }
-    const n = Math.floor(rnd() * 3); for (let k = 0; k < n; k++) { const a = acUnit(); a.position.set(0.8 + rnd() * (W - 1.6), top + 0.28, -1.2 - rnd() * 5); a.rotation.y = rnd() < 0.5 ? 0 : Math.PI; g.add(a); }
+    if (rnd() < 0.55) { const ca = new T.Mesh(new T.BoxGeometry(2.2, 2.1, 2.4), bodyMat(new T.Color("#c8c0b4"))); ca.position.set(W * (0.2 + rnd() * 0.6), top + 1.05, -5.5 - rnd() * 2.5); g.add(ca); } // a casinha da escada
+    if (rnd() < 0.45) { const an = new T.Group(), am = new T.MeshStandardMaterial({ color: "#6a6c70", metalness: 0.7, roughness: 0.4 }); const mast = new T.Mesh(new T.CylinderGeometry(0.03, 0.03, 3, 6), am); mast.position.y = 1.5; an.add(mast);
+      for (const yy of [2.2, 2.7]) { const b2 = new T.Mesh(new T.BoxGeometry(1.2, 0.03, 0.03), am); b2.position.y = yy; an.add(b2); } an.position.set(0.6 + rnd() * (W - 1.2), top, -1.5 - rnd() * 6); g.add(an); } // antena
+    const n = 1 + Math.floor(rnd() * 3); for (let k = 0; k < n; k++) { const a = acUnit(); a.position.set(0.8 + rnd() * (W - 1.6), top + 0.28, -1.2 - rnd() * 5); a.rotation.y = rnd() < 0.5 ? 0 : Math.PI; g.add(a); }
   }
   const WALL_X = RW / 2 + SW; // fachadas encostadas na calçada
   let SH = null;

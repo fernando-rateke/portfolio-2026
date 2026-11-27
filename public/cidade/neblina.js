@@ -25,12 +25,26 @@
           float a = smoothstep(.3, .75, f) * borda * uK * smoothstep(12., 40., vD);
           gl_FragColor = vec4(mix(uC, vec3(1.), .28), a); }` });
     const grupo = new T.Group(); grupo.name = "neblina"; scene.add(grupo);
-    // bancos deitados sobre o terreno de perto, fora dos lugares ocupados
-    const deitada = mat(0.65, true);
-    for (let x = -150; x <= 150; x += 22) for (let z = 50; z >= -170; z -= 22) {
-      const px = x + (r() - 0.5) * 14, pz = z + (r() - 0.5) * 14; if (ocupado(px, pz, 6) || r() < 0.1) continue;
-      const w = 34 + r() * 26; const m = new T.Mesh(new T.PlaneGeometry(w, w), deitada); m.rotation.x = -Math.PI / 2; m.rotation.z = r() * Math.PI;
-      m.position.set(px, altura(px, pz) + 1.2 + r() * 2.5, pz); m.renderOrder = 4; grupo.add(m); }
+    // um tapete de neblina densa que acompanha o relevo e cobre todo o campo de perto; só a rua, a escadaria e o platô
+    // do torii ficam abertos (com bordas suaves, as árvores em volta aparecem saindo da neblina)
+    const tapete = (alto, k) => {
+      const X0 = -165, X1 = 165, Z0 = 60, Z1 = -176, nx = 66, nz = 48;
+      const geo = new T.PlaneGeometry(X1 - X0, Z0 - Z1, nx, nz); geo.rotateX(-Math.PI / 2); geo.translate((X0 + X1) / 2, 0, (Z0 + Z1) / 2);
+      const pa = geo.attributes.position; for (let i = 0; i < pa.count; i++) pa.setY(i, altura(pa.getX(i), pa.getZ(i)) + alto); geo.computeBoundingSphere();
+      const m = new T.ShaderMaterial({ transparent: true, depthWrite: false, fog: false, side: T.DoubleSide, uniforms: { uT, uC: { value: scene.fog.color }, uK: { value: k }, uS: { value: r() * 40 } },
+        vertexShader: `varying float vD; varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position, 1.); vW = w.xyz; vec4 mv = viewMatrix * w; vD = -mv.z; gl_Position = projectionMatrix * mv; }`,
+        fragmentShader: `uniform float uT, uK, uS; uniform vec3 uC; varying float vD; varying vec3 vW;
+          float h(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+          float n(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f); return mix(mix(h(i), h(i + vec2(1, 0)), f.x), mix(h(i + vec2(0, 1)), h(i + vec2(1, 1)), f.x), f.y); }
+          float caixa(vec2 p, vec2 a, vec2 b, float bd){ vec2 d = max(a - p, p - b); return 1. - smoothstep(0., bd, max(d.x, d.y)); }
+          void main(){ vec2 p = vW.xz * .03 + vec2(uT * .01 + uS, uT * .004); float f = n(p) * .5 + n(p * 2.1 + 3.) * .3 + n(p * 4.7) * .2;
+            // a rua com os prédios, a escadaria e o platô do torii ficam abertos
+            float aberto = max(caixa(vW.xz, vec2(-17., -64.), vec2(17., 34.), 12.), caixa(vW.xz, vec2(-7., -126.), vec2(7., -60.), 9.));
+            float borda = smoothstep(165., 140., abs(vW.x)) * smoothstep(-176., -150., vW.z) * smoothstep(60., 40., vW.z);
+            float a = uK * mix(.72, 1., smoothstep(.25, .75, f)) * (1. - aberto) * borda * smoothstep(5., 22., vD);
+            gl_FragColor = vec4(mix(uC, vec3(1.), .2 + f * .12), a); }` });
+      const mesh = new T.Mesh(geo, m); mesh.renderOrder = 4; mesh.frustumCulled = false; grupo.add(mesh); };
+    tapete(2.2, 0.82); tapete(5.5, 0.45);
     // a faixa em pé no horizonte, em volta de tudo
     const empe = mat(0.75, false);
     for (let i = 0; i < 26; i++) { const a = (i / 26) * Math.PI * 2, d = 175 + r() * 60, x = Math.sin(a) * d, z = -40 + Math.cos(a) * d * 1.15;

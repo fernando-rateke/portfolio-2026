@@ -19,18 +19,15 @@
         float n(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f); return mix(mix(h(i), h(i + vec2(1, 0)), f.x), mix(h(i + vec2(0, 1)), h(i + vec2(1, 1)), f.x), f.y); }
         float fbm(vec2 p){ float s = 0., a = .5; for (int k = 0; k < 5; k++) { s += a * n(p); p *= 2.03; a *= .5; } return s; }
         void main(){ vec2 u = vU; float y = u.y;
-          vec3 c = mix(vec3(1., .55, .32), vec3(.32, .36, .72), smoothstep(.12, .55, y)); c = mix(c, vec3(.05, .07, .22), smoothstep(.55, 1., y));
-          // nuvens embaixo, andando devagar
-          float nv = fbm(vec2(u.x * 3. + uT * .03, y * 6.)); float cl = smoothstep(.45, .75, nv) * (1. - smoothstep(.1, .38, y));
-          c = mix(c, vec3(1., .86, .78), cl * .85);
-          // estrelas lá em cima e as luzes do Pavilhão (azul e laranja) piscando no horizonte
-          float st = step(.996, h(floor(u * vec2(220., 260.)))) * smoothstep(.55, .9, y) * (.6 + .4 * sin(uT * 3. + u.x * 40.));
-          vec2 g = floor(u * vec2(60., 90.)); float lz = step(.985, h(g + 7.)) * smoothstep(.12, .2, y) * (1. - smoothstep(.2, .32, y));
-          vec3 lc = mix(vec3(1., .55, .15), vec3(.2, .55, 1.), step(.5, h(g + 3.)));
-          c += st * vec3(.9) + lz * lc * (.7 + .3 * sin(uT * 2. + h(g) * 20.));
-          // a borda: um brilho que respira
-          float e = min(min(u.x, 1. - u.x), min(u.y, 1. - u.y)); float rim = 1. - smoothstep(0., .06, e);
-          c += rim * vec3(1., .8, .55) * (.6 + .4 * sin(uT * 1.6));
+          // o outro lado: noite funda e estrelada, com uma luz dourada morna nascendo no horizonte
+          vec3 c = mix(vec3(1., .86, .58), vec3(.2, .22, .5), smoothstep(.06, .46, y)); c = mix(c, vec3(.03, .05, .14), smoothstep(.34, .95, y));
+          float faixa = exp(-pow((u.x - .5 + (y - .5) * .5) * 4.5, 2.)) * smoothstep(.2, .7, y) * .22; c += vec3(.55, .6, 1.) * faixa * fbm(u * vec2(8., 14.));
+          float st = step(.992, h(floor(u * vec2(260., 320.)))) * smoothstep(.22, .6, y) * (.55 + .45 * sin(uT * 2.4 + u.x * 60. + u.y * 30.));
+          float st2 = step(.9985, h(floor(u * vec2(90., 110.)) + 3.)) * smoothstep(.3, .7, y);
+          c += st * vec3(.95, .95, 1.) + st2 * vec3(1., .95, .8) * 1.6;
+          float nv = fbm(vec2(u.x * 4. + uT * .02, y * 7.)); c = mix(c, vec3(1., .9, .72), smoothstep(.5, .8, nv) * (1. - smoothstep(.02, .2, y)) * .7);
+          float e = min(min(u.x, 1. - u.x), min(u.y, 1. - u.y)); float rim = 1. - smoothstep(0., .05, e);
+          c += rim * vec3(1., .92, .7) * (.75 + .25 * sin(uT * 1.6));
           gl_FragColor = vec4(c, uA * (0.92 + rim * .08)); }` });
     const vao = new T.Mesh(new T.PlaneGeometry(3.7, 4.35), ceu); vao.position.set(P.x, P.y + 2.18, P.z - 0.06); vao.renderOrder = 2; scene.add(vao);
     // um pouco de luz do outro lado, no chão em volta
@@ -46,7 +43,7 @@
       body.dentro .atravessar,body.voando .atravessar{display:none}
       body.atravessando .nav-lugar,body.atravessando .nav-mapa,body.atravessando .cantos,body.atravessando .marcas{opacity:0!important;pointer-events:none!important;transition:opacity .5s}
       .outro-ceu{position:fixed;inset:0;z-index:30;pointer-events:none;opacity:0;transition:opacity 1.1s ease-in;
-        background:linear-gradient(to top,#ff9a5a 0%,#d77a8a 18%,#5a5cb8 52%,#151a44 100%)}
+        background:linear-gradient(to top,#ffdca0 0%,#c9a46e 8%,#2a2f6a 36%,#0b1030 72%,#050816 100%)}
       .outro-ceu.on{opacity:1}`;
     document.head.appendChild(css);
     const btn = document.createElement("button"); btn.type = "button"; btn.className = "atravessar"; btn.textContent = "Atravessar a porta";
@@ -64,11 +61,13 @@
     function atravessar() { if (indo) return; indo = true; btn.classList.remove("on"); if (M.fechar) M.fechar(); document.body.classList.add("atravessando");
       const y = (z) => (M.yEsc ? M.yEsc(z) : P.y) + 1.6;
       const pts = [camera.position.clone(), V3(0.05, y(-100), -100), V3(0, y(-105.5), -105.5), V3(0, P.y + 1.75, -110.5), V3(P.x, P.y + 2.05, P.z + 0.6), V3(P.x, P.y + 2.1, P.z - 2)];
-      const c = new T.CatmullRomCurve3(pts, false, "centripetal"), dur = 4.2, la = new T.Vector3(); let ti = null;
+      const c = new T.CatmullRomCurve3(pts, false, "centripetal"), dur = 4.2 * (M.lento || 1), la = new T.Vector3(); let ti = null;
       M.cinema = (t, dt, cam) => { if (ti == null) ti = t; const u = Math.min(1, (t - ti) / dur), e = u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
         c.getPointAt(e, cam.position); c.getPointAt(Math.min(1, e + 0.05), la); la.y += 0.12; cam.lookAt(la);
+        // o portal se abre: cresce para além do torii e engole o que está atrás (nada da floresta aparece)
+        const k = Math.min(1, Math.max(0, (u - 0.15) / 0.55)), es = k * k * (3 - 2 * k); vao.scale.set(1 + es * 9, 1 + es * 6, 1); vao.position.y = P.y + 2.18 + es * 8;
         // o véu começa a cobrir a tela ao chegar perto e está inteiro antes de cruzar o vão
-        if (cam.position.z < P.z + 4.5) veu.classList.add("on"); if (cam.position.z < P.z + 1.8) veu.style.transition = "opacity .25s"; 
+        if (cam.position.z < P.z + 6.5) veu.classList.add("on"); if (cam.position.z < P.z + 1.8) veu.style.transition = "opacity .25s"; 
         if (u >= 1 && indo !== "foi") { indo = "foi"; setTimeout(() => { location.href = DESTINO + "?de=porta"; }, 500); } };
     }
     btn.addEventListener("click", (e) => { e.stopPropagation(); atravessar(); });

@@ -252,9 +252,10 @@
         const vs = vsign(shop[0], shop[1], shop[2], grande ? 0.8 : 0.55, grande ? 2.4 : Math.min(2.6, 0.75 * [...shop[0]].length + 0.4)); vs.position.set(side * (WALL_X - 0.42), 0.12 + H.base + H.dado + 3 + 1.5, z - 0.4); cidadeG.add(vs); shadowOn(vs);
         // a placa de cima da porta
         const hs = hsign(grande ? "技術 · Curso Técnico" : shop[0], shop[1], shop[2], grande ? 4.6 : 2.6, grande ? 0.62 : 0.5); hs.position.set(side * (WALL_X - 0.12), 0.12 + H.base + H.dado + 2.62, z - 1.5); hs.rotation.y = side < 0 ? Math.PI / 2 : -Math.PI / 2; cidadeG.add(hs);
-        if (shop[4]) lojas.push({ id: shop[4], kanji: shop[0], cor: shop[1], alvos: [vs, hs], porta: V3(side * (WALL_X - 0.2), 1.6, z - 1.5), side });
+        // só a cafeteria é uma loja que se pode entrar (as matérias foram para o Pavilhão, no Ato 2)
+        if (shop[4] === "perfil") lojas.push({ id: shop[4], kanji: shop[0], cor: shop[1], alvos: [vs, hs], porta: V3(side * (WALL_X - 0.2), 1.6, z - 1.5), side });
         // noren na porta, e lanternas vermelhas em alguns
-        if (shop[4] || rnd() < 0.7) { const n = noren(shop[3], shop[1] === "#f4efe4" ? "#2a3a5a" : shop[1], 1.7); n.position.set(side * (WALL_X - 0.2), 0.12 + H.base + H.dado + 2.25, z - 1.5); n.rotation.y = side < 0 ? Math.PI / 2 : -Math.PI / 2; scene.add(n); if (shop[4]) lojas[lojas.length - 1].alvos.push(...n.children); }
+        if (shop[4] || rnd() < 0.7) { const n = noren(shop[3], shop[1] === "#f4efe4" ? "#2a3a5a" : shop[1], 1.7); n.position.set(side * (WALL_X - 0.2), 0.12 + H.base + H.dado + 2.25, z - 1.5); n.rotation.y = side < 0 ? Math.PI / 2 : -Math.PI / 2; scene.add(n); if (shop[4] === "perfil") lojas[lojas.length - 1].alvos.push(...n.children); }
         if (rnd() < 0.5) for (const dz of [-0.2, -2.8]) { const l = chochin(shop[3]); l.position.set(side * (WALL_X - 0.35), 0.12 + H.base + H.dado + 2.1, z + dz); l.rotation.z = (rnd() - 0.5) * 0.06; cidadeG.add(l); }
     }
     // duas máquinas de bebida lado a lado, perto da câmera
@@ -314,6 +315,11 @@
     props({ poles, lamp: lamp0, ubox1, ubox2, trash, crate, pot1, pot2, planter, man, pot3 });
     scene.add(cidadeG); juntar(cidadeG, 48);
     for (const b of M.builders || []) { try { await b(M); } catch (e) { console.error("mundo:", e); } }
+    // o Ato 1 termina no torii do topo da escadaria: o que ficou espalhado para além dele (árvores, plantas) sai
+    { const LIM = -160, m4 = new T.Matrix4(), v = new T.Vector3(), fora = [];
+      scene.traverse((o) => { if (o.isInstancedMesh && o.frustumCulled) { let k = 0; for (let i = 0; i < o.count; i++) { o.getMatrixAt(i, m4); v.setFromMatrixPosition(m4).applyMatrix4(o.matrixWorld); if (v.z >= LIM) { if (k !== i) o.setMatrixAt(k, m4); k++; } }
+          if (k !== o.count) { o.count = k; o.instanceMatrix.needsUpdate = true; if (!k) fora.push(o); } } });
+      for (const o of fora) o.parent && o.parent.remove(o); }
     await prepararGPU(scene, camera);
     renderer.shadowMap.needsUpdate = true; window.cidadePronta = true;
   })();

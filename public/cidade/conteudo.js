@@ -126,6 +126,7 @@
       .pp .btn{justify-self:start;padding:10px 18px;border-radius:3px;border:0;background:#b5301b;color:#fff;font:inherit;cursor:pointer}
       .pp .nota{font-size:13px;opacity:.75;margin:0}
       .pp .ema{padding:12px 14px;margin:0 0 10px;border-radius:3px;background:#e9d8b8;border:1px solid rgba(90,60,30,.25)}.pp .ema b{display:block;color:#7a2a22}.pp .ema span{font-size:12px;opacity:.6}
+      .pp .cv{position:relative;width:100%;aspect-ratio:1/1.414;background:#fff;box-shadow:0 8px 22px rgba(60,30,10,.22)}.pp .cv iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
       .pp .marca-txt{background:rgba(255,214,150,.55);border-radius:3px}.pp [data-b]{transition:background 1.2s}
       @media (max-width:600px){.pp{top:10px;width:calc(100vw - 16px);height:calc(100vh - 20px)}.pp .seda{padding:18px 10px 24px}.pp header{padding:22px 18px 10px}.pp .bd{padding:4px 18px 26px}.pp h2{font-size:22px}.pp .x{top:6px;right:6px}.pp .cordao{display:none}.pp.on .rolar{height:calc(100% - 36px)}}
       @media (prefers-reduced-motion:reduce){.pp .rolar{transition:none}}
@@ -258,6 +259,11 @@
     }
     let corAtual = null;
     M.abrir = abrir; M.fechar = fechar; M.painelAberto = () => aberto;
+    // o currículo: abre no pergaminho, do tamanho de uma folha A4 (o mesmo do Canva que estava no site antigo)
+    const CV = "https://www.canva.com/design/DAGxm9Bd6lU/f8w8zNxuOLH2PDnrVvsAmQ/view";
+    M.abrirCurriculo = () => { aberto = "curriculo"; emk.classList.remove("on");
+      pp.innerHTML = cabeca({ name: "Currículo", desc: "Fernando Rateke Neto" }, { kanji: "履歴", cor: "#2a3a5a" }) + `<div class="bd"><div class="cv"><iframe src="${CV}?embed" title="Currículo de Fernando Rateke Neto" loading="lazy" allowfullscreen></iframe></div><a class="lk" href="${CV}" target="_blank" rel="noopener">Abrir em outra aba</a></div>`;
+      ligar(); mostrar(); };
     const seloDe = (id) => { const k = (M.KANJI || {})[id] || SELO[id]; return k ? { kanji: k[0], cor: k[1] } : null; };
     M.abrirAtividade = (id, i) => { const sub = byId[id]; if (!sub) return;
       // os textos longos (Quem sou, o futuro, os agradecimentos) abrem no emakimono, já no trecho pedido
@@ -300,7 +306,7 @@
     }
     // o quadro de madeira com telhadinho e as plaquinhas de cinco lados, no pátio do santuário
     const quadro = new T.Group(); const placas = [];
-    if (M.J) {
+    if (M.J && M.haiden) { // (o santuário saiu do Ato 1: sem ele, o quadro de emas não é montado)
       const J = M.J, MD = J.MADEIRA_ESC(), HK = J.HINOKI();
       const box = (w, h, d, m, x, y, z) => { const o = new T.Mesh(new T.BoxGeometry(w, h, d), m); o.position.set(x, y, z); o.castShadow = o.receiveShadow = true; quadro.add(o); return o; };
       for (const x of [-1.3, 1.3]) box(0.12, 2.1, 0.12, MD, x, 1.05, 0);

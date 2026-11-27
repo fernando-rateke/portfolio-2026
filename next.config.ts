@@ -8,6 +8,8 @@ const nextConfig: NextConfig = {
         { source: "/", destination: "/cidade/index.html" },
         { source: "/cidade", destination: "/cidade/index.html" },
         { source: "/vale", destination: "/vale/index.html" },
+        // os atos 2 e 3 do portfólio (docs/plano-tres-atos.md)
+        { source: "/pavilhao", destination: "/pavilhao/index.html" },
         // o portfólio de Tokyo Ghoul (o 20º distrito), separado e do jeito que era
         { source: "/tg", destination: "/tg/index.html" },
         // moderação das emas: página estática; a senha é conferida nas rotas /api/admin

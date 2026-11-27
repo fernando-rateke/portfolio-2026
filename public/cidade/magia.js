@@ -34,16 +34,11 @@
     /* 2. pequenas luzes que sobem devagar pelo túnel de torii, como se subissem a escada junto */
     luzinhas(70, () => { const z = L.Z_ESC0 - rnd() * (L.Z_ESC0 - L.Z_ESC1); return V3((rnd() - 0.5) * 2.4, M.yEsc(z) + 0.3 + rnd() * 2.5, z); }, { cor: "#ffd9a0", tam: 0.05, deriva: 0.35, pisca: 0.6 });
 
-    /* 3. vaga-lumes: no arrozal, na beira do lago e na trilha da floresta */
-    luzinhas(260, () => { const x = (rnd() - 0.5) * 110, z = L.Z_VALE - 2 - rnd() * 62; return V3(x, h(x, z) + 0.4 + rnd() * 1.6, z); }, { cor: "#c8ff8a", tam: 0.045, deriva: 0.8 });
-    luzinhas(120, () => { const z = L.Z_PLAT1 - 4 - rnd() * 52, x = M.trilhaX(z) + (rnd() - 0.5) * 16; return V3(x, h(x, z) + 0.5 + rnd() * 2.5, z); }, { cor: "#d8ffa0", tam: 0.04, deriva: 0.7 });
-    luzinhas(90, () => { const a = rnd() * 6.28; const x = L.LAGO.x + Math.cos(a) * L.LAGO.rx * (0.95 + rnd() * 0.3), z = L.LAGO.z + Math.sin(a) * L.LAGO.rz * (0.95 + rnd() * 0.3); return V3(x, L.Y_AGUA + 0.4 + rnd() * 1.5, z); }, { cor: "#c8ff8a", tam: 0.05, deriva: 0.9 });
-
     /* 4. pétalas de cerejeira caindo no pátio do santuário e na beira do lago */
     {
-      const N = 520, geo = new T.PlaneGeometry(0.05, 0.035); const m = new T.MeshStandardMaterial({ color: "#f8c8d4", emissive: new T.Color("#ff9ab8"), emissiveIntensity: 0.12, side: T.DoubleSide, roughness: 0.8 });
+      const N = 260, geo = new T.PlaneGeometry(0.05, 0.035); const m = new T.MeshStandardMaterial({ color: "#f8c8d4", emissive: new T.Color("#ff9ab8"), emissiveIntensity: 0.12, side: T.DoubleSide, roughness: 0.8 });
       // cada pétala anda sozinha na placa de vídeo (anim.js): cai 9 m girando e volta ao alto, em ciclo
-      const P = []; const zonas = [[0, L.Y_TOPO, -132, 22, 18], [13, L.Y_TOPO, -126, 7, 9], [0, L.Y_AGUA, -268, 40, 8], [0, null, (L.Z_ESC0 + L.Z_ESC1) / 2, 6, 21], [0, null, (L.Z_ESC0 + L.Z_ESC1) / 2, 6, 21]];
+      const P = []; const zonas = [[0, null, (L.Z_ESC0 + L.Z_ESC1) / 2, 6, 21], [0, null, (L.Z_ESC0 + L.Z_ESC1) / 2, 6, 21]]; // só a escadaria das cerejeiras (o resto saiu)
       for (let i = 0; i < N; i++) { const zz = zonas[i % zonas.length]; const z = zz[2] + (rnd() - 0.5) * zz[4] * 2; P.push({ c: zz, gy: zz[1] == null ? M.yEsc(z) : zz[1], x: zz[0] + (rnd() - 0.5) * zz[3] * 2, z, y0: rnd(), ph: rnd() * 6.28, sp: 0.25 + rnd() * 0.35 }); }
       const aP = new Float32Array(N * 4), aQ = new Float32Array(N * 2);
       P.forEach((a, i) => { aP.set([a.x, a.z, a.gy, a.ph], i * 4); aQ.set([a.y0, a.sp], i * 2); });
@@ -52,30 +47,6 @@
           desl = vec3(aP.x + sin(uT * 0.6 + aP.w) * 0.8 + k * 0.25, aP.z + H - k, aP.y + cos(uT * 0.5 + aP.w) * 0.6);
           giro = rotX(uT * 1.7 + aP.w) * rotY(uT * 1.1 + aP.w) * rotZ(uT * 0.7);` });
       im.layers.set(1); scene.add(im);
-    }
-
-    /* 5. lanternas de papel subindo do lago, bem devagar, e seus reflexos na água */
-    {
-      const pts = []; for (let i = 0; i <= 10; i++) { const t = i / 10; pts.push(new T.Vector2(0.16 + Math.sin(t * Math.PI) * 0.06 - t * 0.04, t * 0.42)); }
-      const geo = new T.LatheGeometry(pts, 12);
-      const m = new T.MeshStandardMaterial({ color: "#ffc890", emissive: new T.Color("#ff8a30"), emissiveIntensity: 1.25, roughness: 0.9, transparent: true, opacity: 0.95, side: T.DoubleSide });
-      // as lanternas e os halos andam na placa de vídeo (anim.js), pelo mesmo caminho: sobem 60 m devagar, balançando
-      const N = 46;
-      const A = []; for (let i = 0; i < N; i++) { const a = rnd() * 6.28, r = Math.sqrt(rnd()); A.push({ x: L.LAGO.x + Math.cos(a) * r * L.LAGO.rx * 0.8, z: L.LAGO.z + Math.sin(a) * r * L.LAGO.rz * 0.8 - 6, h0: rnd(), sp: 0.18 + rnd() * 0.12, ph: rnd() * 6.28 }); }
-      const aL = new Float32Array(N * 4), aS = new Float32Array(N); A.forEach((a, i) => { aL.set([a.x, a.z, a.h0, a.ph], i * 4); aS[i] = a.sp; });
-      const CAMINHO = `float H = 60., k = mod(aL.z * H + uT * aS, H);
-          desl = vec3(aL.x + sin(uT * 0.2 + aL.w) * 1.5 * (k / H), ${(L.Y_AGUA + 0.3).toFixed(3)} + k, aL.y + cos(uT * 0.17 + aL.w) * 1.2 * (k / H));`;
-      const im = M.anim.particulas({ geo, mat: m, n: N, chave: "lanterna", attrs: { aL: [aL, 4], aS: [aS, 1] }, mover: CAMINHO + "\n giro = rotZ(sin(uT * 0.8 + aL.w) * 0.06);" });
-      scene.add(im);
-      // os halos: um ponto de luz por lanterna, todos num desenho só
-      const hg = new T.BufferGeometry(); hg.setAttribute("position", new T.BufferAttribute(new Float32Array(N * 3), 3)); hg.setAttribute("aL", new T.BufferAttribute(aL, 4)); hg.setAttribute("aS", new T.BufferAttribute(aS, 1));
-      const hm = new T.ShaderMaterial({ transparent: true, depthWrite: false, blending: T.AdditiveBlending, uniforms: { uT: M.anim.U.uT, uMap: { value: glowTex }, uPx: { value: 1 }, uH: { value: innerHeight } },
-        vertexShader: `attribute vec4 aL; attribute float aS; uniform float uT, uPx, uH; varying float vA;
-          void main(){ vec3 desl; ${CAMINHO} vA = 0.45 * min(1., k / 3.);
-            vec4 mv = modelViewMatrix * vec4(desl + vec3(0., 0.2, 0.), 1.); gl_Position = projectionMatrix * mv; gl_PointSize = 1.6 * uH * projectionMatrix[1][1] * 0.5 / -mv.z; }`,
-        fragmentShader: `uniform sampler2D uMap; varying float vA; void main(){ float a = texture2D(uMap, gl_PointCoord).a * vA; gl_FragColor = vec4(vec3(1., .69, .44) * a, a); }` });
-      addEventListener("resize", () => { hm.uniforms.uH.value = innerHeight * M.renderer.getPixelRatio(); }); hm.uniforms.uH.value = innerHeight * M.renderer.getPixelRatio();
-      const halos = new T.Points(hg, hm); halos.frustumCulled = false; scene.add(halos);
     }
 
     /* 6. o torii do lago: um anel de luz muito suave na água, respirando */
@@ -89,13 +60,5 @@
     /* 7. as primeiras estrelas, só no alto do céu, aparecendo e sumindo devagar */
     M.estrelas = luzinhas(700, () => { const a = rnd() * 6.28, el = 0.35 + rnd() * 1.1; const r = 480; return V3(Math.cos(a) * Math.cos(el) * r, Math.sin(el) * r, Math.sin(a) * Math.cos(el) * r - 200); }, { cor: "#fff4e8", tam: 0.55, deriva: 0, pisca: 0.7 });
 
-    /* 8. raios de sol entre as árvores da floresta */
-    {
-      const c = document.createElement("canvas"); c.width = 64; c.height = 256; const g = c.getContext("2d"); const gr = g.createLinearGradient(0, 0, 0, 256); gr.addColorStop(0, "rgba(255,200,140,0)"); gr.addColorStop(0.3, "rgba(255,200,140,0.6)"); gr.addColorStop(1, "rgba(255,200,140,0)"); g.fillStyle = gr; g.fillRect(0, 0, 64, 256);
-      const g2 = g.getImageData(0, 0, 64, 256); for (let y = 0; y < 256; y++) for (let x = 0; x < 64; x++) { const k = Math.sin((x / 63) * Math.PI); g2.data[(y * 64 + x) * 4 + 3] *= k; } g.putImageData(g2, 0, 0);
-      const mt = new T.MeshBasicMaterial({ map: new T.CanvasTexture(c), transparent: true, depthWrite: false, blending: T.AdditiveBlending, opacity: 0.09, side: T.DoubleSide });
-      const dir = M.sun.position.clone().normalize();
-      for (let i = 0; i < 16; i++) { const z = L.Z_PLAT1 - 6 - rnd() * 48, x = M.trilhaX(z) + (rnd() - 0.5) * 18; const ray = new T.Mesh(new T.PlaneGeometry(1.2 + rnd() * 1.6, 22), mt); ray.position.set(x, h(x, z) + 8, z); ray.lookAt(ray.position.clone().add(V3(dir.z, 0, -dir.x))); ray.rotateX(-0.45); scene.add(ray); }
-    }
   });
 })();

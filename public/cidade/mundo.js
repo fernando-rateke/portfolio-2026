@@ -102,7 +102,7 @@
       const p = geo.attributes.position, uv = geo.attributes.uv, n = p.count, splat = new Float32Array(n * 3), col = new Float32Array(n * 3);
       for (let i = 0; i < n; i++) {
         const x = p.getX(i), z = p.getZ(i); let y = h(x, z);
-        if (far && Math.abs(x) < 165 && z < 40 && z > -440) y -= 6; // por baixo do terreno de perto
+        if (far && Math.abs(x) < 165 && z < 40 && z > -176) y -= 6; // por baixo do terreno de perto
         if (z > -61) y -= 0.1; // na cidade o chão fica sob o asfalto e as calçadas
         p.setY(i, y); uv.setXY(i, x / 5, z / 5);
         const sl = Math.hypot(h(x + 1, z) - h(x - 1, z), h(x, z + 1) - h(x, z - 1)) / 2; // inclinação
@@ -126,7 +126,7 @@
             diffuseColor *= sc;`); };
       const mesh = new T.Mesh(geo, m); mesh.receiveShadow = true; scene.add(mesh); return mesh;
     }
-    terreno(-165, 165, 40, -440, 2, false);
+    terreno(-165, 165, 40, -176, 2, false); // (o terreno de perto acaba pouco depois do platô do torii)
     const far = terreno(-1300, 1300, 1100, -1500, 26, true); far.receiveShadow = false;
 
     /* ---------- água ---------- */
@@ -184,7 +184,8 @@
       };
       return mesh;
     }
-    const lago = espelho(new T.CircleGeometry(1, 64)); lago.rotation.x = -Math.PI / 2; lago.scale.set(L.LAGO.rx * 1.45, L.LAGO.rz * 1.45, 1); lago.position.set(L.LAGO.x, L.Y_AGUA, L.LAGO.z); scene.add(lago); M.lago = lago;
+    /* Ato 1 termina no torii do topo da escadaria (a porta): o lago, o vale e o santuário saíram (docs/plano-tres-atos.md) */
+    if (false) { const lago = espelho(new T.CircleGeometry(1, 64)); lago.rotation.x = -Math.PI / 2; lago.scale.set(L.LAGO.rx * 1.45, L.LAGO.rz * 1.45, 1); lago.position.set(L.LAGO.x, L.Y_AGUA, L.LAGO.z); scene.add(lago); M.lago = lago; }
 
     /* ---------- praça e o grande torii ---------- */
     const praca = new T.Mesh(new T.PlaneGeometry(14, 10), pbr("stone_pathway", [3.5, 2.5], { metalness: 0 })); praca.rotation.x = -Math.PI / 2; praca.position.set(0, 0.02, -65); praca.receiveShadow = true; est.add(praca);
@@ -217,63 +218,9 @@
 
     /* ---------- o santuário no alto ---------- */
     const YT = L.Y_TOPO;
-    const cascalho = new T.Mesh(new T.PlaneGeometry(40, 40), pbr("gravel_floor", [12, 12], { metalness: 0, color: "#bdb8ae", roughnessMap: null, metalnessMap: null, roughness: 1 })); cascalho.rotation.x = -Math.PI / 2; cascalho.position.set(0, YT + 0.03, -131); cascalho.receiveShadow = true; est.add(cascalho);
-    const caminho = new T.Mesh(new T.PlaneGeometry(2.4, 22), pbr("stone_pathway", [0.6, 5.5], { metalness: 0 })); caminho.rotation.x = -Math.PI / 2; caminho.position.set(0, YT + 0.05, -122); caminho.receiveShadow = true; est.add(caminho);
-    const topoT = J.torii(4.6, 5.6, { r: 0.22, placa: "神社" }); topoT.position.set(0, YT, -114.5); est.add(topoT);
-    const hai = J.haiden({ W: 10, D: 7 }); hai.position.set(0, YT, -140); est.add(hai); M.haiden = hai;
-    for (const z of [-118, -124, -130]) for (const s of [-1, 1]) { const t = J.toro(1); t.position.set(s * 2.4, YT, z); est.add(t); M.toros.push(t); }
-    // a árvore sagrada recebe a corda; ela mesma vem do arquivo de vegetação
-    M.arvoreSagrada = new T.Vector3(-11, YT, -128);
+    // (o cascalho, o caminho de pedra, o santuário e as lanternas do pátio saíram)
+    const topoT = J.torii(4.6, 5.6, { r: 0.22, placa: "神社" }); topoT.position.set(0, YT, -114.5); est.add(topoT); M.toriiPorta = topoT; // a porta para o Ato 2
 
-    /* ---------- trilha da floresta: pedras no chão ---------- */
-    {
-      const pts = []; for (let z = L.Z_PLAT1 + 6; z > L.Z_VALE - 30; z -= 2) pts.push(new T.Vector3(trilhaX(z), 0, z));
-      const curve = new T.CatmullRomCurve3(pts), seg = 140, W = 2.0, pos = [], uv = [], idx = [];
-      for (let i = 0; i <= seg; i++) { const t = i / seg, c = curve.getPoint(t), d = curve.getTangent(t), nx = -d.z, nz = d.x, ln = Math.hypot(nx, nz);
-        for (const s of [-1, 1]) { const x = c.x + s * W / 2 * nx / ln, z = c.z + s * W / 2 * nz / ln; pos.push(x, h(x, z) + 0.06, z); uv.push(s < 0 ? 0 : 1, i * 0.5); } }
-      for (let i = 0; i < seg; i++) { const a = i * 2; idx.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); }
-      const g = new T.BufferGeometry(); g.setAttribute("position", new T.Float32BufferAttribute(pos, 3)); g.setAttribute("uv", new T.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals();
-      const tr = new T.Mesh(g, pbr("stone_pathway", [1, 1], { metalness: 0, color: "#bdb6a8" })); tr.receiveShadow = true; est.add(tr);
-    }
-
-    /* ---------- vale: arrozais em degraus de água ---------- */
-    {
-      const YV = L.Y_VALE, aguaR = new T.MeshStandardMaterial({ color: "#20282a", roughness: 0.08, metalness: 0.9, envMapIntensity: 0.55 });
-      const dique = pbr("leafy_grass", [3, 0.2], { metalness: 0, color: "#a8a888" });
-      M.arrozais = [];
-      for (let ix = -4; ix <= 3; ix++) for (let iz = 0; iz < 4; iz++) {
-        const cx = ix * 13 + 6.5, cz = L.Z_VALE - 8 - iz * 12.5; if (Math.abs(cx - trilhaX(cz)) < 5) continue;
-        const y = h(cx, cz) + 0.05;
-        const w = new T.Mesh(new T.PlaneGeometry(12, 11.5), aguaR); w.rotation.x = -Math.PI / 2; w.position.set(cx, y + 0.06, cz); est.add(w);
-        for (const [dx, dz, sx, sz] of [[0, 5.95, 12.6, 0.6], [0, -5.95, 12.6, 0.6], [6.25, 0, 0.6, 12.5], [-6.25, 0, 0.6, 12.5]]) { const b = new T.Mesh(new T.BoxGeometry(sx, 0.36, sz), dique); b.position.set(cx + dx, y + 0.02, cz + dz); b.receiveShadow = true; est.add(b); }
-        M.arrozais.push({ x: cx, z: cz, y: y + 0.06, cheio: (ix + iz) % 3 !== 0 });
-      }
-      // o arroz: touceiras de folhas finas, verdes com as pontas douradas, balançando ao vento
-      const tou = (() => { const pos = [], col = [], idx = []; let v = 0; for (let k = 0; k < 7; k++) { const a = k / 7 * Math.PI * 2 + 0.3, lean = 0.12 + (k % 3) * 0.06, hh = 0.5 + (k % 4) * 0.06, w = 0.012;
-          const dx = Math.cos(a), dz = Math.sin(a), px = -dz * w, pz = dx * w;
-          pos.push(-px, 0, -pz, px, 0, pz, dx * lean - px * 0.3, hh, dz * lean - pz * 0.3, dx * lean + px * 0.3, hh, dz * lean + pz * 0.3);
-          col.push(0.26, 0.36, 0.12, 0.26, 0.36, 0.12, 0.62, 0.62, 0.26, 0.62, 0.62, 0.26); idx.push(v, v + 1, v + 2, v + 1, v + 3, v + 2); v += 4; }
-        const g = new T.BufferGeometry(); g.setAttribute("position", new T.Float32BufferAttribute(pos, 3)); g.setAttribute("color", new T.Float32BufferAttribute(col, 3)); g.setIndex(idx); g.computeVertexNormals(); return g; })();
-      const arrozM = new T.MeshStandardMaterial({ vertexColors: true, side: T.DoubleSide, roughness: 0.85 });
-      const uT = { value: 0 }; M.ticks.push((t) => (uT.value = t));
-      arrozM.onBeforeCompile = (sh) => { sh.uniforms.uT = uT; sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nuniform float uT;").replace("#include <begin_vertex>", `#include <begin_vertex>
-        vec4 ip = instanceMatrix * vec4(0., 0., 0., 1.); float w = sin(uT * 1.3 + ip.x * 0.35 + ip.z * 0.2) * 0.5 + sin(uT * 2.1 + ip.x * 0.9) * 0.2;
-        transformed.x += w * 0.09 * position.y * position.y * 4.; transformed.z += w * 0.04 * position.y;`); };
-      const pts = [];
-      for (const a of M.arrozais) { if (!a.cheio) continue; for (let x = -5.6; x <= 5.6; x += 0.48) for (let z = -5.3; z <= 5.3; z += 0.48) pts.push(TRS(a.x + x + (rnd() - 0.5) * 0.08, a.y - 0.02, a.z + z + (rnd() - 0.5) * 0.08, rnd() * 6.28, 0.85 + rnd() * 0.35)); }
-      M.instPedacos(new T.Mesh(tou, arrozM), pts, { cell: 26, camada: 1, longe: 170 });
-    }
-    // a casa de fazenda, de frente para a trilha
-    const casa = J.minka({ W: 11, D: 7 }); casa.position.set(-34, h(-34, -226) - 0.1, -226); casa.rotation.y = Math.PI / 2; est.add(casa); M.casa = casa;
-
-    /* ---------- o torii dentro do lago ---------- */
-    const lagoT = J.torii(9, 12, { r: 0.5, noBase: true, placa: "水" }); lagoT.position.set(0, L.Y_AGUA - 1.2, L.LAGO.z + 6); est.add(lagoT); M.toriiLago = lagoT;
-    // reflexo: uma cópia de cabeça para baixo debaixo da água semitransparente
-    // píer de madeira até a água
-    const pierM = pbr("stair_planks", [1, 6], { metalness: 0, color: "#a89880" });
-    const pz0 = L.LAGO.z + L.LAGO.rz - 2, pier = new T.Mesh(new T.BoxGeometry(2.4, 0.18, 22), pierM); pier.position.set(0, L.Y_AGUA + 0.55, pz0 - 9); pier.castShadow = pier.receiveShadow = true; est.add(pier);
-    for (let z = pz0 + 1; z > pz0 - 20; z -= 3) for (const s of [-1, 1]) { const p = new T.Mesh(new T.CylinderGeometry(0.1, 0.1, 2.6, 8), J.MADEIRA_ESC()); p.position.set(s * 1.1, L.Y_AGUA - 0.6, z); est.add(p); }
-    M.pierFim = new T.Vector3(0, L.Y_AGUA + 0.64, pz0 - 19.5);
     scene.add(est); M.juntar(est, 30);
   });
 })();

@@ -14,24 +14,18 @@
     // cada nó: posição dos olhos, para onde olhar e, se for um lugar, o nome
     const N = [
       { p: V3(0.6, 1.65, 26), o: V3(-0.4, 3.2, -10), id: "rua", g: "A cidade", nome: "A rua", jp: "通り" },
-      { p: V3(0.3, 1.65, -14), o: V3(0, 3.6, -60), id: "lojas", g: "A cidade", nome: "As lojas", jp: "商店街" },
+      { p: V3(0.3, 1.65, -14), o: V3(0, 3.6, -60), id: "lojas", g: "A cidade", nome: "A cafeteria", jp: "喫茶店" },
       { p: V3(0, 1.7, -53), o: V3(0, 7.5, -75), id: "torii", g: "O santuário", nome: "O grande torii", jp: "鳥居" },
       { p: at(0, -78, 1.6), o: V3(0, yEsc(-96) + 2, -96) },
       { p: at(0.2, -94.5, 1.6), o: V3(4.6, yEsc(-104) + 2.0, -104), id: "escadaria", g: "O santuário", nome: "A escadaria das cerejeiras", jp: "桜の石段" },
-      { p: at(0, -111, 1.65), o: V3(4, L.Y_TOPO + 2.6, -134) },
-      { p: at(0, -119, 1.65), o: V3(0, L.Y_TOPO + 3.5, -140), id: "santuario", g: "O santuário", nome: "O santuário", jp: "神社" },
-      { p: at(-10.5, -137, 1.65), o: V3(-9, L.Y_TOPO, -152) },
-      { p: at(tx(-150), -150, 1.65), o: V3(tx(-165), h(tx(-165), -165) + 1.4, -165) },
-      { p: at(tx(-196), -196, 3.2), o: V3(0, L.Y_VALE + 1, -290), id: "vale", g: "O campo", nome: "O vale", jp: "谷" },
-      { p: at(tx(-222) + 1.5, -222, 1.65), o: V3(-34, L.Y_VALE + 3.5, -226), id: "arrozal", g: "O campo", nome: "O arrozal", jp: "田んぼ" },
-      { p: at(tx(-245), -245, 1.65), o: V3(0, L.Y_VALE + 4, -300) },
-      { p: M.pierFim.clone().add(V3(0, 1.9, 3)), o: V3(0, L.Y_AGUA + 3.2, -305), id: "lago", g: "O campo", nome: "O lago", jp: "湖" },
+      // o fim do Ato 1: o torii do topo da escadaria, a porta para o Pavilhão (docs/plano-tres-atos.md)
+      { p: at(0, -108.6, 1.6), o: V3(0, L.Y_TOPO + 2.7, -122), id: "porta", g: "O santuário", nome: "A porta", jp: "門" },
     ];
 
     /* ---------- os lugares e os carimbos ---------- */
     const lugares = N.map((n, i) => (n.nome ? i : -1)).filter((i) => i >= 0);
     // o kanji do carimbo de cada lugar e onde ele flutua no mapa visto do céu
-    const HANKO = { rua: ["通", V3(0, 8, 14)], lojas: ["商", V3(0, 10, -26)], torii: ["鳥居", V3(0, 13, -64)], escadaria: ["桜", V3(0, yEsc(-94) + 8, -94)], santuario: ["社", V3(0, L.Y_TOPO + 12, -137)],
+    const HANKO = { rua: ["通", V3(0, 8, 14)], lojas: ["喫", V3(0, 10, -26)], torii: ["鳥居", V3(0, 13, -64)], escadaria: ["桜", V3(0, yEsc(-94) + 8, -94)], porta: ["門", V3(0, L.Y_TOPO + 9, -114.5)],
       vale: ["谷", V3(tx(-198), h(tx(-198), -198) + 10, -198)], arrozal: ["田", V3(-34, L.Y_VALE + 7, -226)], lago: ["湖", V3(0, L.Y_AGUA + 9, -300)] };
     M.lugares = lugares.map((i, k) => ({ i: k, id: N[i].id, g: N[i].g, nome: N[i].nome, jp: N[i].jp, kj: (HANKO[N[i].id] || ["印"])[0] }));
     let aqui = 0;

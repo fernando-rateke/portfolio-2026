@@ -1,0 +1,72 @@
+/* A porta: o torii do topo da escadaria é o fim do Ato 1. Dentro do vão dele aparece outro céu (o anoitecer acima
+   das nuvens, com luzes azuis e laranja); chegando lá, "Atravessar a porta" leva a câmera através do torii, o céu do
+   outro lado toma a tela e a página do Pavilhão (Ato 2) abre já nesse céu. A página do Pavilhão começa a ser baixada
+   assim que se chega à porta, para a passagem não esperar. */
+(() => {
+  const M = (window.MUNDO = window.MUNDO || {});
+  M.builders = M.builders || [];
+  M.builders.push(async (M) => {
+    const { T, scene, camera, V3 } = M;
+    const t0 = M.toriiPorta; if (!t0) return;
+    const P = t0.position, DESTINO = "/pavilhao/";
+
+    // o outro céu: gradiente da hora azul, nuvens embaixo, estrelas e pontos de luz azuis e laranja; a borda brilha
+    const ceu = new T.ShaderMaterial({ transparent: true, depthWrite: false, side: T.DoubleSide, fog: false, toneMapped: false,
+      uniforms: { uT: M.anim ? M.anim.U.uT : { value: 0 }, uA: { value: 1 } },
+      vertexShader: `varying vec2 vU; void main(){ vU = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }`,
+      fragmentShader: `uniform float uT, uA; varying vec2 vU;
+        float h(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+        float n(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f); return mix(mix(h(i), h(i + vec2(1, 0)), f.x), mix(h(i + vec2(0, 1)), h(i + vec2(1, 1)), f.x), f.y); }
+        float fbm(vec2 p){ float s = 0., a = .5; for (int k = 0; k < 5; k++) { s += a * n(p); p *= 2.03; a *= .5; } return s; }
+        void main(){ vec2 u = vU; float y = u.y;
+          vec3 c = mix(vec3(1., .55, .32), vec3(.32, .36, .72), smoothstep(.12, .55, y)); c = mix(c, vec3(.05, .07, .22), smoothstep(.55, 1., y));
+          // nuvens embaixo, andando devagar
+          float nv = fbm(vec2(u.x * 3. + uT * .03, y * 6.)); float cl = smoothstep(.45, .75, nv) * (1. - smoothstep(.1, .38, y));
+          c = mix(c, vec3(1., .86, .78), cl * .85);
+          // estrelas lá em cima e as luzes do Pavilhão (azul e laranja) piscando no horizonte
+          float st = step(.996, h(floor(u * vec2(220., 260.)))) * smoothstep(.55, .9, y) * (.6 + .4 * sin(uT * 3. + u.x * 40.));
+          vec2 g = floor(u * vec2(60., 90.)); float lz = step(.985, h(g + 7.)) * smoothstep(.12, .2, y) * (1. - smoothstep(.2, .32, y));
+          vec3 lc = mix(vec3(1., .55, .15), vec3(.2, .55, 1.), step(.5, h(g + 3.)));
+          c += st * vec3(.9) + lz * lc * (.7 + .3 * sin(uT * 2. + h(g) * 20.));
+          // a borda: um brilho que respira
+          float e = min(min(u.x, 1. - u.x), min(u.y, 1. - u.y)); float rim = 1. - smoothstep(0., .06, e);
+          c += rim * vec3(1., .8, .55) * (.6 + .4 * sin(uT * 1.6));
+          gl_FragColor = vec4(c, uA * (0.92 + rim * .08)); }` });
+    const vao = new T.Mesh(new T.PlaneGeometry(3.7, 4.35), ceu); vao.position.set(P.x, P.y + 2.18, P.z - 0.06); vao.renderOrder = 2; scene.add(vao);
+    // um pouco de luz do outro lado, no chão em volta
+    if (M.luzFonte) M.luzFonte(V3(P.x, P.y + 1.6, P.z + 0.8), "#ffb27a", 1.2, 9);
+
+    // o botão de atravessar, só quando se está na porta
+    const css = document.createElement("style");
+    css.textContent = `.atravessar{position:fixed;left:50%;bottom:84px;transform:translateX(-50%) translateY(8px);z-index:6;padding:13px 26px;border-radius:999px;border:1px solid rgba(255,214,170,.7);
+        background:linear-gradient(135deg,rgba(181,48,27,.9),rgba(232,120,40,.9));color:#fff6ec;font:700 16px "Shippori Mincho","Noto Serif JP",Georgia,serif;letter-spacing:.04em;cursor:pointer;
+        box-shadow:0 0 0 0 rgba(255,170,90,.5),0 10px 30px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:opacity .5s,transform .5s;animation:chama 2.4s ease-in-out infinite}
+      .atravessar.on{opacity:1;pointer-events:auto;transform:translateX(-50%)}
+      @keyframes chama{50%{box-shadow:0 0 0 10px rgba(255,170,90,0),0 10px 30px rgba(0,0,0,.4)}}
+      body.dentro .atravessar,body.voando .atravessar{display:none}
+      .outro-ceu{position:fixed;inset:0;z-index:30;pointer-events:none;opacity:0;transition:opacity 1.1s ease-in;
+        background:linear-gradient(to top,#ff9a5a 0%,#d77a8a 18%,#5a5cb8 52%,#151a44 100%)}
+      .outro-ceu.on{opacity:1}`;
+    document.head.appendChild(css);
+    const btn = document.createElement("button"); btn.type = "button"; btn.className = "atravessar"; btn.textContent = "Atravessar a porta";
+    const veu = document.createElement("div"); veu.className = "outro-ceu";
+    if (!M.Q.has("limpo")) document.body.append(btn, veu);
+    const naPorta = () => M.lugares && M.lugares[M.lugarAtual()] && M.lugares[M.lugarAtual()].id === "porta";
+    let prefetch = false;
+    M.ticks.push(() => { const ok = naPorta() && !(M.noCeu && M.noCeu()) && !M.cinema; btn.classList.toggle("on", ok);
+      if (ok && !prefetch) { prefetch = true; const l = document.createElement("link"); l.rel = "prefetch"; l.href = DESTINO; document.head.appendChild(l); } });
+
+    // atravessar: a câmera anda até o vão e passa por ele; o céu do outro lado toma a tela e a página troca
+    let indo = false;
+    function atravessar() { if (indo) return; indo = true; btn.classList.remove("on"); if (M.fechar) M.fechar();
+      const de = camera.position.clone(), para = V3(P.x, P.y + 2.2, P.z - 3), olhar = V3(P.x, P.y + 2.3, P.z - 30); let ti = null;
+      M.cinema = (t, dt, cam) => { if (ti == null) ti = t; const u = Math.min(1, (t - ti) / 2.6), e = u * u * (3 - 2 * u);
+        cam.position.copy(de).lerp(para, e); cam.lookAt(olhar); cam.fov = 48 + e * 14; cam.updateProjectionMatrix();
+        if (u > 0.55) veu.classList.add("on"); if (u >= 1 && indo !== "foi") { indo = "foi"; setTimeout(() => { location.href = DESTINO + "?de=porta"; }, 900); } };
+    }
+    btn.addEventListener("click", (e) => { e.stopPropagation(); atravessar(); });
+    M.atravessar = atravessar;
+    // no último lugar, "seguir" (teclado, controle) também atravessa
+    const prox = M.proximo; M.proximo = () => (naPorta() ? atravessar() : prox && prox());
+  });
+})();

@@ -347,7 +347,7 @@
     const SALAS = {
       perfil: { titulo: "A cafeteria", W: 6.4, D: 5.6, H: 2.9, piso: "wood_floor", corPiso: "#c8b0a0", parede: "beige_wall_001", corParede: "#d8c0a4",
         vistas: [[V3(1.1, 1.6, 2.3), V3(-0.7, 1.3, -2.8)], [V3(-2.4, 1.5, 1.8), V3(2.2, 1.1, -1.2)], [V3(0.6, 1.55, -1.5), V3(0.3, 1.0, 2.8)]],
-        portaX: 0.4, cav: [[-0.75, 0.55], [1.2, 0.6]], estoque: { parede: "fundo", u: 2.55, off: -0.8, nome: "倉庫", cor: "#2a3a5a" },
+        portaX: 0.4, semCavalete: true,
         async montar(g, sub, alvos, P, L) {
           // a divisória vazada separa as mesas do corredor do balcão; pendentes sobre o balcão e o ventilador no teto
           divisoriaVazada(g, -0.3, -1.2, 1.9, Math.PI / 2);
@@ -357,93 +357,16 @@
             por(g, "bar_chair_round_01", 1.25, 0, -1.9, 1.2, 1), por(g, "bar_chair_round_01", 1.25, 0, -1.0, 1.8, 1),
             por(g, "round_wooden_table_01", -1.9, 0, -1.0, 0, 0.72), por(g, "tea_set_01", -1.9, 0.72, -1.0, 0.6, 0.85), por(g, "chinese_armchair", -2.5, 0, -0.1, 2.4, 0.9), por(g, "chinese_armchair", -1.1, 0, -1.8, -0.6, 0.9),
             por(g, "potted_plant_04", -2.95, 1.05, -0.4, 0, 1.6), por(g, "ceramic_vase_01", -2.9, 0, 2.4, 0, 2)]);
-        } },
-      matematica: { titulo: "A sala de Matemática", W: 6.4, D: 5.6, H: 2.9, piso: "dark_wooden_planks", corPiso: "#b8a090", parede: "white_plaster_02", corParede: "#d8d2c4",
-        vistas: [[V3(0.3, 1.6, 2.2), V3(-0.4, 1.3, -2.8)], [V3(2.4, 1.5, 1.6), V3(-2.4, 1.2, -1.4)], [V3(-1.6, 1.55, 0.6), V3(3.2, 1.5, -0.6)], [V3(-0.8, 1.55, -1.0), V3(1.4, 0.9, 2.8)]],
-        portaX: 1.4, cav: [[0.35, 0.5], [2.45, 0.5]], estoque: { parede: "fundo", u: 2.55, off: -0.6, nome: "準備室", cor: "#2a4a8a" },
-        async montar(g, sub, alvos, P, L) {
-          await Promise.all([L.pend(-0.1, -0.6, "modern_ceiling_lamp_01", 0.9), L.pend(0.8, -0.6, "modern_ceiling_lamp_01", 0.9), L.pend(-1.6, -1.6, "modern_ceiling_lamp_01", 0.9)]);
-          janela(g, -3.18, 0.4, Math.PI / 2);
-          const lousa = await por(g, "standing_chalkboard_01", -1.75, 0, -2.0, 0.3, 1.35); trocar(lousa, /board/, (c) => { uvPlano(c); c.material = new T.MeshStandardMaterial({ map: giz(), roughness: 0.9, side: T.DoubleSide }); });
-          await Promise.all([por(g, "painted_wooden_table", 0.3, 0, -0.6, 0, 0.75), por(g, "chess_set", -0.1, 0.72, -0.6, 0.3, 0.9), por(g, "binder_notebook", 0.75, 0.72, -0.7, -0.2, 1), por(g, "stationery_supplies", 0.95, 0.79, -0.45, 0.4, 1),
-            por(g, "SchoolChair_01", -0.3, 0, -1.25, 0, 1), por(g, "SchoolChair_01", 0.9, 0, -1.25, 0.2, 1), por(g, "Shelf_01", 3.05, 0, -1.4, -Math.PI / 2, 1),
-            por(g, "book_encyclopedia_set_01", 3.05, 1.02, -1.6, -Math.PI / 2, 1), por(g, "book_encyclopedia_set_01", 3.05, 1.5, -1.6, -Math.PI / 2, 1),
-            por(g, "desk_lamp_arm_01", 1.05, 0.72, -0.8, -0.6, 1), por(g, "potted_plant_04", -2.95, 1.05, 0.4, 0, 1.6)]);
-          await bilhete(g, alvos, P.esq(1.8), "Obrigado, professor Wagner", "Sou grato pela confiança, pelas oportunidades e por ter contribuído tanto para minha formação acadêmica e pessoal.", () => M.abrirAtividade("agradecimentos", 3), "Obrigado, prof. Wagner");
-        } },
-      linguagens: { titulo: "A livraria de Linguagens", W: 6.4, D: 6.0, H: 2.9, piso: "wood_floor", corPiso: "#b8a090", parede: "painted_plaster_wall", corParede: "#d4c4ae",
-        vistas: [[V3(0, 1.6, 2.4), V3(0, 1.35, -3)], [V3(0.6, 1.55, -1.2), V3(-0.4, 1.2, -3)], [V3(0.6, 1.6, -0.6), V3(-0.3, 1.0, 3)]],
-        portaX: -0.4, cav: [[-1.45, 0.7], [0.65, 0.7]], estoque: { parede: "fundo", u: 2.3, off: -0.5, nome: "在庫", cor: "#3a4a5a" },
-        async montar(g, sub, alvos, P, L) {
-          await Promise.all([L.pend(-1.0, -2.2), L.pend(2.25, 1.75)]);
-          const pm = M.pbr("painted_plaster_wall", [2, 1.2], { metalness: 0, color: "#c8b8a0" });
-          divisoria(g, 6.4, -1.0, 2.9, 0.4, 1.3, pm, "文", "#3a4a5a"); janela(g, -3.18, -2.1, Math.PI / 2, 1.1, 0.9);
-          balcao(g, 2.25, 1.75, 1.4, 0, 1.0);
-          const est = [por(g, "wooden_bookshelf_worn", -2.85, 0, 0.2, Math.PI / 2, 0.95), por(g, "wooden_bookshelf_worn", -2.85, 0, 1.6, Math.PI / 2, 0.95), por(g, "wooden_bookshelf_worn", 2.85, 0, -0.1, -Math.PI / 2, 0.95)];
-          await Promise.all(est);
-          for (const [x, z, ry] of [[-2.85, 0.2, Math.PI / 2], [-2.85, 1.6, Math.PI / 2], [2.85, -0.1, -Math.PI / 2]]) for (const y of [0.4, 0.86, 1.32]) for (const dz of [-0.33, 0.24]) await por(g, "book_encyclopedia_set_01", x, y, z + dz, ry, 0.95);
-          await Promise.all([por(g, "CashRegister_01", 2.0, 1.0, 1.7, Math.PI, 0.7), por(g, "vintage_oil_lamp", 2.7, 1.0, 1.7, 0, 0.6), por(g, "book_encyclopedia_set_01", 2.35, 1.0, 1.65, 0.3, 0.8),
-            por(g, "ArmChair_01", -1.4, 0, -2.2, 0.7, 1), por(g, "side_table_01", -0.6, 0, -2.5, 0, 1), por(g, "desk_lamp_arm_01", -0.6, 0.55, -2.5, 0.8, 0.8), por(g, "potted_plant_04", 1.4, 0, -2.6, 0, 2.6)]);
-          await bilhete(g, alvos, P.dir(1.3), "Obrigado, professora Natali", "Por despertar em mim uma paixão que eu ainda não tinha compreendido por completo: a criação de jogos e narrativas interativas.", () => M.abrirAtividade("agradecimentos", 2), "Obrigado, prof.ª Natali");
-        } },
-      humanas: { titulo: "O antiquário de Ciências Humanas", W: 6.4, D: 5.6, H: 2.9, piso: "tatami_mat", corPiso: "#c8bca0", parede: "beige_wall_001", corParede: "#c8b498",
-        vistas: [[V3(0, 1.6, 2.2), V3(0, 1.3, -2.8)], [V3(-2.3, 1.45, 1.4), V3(1.6, 1.1, -1.6)], [V3(1.4, 1.5, 0.8), V3(-3.2, 1.4, -0.2)], [V3(1.0, 1.5, -0.8), V3(-0.6, 0.9, 2.8)]],
-        portaX: -0.2, cav: [[-1.25, 0.4], [0.85, 0.4]], estoque: { parede: "dir", u: 0.3, off: 0.2, nome: "倉庫", cor: "#5a3a22" },
-        async montar(g, sub, alvos, P, L) {
-          await Promise.all([L.pend(0, -0.6, "chinese_chandelier", 0.8), L.pend(-2.35, 1.25), ventilador(g, 1.3, -0.4, 2.9)]);
-          // um estrado de tatame no fundo, painéis de papel acesos na parede esquerda e a porta do depósito
-          box(g, 6.36, 0.3, 1.6, M.pbr("tatami_mat", [3, 1], { metalness: 0, color: "#d8cca8" }), 0, 0.15, -2.0); box(g, 6.36, 0.06, 0.08, ESCURA(), 0, 0.31, -1.2);
-          for (const z of [-1.0, 0.0, 1.0, 2.0]) shoji(g, -3.16, z, 0.95, 1.9, Math.PI / 2, 0.15);
-          await Promise.all([por(g, "chinese_cabinet", -2.6, 0.3, -2.45, 0.2, 0.75), por(g, "chinese_cabinet", 2.6, 0.3, -2.45, -0.2, 0.75), por(g, "chinese_commode", 0, 0.3, -2.15, 0, 0.42),
-            por(g, "marble_bust_01", -0.5, 1.15, -2.15, 0.3, 1.2), por(g, "mantel_clock_01", 0.35, 1.15, -2.15, -0.2, 1.3), por(g, "seadogs_compass", 0.75, 1.15, -2.05, 0.6, 2), por(g, "antique_ceramic_vase_01", -0.95, 1.15, -2.1, 0, 1.2),
-            por(g, "vintage_binocular", 0.95, 1.17, -2.25, 0.4, 1.4), por(g, "vintage_suitcase", 2.6, 0, 2.2, -0.4, 0.8), por(g, "chinese_armchair", -2.6, 0, 2.1, 2.2, 0.9), por(g, "chinese_tea_table", -2.35, 0, 1.25, 0.2, 0.9),
-            por(g, "vintage_oil_lamp", -2.35, 0.45, 1.25, 0, 0.7)]);
-        } },
-      natureza: { titulo: "O laboratório de Ciências da Natureza", W: 6.4, D: 5.6, H: 2.9, piso: "wood_floor", corPiso: "#c0b4a4", parede: "white_plaster_02", corParede: "#d4dcd0",
-        vistas: [[V3(0, 1.6, 2.2), V3(0, 1.2, -2.8)], [V3(-2.2, 1.5, 1.5), V3(2.0, 1.3, -1.4)], [V3(1.4, 1.55, 0.6), V3(-3.2, 1.5, -0.6)], [V3(-0.6, 1.55, -1.2), V3(1.5, 0.9, 2.8)]],
-        portaX: 1.5, cav: [[0.45, 0.4], [2.55, 0.4]], estoque: { parede: "fundo", u: 2.55, off: -0.6, nome: "標本室", cor: "#2a6a46" },
-        async montar(g, sub, alvos, P, L) {
-          await Promise.all([L.pend(0.0, -1.0), L.pend(-1.2, -2.25), L.pend(1.2, -2.25)]);
-          // a bancada do laboratório no fundo, a janela com plantas e a porta da sala de amostras
-          balcao(g, -0.4, -2.45, 4.0, 0, 0.92); janela(g, -3.18, -0.6, Math.PI / 2);
-          await Promise.all([por(g, "vintage_microscope", -1.4, 0.92, -2.4, 0.5, 1.4), por(g, "wicker_basket_02", -0.6, 0.92, -2.35, 0.2, 1.2), por(g, "potted_plant_04", 0.1, 0.92, -2.45, 0, 1.5),
-            por(g, "ceramic_vase_03", 0.6, 0.92, -2.45, 0, 0.7), por(g, "ceramic_vase_01", 0.95, 0.92, -2.4, 0, 0.7), por(g, "desk_lamp_arm_01", -2.0, 0.92, -2.45, 0.5, 0.9),
-            por(g, "planter_box_02", -2.8, 0, -0.6, Math.PI / 2, 0.9), por(g, "painted_wooden_table", 0.0, 0, -1.0, 0, 0.7), por(g, "potted_plant_04", -0.3, 0.67, -1.0, 0, 1.4), por(g, "vintage_microscope", 0.3, 0.67, -1.05, -0.4, 1.2),
-            por(g, "wooden_display_shelves_01", 2.95, 0, -0.6, Math.PI, 1.1)]);
-          for (const dz of [-0.35, 0, 0.35]) await por(g, "potted_plant_04", -2.8 + (rnd() - 0.5) * 0.1, 0.4, -0.6 + dz, rnd() * 6, 1.9);
-          for (const dz of [-0.3, 0.3]) await por(g, "potted_plant_04", 2.95, 1.72, -0.6 + dz, rnd() * 6, 1.6);
-        } },
-      tecnico: { titulo: "O laboratório do curso técnico", W: 9, D: 6.6, H: 3.1, piso: "wood_floor", corPiso: "#a8a4a0", parede: "white_plaster_02", corParede: "#cdd2d8", tech: true,
-        vistas: [[V3(0, 1.65, 2.8), V3(0, 1.1, -3.3)], [V3(-3.2, 1.55, 1.6), V3(2.6, 1.0, -2.2)], [V3(3.2, 1.55, 1.6), V3(-2.6, 1.0, -2.2)], [V3(-0.6, 1.6, -1.2), V3(2.4, 0.9, 3.3)]],
-        portaX: 2.4, tech: true,
-        // o estoque é o quarto atrás da porta da sala dos servidores: escuro, monitores velhos empilhados e fios
-        estoque: { parede: "fundo", u: 3.4, off: -0.9, nome: "サーバー室", cor: "#1a2a3a", estilo: "quarto", w: 3.8, d: 3.0 }, semCavalete: true,
-        async montar(g, sub, alvos, P, L) {
-          janela(g, -4.48, 0.8, Math.PI / 2, 1.6, 1.1);
-          /* o curso técnico inteiro tem duas atividades em destaque, em duas mesas logo na entrada, viradas para quem
-             entra, com a atividade na tela e a plaquinha おすすめ na beirada; o resto fica no quarto dos fundos */
-          const porta = V3(2.4, 0, 3.7), pos = [[0.85, 0.95], [3.45, 1.15]];
-          await Promise.all(destaquesDe(sub).map(async ([a, acao, s], k) => { const [x, z] = pos[k], ry = Math.atan2(porta.x - x, porta.z - z);
-            const [kj, cor] = KANJI[s.id] || ["技", "#7fe0ff"], rot = (vx, vz) => V3(vx, 0, vz).applyAxisAngle(V3(0, 1, 0), ry);
-            const d = await por(g, "metal_office_desk", x, 0, z, ry, 0.8); const o = rot(0, 0.06);
-            const pc = await por(g, "classic_laptop", x + o.x, 0.63, z + o.z, ry, 1.55); trocar(pc, /screen/, (c) => telaAtividade(c, a, kj, cor));
-            const pf = rot(0, 0.39); plaquinha(g, V3(x + pf.x, 0.53, z + pf.z), ry, 0.8);
-            const st = rot(0.55, -0.6); await por(g, "metal_stool_01", x + st.x, 0, z + st.z, ry, 0.9);
-            if (!pc) return; pc.updateMatrixWorld(true); const bb = new T.Box3().setFromObject(pc), c = bb.getCenter(V3()), nrm = V3(0, 0, 1).applyAxisAngle(V3(0, 1, 0), ry);
-            alvos.push({ obj: pc, nome: a.t, acao, topo: V3(c.x, bb.max.y + 0.15 + k * 0.4, c.z), ver: c.clone(), foco: [c.clone().addScaledVector(nrm, 0.7).setY(9), c.clone()], perto: [c.clone().addScaledVector(nrm, 1.25).setY(c.y + 0.3), c.clone()] });
-            if (d) alvos.push({ obj: d, nome: a.t, acao }); }));
-          // a bancada do fundo: a placa de circuito e o multímetro das práticas de IoT
-          balcao(g, -1.6, -2.95, 3.2, 0, 0.92);
-          await Promise.all([por(g, "circuit_board", -2.2, 0.92, -2.9, 0.3, 1.0), por(g, "retro_multimeter", -1.4, 0.92, -2.95, 0.2, 1.2), por(g, "desk_lamp_arm_01", -0.6, 0.92, -2.95, -0.4, 0.9),
-            por(g, "classic_laptop", -3.0, 0.92, -2.9, 0.15, 1.0)]);
-          await Promise.all([por(g, "security_camera_01", 4.3, 2.75, -3.1, -0.8, 1.1), por(g, "power_box_01", -4.4, 1.6, 2.4, Math.PI / 2, 1),
-            por(g, "steel_frame_shelves_01", -4.2, 0, -1.6, Math.PI / 2, 0.09), por(g, "steel_frame_shelves_01", 1.2, 0, -3.0, 0, 0.09),
-            por(g, "potted_plant_04", 4.1, 0, 2.6, 0, 3)]);
-          for (const x of [-2.4, 0, 2.4]) for (const z of [-1.8, 1.0]) { const f = await por(g, "mounted_fluorescent_lights", x, 3.08, z, 0, 1.2);
-            trocar(f, /glass/, (c) => { c.material = c.material.clone(); c.material.emissive = new T.Color("#e8f0ff"); c.material.emissiveIntensity = 1.2; L.vidros.push(c.material); }); f && f.traverse((c) => { c.userData.semSombra = true; });
-          }
-          // as seis luminárias brilham, mas só duas luzes iluminam a sala (uma de cada lado)
-          for (const x of [-1.8, 1.8]) { const l = new T.PointLight("#dce8ff", 0.5, 7, 1.6); l.position.set(x, 2.7, -0.6); L.cena.add(l); L.luzes.push(l); }
+          /* o que se toca aqui: a folha do currículo, sobre o balcão (só ao tocar o currículo aparece), e o caderno do
+             "Sobre mim", na mesa (só ao abrir aparece a foto, ao lado do texto) */
+          const folhaTex = M.canvasTex(420, 594, (c, w, h) => { c.fillStyle = "#f6f1e6"; c.fillRect(0, 0, w, h); c.fillStyle = "#2a2220"; c.font = `700 46px ${M.JP}`; c.fillText("履歴書", 34, 78);
+            c.font = `600 24px ${M.JP}`; c.fillText("Currículo", 36, 116); c.fillStyle = "#b5301b"; c.fillRect(36, 132, 90, 3); c.fillStyle = "rgba(60,45,35,.28)";
+            for (let y = 176; y < h - 40; y += 26) c.fillRect(36, y, (y * 37) % 5 === 0 ? 220 : w - 72, 5); });
+          const folha = new T.Mesh(new T.PlaneGeometry(0.3, 0.42), new T.MeshStandardMaterial({ map: folhaTex, roughness: 0.9 })); folha.rotation.x = -Math.PI / 2; folha.rotation.z = 0.28;
+          folha.position.set(1.85, 1.012, -0.95); g.add(folha);
+          alvos.push({ obj: folha, nome: "Currículo", acao: () => M.abrirCurriculo && M.abrirCurriculo(), topo: V3(1.85, 1.45, -0.95), ver: V3(1.85, 1.05, -0.95), foco: [V3(1.85, 9, -0.6), V3(1.85, 1.0, -0.95)] });
+          const cad = await por(g, "binder_notebook", -1.6, 0.72, -0.72, 0.5, 1.25);
+          if (cad) alvos.push({ obj: cad, nome: "Sobre mim", acao: () => M.abrirAtividade("perfil", 0), topo: V3(-1.6, 1.2, -0.72), ver: V3(-1.6, 0.8, -0.72), foco: [V3(-1.6, 9, -0.4), V3(-1.6, 0.75, -0.72)] });
         } },
     };
 
@@ -548,8 +471,13 @@
 
     let expFora = null;
     M.aoTema = () => { const d = M.dentro; if (!d) return; expFora = renderer.toneMappingExposure; luzDoTema(d); renderer.toneMappingExposure = EXP; renderer.shadowMap.needsUpdate = true; };
+    /* o sininho da porta (furin de loja): três parciais de sino, com batidas leves, tocado pelo próprio navegador */
+    function sino() { try { const ac = M.audioCtx || (M.audioCtx = new (window.AudioContext || window.webkitAudioContext)()); if (ac.state === "suspended") ac.resume();
+      const t0 = ac.currentTime, out = ac.createGain(); out.gain.value = 0.22; out.connect(ac.destination);
+      [0, 0.16, 0.34].forEach((dt, k) => [[2093, 1], [2637, 0.55], [3520, 0.3], [5274, 0.12]].forEach(([f, a]) => { const o = ac.createOscillator(), gg = ac.createGain(); o.type = "sine"; o.frequency.value = f * (1 + k * 0.004);
+        gg.gain.setValueAtTime(0, t0 + dt); gg.gain.linearRampToValueAtTime(a * (1 - k * 0.25), t0 + dt + 0.005); gg.gain.exponentialRampToValueAtTime(0.0001, t0 + dt + 1.6 - k * 0.2); o.connect(gg); gg.connect(out); o.start(t0 + dt); o.stop(t0 + dt + 1.7); })); } catch (e) { /* sem som */ } }
     async function entrar(id) {
-      if (!SALAS[id] || M.dentro) return;
+      if (!SALAS[id] || M.dentro) return; sino();
       veu.classList.add("on"); M.fechar && M.fechar(); await new Promise((r) => setTimeout(r, 420));
       if (!prontas[id]) prontas[id] = construir(id);
       const d = await prontas[id]; if (!d) { veu.classList.remove("on"); return; }

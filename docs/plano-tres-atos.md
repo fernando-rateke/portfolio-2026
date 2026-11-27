@@ -38,15 +38,20 @@ O Vale (`/vale`) e o Tokyo Ghoul (`/tg`) ficam como estão, separados; não mexe
 
 ## O Ato 2, o Pavilhão (montado; faltam as atividades)
 
-- `public/pavilhao/index.html` + `pavilhao.js`; o prédio é a "White round exhibition gallery" (Christy Hsu, CC BY),
-  comprimida em `public/pavilhao/modelos/galeria.glb` (260 KB). Céu da hora azul, espelho d'água em volta.
-- Chegada: a página abre no mesmo céu da porta; a câmera desce do alto pelo círculo do teto; as linhas do prédio
-  acendem em azul e laranja e o prédio se materializa. Depois, a sala 1.
-- Cinco salas em volta do centro (espelho d'água redondo e escultura de bastões de luz), cada uma com o nome e
-  **duas** atividades em painéis de luz. A planta (embaixo à esquerda) e as setas do teclado levam de uma sala a outra.
+- `public/pavilhao/index.html` + `pavilhao.js`; o prédio é a "Vr Studio Gallery" (R-LAB, CC BY), uma galeria com
+  colunas, claraboias e quadros, comprimida em `public/pavilhao/modelos/salao.glb` (2,7 MB). Manhã cedo, sobre um mar
+  de nuvens; o piso é um espelho escuro.
+- **A chegada é um vídeo** (`chegada.webm`, com `chegada.mp4` de reserva; 7,4 s, 1080p), gravado da própria cena com
+  `?filme` (Playwright tira os quadros, o ffmpeg junta). Começa no mesmo céu da porta, o sol nasce, a câmera desce até
+  o telhado e entra pela claraboia; termina exatamente na primeira parada, e a cena ao vivo assume. Enquanto o vídeo
+  passa, a galeria carrega por trás. Para refazer: mudar `QUADROS` em `pavilhao.js` e gravar de novo.
+- **Cinco paradas, dois quadros cada** (os 10 quadros do próprio modelo): Linguagens e Matemática na metade da janela
+  (esquerda e direita), Ciências Humanas e da Natureza na metade da porta, e o Técnico nos dois quadros ao lado da
+  porta. Cada quadro tem passe-partout, etiqueta de museu e o botão "Abrir"; sem imagem, vira um cartaz na cor da matéria.
 - **As atividades ficam em `public/pavilhao/atividades.json`**: uma lista por matéria, com título, subtítulo, imagem,
   contexto, aprendizagens, importância, competências ([código, descrição]), links e créditos. Campo vazio = "Em breve".
-- Da sala do Técnico, "Entrar na tela": a câmera entra num painel, os pixels caem como chuva e abre `/neon/`.
+- Do Técnico, "Atravessar a porta": a porta de madeira se dissolve, a chuva de neon aparece no vão, a câmera entra, os
+  pixels caem e abre `/neon/`. A planta (embaixo à esquerda), as setas do teclado e o celular levam de uma parada a outra.
 - O celular continua pareado (`public/comum/ponte.js`; o par fica em sessionStorage "controle-par").
 
 ## As atividades (duas por matéria)

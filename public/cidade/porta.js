@@ -53,7 +53,8 @@
     const naPorta = () => M.lugares && M.lugares[M.lugarAtual()] && M.lugares[M.lugarAtual()].id === "certificados" && !(M.andando && M.andando());
     let prefetch = false;
     M.ticks.push(() => { const ok = naPorta() && !(M.noCeu && M.noCeu()) && !M.cinema; btn.classList.toggle("on", ok);
-      if (ok && !prefetch) { prefetch = true; const l = document.createElement("link"); l.rel = "prefetch"; l.href = DESTINO; document.head.appendChild(l); } });
+      if (ok && !prefetch) { prefetch = true; // a página do Pavilhão, o vídeo da chegada e a galeria já vêm baixando
+        for (const u of [DESTINO, "/pavilhao/chegada.webm", "/pavilhao/pavilhao.js", "/pavilhao/modelos/salao.glb"]) { const l = document.createElement("link"); l.rel = "prefetch"; l.href = u; document.head.appendChild(l); } } });
 
     /* atravessar: dos certificados, a câmera sobe o resto da escadaria e passa pelo vão. O céu do outro lado toma a tela
        inteira ANTES de a câmera cruzar o torii (atrás dele não há nada para ver) e a página do Pavilhão abre nesse céu. */

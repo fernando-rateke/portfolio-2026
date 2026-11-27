@@ -24,3 +24,8 @@ Céu: belfast_sunset_puresky, com as cores ajustadas para o pôr do sol.
 
 As árvores distantes são imagens renderizadas a partir desses mesmos modelos. Torii, lanternas de pedra,
 santuário, casa de fazenda, placas, cortinas e lanternas de papel foram montados em código com essas texturas.
+
+Ato 2, o Pavilhão (Sketchfab, CC BY 4.0):
+- "Vr Studio Gallery", de R-LAB (rakshaan): https://sketchfab.com/3d-models/vr-studio-gallery-789cdada4ffb4924bbda9897c1df51ca
+  Comprimido para a web (geometria das colunas simplificada, texturas webp). O céu, as nuvens, o piso espelhado, os
+  quadros e o vídeo da chegada (chegada.webm/mp4, gravado da própria cena) foram feitos em código.

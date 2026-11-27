@@ -261,15 +261,17 @@
       .capa .sl{display:flex;align-items:center;gap:14px;margin-bottom:16px}.capa .sl i{font:800 15px/1.05 "Shippori Mincho",serif;font-style:normal;writing-mode:vertical-rl;padding:7px 6px;border-radius:5px;background:#b5301b;color:#fff3e4;transform:rotate(-5deg)}
       .capa .sl span{font:500 13px "Shippori Mincho",serif;letter-spacing:.32em;text-transform:uppercase;opacity:.85}
       .capa h1{margin:0;font:800 clamp(38px,6.4vw,84px)/1.02 "Shippori Mincho","Noto Serif JP",Georgia,serif;letter-spacing:-.005em;text-shadow:0 6px 40px rgba(0,0,0,.45)}
-      .capa p{margin:14px 0 30px;max-width:560px;font:400 clamp(15px,1.5vw,19px)/1.55 "Shippori Mincho",Georgia,serif;opacity:.9}
-      .capa button{padding:15px 32px;border-radius:999px;border:1px solid rgba(255,228,196,.75);background:linear-gradient(135deg,rgba(181,48,27,.92),rgba(226,108,40,.92));color:#fff6ec;
-        font:700 17px "Shippori Mincho",Georgia,serif;letter-spacing:.05em;cursor:pointer;box-shadow:0 12px 34px rgba(0,0,0,.4)}
-      .capa button:hover,.capa button:focus-visible{filter:brightness(1.1);outline:none}
-      .capa small{margin-top:14px;font:400 12.5px "Shippori Mincho",serif;letter-spacing:.06em;opacity:.65}`;
+      /* o botão: um selo vermelho (始, "começo") e a palavra com uma linha que se estende ao passar o mouse */
+      .capa button{margin-top:34px;display:flex;align-items:center;gap:16px;padding:0;border:0;background:none;color:#fff4e6;cursor:pointer;font:600 15px "Shippori Mincho",Georgia,serif;letter-spacing:.42em;text-transform:uppercase}
+      .capa button i{display:grid;place-items:center;width:50px;height:50px;border-radius:6px;background:#b5301b;color:#fff3e4;font:800 22px/1 "Shippori Mincho",serif;font-style:normal;letter-spacing:0;
+        transform:rotate(-4deg);box-shadow:inset 0 0 0 2px rgba(255,236,214,.35),0 8px 24px rgba(0,0,0,.35);transition:transform .35s cubic-bezier(.2,1.4,.4,1)}
+      .capa button span{position:relative;padding:6px 0}.capa button span::after{content:"";position:absolute;left:0;bottom:0;height:1px;width:34px;background:rgba(255,244,230,.7);transition:width .45s cubic-bezier(.2,.8,.2,1)}
+      .capa button:hover i,.capa button:focus-visible i{transform:rotate(0) scale(1.08)}.capa button:hover span::after,.capa button:focus-visible span::after{width:100%}
+      .capa button:focus-visible{outline:none}`;
     document.head.appendChild(cs2);
     const capa = document.createElement("div"); capa.className = "capa";
     capa.innerHTML = `<div class="sl"><i>ラテケ</i><span>Portfólio · 3º ano · Colégio SESI</span></div><h1>Fernando<br>Rateke Neto</h1>
-      <p>Uma viagem em três lugares: quem eu sou, o que eu aprendi e para onde eu vou.</p><button type="button">Começar</button><small>Enter também começa · na apresentação, o controle pelo celular conduz</small>`;
+      <button type="button" aria-label="Começar"><i>始</i><span>Começar</span></button>`;
     if (!limpo) document.body.appendChild(capa);
     function comecar() { if (modo !== "capa") return; document.body.classList.remove("capa-on"); pousar(0, false); }
     capa.querySelector("button").addEventListener("click", (e) => { e.stopPropagation(); comecar(); });

@@ -1,23 +1,85 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Rateke · O futuro</title>
+<meta name="description" content="Ato 3 do portfólio de Fernando Rateke Neto: o futuro, os agradecimentos e os créditos.">
 <link rel="icon" href="/rateke-icone.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;800&family=Geist+Mono:wght@400;500&display=swap">
 <style>
-  /* provisório: o Ato 3 ainda está sendo construído. */
-  html, body { margin: 0; height: 100%; }
-  body { display: grid; place-items: center; background: linear-gradient(160deg, #1a0630, #3a0a52 45%, #0a1a40); color: #fff6ec;
-    font-family: "Shippori Mincho", Georgia, serif; text-align: center; }
-  h1 { font-size: clamp(28px, 5vw, 52px); margin: 0 0 10px; font-weight: 800; text-shadow: 0 4px 30px rgba(0,0,0,.35); }
-  p { margin: 0 0 26px; opacity: .85; }
-  a { color: #fff6ec; border: 1px solid rgba(255,246,236,.6); border-radius: 999px; padding: 10px 22px; text-decoration: none; }
-  a:hover, a:focus-visible { background: rgba(255,246,236,.15); outline: none; }
+  /* o Ato 3: um beco de uma cidade do futuro, à noite, com chuva. Tinta clara sobre o escuro, nada de caixas de vidro. */
+  :root { --tinta: #e9f3ff; --ciano: #5fe3ff; --rosa: #ff4fb0; --fundo: #060412; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--fundo); color: var(--tinta); font-family: "Archivo", system-ui, sans-serif; }
+  canvas#c { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  button { font: inherit; }
+  /* um pouco de escuro nas bordas, como uma lente */
+  #lente { position: fixed; inset: 0; z-index: 2; pointer-events: none; background: radial-gradient(ellipse at 50% 55%, rgba(0,0,0,0) 55%, rgba(2,2,10,.55) 100%); }
+  /* o índice, no alto à esquerda (o mesmo desenho do Pavilhão) */
+  #indice { position: fixed; z-index: 5; left: 30px; top: 26px; transition: opacity .5s; text-shadow: 0 1px 12px rgba(0,0,0,.8); }
+  #indice .tit { display: block; margin: 0 0 12px 34px; font: 600 11px "Archivo", sans-serif; letter-spacing: .22em; text-transform: uppercase; opacity: .6; }
+  #indice ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 1px; }
+  #indice button { display: flex; align-items: baseline; gap: 10px; padding: 3px 0; border: 0; background: none; color: inherit; cursor: pointer; text-align: left; font: 500 clamp(14px, 1vw, 17px)/1.25 "Archivo", sans-serif; opacity: .5; transition: opacity .3s; }
+  #indice button i { width: 24px; font: 500 11px "Archivo", sans-serif; font-style: normal; font-variant-numeric: tabular-nums; letter-spacing: .06em; }
+  #indice button::after { content: ""; align-self: center; width: 0; height: 1.5px; background: var(--cor, var(--ciano)); transition: width .45s ease; }
+  #indice button.on { opacity: 1; font-weight: 800; font-size: clamp(18px, 1.35vw, 24px); } #indice button.on::after { width: 28px; }
+  #indice button:hover, #indice button:focus-visible { opacity: 1; outline: none; }
+  body.chegando #indice, body.creditos #indice, body.chegando #ler, body.creditos #ler { opacity: 0 !important; pointer-events: none !important; }
+  @media (max-width: 640px) { #indice { left: 16px; top: 16px; } #indice button { font-size: 13px; } #indice button.on { font-size: 16px; } }
+  /* "Ler o texto": uma placa simples, clara, embaixo no centro */
+  #ler { position: fixed; z-index: 6; left: 50%; bottom: 30px; transform: translateX(-50%) translateY(6px); display: flex; align-items: center; gap: 14px; padding: 12px 18px 12px 20px; border: 1px solid var(--tinta); border-radius: 2px;
+    background: rgba(6,4,18,.55); color: var(--tinta); font: 700 14px "Archivo", sans-serif; letter-spacing: .03em; cursor: pointer; opacity: 0; pointer-events: none; transition: opacity .4s, transform .4s, background .2s, color .2s; }
+  #ler::after { content: "→"; font-weight: 500; } #ler:hover, #ler:focus-visible { background: var(--tinta); color: var(--fundo); outline: none; }
+  #ler.on { opacity: 1; pointer-events: auto; transform: translateX(-50%); }
+  /* o texto inteiro: uma coluna escura do lado direito; o beco continua à vista do outro lado */
+  #texto { position: fixed; z-index: 20; top: 0; right: 0; bottom: 0; width: min(640px, 100%); display: flex; flex-direction: column; background: rgba(5,4,14,.93); border-left: 1px solid rgba(233,243,255,.18);
+    transform: translateX(24px); opacity: 0; pointer-events: none; transition: opacity .45s, transform .55s cubic-bezier(.2,.9,.2,1); }
+  #texto.on { transform: none; opacity: 1; pointer-events: auto; }
+  #texto .cab { padding: 34px 44px 10px; } #texto .cab span { font: 600 11px "Archivo", sans-serif; letter-spacing: .22em; text-transform: uppercase; color: var(--cor, var(--ciano)); }
+  #texto h2 { margin: 8px 0 0; font: 800 clamp(28px, 3vw, 40px)/1.08 "Archivo", sans-serif; letter-spacing: -.01em; }
+  #texto .corpo { overflow: auto; padding: 8px 44px 60px; scrollbar-width: thin; scrollbar-color: rgba(233,243,255,.3) transparent; }
+  #texto .corpo p { margin: 0 0 16px; font: 400 17px/1.65 "Archivo", sans-serif; color: rgba(233,243,255,.9); }
+  #texto .corpo h3 { margin: 30px 0 10px; font: 600 12px "Archivo", sans-serif; letter-spacing: .2em; text-transform: uppercase; color: var(--cor, var(--ciano)); }
+  #texto .x { position: absolute; top: 26px; right: 26px; width: 40px; height: 40px; border: 1px solid rgba(233,243,255,.4); border-radius: 2px; background: none; color: var(--tinta); font-size: 22px; line-height: 1; cursor: pointer; }
+  #texto .x:hover, #texto .x:focus-visible { background: var(--tinta); color: var(--fundo); outline: none; }
+  @media (max-width: 640px) { #texto .cab { padding: 26px 22px 8px; } #texto .corpo { padding: 6px 22px 50px; } #texto .x { top: 18px; right: 16px; } }
+  /* os créditos */
+  #cred { position: fixed; inset: 0; z-index: 15; pointer-events: none; opacity: 0; transition: opacity 1s; overflow: hidden; text-align: center; }
+  #cred.on { opacity: 1; }
+  #cred .faixa { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(4,3,12,0) 15%, rgba(4,3,12,.55) 36%, rgba(4,3,12,.55) 64%, rgba(4,3,12,0) 85%); transition: opacity 2s; }
+  #cred .rolo { position: absolute; left: 50%; top: 0; width: min(560px, 88vw); transform: translateX(-50%); will-change: transform; text-shadow: 0 1px 14px rgba(0,0,0,.8); }
+  #cred .abre { height: 70vh; }
+  #cred section { margin: 0 0 64px; } #cred h3 { margin: 0 0 18px; font: 600 12px "Archivo", sans-serif; letter-spacing: .24em; text-transform: uppercase; color: var(--ciano); }
+  #cred .it { margin: 0 0 14px; } #cred .it small { display: block; font: 400 12.5px "Archivo", sans-serif; letter-spacing: .04em; opacity: .6; margin-bottom: 3px; }
+  #cred .it span { display: block; font: 500 20px/1.45 "Archivo", sans-serif; }
+  #cred .it span.mini { font-size: 14px; opacity: .8; }
+  #cred .fim { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; opacity: 0; transition: opacity 1.6s; }
+  #cred .fim.on { opacity: 1; pointer-events: auto; }
+  #cred .fim .marca { display: flex; align-items: center; gap: 18px; font: 800 clamp(26px, 4vw, 48px) "Archivo", sans-serif; letter-spacing: -.01em; }
+  #cred .fim img { width: 1.4em; height: 1.4em; border-radius: 22%; box-shadow: 0 6px 30px rgba(0,0,0,.5); }
+  #cred .fim small { font: 500 12px "Archivo", sans-serif; letter-spacing: .24em; text-transform: uppercase; opacity: .65; }
+  #cred .fim a { margin-top: 10px; padding: 11px 18px; border: 1px solid var(--tinta); border-radius: 2px; color: var(--tinta); text-decoration: none; font: 700 14px "Archivo", sans-serif; }
+  #cred .fim a:hover, #cred .fim a:focus-visible { background: var(--tinta); color: var(--fundo); outline: none; }
+  #cred .pular { position: absolute; right: 22px; bottom: 22px; padding: 8px 14px; border: 1px solid rgba(233,243,255,.35); border-radius: 2px; background: none; color: rgba(233,243,255,.75); font: 600 13px "Archivo", sans-serif; cursor: pointer; pointer-events: auto; }
+  #cred.acabou .pular { display: none; }
+  /* a chegada: a chuva de pixels do Pavilhão continua aqui e assenta no beco */
+  #pixels { position: fixed; inset: 0; z-index: 30; background: var(--fundo); transition: opacity 1s ease; } #pixels.fim { opacity: 0; pointer-events: none; } #pixels canvas { width: 100%; height: 100%; display: block; }
+  @media (prefers-reduced-motion: reduce) { #texto { transition: opacity .2s; } }
 </style>
 </head>
-<body>
-  <main><h1>O futuro</h1><p>O Ato 3, a cidade neon, está sendo construído.</p><a href="/pavilhao/?sala=4">Voltar ao Pavilhão</a></main>
+<body class="chegando">
+<canvas id="c"></canvas>
+<div id="lente"></div>
+<nav id="indice" aria-label="O futuro"></nav>
+<button id="ler" type="button">Ler o texto</button>
+<aside id="texto" role="dialog" aria-hidden="true"></aside>
+<div id="cred" aria-hidden="true"></div>
+<div id="pixels" aria-hidden="true"><canvas></canvas></div>
+<script src="/vale/three.min.js"></script>
+<script src="/vale/gltf.js"></script>
+<script src="/cidade/meshopt.js"></script>
+<script src="/comum/ponte.js"></script>
+<script src="/neon/textos.js"></script>
+<script src="/neon/neon.js"></script>
 </body>
 </html>

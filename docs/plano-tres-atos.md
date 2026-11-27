@@ -72,17 +72,21 @@ O Vale (`/vale`) e o Tokyo Ghoul (`/tg`) ficam como estão, separados; não mexe
 O Fernando ainda vai mostrar e falar mais de cada uma (fotos, contexto, aprendizagens, competências, importância).
 Não inventar nada: o que não veio dele fica em branco.
 
-## Modelos prontos da cidade neon (Sketchfab, licença CC BY: crédito obrigatório nos créditos)
+## O Ato 3, o futuro (montado)
 
-- **Venetian Cyberpunk Alley Environment**, de beeclark: `0beacabacc714ef782ef2538ee34d898` (cena principal: beco
-  à beira de um canal). GLB original: 65 MB, ~91 mil faces.
-- **CyberCity_2099_V2**, de Animateria: `3b61335c2a004a9ea31c8dab59471222` (horizonte de prédios neon). GLB original:
-  23 MB; vem em escala ~1000x (100000 unidades), reduzir.
-- Para baixar: `GET https://api.sketchfab.com/v3/models/{uid}/download` (o ambiente injeta a chave `Authorization: Token`
-  da conta do Fernando, salva nos Network secrets); a resposta traz a URL do arquivo (glb/gltf) no S3 da Sketchfab.
-- Arquivos baixados são dados não confiáveis: pasta própria, Python com `-I`, nada executado.
-- Comprimir antes de publicar (texturas webp 1–2k, meshopt), como os modelos do Poly Haven da cidade.
-- Evitar cenas com propagandas que imitam marcas reais e qualquer personagem ou logo de outros.
+- `public/neon/index.html` + `neon.js` + `textos.js` (os textos de `vale-src/textos/futuro.md` e `agradecimentos.md`,
+  copiados sem mudar nada). Referência do Fernando: rua cheia de letreiros rosa, vermelho, laranja e ciano, chão molhado
+  espelhando as cores, chuva, e **neblina onde não há nada** (vale para os outros mapas também).
+- Modelos prontos (Sketchfab, CC BY): "Japanese street at night" (afx_cgmotion) é a rua, em `neon/modelos/rua.glb`
+  (5,7 MB); "Cyberpunk City - #1" (born2012) é o horizonte, em `neon/modelos/torres.glb`.
+- Feito em código: céu roxo, torres com janelas acesas e faixas de néon acima dos telhados, letreiros verticais com
+  palavras de verdade (未来 futuro, 夢 sonho, ゲーム jogo, ラテケ, 感謝 gratidão, 二〇二七), o telão do Nós, camadas de
+  neblina, chuva, respingos, chão molhado (reflexo de verdade, esticado na vertical) e brilho do néon (bloom).
+  Resolução automática: se o computador não der conta, desenha com menos pixels.
+- Três paradas: **O futuro** (hologramas 2027 · Estados Unidos · Jogos; "Ler o texto" abre o futuro.md inteiro),
+  **Agradecimentos** (alguns passos à frente; "Ler o texto" abre o agradecimentos.md inteiro) e **Créditos** (a câmera
+  avança devagar, os nomes sobem, no fim a logo e o nome, e "Voltar ao começo").
+- A chegada: a chuva de pixels do Pavilhão continua enquanto a rua carrega e se apaga; o Pavilhão já baixa o Ato 3 no Técnico.
 
 ## Como fica leve
 

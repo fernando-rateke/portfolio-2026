@@ -287,6 +287,8 @@
     nomeSala.textContent = s ? `${s.mat.nome}, ${aqui + 1} de ${paradas.length}` : "";
     planta.querySelectorAll("[data-k]").forEach((el) => el.classList.toggle("on", +el.dataset.k === aqui));
     telaBtn.classList.toggle("on", !!s && !!PARADAS[aqui].porta && modo === "sala");
+    // no Técnico, o Ato 3 já começa a ser baixado (a página, o motor e a rua)
+    if (s && PARADAS[aqui].porta && !ui.pre) { ui.pre = true; for (const u of ["/neon/", "/neon/neon.js", "/neon/textos.js", "/neon/modelos/rua.glb", "/neon/modelos/torres.glb"]) { const l = document.createElement("link"); l.rel = "prefetch"; l.href = u; document.head.appendChild(l); } }
     document.body.classList.toggle("chegando", modo === "chegada" || modo === "saindo"); }
   const painel = document.getElementById("painel"); let aberto = null;
   function abrir(a) { if (modo !== "sala") return; aberto = a; const at = a.at, cor = a.mat.cor || "#0072ce", vazio = `<p class="breve">Em breve.</p>`;

@@ -19,7 +19,7 @@
     const N = [
       { p: V3(-cS * 1.5, 1.66, cP.z + 4.2), o: V3(cP.x, 2.1, cP.z - 0.4), id: "cafeteria", g: "A cidade", nome: "A cafeteria", jp: "喫茶店", entrar: "perfil" },
       { p: at(0.2, -94.5, 1.6), o: V3(4.6, yEsc(-104) + 2.0, -104), id: "certificados", g: "A escadaria", nome: "Os certificados", jp: "証",
-        rota: [V3(0, 1.75, -44), V3(0, 1.75, -56), V3(0, 1.8, -64.5), at(0, -72, 1.65), at(0, -80, 1.62), at(0.1, -88, 1.6)] },
+        rota: [V3(0, 1.75, -52), V3(0, 1.78, -58), V3(0, 1.8, -64.5), at(0, -72, 1.65), at(0, -80, 1.62), at(0.1, -88, 1.6)] },
       { p: at(0, -108.6, 1.6), o: V3(0, L.Y_TOPO + 2.7, -122), id: "porta", g: "A escadaria", nome: "A porta", jp: "門", atravessar: true },
     ];
     const lugares = N.map((n, i) => i);
@@ -63,7 +63,7 @@
     const mira0 = () => tmp.copy(camera.position).add(camera.getWorldDirection(dir).multiplyScalar(30));
     function subir(depois) { if (modo === "ceu" || voo || M.dentro) return; fecharTudo();
       zF = zFA = Math.max(Z1, Math.min(Z0, noLugar(aqui).p.z - 45)); poseCeu(zF);
-      const a = camera.position.clone(); voar(CEU.p, CEU.o, a.clone().add(V3(0, 30, 0)), CEU.p.clone().add(V3(10, -30, 20)), 2.4, () => { modo = "ceu"; ui(); if (depois) depois(); });
+      const a = camera.position.clone(); voar(CEU.p, CEU.o, a.clone().add(V3(0, 30, 0)), CEU.p.clone().add(V3(10, -30, 20)), 1.7, () => { modo = "ceu"; ui(); if (depois) depois(); });
       modo = "subindo"; ui(); }
     function pousar(k, auto, depois) { k = Math.max(0, Math.min(lugares.length - 1, k)); if (M.dentro) return; fecharTudo(); const n = noLugar(k);
       // a porta não é parada: dos certificados, atravessa direto; de outro lugar, chega aos certificados e segue
@@ -74,19 +74,19 @@
       // com rota: desce até o começo dela (olhando para frente) e segue a pé até a parada
       const alvoP = n.rota ? n.rota[0] : n.p, alvoO = n.rota ? n.rota[2] : n.o;
       const b = alto0 ? de.clone().lerp(alvoP, 0.35).setY(de.y * 0.9) : de.clone().add(V3(0, alto, 0));
-      const dur = alto0 ? 2.6 : Math.min(4.2, 1.6 + de.distanceTo(alvoP) / 70);
+      const dur = alto0 ? 2.0 : Math.min(3.0, 1.3 + de.distanceTo(alvoP) / 90);
       const c = n.rota ? alvoP.clone().add(V3(0, 24, 22)) : chegada(n);
       voar(alvoP, alvoO, b, c, dur, n.rota ? () => seguir([...n.rota, n.p], n.o, fim) : fim);
       modo = "descendo"; aqui = k; ui(); }
     // seguir uma rota a pé: a câmera anda pela curva olhando um pouco à frente e, no fim, vira para o que se vai ver
     function seguir(pts, olharFim, fim) { const c = new T.CatmullRomCurve3(pts.map((p) => p.clone()), false, "centripetal"); const L0 = c.getLength();
-      rota = { c, o: olharFim.clone(), t0: null, dur: Math.max(2.4, Math.min(6.5, L0 / 7.5)), fim }; modo = "descendo"; }
+      rota = { c, o: olharFim.clone(), t0: null, dur: Math.max(2.0, Math.min(3.6, L0 / 10)), fim }; modo = "descendo"; }
     M.seguirRota = seguir;
     /* ir a um lugar "pelo mapa" (o controle pelo celular e os botões): a câmera sobe até o céu, mostra a cidade e desce
        no lugar; de dentro da cafeteria, sai antes. auto: ao chegar, entra (na cafeteria) */
     async function pelo(k, auto) { if (voo || rota) return; if (M.dentro && M.sair) { await M.sair(); await new Promise((r) => setTimeout(r, 450)); }
       const n = noLugar(k); if (n.atravessar && modo === "lugar" && N[aqui].id === "certificados") return pousar(k);
-      if (modo === "lugar") { subir(() => setTimeout(() => pousar(k, auto), 700)); } else pousar(k, auto); }
+      if (modo === "lugar") { subir(() => setTimeout(() => pousar(k, auto), 250)); } else pousar(k, auto); }
     M.ir = (id, auto = true) => { const k = N.findIndex((n) => n.id === id); if (k >= 0) pelo(k, auto); };
     const fecharTudo = () => { if (M.painelAberto && M.painelAberto()) M.fechar(); };
     M.irPara = pousar; M.pular = (k) => { voo = null; modo = "lugar"; aqui = Math.max(0, Math.min(lugares.length - 1, k)); yaw = pitch = yawA = pitchA = 0; chegou(aqui, true); };

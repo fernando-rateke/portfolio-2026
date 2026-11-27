@@ -35,18 +35,21 @@
 
     // o botão de atravessar, só quando se está na porta
     const css = document.createElement("style");
-    css.textContent = `.atravessar{position:fixed;left:50%;bottom:84px;transform:translateX(-50%) translateY(8px);z-index:6;padding:13px 26px;border-radius:999px;border:1px solid rgba(255,214,170,.7);
-        background:linear-gradient(135deg,rgba(181,48,27,.9),rgba(232,120,40,.9));color:#fff6ec;font:700 16px "Shippori Mincho","Noto Serif JP",Georgia,serif;letter-spacing:.04em;cursor:pointer;
-        box-shadow:0 0 0 0 rgba(255,170,90,.5),0 10px 30px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:opacity .5s,transform .5s;animation:chama 2.4s ease-in-out infinite}
+    // o botão segue o desenho do botão do mapa (mesma família, sem brilho nem gradiente): o selo 門 e o nome
+    css.textContent = `.atravessar{position:fixed;left:50%;bottom:76px;transform:translateX(-50%) translateY(6px);z-index:6;display:flex;align-items:center;gap:10px;padding:8px 18px 8px 8px;border-radius:999px;
+        border:1px solid rgba(246,238,226,.5);background:rgba(20,14,18,.42);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:#f6eee2;font:600 15px "Shippori Mincho","Noto Serif JP",Georgia,serif;cursor:pointer;
+        opacity:0;pointer-events:none;transition:opacity .4s,transform .4s,background .25s}
+      .atravessar i{display:grid;place-items:center;width:28px;height:28px;border-radius:4px;background:#b5301b;color:#fff3e4;font:700 14px/1 "Shippori Mincho",serif;font-style:normal;transform:rotate(-4deg)}
+      .atravessar kbd{font:11px monospace;opacity:.6;border:1px solid rgba(246,238,226,.35);border-radius:4px;padding:1px 5px}
+      .atravessar:hover,.atravessar:focus-visible{background:rgba(181,48,27,.8);outline:none}
       .atravessar.on{opacity:1;pointer-events:auto;transform:translateX(-50%)}
-      @keyframes chama{50%{box-shadow:0 0 0 10px rgba(255,170,90,0),0 10px 30px rgba(0,0,0,.4)}}
       body.dentro .atravessar,body.voando .atravessar{display:none}
       body.atravessando .nav-lugar,body.atravessando .nav-mapa,body.atravessando .cantos,body.atravessando .marcas{opacity:0!important;pointer-events:none!important;transition:opacity .5s}
       .outro-ceu{position:fixed;inset:0;z-index:30;pointer-events:none;opacity:0;transition:opacity 1.1s ease-in;
         background:linear-gradient(to top,#ffdca0 0%,#c9a46e 8%,#2a2f6a 36%,#0b1030 72%,#050816 100%)}
       .outro-ceu.on{opacity:1}`;
     document.head.appendChild(css);
-    const btn = document.createElement("button"); btn.type = "button"; btn.className = "atravessar"; btn.textContent = "Atravessar a porta";
+    const btn = document.createElement("button"); btn.type = "button"; btn.className = "atravessar"; btn.innerHTML = `<i>門</i>Atravessar a porta <kbd>Enter</kbd>`;
     const veu = document.createElement("div"); veu.className = "outro-ceu";
     if (!M.Q.has("limpo")) document.body.append(btn, veu);
     // o botão aparece nos certificados: dali a câmera segue direto para a porta
@@ -62,7 +65,7 @@
     function atravessar() { if (indo) return; indo = true; btn.classList.remove("on"); if (M.fechar) M.fechar(); document.body.classList.add("atravessando");
       const y = (z) => (M.yEsc ? M.yEsc(z) : P.y) + 1.6;
       const pts = [camera.position.clone(), V3(0.05, y(-100), -100), V3(0, y(-105.5), -105.5), V3(0, P.y + 1.75, -110.5), V3(P.x, P.y + 2.05, P.z + 0.6), V3(P.x, P.y + 2.1, P.z - 2)];
-      const c = new T.CatmullRomCurve3(pts, false, "centripetal"), dur = 4.2 * (M.lento || 1), la = new T.Vector3(); let ti = null;
+      const c = new T.CatmullRomCurve3(pts, false, "centripetal"), dur = 3.0 * (M.lento || 1), la = new T.Vector3(); let ti = null;
       M.cinema = (t, dt, cam) => { if (ti == null) ti = t; const u = Math.min(1, (t - ti) / dur), e = u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
         c.getPointAt(e, cam.position); c.getPointAt(Math.min(1, e + 0.05), la); la.y += 0.12; cam.lookAt(la);
         // o portal se abre: cresce para além do torii e engole o que está atrás (nada da floresta aparece)
@@ -72,6 +75,7 @@
         if (u >= 1 && indo !== "foi") { indo = "foi"; setTimeout(() => { location.href = DESTINO + "?de=porta"; }, 500); } };
     }
     btn.addEventListener("click", (e) => { e.stopPropagation(); atravessar(); });
+    addEventListener("keydown", (e) => { if (e.key === "Enter" && btn.classList.contains("on") && !(M.painelAberto && M.painelAberto())) { e.preventDefault(); atravessar(); } });
     M.atravessar = atravessar;
 
   });

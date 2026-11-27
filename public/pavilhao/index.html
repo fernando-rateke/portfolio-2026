@@ -19,27 +19,31 @@
   #veu .bx { text-align: center; } #veu small { display: block; font: 500 12px "Geist Mono", monospace; letter-spacing: .32em; text-transform: uppercase; opacity: .8; margin-bottom: 10px; }
   #veu b { font: 800 clamp(30px, 5vw, 56px)/1 "Archivo", sans-serif; letter-spacing: -.01em; }
   #veu .linha { width: min(240px, 60vw); height: 2px; margin: 22px auto 0; background: rgba(255,255,255,.2); overflow: hidden; } #veu .linha i { display: block; height: 100%; width: 0; background: #fff; transition: width .3s; }
-  /* o nome da sala, embaixo no centro */
-  #sala { position: fixed; z-index: 5; left: 50%; bottom: 26px; transform: translateX(-50%); text-align: center; color: var(--tinta); font: 800 clamp(20px, 2.4vw, 30px)/1.1 "Archivo", sans-serif;
-    padding: 10px 22px 12px; border-radius: 14px; background: var(--vidro); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 10px 30px rgba(10,20,60,.25); border-bottom: 3px solid var(--cor, var(--azul)); transition: opacity .6s; }
-  #sala:empty { display: none; } #sala small { display: block; font: 500 11px "Geist Mono", monospace; letter-spacing: .2em; text-transform: uppercase; color: var(--cor, var(--azul)); margin-bottom: 3px; }
-  /* a planta: o círculo do salão com as cinco salas */
-  #planta { position: fixed; z-index: 5; left: 18px; bottom: 18px; display: flex; align-items: flex-end; gap: 12px; padding: 12px; border-radius: 16px; background: rgba(10,16,48,.5); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); transition: opacity .6s; }
-  #planta svg { width: 58px; height: 100px; } #planta .pt { fill: rgba(160,190,255,.25); stroke: rgba(200,220,255,.7); cursor: pointer; transition: fill .3s; } #planta .pt.on { fill: var(--laranja); stroke: #fff; }
-  #planta .nomes { display: grid; gap: 2px; } #planta .nomes button { display: flex; gap: 8px; align-items: baseline; padding: 4px 8px; border: 0; border-radius: 8px; background: none; color: #dfe6ff; cursor: pointer; text-align: left; font: 600 13px "Archivo", sans-serif; }
-  #planta .nomes button i { font: 500 10px "Geist Mono", monospace; font-style: normal; opacity: .6; } #planta .nomes button:hover, #planta .nomes button:focus-visible { background: rgba(255,255,255,.12); outline: none; }
-  #planta .nomes button.on { background: rgba(255,138,28,.22); color: #fff; }
-  body.chegando #planta, body.chegando #sala { opacity: 0; pointer-events: none; }
-  @media (max-width: 640px) { #planta .nomes { display: none; } #planta svg { width: 42px; height: 72px; } #sala { bottom: 104px; } }
-  /* os nomes em cima dos painéis */
+  /* o índice, no alto à esquerda, como a lista de salas na parede de um museu: o nome da matéria atual em destaque,
+     as outras mais claras (tocar leva até elas). Sem caixa nem vidro: tinta escura sobre a parede clara. */
+  #sala { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  #planta { position: fixed; z-index: 5; left: 30px; top: 26px; color: var(--tinta); transition: opacity .5s; text-shadow: 0 0 14px rgba(255,255,255,.7); }
+  #planta .tit { display: block; margin: 0 0 12px 34px; font: 600 11px "Archivo", sans-serif; letter-spacing: .22em; text-transform: uppercase; opacity: .55; }
+  #planta ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 1px; }
+  #planta button { display: flex; align-items: baseline; gap: 10px; padding: 3px 0; border: 0; background: none; color: inherit; cursor: pointer; text-align: left; font: 500 clamp(14px, 1vw, 17px)/1.25 "Archivo", sans-serif; opacity: .45; transition: opacity .3s; }
+  #planta button i { width: 24px; font: 500 11px "Archivo", sans-serif; font-style: normal; font-variant-numeric: tabular-nums; letter-spacing: .06em; }
+  #planta button::after { content: ""; align-self: center; width: 0; height: 1.5px; background: var(--cor, currentColor); transition: width .45s ease; }
+  #planta button.on { opacity: 1; font-weight: 800; font-size: clamp(18px, 1.35vw, 24px); }
+  #planta button.on::after { width: 28px; }
+  #planta button:hover, #planta button:focus-visible { opacity: 1; outline: none; }
+  body.chegando #planta { opacity: 0; pointer-events: none; }
+  @media (max-width: 640px) { #planta { left: 16px; top: 16px; } #planta button { font-size: 13px; } #planta button.on { font-size: 16px; } #planta .tit { margin-bottom: 8px; } }
+  /* "Abrir", embaixo de cada quadro: só a palavra sublinhada, como numa legenda */
   #rotulos { position: fixed; inset: 0; z-index: 4; pointer-events: none; }
-  .rot { position: absolute; left: 0; top: 0; padding: 7px 14px; border-radius: 999px; border: 0; background: rgba(13,20,48,.78); color: #fff; font: 700 13px "Archivo", sans-serif; cursor: pointer; pointer-events: auto; opacity: 0; visibility: hidden; transition: opacity .3s; white-space: nowrap; }
-  .rot.on { opacity: 1; visibility: visible; } .rot:hover, .rot:focus-visible { background: var(--laranja); outline: none; }
-  /* entrar na tela (só na sala do Técnico) */
-  #tela { position: fixed; z-index: 6; left: 50%; bottom: 104px; transform: translateX(-50%) translateY(8px); padding: 13px 26px; border-radius: 999px; border: 0; background: linear-gradient(135deg, #ff3ea5, #6a5cff); color: #fff;
-    font: 800 16px "Archivo", sans-serif; letter-spacing: .02em; cursor: pointer; opacity: 0; pointer-events: none; transition: opacity .5s, transform .5s; box-shadow: 0 12px 30px rgba(80,40,180,.45); }
+  .rot { position: absolute; left: 0; top: 0; padding: 6px 8px; border: 0; background: none; color: var(--tinta); font: 600 13px "Archivo", sans-serif; letter-spacing: .04em; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 5px;
+    cursor: pointer; pointer-events: auto; opacity: 0; visibility: hidden; transition: opacity .3s, color .2s; white-space: nowrap; }
+  .rot.on { opacity: .85; visibility: visible; } .rot:hover, .rot:focus-visible { opacity: 1; color: var(--laranja); outline: none; }
+  /* atravessar a porta (só no Técnico): uma placa, como a sinalização de um museu */
+  #tela { position: fixed; z-index: 6; left: 50%; bottom: 30px; transform: translateX(-50%) translateY(6px); display: flex; align-items: center; gap: 14px; padding: 12px 18px 12px 20px; border: 1px solid var(--tinta); border-radius: 2px;
+    background: #f4f1ea; color: var(--tinta); font: 700 14px "Archivo", sans-serif; letter-spacing: .03em; cursor: pointer; opacity: 0; pointer-events: none; transition: opacity .4s, transform .4s, background .2s, color .2s; }
+  #tela::after { content: "→"; font-weight: 500; transition: transform .2s; } #tela:hover::after, #tela:focus-visible::after { transform: translateX(3px); }
+  #tela:hover, #tela:focus-visible { background: var(--tinta); color: #f4f1ea; outline: none; }
   #tela.on { opacity: 1; pointer-events: auto; transform: translateX(-50%); }
-  @media (max-width: 640px) { #tela { bottom: 170px; } }
   /* o painel da atividade */
   #painel { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 16px; background: rgba(6,10,34,.45); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); opacity: 0; pointer-events: none; transition: opacity .45s; }
   #painel.on { opacity: 1; pointer-events: auto; }

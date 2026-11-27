@@ -27,10 +27,11 @@
   const CLARABOIAS = [-5.65, -3.45, -0.6, 2.37, 5.32];
   // os quadros, na ordem em que o visitante os vê (da esquerda para a direita na tela)
   const PARADAS = [
-    { lado: -1, z: 2.49, q: [3.86, 1.12] },   // Linguagens: parede da esquerda, perto da janela
-    { lado: 1, z: 2.49, q: [1.12, 3.86] },    // Matemática: parede da direita
-    { lado: -1, z: -2.47, q: [-1.095, -3.83] }, // Ciências Humanas
-    { lado: 1, z: -2.47, q: [-3.83, -1.095] },  // Ciências da Natureza
+    // a câmera fica no meio do salão: de uma parada à outra ela só gira no lugar ou anda alguns metros ao longo de uma parede
+    { lado: -1, z: 2.49, q: [3.86, 1.12] },     // Linguagens: parede da esquerda, perto da janela
+    { lado: 1, z: 2.49, q: [1.12, 3.86] },      // Matemática: em frente (gira no lugar)
+    { lado: 1, z: -2.47, q: [-3.83, -1.095] },  // Ciências Humanas: mesma parede, mais perto da porta
+    { lado: -1, z: -2.47, q: [-1.095, -3.83] }, // Ciências da Natureza: em frente (gira no lugar)
     { porta: true, q: [-2.335, 2.325] },        // Técnico: os dois quadros ao lado da porta
   ];
 
@@ -229,19 +230,20 @@
   /* ---------- a câmera: cada parada tem a sua pose; entre elas, um passo para o meio do salão ---------- */
   function pose(k) { const P = PARADAS[k]; const hf = 2 * Math.atan(Math.tan((camera.fov * Math.PI) / 360) * camera.aspect);
     if (P.porta) { const d = cl(7.6 / (2 * Math.tan(hf / 2)), 3.2, 12); return { p: V3(0, OLHO, PAREDE_PORTA + d), yaw: 0, pitch: Math.atan2(MEIO_QUADRO - OLHO, d) }; }
-    const d = cl(7.2 / (2 * Math.tan(hf / 2)), 3, 7.4); return { p: V3(P.lado * (PAREDE_X - d), OLHO, P.z), yaw: -P.lado * Math.PI / 2, pitch: Math.atan2(MEIO_QUADRO - OLHO, d) }; }
+    const d = cl(6.4 / (2 * Math.tan(hf / 2)), 4.05, 7.4); return { p: V3(P.lado * (PAREDE_X - d), OLHO, P.z), yaw: -P.lado * Math.PI / 2, pitch: Math.atan2(MEIO_QUADRO - OLHO, d) }; }
   let modo = "chegada", aqui = -1, mov = null, mx = 0, my = 0;
   const cam = { p: V3(), yaw: 0, pitch: 0 };
   const aplicar = (c) => { camera.position.copy(c.p); camera.rotation.set(c.pitch, c.yaw, 0); };
   addEventListener("pointermove", (e) => { if (e.pointerType === "mouse") { mx = e.clientX / innerWidth - 0.5; my = e.clientY / innerHeight - 0.5; } });
   function irSala(k) { if (!paradas[k] || mov || modo !== "sala" || k === aqui) return; fechar(); const de = { p: cam.p.clone(), yaw: cam.yaw, pitch: cam.pitch }, para = pose(k);
-    const meio = de.p.clone().lerp(para.p, 0.5); meio.x *= 0.2; meio.z += 0.5;
+    // ao girar no lugar, a câmera recua um passo (dá para ver o salão no meio do giro)
+    const meio = de.p.clone().lerp(para.p, 0.5); meio.z += Math.abs(para.yaw - de.yaw) > 2 ? 0.45 : 0;
     const curva = new T.QuadraticBezierCurve3(de.p, meio, para.p);
-    mov = { de, para, curva, t: null, dur: 1.5 + Math.min(1.4, de.p.distanceTo(para.p) * 0.16) + Math.abs(para.yaw - de.yaw) * 0.25, fim: () => { aqui = k; ui(); } }; modo = "andando"; ui(); }
+    mov = { de, para, curva, t: null, dur: 0.95 + Math.min(0.6, de.p.distanceTo(para.p) * 0.08) + Math.abs(para.yaw - de.yaw) * 0.2, fim: () => { aqui = k; ui(); } }; modo = "andando"; ui(); }
   M2.irSala = irSala;
   function tick(t, dt) {
-    if (mov) { if (mov.t == null) mov.t = t; const u = Math.min(1, (t - mov.t) / mov.dur), e = suave(u);
-      mov.curva.getPoint(e, cam.p); cam.p.y += Math.sin(e * Math.PI) * 0.06; cam.yaw = mov.de.yaw + (mov.para.yaw - mov.de.yaw) * e; cam.pitch = mov.de.pitch + (mov.para.pitch - mov.de.pitch) * e;
+    if (mov) { if (mov.t == null) mov.t = t; const u = Math.min(1, (t - mov.t) / mov.dur), e = 0.5 - 0.5 * Math.cos(Math.PI * u); // começa e termina devagar, sem arrancada
+      mov.curva.getPoint(e, cam.p); cam.yaw = mov.de.yaw + (mov.para.yaw - mov.de.yaw) * e; cam.pitch = mov.de.pitch + (mov.para.pitch - mov.de.pitch) * e;
       if (u >= 1) { const f = mov.fim; mov = null; modo = "sala"; f(); } aplicar(cam); }
     else if (modo === "sala" && aqui >= 0) { const p = pose(aqui), k = 1 - Math.exp(-dt * 3); cam.p.lerp(p.p, k); cam.yaw += (p.yaw - mx * 0.06 - cam.yaw) * k; cam.pitch += (p.pitch - my * 0.04 - cam.pitch) * k;
       aplicar(cam); camera.position.y += Math.sin(t * 0.5) * 0.008; }
@@ -249,16 +251,15 @@
   }
 
   /* ---------- a chegada (é o que o vídeo mostra): do céu da porta até a primeira parada ---------- */
-  const DUR = 7.4;
+  const DUR = 5.2;
   const QUADROS = [ // tempo, posição, giro, inclinação, dia (0 = a noite da porta, 1 = manhã)
-    [0.0, V3(0, 46, 118), 0, 0.46, 0],
-    [1.4, V3(0, 42, 100), 0, 0.3, 0.05],
-    [3.0, V3(1.2, 24, 50), 0, -0.32, 0.75],
-    [4.6, V3(0.3, 12, 10), 0, -1.05, 1],
-    [5.5, V3(0, 4.4, 2.42), 0, -1.53, 1],
-    [6.1, V3(0, 0.9, 2.42), 0.05, -1.25, 1],
-    [6.7, V3(-0.4, 0.05, 2.5), 1.25, -0.3, 1],
-    [7.4, null, null, null, 1],
+    [0.0, V3(0, 17, 40), 0, 0.46, 0],
+    [1.1, V3(0, 16, 35), 0, 0.12, 0.25],
+    [2.3, V3(0.3, 10.5, 17), 0, -0.62, 0.9],
+    [3.3, V3(0, 4.4, 2.42), 0, -1.53, 1],
+    [3.9, V3(0, 0.9, 2.42), 0.05, -1.25, 1],
+    [4.55, V3(0, 0.0, 2.5), 1.25, -0.28, 1],
+    [5.2, null, null, null, 1],
   ];
   let curvaChegada = null;
   const suaveLeve = (u) => u * u * (3 - 2 * u) * 0.5 + u * 0.5;
@@ -279,17 +280,11 @@
       r.b.style.transform = `translate(${((pv.x * 0.5 + 0.5) * innerWidth).toFixed(1)}px, ${((-pv.y * 0.5 + 0.5) * innerHeight).toFixed(1)}px) translate(-50%, 0)`; r.b.classList.toggle("on", ver); } }
   const planta = document.getElementById("planta"), nomeSala = document.getElementById("sala"), telaBtn = document.getElementById("tela");
   function desenharPlanta() {
-    // a galeria vista de cima: a janela em cima, a porta embaixo; um ponto em cada parada
-    const px = (x) => (x / 4.1) * 26, pz = (z) => (-z / 7.9) * 50, svg = [`<svg viewBox="-34 -58 68 116" aria-hidden="true"><rect x="-27" y="-51" width="54" height="102" rx="2" fill="none" stroke="rgba(160,190,255,.45)"/>
-      <line x1="-10" y1="-51" x2="10" y2="-51" stroke="#ffd59a" stroke-width="3"/><path d="M-6 51 v-6 a6 6 0 0 1 12 0 v6" fill="none" stroke="rgba(255,255,255,.7)"/>`];
-    paradas.forEach((s, k) => { const P = PARADAS[k], x = P.porta ? 0 : px(P.lado * 3.5), y = P.porta ? pz(-6.6) : pz(P.z); svg.push(`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="5.5" class="pt" data-k="${k}"/>`); });
-    svg.push("</svg>");
-    planta.innerHTML = svg.join("") + `<div class="nomes">${paradas.map((s, k) => `<button type="button" data-k="${k}"><i>${String(k + 1).padStart(2, "0")}</i>${esc(s.mat.nome)}</button>`).join("")}</div>`;
+    planta.innerHTML = `<span class="tit">O Pavilhão</span><ol>${paradas.map((s, k) => `<li><button type="button" data-k="${k}" style="--cor:${esc(s.mat.cor || "#0072ce")}"><i>${String(k + 1).padStart(2, "0")}</i>${esc(s.mat.nome)}</button></li>`).join("")}</ol>`;
     planta.querySelectorAll("[data-k]").forEach((el) => el.addEventListener("click", () => irSala(+el.dataset.k)));
   }
   function ui() { const s = paradas[aqui];
-    nomeSala.innerHTML = s ? `<small>${String(aqui + 1).padStart(2, "0")} de ${paradas.length} · ${esc(s.mat.sigla || "")}</small>${esc(s.mat.nome)}` : "";
-    nomeSala.style.setProperty("--cor", s ? s.mat.cor : "#0072ce");
+    nomeSala.textContent = s ? `${s.mat.nome}, ${aqui + 1} de ${paradas.length}` : "";
     planta.querySelectorAll("[data-k]").forEach((el) => el.classList.toggle("on", +el.dataset.k === aqui));
     telaBtn.classList.toggle("on", !!s && !!PARADAS[aqui].porta && modo === "sala");
     document.body.classList.toggle("chegando", modo === "chegada" || modo === "saindo"); }
@@ -320,14 +315,14 @@
   function atravessar() { if (modo !== "sala" || !PARADAS[aqui] || !PARADAS[aqui].porta) return; fechar(); modo = "saindo"; ui(); for (const r of rots) r.b.classList.remove("on");
     const de = cam.p.clone(), para = V3(0, PISO + 1.25, PORTA_Z + 0.25), y0 = cam.yaw, p0 = cam.pitch; let acc = 0;
     if (porta) { porta.material = porta.material.clone(); porta.material.transparent = true; }
-    saida = (t, dt) => { acc += Math.min(dt, 0.05); const u = Math.min(1, acc / 3.4), e = suave(cl((u - 0.25) / 0.75));
+    saida = (t, dt) => { acc += Math.min(dt, 0.05); const u = Math.min(1, acc / 2.6), e = suave(cl((u - 0.25) / 0.75));
       portal.material.uniforms.uA.value = cl(u / 0.3); if (porta) porta.material.opacity = 1 - cl(u / 0.3);
       cam.p.copy(de).lerp(para, e); cam.yaw = y0 * (1 - e); cam.pitch = p0 + (0.02 - p0) * e; aplicar(cam);
       if (u > 0.78) pix.classList.add("on"); if (u >= 1) { chuva(); return true; } }; }
   function chuva() { const c = pix.querySelector("canvas"), g = c.getContext("2d"); c.width = innerWidth; c.height = innerHeight; const cols = Math.ceil(innerWidth / 14), ys = Array.from({ length: cols }, () => -Math.random() * innerHeight);
     let n = 0; const passo = () => { g.fillStyle = "rgba(6,4,18,.18)"; g.fillRect(0, 0, c.width, c.height);
       for (let i = 0; i < cols; i++) { g.fillStyle = i % 5 === 0 ? "#ff3ea5" : i % 3 === 0 ? "#3ee8ff" : "#7a8cff"; g.fillRect(i * 14, ys[i], 3, 18); ys[i] += 18 + (i % 7) * 3; if (ys[i] > c.height) ys[i] = -Math.random() * 200; }
-      if (++n < 100) requestAnimationFrame(passo); else location.href = "/neon/?de=pavilhao"; };
+      if (++n < 70) requestAnimationFrame(passo); else location.href = "/neon/?de=pavilhao"; };
     passo(); }
   telaBtn.addEventListener("click", atravessar);
 

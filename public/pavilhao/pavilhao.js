@@ -317,10 +317,10 @@
 
   /* ---------- a porta se abre para o futuro: a cidade neon aparece no vão e a câmera entra ---------- */
   const pix = document.getElementById("pixels"); let saida = null;
-  function atravessar() { if (modo !== "sala" || !PARADAS[aqui] || !PARADAS[aqui].porta) return; fechar(); modo = "saindo"; ui();
-    const de = cam.p.clone(), para = V3(0, PISO + 1.25, PORTA_Z + 0.25), y0 = cam.yaw, p0 = cam.pitch; let ti = null;
+  function atravessar() { if (modo !== "sala" || !PARADAS[aqui] || !PARADAS[aqui].porta) return; fechar(); modo = "saindo"; ui(); for (const r of rots) r.b.classList.remove("on");
+    const de = cam.p.clone(), para = V3(0, PISO + 1.25, PORTA_Z + 0.25), y0 = cam.yaw, p0 = cam.pitch; let acc = 0;
     if (porta) { porta.material = porta.material.clone(); porta.material.transparent = true; }
-    saida = (t) => { if (ti == null) ti = t; const u = Math.min(1, (t - ti) / 3.4), e = suave(cl((u - 0.25) / 0.75));
+    saida = (t, dt) => { acc += Math.min(dt, 0.05); const u = Math.min(1, acc / 3.4), e = suave(cl((u - 0.25) / 0.75));
       portal.material.uniforms.uA.value = cl(u / 0.3); if (porta) porta.material.opacity = 1 - cl(u / 0.3);
       cam.p.copy(de).lerp(para, e); cam.yaw = y0 * (1 - e); cam.pitch = p0 + (0.02 - p0) * e; aplicar(cam);
       if (u > 0.78) pix.classList.add("on"); if (u >= 1) { chuva(); return true; } }; }
@@ -376,6 +376,6 @@
     veu.classList.add("fim"); if (filme) { filme.classList.remove("on"); filme.classList.add("sai"); setTimeout(() => filme.remove(), 1200); }
   })();
   function frame() { const t = clock.getElapsedTime(), dt = Math.min(0.1, t - last); last = t;
-    if (pronto) { if (saida) { U.uT.value = t; if (saida(t)) saida = null; } else tick(t, dt); desenhar(); } requestAnimationFrame(frame); }
+    if (pronto) { if (saida) { U.uT.value = t; if (saida(t, dt)) saida = null; } else tick(t, dt); desenhar(); } requestAnimationFrame(frame); }
   if (!FILME) frame();
 })();

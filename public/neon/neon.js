@@ -320,7 +320,7 @@
     { t: "Iniciação Científica em Matemática", itens: [["", "Ana Maria Clara Alves Bittencourt", "Naiara Alicia Broering Rech Farrell", "Lucas Ferrari", "Maria Eduarda dos Santos Bernardo", "Larissa Miranda Medeiros", "Vitor Cunha de Souza"]] },
     { t: "Amigos", itens: [["", "Cauã Canova", "Ana Maria Clara Alves Bittencourt", "Luana Lupi Vergara"]] },
     { t: "Arte do jogo Nós", itens: [["", "Luana Lupi Vergara"]] },
-    { t: "Modelos, texturas e imagens", itens: [["Ato 1, o Japão", "Poly Haven (CC0)"], ["Ato 2, a galeria", "“Vr Studio Gallery”, de R-LAB (CC BY)"], ["Ato 3, a rua", "“Japanese street at night”, de afx_cgmotion (CC BY)", "“Cyberpunk City - #1”, de born2012 (CC BY)"], ["", "Modelos da Sketchfab, sob licença Creative Commons Atribuição 4.0"]] },
+    { t: "Modelos, texturas e imagens", itens: [["Ato 1, o Japão", "Poly Haven (CC0)"], ["Ato 2, a feira", "“Warehouse”, de Nicholas-3D (CC BY)", "estandes de fasih.lisan (CC BY)", "pessoas de Loïc Norgeot (CC BY)", "logos SESI e SENAI: Wikimedia Commons (CC BY-SA)"], ["Ato 3, a rua", "“Japanese street at night”, de afx_cgmotion (CC BY)", "“Cyberpunk City - #1”, de born2012 (CC BY)"], ["", "Modelos da Sketchfab, sob licença Creative Commons Atribuição 4.0"]] },
   ];
   const cred = document.getElementById("cred");
   cred.innerHTML = `<div class="faixa"></div><div class="rolo"><div class="abre"></div>${BLOCOS.map((b) => `<section><h3>${esc(b.t)}</h3>${b.itens.map(([papel, ...nomes]) => `<div class="it">${papel ? `<small>${esc(papel)}</small>` : ""}${nomes.map((n) => `<span${n.length > 40 ? ' class="mini"' : ""}>${esc(n)}</span>`).join("")}</div>`).join("")}</section>`).join("")}<div style="height:40vh"></div></div>

@@ -25,10 +25,14 @@ Céu: belfast_sunset_puresky, com as cores ajustadas para o pôr do sol.
 As árvores distantes são imagens renderizadas a partir desses mesmos modelos. Torii, lanternas de pedra,
 santuário, casa de fazenda, placas, cortinas e lanternas de papel foram montados em código com essas texturas.
 
-Ato 2, o Pavilhão (Sketchfab, CC BY 4.0):
-- "Vr Studio Gallery", de R-LAB (rakshaan): https://sketchfab.com/3d-models/vr-studio-gallery-789cdada4ffb4924bbda9897c1df51ca
-  Comprimido para a web (geometria das colunas simplificada, texturas webp). O céu, as nuvens, o piso espelhado, os
-  quadros e o vídeo da chegada (chegada.webm/mp4, gravado da própria cena) foram feitos em código.
+Ato 2, o Pavilhão SESI SENAI (Sketchfab, CC BY 4.0):
+- "Warehouse FBX Model Free", de Nicholas-3D: https://sketchfab.com/3d-models/warehouse-fbx-model-free-daa7fd3ff88945298d00045ca40a4c03
+- "EXHIBITION STAND_221001", de fasih.lisan (recolorido nas cores do SESI SENAI): https://sketchfab.com/3d-models/exhibition-stand-221001-3f887914aaa147b6a754e6a92dcf43b9
+- "3d exhibition stand 014", de fasih.lisan: https://sketchfab.com/3d-models/3d-exhibition-stand-014-61be25e36a0645df93f3deb66b5f699c
+- "WIP - Lowpoly People - 2", de Loïc Norgeot: https://sketchfab.com/3d-models/wip-lowpoly-people-2-4cf6f452719c4363bab5faddbc221391
+Logos do SESI e do SENAI (versão 2024): Wikimedia Commons, "SESI logo 2024.png" e "SENAI logo 2024.png", CC BY-SA 4.0.
+  Comprimidos para a web. O céu, a praça, o tapete, os banners, as bandeiras, os cartazes e o vídeo da chegada
+  (chegada.webm/mp4, gravado da própria cena) foram feitos em código.
 
 Ato 3, o futuro (Sketchfab, CC BY 4.0):
 - "Japanese street at night", de afx_cgmotion: https://sketchfab.com/3d-models/japanese-street-at-night-fb1bdcd71a5544d699379d2d13dd1171

@@ -36,23 +36,23 @@ O Vale (`/vale`) e o Tokyo Ghoul (`/tg`) ficam como estão, separados; não mexe
 - **O celular** não tem cursor: mostra botões com nome do que dá para fazer agora (`M.acoes()` / `M.fazer(id)`; dentro
   da cafeteria `M.acoesDentro`), mais Fechar e uma faixa para rolar quando há um texto aberto. Meta do cronômetro: 8 min.
 
-## O Ato 2, o Pavilhão (montado; faltam as atividades)
+## O Ato 2, o Pavilhão SESI SENAI: uma feira de ciências (refeito em 27/11 a pedido do Fernando)
 
-- `public/pavilhao/index.html` + `pavilhao.js`; o prédio é a "Vr Studio Gallery" (R-LAB, CC BY), uma galeria com
-  colunas, claraboias e quadros, comprimida em `public/pavilhao/modelos/salao.glb` (2,7 MB). Manhã cedo, sobre um mar
-  de nuvens; o piso é um espelho escuro.
-- **A chegada é um vídeo** (`chegada.webm`, com `chegada.mp4` de reserva; 7,4 s, 1080p), gravado da própria cena com
-  `?filme` (Playwright tira os quadros, o ffmpeg junta). Começa no mesmo céu da porta, o sol nasce, a câmera desce até
-  o telhado e entra pela claraboia; termina exatamente na primeira parada, e a cena ao vivo assume. Enquanto o vídeo
-  passa, a galeria carrega por trás. Para refazer: mudar `QUADROS` em `pavilhao.js` e gravar de novo.
-- **Cinco paradas, dois quadros cada** (os 10 quadros do próprio modelo): Linguagens e Matemática na metade da janela
-  (esquerda e direita), Ciências Humanas e da Natureza na metade da porta, e o Técnico nos dois quadros ao lado da
-  porta. Cada quadro tem passe-partout, etiqueta de museu e o botão "Abrir"; sem imagem, vira um cartaz na cor da matéria.
-- **As atividades ficam em `public/pavilhao/atividades.json`**: uma lista por matéria, com título, subtítulo, imagem,
-  contexto, aprendizagens, importância, competências ([código, descrição]), links e créditos. Campo vazio = "Em breve".
-- Do Técnico, "Atravessar a porta": a porta de madeira se dissolve, a chuva de neon aparece no vão, a câmera entra, os
-  pixels caem e abre `/neon/`. A planta (embaixo à esquerda), as setas do teclado e o celular levam de uma parada a outra.
-- O celular continua pareado (`public/comum/ponte.js`; o par fica em sessionStorage "controle-par").
+- O Fernando achou a galeria vazia e sem cara de SESI SENAI e escolheu: **feira de ciências**, com os **logos oficiais**
+  (pegos da internet), **vídeo novo** na chegada e uma **parte só da Iniciação Científica**, falando o quanto ela
+  contribuiu para a vida dele.
+- `public/pavilhao/pavilhao.js` + `feira/` (galpão de Nicholas-3D; estande de fasih.lisan recolorido para cada matéria;
+  estande maior de fasih.lisan para a Iniciação; gente de Loïc Norgeot; todos CC BY) + `img/sesi.png`, `img/senai.png`
+  (logos 2024, Wikimedia Commons, CC BY-SA). Cores tiradas dos logos: azul #0e4194, verde #68b42d, laranja #e8490f.
+- Corredor com tapete azul; estandes alternando os lados: Linguagens, Matemática, Ciências Humanas, Ciências da
+  Natureza, Técnico. Cada estande: faixa com os logos e o nome, placa suspensa, balcão, dois cartazes (as atividades,
+  "Abrir") e a TV alternando as duas. No fundo, o estande da **Iniciação Científica**: o título, um painel com as
+  palavras do Fernando e "Ler", que abre os trechos do texto de agradecimentos sobre a Iniciação, sobre o que aprendeu
+  com o prof. Wagner e sobre a equipe (sem inventar nada).
+- A chegada é um vídeo (`chegada.webm`/`.mp4`): do céu da porta até a fachada com o nome do pavilhão, pelo portão
+  (um plano de corte tira a parede na hora de passar) e pelo corredor até Linguagens.
+- Da Iniciação, "Entrar na tela": a câmera entra na TV, os pixels caem e abre o Ato 3.
+- As atividades continuam em `public/pavilhao/atividades.json` (campo vazio = "Em breve").
 
 ## As atividades (duas por matéria)
 

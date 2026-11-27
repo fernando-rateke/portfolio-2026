@@ -109,3 +109,9 @@ Não inventar nada: o que não veio dele fica em branco.
 - Fotos, contexto, aprendizagens, competências e importância das 10 atividades.
 - O teaser do Vozes pelo Ambiente.
 - Os certificados atualizados (o quadro da escadaria fica; ele atualiza depois da estrutura pronta).
+
+## A neblina onde não há nada (pedido do Fernando, vale para todos os mapas)
+
+- Cidade (`public/cidade/neblina.js`): bancos de neblina baixa sobre o campo vazio em volta da rua (bonitos vistos do
+  mapa) e uma faixa em pé no horizonte, na cor do céu do tema; nada entra na rua, na escadaria nem no platô do torii.
+- Ato 3: camadas de neblina no fim da rua, entre as torres e no céu baixo. Ato 2: o mar de nuvens em volta da galeria.

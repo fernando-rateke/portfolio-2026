@@ -94,8 +94,10 @@
       await connect();
     }
     const close = () => { veu.classList.remove("on"); veu.setAttribute("aria-hidden", "true"); };
-    function paired() { close(); document.body.classList.add("apresentando"); cursorEl.classList.add("on"); chip.hidden = false; moveTo(innerWidth / 2, innerHeight / 2); lastState = ""; sendState(); }
-    function unpair() { phone = null; document.body.classList.remove("apresentando"); cursorEl.classList.remove("on"); spot.classList.remove("on"); chip.hidden = true; }
+    // o par (código e celular) fica guardado nesta aba: ao passar para o Pavilhão e a cidade neon, o celular continua conectado
+    const guardar = () => { try { sessionStorage.setItem("controle-par", JSON.stringify({ code, phone })); } catch (e) { /* sem storage */ } };
+    function paired() { guardar(); close(); document.body.classList.add("apresentando"); cursorEl.classList.add("on"); chip.hidden = false; moveTo(innerWidth / 2, innerHeight / 2); lastState = ""; sendState(); }
+    function unpair() { try { sessionStorage.removeItem("controle-par"); } catch (e) { /* nada */ } phone = null; document.body.classList.remove("apresentando"); cursorEl.classList.remove("on"); spot.classList.remove("on"); chip.hidden = true; }
     function moveTo(x, y) {
       pos.x = Math.max(0, Math.min(innerWidth - 1, x)); pos.y = Math.max(0, Math.min(innerHeight - 1, y));
       cursorEl.style.transform = `translate(${pos.x}px, ${pos.y}px)`; spot.style.setProperty("--x", pos.x + "px"); spot.style.setProperty("--y", pos.y + "px");
@@ -150,6 +152,9 @@
       }
       sendState();
     }
+    // voltando de outra página da apresentação com o celular já pareado: reconecta sozinho
+    { let par = null; try { par = JSON.parse(sessionStorage.getItem("controle-par") || "null"); } catch (e) { par = null; }
+      if (par && par.code && par.phone) { code = par.code; phone = par.phone; lastSeen = performance.now(); connect().then(() => { paired(); send({ t: "paired", phone }); }); } }
     aprBtn.addEventListener("click", open); veu.querySelector("button").addEventListener("click", close);
     addEventListener("keydown", (e) => { if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return; if (e.key.toLowerCase() === "p") { if (veu.classList.contains("on")) close(); else open(); } else if (e.key === "Escape" && veu.classList.contains("on")) close(); });
   });

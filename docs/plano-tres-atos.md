@@ -36,6 +36,19 @@ O Vale (`/vale`) e o Tokyo Ghoul (`/tg`) ficam como estão, separados; não mexe
 - **O celular** não tem cursor: mostra botões com nome do que dá para fazer agora (`M.acoes()` / `M.fazer(id)`; dentro
   da cafeteria `M.acoesDentro`), mais Fechar e uma faixa para rolar quando há um texto aberto. Meta do cronômetro: 8 min.
 
+## O Ato 2, o Pavilhão (montado; faltam as atividades)
+
+- `public/pavilhao/index.html` + `pavilhao.js`; o prédio é a "White round exhibition gallery" (Christy Hsu, CC BY),
+  comprimida em `public/pavilhao/modelos/galeria.glb` (260 KB). Céu da hora azul, espelho d'água em volta.
+- Chegada: a página abre no mesmo céu da porta; a câmera desce do alto pelo círculo do teto; as linhas do prédio
+  acendem em azul e laranja e o prédio se materializa. Depois, a sala 1.
+- Cinco salas em volta do centro (espelho d'água redondo e escultura de bastões de luz), cada uma com o nome e
+  **duas** atividades em painéis de luz. A planta (embaixo à esquerda) e as setas do teclado levam de uma sala a outra.
+- **As atividades ficam em `public/pavilhao/atividades.json`**: uma lista por matéria, com título, subtítulo, imagem,
+  contexto, aprendizagens, importância, competências ([código, descrição]), links e créditos. Campo vazio = "Em breve".
+- Da sala do Técnico, "Entrar na tela": a câmera entra num painel, os pixels caem como chuva e abre `/neon/`.
+- O celular continua pareado (`public/comum/ponte.js`; o par fica em sessionStorage "controle-par").
+
 ## As atividades (duas por matéria)
 
 | Matéria | Atividade | Link / observação |

@@ -1,0 +1,227 @@
+{
+  "_leia": "As cinco salas do Pavilhão, com exatamente duas atividades cada. Campos vazios aparecem como 'em breve'. Imagens: caminho a partir de /public (ex.: /pavilhao/img/...). Não inventar conteúdo: o que não veio do Fernando fica vazio.",
+  "materias": [
+    {
+      "id": "linguagens",
+      "nome": "Linguagens",
+      "sigla": "LIN",
+      "cor": "#f39200",
+      "atividades": [
+        {
+          "titulo": "Secos e Molhados: o jogo Nós",
+          "subtitulo": "Linguagens · narrativa interativa",
+          "imagem": "/vale/nos/capa.jpg",
+          "contexto": "Liam desperta dentro de uma casa construída pelo próprio coma, sem saber o que aconteceu na noite do incêndio nem por que as lembranças da família não se encaixam. Escondido sob o assoalho, o Tear desloca para alguém aquilo que impediria a família de continuar unida. Esse alguém é o Nó: Liam. A obra discute que crianças não devem carregar os conflitos dos adultos, que o controle pode se disfarçar de cuidado, que o perdão não é obrigação e que a memória não é posse. A abertura já é jogável, feita em TypeScript e Canvas, sobre um roteiro completo de seis capítulos e quatro finais. Criação e desenvolvimento narrativo: Fernando Rateke Neto e Luana Lupi Vergara. Arte: Luana Lupi Vergara.",
+          "aprendizagens": "",
+          "importancia": "",
+          "competencias": [],
+          "links": [
+            [
+              "Jogar a demonstração",
+              "https://nos-brown-psi.vercel.app/"
+            ],
+            [
+              "Ler o roteiro",
+              "https://github.com/Rateke/NOS"
+            ]
+          ],
+          "creditos": "Arte: Luana Lupi Vergara"
+        },
+        {
+          "titulo": "Haketemodu",
+          "subtitulo": "O modelo físico de Hollow Depths",
+          "imagem": "",
+          "contexto": "",
+          "aprendizagens": "",
+          "importancia": "",
+          "competencias": [],
+          "links": [
+            [
+              "Ver no Canva",
+              "https://canva.link/0ezrw2vogp0kmkb"
+            ]
+          ],
+          "creditos": ""
+        }
+      ]
+    },
+    {
+      "id": "matematica",
+      "nome": "Matemática",
+      "sigla": "MAT",
+      "cor": "#0072ce",
+      "atividades": [
+        {
+          "titulo": "Hollow Depths",
+          "subtitulo": "Game Design & Matemática · 1º Trimestre",
+          "imagem": "/vale/grim/hollow-depths.jpg",
+          "contexto": "Um RPG de turno em que exploração e combate são orientados por probabilidade, cartas e leitura de variáveis numéricas.",
+          "aprendizagens": "",
+          "importancia": "",
+          "competencias": [],
+          "links": [
+            [
+              "Jogar / Acessar",
+              "https://game-nauy.onrender.com/"
+            ]
+          ],
+          "creditos": ""
+        },
+        {
+          "titulo": "Ciclo Trigonométrico",
+          "subtitulo": "",
+          "imagem": "",
+          "contexto": "",
+          "aprendizagens": "",
+          "importancia": "",
+          "competencias": [],
+          "links": [],
+          "creditos": ""
+        }
+      ]
+    },
+    {
+      "id": "humanas",
+      "nome": "Ciências Humanas",
+      "sigla": "CHS",
+      "cor": "#f39200",
+      "atividades": [
+        {
+          "titulo": "Era Vargas: galeria de fotos",
+          "subtitulo": "",
+          "imagem": "",
+          "contexto": "",
+          "aprendizagens": "",
+          "importancia": "",
+          "competencias": [],
+          "links": [
+            [
+              "Ver a galeria",
+              "https://vargas-nine.vercel.app/"
+            ]
+          ],
+          "creditos": ""
+        },
+        {
+          "titulo": "Júri simulado: o julgamento de Vargas",
+          "subtitulo": "",
+          "imagem": "",
+          "contexto": "",
+          "aprendizagens": "",
+          "importancia": "",
+          "competencias": [],
+          "links": [],
+          "creditos": ""
+        }
+      ]
+    },
+    {
+      "id": "natureza",
+      "nome": "Ciências da Natureza",
+      "sigla": "CNT",
+      "cor": "#0072ce",
+      "atividades": [
+        {
+          "titulo": "Vozes pelo Ambiente",
+          "subtitulo": "Jogo e teaser",
+          "imagem": "",
+          "contexto": "",
+          "aprendizagens": "",
+          "importancia": "",
+          "competencias": [],
+          "links": [
+            [
+              "Jogar",
+              "https://projeto-aguente.vercel.app/"
+            ]
+          ],
+          "creditos": ""
+        },
+        {
+          "titulo": "Extração de óleos essenciais",
+          "subtitulo": "",
+          "imagem": "",
+          "contexto": "",
+          "aprendizagens": "",
+          "importancia": "",
+          "competencias": [],
+          "links": [],
+          "creditos": ""
+        }
+      ]
+    },
+    {
+      "id": "tecnico",
+      "nome": "Técnico",
+      "sigla": "TEC",
+      "cor": "#f39200",
+      "atividades": [
+        {
+          "titulo": "AcousticBuild",
+          "subtitulo": "Desenvolvimento Web Full-Stack · 2º Trimestre",
+          "imagem": "",
+          "contexto": "O AcousticBuild é um projeto full-stack desenvolvido no curso técnico integrado à Iniciação Científica de Matemática, voltado à análise e previsão do desempenho acústico de edificações.",
+          "aprendizagens": "Construímos uma interface moderna e responsiva com React no frontend, API RESTful com Python e FastAPI no backend, banco SQLite via SQLAlchemy, autenticação JWT e criptografia de senhas com Bcrypt, tornando cálculos de engenharia acústica acessíveis para arquitetos e projetistas.",
+          "importancia": "",
+          "competencias": [
+            [
+              "H1",
+              "Reconhecer requisitos de qualidade, integridade, usabilidade e segurança da informação (interface responsiva, validação, JWT, hash Bcrypt e integridade)."
+            ],
+            [
+              "H4",
+              "Selecionar linguagem de programação de acordo com os requisitos (React/JS para interface, Python/FastAPI para servidor, SQLite e CSS Modules)."
+            ],
+            [
+              "H6",
+              "Aplicar linguagem de programação por meio de APIs, bibliotecas e frameworks na construção de rotinas de software (React, FastAPI, Axios, React Router, SQLAlchemy, JWT, Bcrypt)."
+            ]
+          ],
+          "links": [
+            [
+              "Apresentação — AcousticBuild",
+              "https://www.canva.com/design/DAHOEXsnSiU/twMjG-Quo00LmeoNuiPzQg/view?utm_content=DAHOEXsnSiU&utm_campaign=designshare&utm_medium=embeds&utm_source=link"
+            ],
+            [
+              "Protótipo no Figma",
+              "https://www.figma.com/design/itGMzpxwezLRZ5aq1XkDc3/AcousticBuild?node-id=0-1&t=Dxhsf2FjqqYf4AYB-1"
+            ],
+            [
+              "Repositório no GitHub",
+              "https://github.com/jjoaohartmann/SA-acousticBuild"
+            ],
+            [
+              "README do Projeto",
+              "https://github.com/jjoaohartmann/SA-acousticBuild/blob/main/README.md"
+            ],
+            [
+              "Vídeo do Projeto",
+              "https://drive.google.com/file/d/1kC-pFY_rgKTiVAEkhKXlEsYN6WP5YFrU/view"
+            ],
+            [
+              "Vídeo",
+              "https://drive.google.com/file/d/1kC-pFY_rgKTiVAEkhKXlEsYN6WP5YFrU/view"
+            ]
+          ],
+          "creditos": "Equipe: Maria Eduarda Tessari, Julia Veríssimo e Sara Rotenski Pereira"
+        },
+        {
+          "titulo": "Hackathon",
+          "subtitulo": "",
+          "imagem": "",
+          "contexto": "",
+          "aprendizagens": "",
+          "importancia": "",
+          "competencias": [],
+          "links": [
+            [
+              "Ver o material",
+              "https://drive.google.com/file/d/19nnz9vLPuvkBfWm0xNttYP2UVHxVL53J/view"
+            ]
+          ],
+          "creditos": ""
+        }
+      ]
+    }
+  ]
+}

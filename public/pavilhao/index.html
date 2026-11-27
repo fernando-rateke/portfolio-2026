@@ -1,23 +1,80 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Rateke · O Pavilhão</title>
+<meta name="description" content="Ato 2 do portfólio de Fernando Rateke Neto: as matérias, duas atividades cada.">
 <link rel="icon" href="/rateke-icone.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Geist+Mono:wght@400;500&display=swap">
 <style>
-  /* provisório: o Ato 2 ainda está sendo construído. A página já abre no mesmo céu da porta, para a passagem não ter corte. */
-  html, body { margin: 0; height: 100%; }
-  body { display: grid; place-items: center; background: linear-gradient(to top, #ff9a5a 0%, #d77a8a 18%, #5a5cb8 52%, #151a44 100%); color: #fff6ec;
-    font-family: "Shippori Mincho", Georgia, serif; text-align: center; }
-  h1 { font-size: clamp(28px, 5vw, 52px); margin: 0 0 10px; font-weight: 800; text-shadow: 0 4px 30px rgba(0,0,0,.35); }
-  p { margin: 0 0 26px; opacity: .85; }
-  a { color: #fff6ec; border: 1px solid rgba(255,246,236,.6); border-radius: 999px; padding: 10px 22px; text-decoration: none; }
-  a:hover, a:focus-visible { background: rgba(255,246,236,.15); outline: none; }
+  /* o Ato 2 tem cara própria: vidro claro, azul e laranja (SESI SENAI), letra de exposição */
+  :root { --azul: #0a84ff; --laranja: #ff8a1c; --tinta: #0d1430; --vidro: rgba(246,248,255,.86); }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #070a22; color: #eef2ff; font-family: "Archivo", system-ui, sans-serif; }
+  canvas#c { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  button { font: inherit; }
+  /* a abertura: o mesmo céu da porta, para a passagem não ter corte */
+  #veu { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; background: linear-gradient(to top, #ff9a5a 0%, #d77a8a 18%, #5a5cb8 52%, #151a44 100%); transition: opacity 1.6s ease .2s; }
+  #veu.fim { opacity: 0; pointer-events: none; }
+  #veu .bx { text-align: center; } #veu small { display: block; font: 500 12px "Geist Mono", monospace; letter-spacing: .32em; text-transform: uppercase; opacity: .8; margin-bottom: 10px; }
+  #veu b { font: 800 clamp(30px, 5vw, 56px)/1 "Archivo", sans-serif; letter-spacing: -.01em; }
+  #veu .linha { width: min(240px, 60vw); height: 2px; margin: 22px auto 0; background: rgba(255,255,255,.2); overflow: hidden; } #veu .linha i { display: block; height: 100%; width: 0; background: #fff; transition: width .3s; }
+  /* o nome da sala, embaixo no centro */
+  #sala { position: fixed; z-index: 5; left: 50%; bottom: 26px; transform: translateX(-50%); text-align: center; color: var(--tinta); font: 800 clamp(20px, 2.4vw, 30px)/1.1 "Archivo", sans-serif;
+    padding: 10px 22px 12px; border-radius: 14px; background: var(--vidro); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 10px 30px rgba(10,20,60,.25); border-bottom: 3px solid var(--cor, var(--azul)); transition: opacity .6s; }
+  #sala:empty { display: none; } #sala small { display: block; font: 500 11px "Geist Mono", monospace; letter-spacing: .2em; text-transform: uppercase; color: var(--cor, var(--azul)); margin-bottom: 3px; }
+  /* a planta: o círculo do salão com as cinco salas */
+  #planta { position: fixed; z-index: 5; left: 18px; bottom: 18px; display: flex; align-items: flex-end; gap: 12px; padding: 12px; border-radius: 16px; background: rgba(10,16,48,.5); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); transition: opacity .6s; }
+  #planta svg { width: 96px; height: 96px; } #planta .pt { fill: rgba(160,190,255,.25); stroke: rgba(200,220,255,.7); cursor: pointer; transition: fill .3s; } #planta .pt.on { fill: var(--laranja); stroke: #fff; }
+  #planta .nomes { display: grid; gap: 2px; } #planta .nomes button { display: flex; gap: 8px; align-items: baseline; padding: 4px 8px; border: 0; border-radius: 8px; background: none; color: #dfe6ff; cursor: pointer; text-align: left; font: 600 13px "Archivo", sans-serif; }
+  #planta .nomes button i { font: 500 10px "Geist Mono", monospace; font-style: normal; opacity: .6; } #planta .nomes button:hover, #planta .nomes button:focus-visible { background: rgba(255,255,255,.12); outline: none; }
+  #planta .nomes button.on { background: rgba(255,138,28,.22); color: #fff; }
+  body.chegando #planta, body.chegando #sala { opacity: 0; pointer-events: none; }
+  @media (max-width: 640px) { #planta .nomes { display: none; } #planta svg { width: 72px; height: 72px; } #sala { bottom: 104px; } }
+  /* os nomes em cima dos painéis */
+  #rotulos { position: fixed; inset: 0; z-index: 4; pointer-events: none; }
+  .rot { position: absolute; left: 0; top: 0; padding: 7px 14px; border-radius: 999px; border: 0; background: rgba(13,20,48,.78); color: #fff; font: 700 13px "Archivo", sans-serif; cursor: pointer; pointer-events: auto; opacity: 0; visibility: hidden; transition: opacity .3s; white-space: nowrap; }
+  .rot.on { opacity: 1; visibility: visible; } .rot:hover, .rot:focus-visible { background: var(--laranja); outline: none; }
+  /* entrar na tela (só na sala do Técnico) */
+  #tela { position: fixed; z-index: 6; left: 50%; bottom: 104px; transform: translateX(-50%) translateY(8px); padding: 13px 26px; border-radius: 999px; border: 0; background: linear-gradient(135deg, #ff3ea5, #6a5cff); color: #fff;
+    font: 800 16px "Archivo", sans-serif; letter-spacing: .02em; cursor: pointer; opacity: 0; pointer-events: none; transition: opacity .5s, transform .5s; box-shadow: 0 12px 30px rgba(80,40,180,.45); }
+  #tela.on { opacity: 1; pointer-events: auto; transform: translateX(-50%); }
+  @media (max-width: 640px) { #tela { bottom: 170px; } }
+  /* o painel da atividade */
+  #painel { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 16px; background: rgba(6,10,34,.45); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); opacity: 0; pointer-events: none; transition: opacity .45s; }
+  #painel.on { opacity: 1; pointer-events: auto; }
+  #painel .vidro { position: relative; width: min(760px, 100%); max-height: calc(100vh - 32px); display: flex; flex-direction: column; border-radius: 22px; background: var(--vidro); color: var(--tinta); overflow: hidden;
+    box-shadow: 0 30px 80px rgba(0,0,30,.45); transform: translateY(18px) scale(.98); transition: transform .5s cubic-bezier(.2,.9,.2,1); border-top: 5px solid var(--cor, var(--azul)); }
+  #painel.on .vidro { transform: none; }
+  #painel .cab { padding: 26px 30px 14px; } #painel .cab span { font: 500 11px "Geist Mono", monospace; letter-spacing: .16em; text-transform: uppercase; color: var(--cor, var(--azul)); }
+  #painel h2 { margin: 6px 0 0; font: 800 clamp(24px, 3vw, 34px)/1.1 "Archivo", sans-serif; letter-spacing: -.01em; } #painel .sub { margin: 6px 0 0; color: #4a5680; }
+  #painel .corpo { overflow: auto; padding: 0 30px 30px; } #painel .corpo img { display: block; width: 100%; max-height: 46vh; object-fit: contain; border-radius: 12px; background: #e8ecf8; margin: 6px 0 10px; }
+  #painel h4 { margin: 20px 0 6px; font: 500 11px "Geist Mono", monospace; letter-spacing: .18em; text-transform: uppercase; color: var(--cor, var(--azul)); }
+  #painel p { margin: 0 0 10px; line-height: 1.6; } #painel .breve { color: #8a94b8; font-style: italic; }
+  #painel ul { margin: 0; padding: 0; list-style: none; } #painel li { margin: 0 0 6px; font-size: 14px; } #painel li b { color: var(--cor, var(--azul)); margin-right: 6px; }
+  #painel .links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; } #painel .links a { padding: 10px 16px; border-radius: 999px; background: var(--tinta); color: #fff; text-decoration: none; font-weight: 700; font-size: 14px; }
+  #painel .links a:hover, #painel .links a:focus-visible { background: var(--cor, var(--azul)); outline: none; }
+  #painel .cred { margin-top: 16px; font-size: 13px; color: #4a5680; }
+  #painel .x { position: absolute; top: 14px; right: 14px; width: 38px; height: 38px; border-radius: 50%; border: 0; background: var(--tinta); color: #fff; font-size: 22px; line-height: 1; cursor: pointer; }
+  #painel .x:hover, #painel .x:focus-visible { background: var(--cor, var(--azul)); outline: none; }
+  /* a saída para a cidade neon: os pixels caindo */
+  #pixels { position: fixed; inset: 0; z-index: 25; opacity: 0; pointer-events: none; background: #060412; transition: opacity .8s; } #pixels.on { opacity: 1; } #pixels canvas { width: 100%; height: 100%; display: block; }
+  @media (prefers-reduced-motion: reduce) { #painel .vidro { transition: none; } }
 </style>
 </head>
-<body>
-  <main><h1>O Pavilhão</h1><p>O Ato 2 está sendo construído.</p><a href="/?s=1">Voltar aos certificados</a></main>
+<body class="chegando">
+<canvas id="c"></canvas>
+<div id="rotulos"></div>
+<div id="sala" aria-live="polite"></div>
+<nav id="planta" aria-label="Planta do Pavilhão"></nav>
+<button id="tela" type="button">Entrar na tela</button>
+<div id="painel" role="dialog" aria-hidden="true"><div class="vidro"></div></div>
+<div id="pixels" aria-hidden="true"><canvas></canvas></div>
+<div id="veu" role="status"><div class="bx"><small>Ato 2</small><b>O Pavilhão</b><div class="linha"><i></i></div></div></div>
+<script src="/vale/three.min.js"></script>
+<script src="/vale/gltf.js"></script>
+<script src="/cidade/meshopt.js"></script>
+<script src="/comum/ponte.js"></script>
+<script src="/pavilhao/pavilhao.js"></script>
 </body>
 </html>

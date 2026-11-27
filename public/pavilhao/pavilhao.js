@@ -166,16 +166,18 @@
       modelo.traverse((o) => { if (!o.isMesh) return; const n = o.material.name; if (/illuminate_logo|cropping_logo|croopping_logo|Object002|poster_mtl/.test(n)) o.visible = false; if (/Object174/.test(n)) telaIC = o; }); }
     const g = new T.Group(); g.position.set(0, 0, IC_Z); scene.add(g);
     // o título grande, por cima do estande
-    const tit = new T.Mesh(new T.PlaneGeometry(5.4, 1.0), new T.MeshBasicMaterial({ map: tex(2160, 400, (c, w, h) => { c.fillStyle = AZUL; c.fillRect(0, 0, w, h); c.fillStyle = VERDE; c.fillRect(0, h - 22, w, 22);
+    const tit = new T.Mesh(new T.PlaneGeometry(6.4, 1.35), new T.MeshBasicMaterial({ map: tex(2328, 491, (c, w, h) => { c.fillStyle = AZUL; c.fillRect(0, 0, w, h); c.fillStyle = VERDE; c.fillRect(0, h - 22, w, 22);
         c.fillStyle = "#ffffff"; c.textAlign = "center"; c.textBaseline = "middle"; c.font = "800 120px Archivo, sans-serif"; c.font = "800 150px Archivo, sans-serif"; c.fillText("INICIAÇÃO CIENTÍFICA", w / 2, h * 0.42, w - 60); c.font = "600 50px Archivo, sans-serif"; c.fillText("em Matemática · Colégio SESI de Florianópolis", w / 2, h * 0.8); }), toneMapped: false }));
-    tit.position.set(-1.4, 4.35, 1.42); g.add(tit);
+    tit.position.set(-1.0, 4.05, 1.48); g.add(tit);
     // o painel grande com as palavras do Fernando sobre o que a Iniciação significou
-    const frase = IC.ic[0] || "";
-    const painelIC = new T.Mesh(new T.PlaneGeometry(4.6, 2.05), new T.MeshBasicMaterial({ map: tex(2300, 1025, (c, w, h) => { c.fillStyle = "#ffffff"; c.fillRect(0, 0, w, h); c.fillStyle = AZUL; c.fillRect(0, 0, 18, h);
+    const frase = (IC.ic[0] || "").split(/(?<=\.)\s+/).slice(0, 2).join(" ");
+    const painelIC = new T.Mesh(new T.PlaneGeometry(4.3, 2.5), new T.MeshBasicMaterial({ map: tex(1720, 1000, (c, w, h) => { c.fillStyle = "#ffffff"; c.fillRect(0, 0, w, h); c.fillStyle = AZUL; c.fillRect(0, 0, 18, h);
         logoEm(c, LOGO.sesi, 70, 50, 90); c.fillStyle = VERDE; c.font = "700 40px Archivo, sans-serif"; c.textBaseline = "alphabetic"; c.fillText("O QUE A INICIAÇÃO CIENTÍFICA SIGNIFICOU PARA MIM", 70, 210);
-        c.fillStyle = "#16203f"; c.font = "500 50px Archivo, sans-serif"; quebrar(c, frase, w - 140).slice(0, 11).forEach((l, i) => c.fillText(l, 70, 290 + i * 64));
+        c.fillStyle = "#16203f"; c.font = "500 60px Archivo, sans-serif"; quebrar(c, frase, w - 140).slice(0, 8).forEach((l, i) => c.fillText(l, 70, 300 + i * 78));
         c.fillStyle = AZUL; c.font = "700 38px Archivo, sans-serif"; c.fillText("Toque para ler tudo  →", 70, h - 50); }) }));
-    painelIC.position.set(-0.9, 1.85, -1.3); g.add(painelIC);
+    painelIC.position.set(-1.45, 1.9, -1.3); g.add(painelIC);
+    // o logo do SENAI na torre, em cima da TV (cobre o logo de exemplo do modelo)
+    { const lg = new T.Mesh(new T.PlaneGeometry(1.5, 0.42), new T.MeshBasicMaterial({ map: tex(600, 168, (c, w, h) => { c.fillStyle = "#ffffff"; c.fillRect(0, 0, w, h); logoEm(c, LOGO.senai, 20, 14, h - 28); }) })); lg.position.set(2.15, 3.0, 0.14); g.add(lg); }
     const a = { obj: painelIC, mat: st.mat, at: { titulo: "Iniciação Científica em Matemática" }, k: 5, j: 0, nome: "Iniciação Científica", ic: true }; alvos.push(a); st.quadros[0] = a;
     // a tela da TV: é por ela que se entra no futuro
     if (telaIC) telaIC.material = new T.MeshBasicMaterial({ map: tex(640, 400, (c, w, h) => { const gr = c.createLinearGradient(0, 0, w, h); gr.addColorStop(0, "#1a0640"); gr.addColorStop(1, "#0b3a7a"); c.fillStyle = gr; c.fillRect(0, 0, w, h);
@@ -188,15 +190,15 @@
     const lista = [...tipos.values()]; if (!lista.length) return;
     const pos = []; for (const [k, E] of ESTANDES.entries()) for (let i = 0; i < 4; i++) { const lado = i % 2 ? 1 : -1, dz = lado * (2.2 + rnd() * 2.4), olha = rnd() < 0.75;
       pos.push([E.lado * (3.6 + rnd() * 1.6), E.z + dz, olha ? (E.lado < 0 ? -Math.PI / 2 : Math.PI / 2) + (rnd() - 0.5) * 0.9 : rnd() * Math.PI * 2]); }
-    for (let i = 0; i < 5; i++) { const lado = i % 2 ? 1 : -1; pos.push([lado * (1.9 + rnd() * 1.6), IC_Z + 3.2 + rnd() * 2.5, Math.PI + (rnd() - 0.5) * 0.9]); }
-    for (const [x, z, ry] of pos) { if (Math.abs(x) < 1.3) continue; const t = lista[Math.floor(rnd() * lista.length)], c = t.bb.getCenter(new T.Vector3()), s = (1.6 + rnd() * 0.25) / (t.bb.max.y - t.bb.min.y);
+    for (let i = 0; i < 5; i++) { const lado = i % 2 ? 1 : -1; pos.push([lado * (3.4 + rnd() * 1.3), IC_Z + 2.6 + rnd() * 2.5, Math.PI + (rnd() - 0.5) * 0.9]); }
+    for (const [i, [x, z, ry]] of pos.entries()) { if (Math.abs(x) < 1.3) continue; const t = lista[(i * 5 + 2) % lista.length], c = t.bb.getCenter(new T.Vector3()), s = (1.6 + rnd() * 0.25) / (t.bb.max.y - t.bb.min.y);
       const p = new T.Mesh(t.o.geometry, t.o.material); p.matrixAutoUpdate = false; const M = new T.Matrix4().makeTranslation(-c.x, -t.bb.min.y, -c.z).premultiply(new T.Matrix4().makeScale(s, s, s)).premultiply(new T.Matrix4().makeRotationY(ry)).premultiply(new T.Matrix4().makeTranslation(x, 0, z));
       p.matrix.copy(M.multiply(t.o.matrixWorld)); scene.add(p); }
   }
 
   /* ---------- a câmera: no corredor; de um estande ao outro, gira e anda poucos metros ---------- */
   function pose(k) { const hf = 2 * Math.atan(Math.tan((camera.fov * Math.PI) / 360) * camera.aspect);
-    if (k === 5) { const d = cl(9 / (2 * Math.tan(hf / 2)), 6, 14); return { p: V3(-0.5, OLHO, IC_Z + 1.5 + d), yaw: 0, pitch: 0.09 }; }
+    if (k === 5) { const d = cl(12.5 / (2 * Math.tan(hf / 2)), 7.4, 16); return { p: V3(-0.4, OLHO, IC_Z + 1.5 + d), yaw: 0, pitch: 0.07 }; }
     const E = ESTANDES[k], fundo = E.lado * (HX - 1.75 - 1.47), d = cl(10 / (2 * Math.tan(hf / 2)), 6.2, 13); return { p: V3(fundo - E.lado * d, OLHO, E.z), yaw: -E.lado * Math.PI / 2, pitch: 0.03 }; }
   let modo = "chegada", aqui = -1, mov = null, mx = 0, my = 0;
   const cam = { p: V3(), yaw: 0, pitch: 0 };

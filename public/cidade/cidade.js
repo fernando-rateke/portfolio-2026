@@ -76,15 +76,15 @@
       const grupos = Array.isArray(o.material) && g.groups.length ? g.groups : [{ start: 0, count: I ? I.length : P.length / 3, materialIndex: 0 }];
       for (const gr of grupos) {
         const m = Array.isArray(o.material) ? o.material[gr.materialIndex] : o.material; const key = m.uuid + "|" + ck;
-        let e = by.get(key); if (!e) by.set(key, (e = { m, p: [], n: [], u: [], sh: o.castShadow }));
+        let e = by.get(key); if (!e) by.set(key, (e = { m, p: [], n: [], u: [], s: [], sh: o.castShadow })); const sem = o.userData.semente || 0;
         for (let k = gr.start; k < gr.start + gr.count; k++) { const i = I ? I[k] : k;
           v.set(P[i * 3], P[i * 3 + 1], P[i * 3 + 2]).applyMatrix4(o.matrixWorld); e.p.push(v.x, v.y, v.z);
           if (N) { v.set(N[i * 3], N[i * 3 + 1], N[i * 3 + 2]).applyMatrix3(nm).normalize(); e.n.push(v.x, v.y, v.z); } else e.n.push(0, 1, 0);
-          if (U) e.u.push(U[i * 2], U[i * 2 + 1]); else e.u.push(0, 0); }
+          if (U) e.u.push(U[i * 2], U[i * 2 + 1]); else e.u.push(0, 0); e.s.push(sem); }
       }
     });
     const out = new T.Group();
-    for (const e of by.values()) { const geo = new T.BufferGeometry(); geo.setAttribute("position", new T.Float32BufferAttribute(e.p, 3)); geo.setAttribute("normal", new T.Float32BufferAttribute(e.n, 3)); geo.setAttribute("uv", new T.Float32BufferAttribute(e.u, 2)); geo.computeBoundingSphere();
+    for (const e of by.values()) { const geo = new T.BufferGeometry(); geo.setAttribute("position", new T.Float32BufferAttribute(e.p, 3)); geo.setAttribute("normal", new T.Float32BufferAttribute(e.n, 3)); geo.setAttribute("uv", new T.Float32BufferAttribute(e.u, 2)); if (e.m.userData.janelaViva) geo.setAttribute("semente", new T.Float32BufferAttribute(e.s, 1)); geo.computeBoundingSphere();
       const mesh = new T.Mesh(geo, e.m); mesh.castShadow = e.sh; mesh.receiveShadow = true; out.add(mesh); longe.push(mesh); }
     if (group.parent) group.parent.remove(group); alvo.add(out); return out;
   }
@@ -107,11 +107,11 @@
     const retint = (o) => o.traverse((m) => { if (!m.isMesh) return; const n = m.material.name || "";
       if (/plaster/.test(n)) { const k = "p" + tint.getHexString(); if (!matCache[k]) { matCache[k] = m.material.clone(); matCache[k].map = greyMap(m.material.map); matCache[k].color.copy(tint); } m.material = matCache[k]; }
       else if (/glass/.test(n)) { const lit = rnd() < (kinds.lit == null ? 0.45 : kinds.lit) ? 1 + Math.floor(rnd() * 4) : 0, k = "g" + lit + n;
-        if (!matCache[k]) { const gm = (matCache[k] = m.material.clone()); gm.userData.janela = lit ? "acesa" : "apagada"; if (lit) { gm.emissive = new T.Color(["#ffcf8a", "#ffe2b0", "#fff0d8", "#cfe4ff"][lit - 1]); gm.emissiveIntensity = 0.75; } } m.material = matCache[k]; } });
+        if (!matCache[k]) { const gm = (matCache[k] = m.material.clone()); gm.userData.janela = lit ? "acesa" : "apagada"; if (lit) { gm.emissive = new T.Color(["#ffcf8a", "#ffe2b0", "#fff0d8", "#cfe4ff"][lit - 1]); gm.emissiveIntensity = 0.75; } janelaViva(gm, lit ? "acesa" : "apagada"); } m.material = matCache[k]; } });
     const BW = 3, FH = H.wall;
     for (let i = 0; i < bays; i++) {
       const x = (i + 1) * BW;
-      const add = (name, y) => { const p = piece(name); retint(p); p.position.set(x, y, 0); g.add(p); return p; };
+      const add = (name, y) => { const p = piece(name); retint(p); const sem = 1 + rnd() * 997; p.traverse((m) => { m.userData.semente = sem; }); p.position.set(x, y, 0); g.add(p); return p; };
       add("base_standard_01", 0);
       let y = H.base;
       // térreo
@@ -166,6 +166,24 @@
   }
   // o fundo e as laterais do prédio (o que se vê da capa e do mapa): janelas pequenas, algumas acesas, cano de
   // descida e ar-condicionados; tudo numa textura só (com recorte), repetida com deslocamento para não parecer igual
+  /* janelas vivas: cada janela acende e apaga devagar, no seu tempo (de 25 a 75 s), e algumas têm a luz azulada e
+     trêmula de uma TV. A identidade da janela vem da semente gravada na malha juntada (e, no fundo, da casa na textura). */
+  function janelaViva(m, tipo) { m.userData.janelaViva = tipo;
+    const mod = { acesa: "mix(.1, 1.15, on)", apagada: "mix(1., 6., on * step(.72, hj(id + 4.2)))", fundo: "on" }[tipo];
+    const id = tipo === "fundo" ? "floor(vUv * 4.) + vSem * 13." : "vec2(vSem, vSem * 1.7)";
+    m.customProgramCacheKey = () => "janela-" + tipo;
+    m.onBeforeCompile = (sh) => { sh.uniforms.uTJ = (M.anim && M.anim.U.uT) || { value: 0 };
+      sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nattribute float semente; varying float vSem;").replace("#include <begin_vertex>", "#include <begin_vertex>\nvSem = semente;");
+      sh.fragmentShader = sh.fragmentShader.replace("#include <common>", `#include <common>
+        uniform float uTJ; varying float vSem;
+        float hj(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+        float nj(float x){ float i = floor(x), f = fract(x); return mix(hj(vec2(i, 1.)), hj(vec2(i + 1., 1.)), f * f * (3. - 2. * f)); }
+        float estadoJ(vec2 id, float t){ float h1 = hj(id), per = 25. + h1 * 50., tt = t + h1 * 300., ph = floor(tt / per);
+          float a = step(.5, hj(id + ph * 1.37)), b = step(.5, hj(id + (ph - 1.) * 1.37)); return mix(b, a, smoothstep(0., 1.6, tt - ph * per)); }`)
+        .replace("#include <emissivemap_fragment>", `#include <emissivemap_fragment>
+        { vec2 id = ${id}; float on = estadoJ(id, uTJ); float tv = step(.85, hj(id + 9.1)) * on; float fl = .55 + .45 * nj(uTJ * 6. + hj(id) * 40.);
+          totalEmissiveRadiance *= ${mod};
+          totalEmissiveRadiance = mix(totalEmissiveRadiance, vec3(.45, .62, 1.) * dot(totalEmissiveRadiance, vec3(.4)) * 1.5 * fl, tv); }`); }; }
   let fundoMats = null;
   function fundoMat() { if (fundoMats) return fundoMats;
     const C = 4, Rr = 4, W = 512, Hh = 512, mw = W / C, mh = Hh / Rr; const acesas = [];
@@ -173,14 +191,14 @@
     const mapa = canvasTex(W, Hh, (c) => { c.clearRect(0, 0, W, Hh);
       for (let k = 0; k < C * Rr; k++) { const x = (k % C) * mw, y = Math.floor(k / C) * mh, ww = mw * 0.46, hh = mh * 0.5, x0 = x + (mw - ww) / 2, y0 = y + mh * 0.2;
         c.fillStyle = "#b9b4aa"; c.fillRect(x0 - 5, y0 - 5, ww + 10, hh + 12); // moldura e peitoril
-        c.fillStyle = acesas[k] ? "#e8c890" : "#2a3038"; c.fillRect(x0, y0, ww, hh);
+        c.fillStyle = "#2a3038"; c.fillRect(x0, y0, ww, hh);
         c.fillStyle = "rgba(255,255,255,.12)"; c.fillRect(x0, y0, ww * 0.45, hh); c.fillStyle = "#8a857c"; c.fillRect(x0 + ww / 2 - 2, y0, 4, hh); // vidro e divisão
-        if (!acesas[k] && rnd() < 0.4) { c.fillStyle = ["#d8cfc0", "#9aa8b8", "#c8a890"][k % 3]; c.fillRect(x0 + 3, y0 + 3, ww * 0.42, hh - 6); } // cortina
+        if (rnd() < 0.4) { c.fillStyle = ["#d8cfc0", "#9aa8b8", "#c8a890"][k % 3]; c.fillRect(x0 + 3, y0 + 3, ww * 0.42, hh - 6); } // cortina
         if (rnd() < 0.22) { c.fillStyle = "#dedbd3"; c.fillRect(x0 + ww * 0.15, y0 + hh + 14, ww * 0.7, mh * 0.16); c.fillStyle = "#3a3c40"; c.beginPath(); c.arc(x0 + ww * 0.4, y0 + hh + 14 + mh * 0.08, mh * 0.06, 0, 7); c.fill(); } } // ar-condicionado
     });
-    const brilho = canvasTex(W, Hh, (c) => { c.fillStyle = "#000"; c.fillRect(0, 0, W, Hh); for (let k = 0; k < C * Rr; k++) if (acesas[k]) { const x = (k % C) * mw, y = Math.floor(k / C) * mh, ww = mw * 0.46, hh = mh * 0.5; c.fillStyle = "#ffcf8a"; c.fillRect(x + (mw - ww) / 2, y + mh * 0.2, ww, hh); } });
+    const brilho = canvasTex(W, Hh, (c) => { c.fillStyle = "#000"; c.fillRect(0, 0, W, Hh); for (let k = 0; k < C * Rr; k++) { const x = (k % C) * mw, y = Math.floor(k / C) * mh, ww = mw * 0.46, hh = mh * 0.5; c.fillStyle = "#ffcf8a"; c.fillRect(x + (mw - ww) / 2, y + mh * 0.2, ww, hh); } });
     for (const t of [mapa, brilho]) { t.wrapS = t.wrapT = T.RepeatWrapping; }
-    const m = new T.MeshStandardMaterial({ map: mapa, emissiveMap: brilho, emissive: new T.Color("#ffffff"), emissiveIntensity: 0.55, alphaTest: 0.5, roughness: 0.7 }); m.userData.janela = "acesa"; m.userData.ei = 0.55;
+    const m = new T.MeshStandardMaterial({ map: mapa, emissiveMap: brilho, emissive: new T.Color("#ffffff"), emissiveIntensity: 0.55, alphaTest: 0.5, roughness: 0.7 }); m.userData.janela = "acesa"; m.userData.ei = 0.55; janelaViva(m, "fundo");
     const cano = new T.MeshStandardMaterial({ color: "#8a8c90", metalness: 0.5, roughness: 0.5 });
     return (fundoMats = { m, cano }); }
   function fundos(g, W, top, floors, FH) {
@@ -188,7 +206,7 @@
     // a parede: módulos de 1,5 m por andar; o deslocamento sorteado muda quais janelas ficam acesas
     const parede = (larg, x, z, ry) => { const geo = new T.PlaneGeometry(larg, alto); const uv = geo.attributes.uv, ox = Math.floor(rnd() * 4) / 4, oy = Math.floor(rnd() * 4) / 4;
       for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * (larg / 1.5) / 4 + ox, uv.getY(i) * floors / 4 + oy);
-      const p = new T.Mesh(geo, m); p.position.set(x, y0 + alto / 2, z); p.rotation.y = ry; g.add(p); };
+      const p = new T.Mesh(geo, m); p.userData.semente = 1 + rnd() * 997; p.position.set(x, y0 + alto / 2, z); p.rotation.y = ry; g.add(p); };
     parede(W, W / 2, -0.25 - D - 0.03, Math.PI);
     parede(D, -0.03, -0.25 - D / 2, -Math.PI / 2); parede(D, W + 0.03, -0.25 - D / 2, Math.PI / 2);
     // canos de descida no fundo

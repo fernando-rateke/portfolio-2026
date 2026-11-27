@@ -44,6 +44,7 @@
       .atravessar.on{opacity:1;pointer-events:auto;transform:translateX(-50%)}
       @keyframes chama{50%{box-shadow:0 0 0 10px rgba(255,170,90,0),0 10px 30px rgba(0,0,0,.4)}}
       body.dentro .atravessar,body.voando .atravessar{display:none}
+      body.atravessando .nav-lugar,body.atravessando .nav-mapa,body.atravessando .cantos,body.atravessando .marcas{opacity:0!important;pointer-events:none!important;transition:opacity .5s}
       .outro-ceu{position:fixed;inset:0;z-index:30;pointer-events:none;opacity:0;transition:opacity 1.1s ease-in;
         background:linear-gradient(to top,#ff9a5a 0%,#d77a8a 18%,#5a5cb8 52%,#151a44 100%)}
       .outro-ceu.on{opacity:1}`;
@@ -51,22 +52,27 @@
     const btn = document.createElement("button"); btn.type = "button"; btn.className = "atravessar"; btn.textContent = "Atravessar a porta";
     const veu = document.createElement("div"); veu.className = "outro-ceu";
     if (!M.Q.has("limpo")) document.body.append(btn, veu);
-    const naPorta = () => M.lugares && M.lugares[M.lugarAtual()] && M.lugares[M.lugarAtual()].id === "porta";
+    // o botão aparece nos certificados: dali a câmera segue direto para a porta
+    const naPorta = () => M.lugares && M.lugares[M.lugarAtual()] && M.lugares[M.lugarAtual()].id === "certificados" && !(M.andando && M.andando());
     let prefetch = false;
     M.ticks.push(() => { const ok = naPorta() && !(M.noCeu && M.noCeu()) && !M.cinema; btn.classList.toggle("on", ok);
       if (ok && !prefetch) { prefetch = true; const l = document.createElement("link"); l.rel = "prefetch"; l.href = DESTINO; document.head.appendChild(l); } });
 
-    // atravessar: a câmera anda até o vão e passa por ele; o céu do outro lado toma a tela e a página troca
+    /* atravessar: dos certificados, a câmera sobe o resto da escadaria e passa pelo vão. O céu do outro lado toma a tela
+       inteira ANTES de a câmera cruzar o torii (atrás dele não há nada para ver) e a página do Pavilhão abre nesse céu. */
     let indo = false;
-    function atravessar() { if (indo) return; indo = true; btn.classList.remove("on"); if (M.fechar) M.fechar();
-      const de = camera.position.clone(), para = V3(P.x, P.y + 2.2, P.z - 3), olhar = V3(P.x, P.y + 2.3, P.z - 30); let ti = null;
-      M.cinema = (t, dt, cam) => { if (ti == null) ti = t; const u = Math.min(1, (t - ti) / 2.6), e = u * u * (3 - 2 * u);
-        cam.position.copy(de).lerp(para, e); cam.lookAt(olhar); cam.fov = 48 + e * 14; cam.updateProjectionMatrix();
-        if (u > 0.55) veu.classList.add("on"); if (u >= 1 && indo !== "foi") { indo = "foi"; setTimeout(() => { location.href = DESTINO + "?de=porta"; }, 900); } };
+    function atravessar() { if (indo) return; indo = true; btn.classList.remove("on"); if (M.fechar) M.fechar(); document.body.classList.add("atravessando");
+      const y = (z) => (M.yEsc ? M.yEsc(z) : P.y) + 1.6;
+      const pts = [camera.position.clone(), V3(0.05, y(-100), -100), V3(0, y(-105.5), -105.5), V3(0, P.y + 1.75, -110.5), V3(P.x, P.y + 2.05, P.z + 0.6), V3(P.x, P.y + 2.1, P.z - 2)];
+      const c = new T.CatmullRomCurve3(pts, false, "centripetal"), dur = 4.2, la = new T.Vector3(); let ti = null;
+      M.cinema = (t, dt, cam) => { if (ti == null) ti = t; const u = Math.min(1, (t - ti) / dur), e = u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
+        c.getPointAt(e, cam.position); c.getPointAt(Math.min(1, e + 0.05), la); la.y += 0.12; cam.lookAt(la);
+        // o véu começa a cobrir a tela ao chegar perto e está inteiro antes de cruzar o vão
+        if (cam.position.z < P.z + 4.5) veu.classList.add("on"); if (cam.position.z < P.z + 1.8) veu.style.transition = "opacity .25s"; 
+        if (u >= 1 && indo !== "foi") { indo = "foi"; setTimeout(() => { location.href = DESTINO + "?de=porta"; }, 500); } };
     }
     btn.addEventListener("click", (e) => { e.stopPropagation(); atravessar(); });
     M.atravessar = atravessar;
-    // no último lugar, "seguir" (teclado, controle) também atravessa
-    const prox = M.proximo; M.proximo = () => (naPorta() ? atravessar() : prox && prox());
+
   });
 })();

@@ -116,7 +116,9 @@
       if (!phone) return;
       const k = M.lugarAtual(), lugar = M.lugares[k], sec = M.painelAberto();
       const st = { t: "state", phone, fin: "", place: k, id: sec || lugar.id, title: lugar.nome, sub: lugar.jp, g: lugar.g, back: k > 0, panel: !!sec, music: !!(music && !music.paused),
-        places: M.lugares.map((p) => ({ i: p.i, id: p.id, t: p.nome, g: p.g, sub: p.jp })) };
+        places: M.lugares.map((p) => ({ i: p.i, id: p.id, t: p.nome, g: p.g, sub: p.jp })),
+        // os botões do celular: o que dá para fazer agora, com nome (sem cursor)
+        acoes: (sec ? [{ id: "fechar", t: "Fechar" }] : []).concat(M.acoes ? M.acoes() : []) };
       const js = JSON.stringify(st); if (js === lastState) return; lastState = js; send(st);
     }
     setInterval(() => { if (phone) { sendState(); chip.querySelector("span").textContent = performance.now() - lastSeen > 20000 ? "Controle sem sinal" : "Controle conectado"; } }, 400);
@@ -137,6 +139,7 @@
         case "back": if (M.dentro) M.sair(); else M.anterior(); break;
         case "go": M.irPara(m.i); break;
         case "creditos": if (M.creditos) M.creditos(); break;
+        case "acao": if (m.id === "fechar") { M.fechar(); light.classList.remove("on"); } else if (M.fazer) M.fazer(String(m.id || "")); break;
         case "mapa": if (M.dentro) M.sair(); else if (M.mapa) M.mapa(); break;
         case "home": case "fim": M.irPara(0); break;
         case "close": M.fechar(); light.classList.remove("on"); break;

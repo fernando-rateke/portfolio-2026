@@ -489,6 +489,11 @@
     }
     async function sairDaLoja() { if (!M.dentro) return; veu.classList.add("on"); await new Promise((r) => setTimeout(r, 380)); M.fechar && M.fechar(); M.dentro = null; if (expFora != null) renderer.toneMappingExposure = expFora; M.refazSombra && M.refazSombra(); document.body.classList.remove("dentro"); M.marcasSala && M.marcasSala([]); setTimeout(() => veu.classList.remove("on"), 120); }
     M.entrar = entrar; M.sair = sairDaLoja; M.temSala = (id) => !!SALAS[id];
+    // dentro de uma loja, o celular mostra o que se pode abrir ali (pelo nome) e o botão de sair
+    M.acoesDentro = () => { const d = M.dentro; if (!d) return []; const vis = new Set(); const a = [];
+      d.alvos.forEach((x, i) => { if (x.topo && x.nome && !vis.has(x.nome)) { vis.add(x.nome); a.push({ id: "alvo:" + i, t: x.nome }); } });
+      return a.concat([{ id: "sair", t: "Sair da " + (d.cfg.titulo || "loja").replace(/^(A|O) /, "").toLowerCase() }]); };
+    M.fazerDentro = (id) => { const d = M.dentro; if (!d) return; if (id === "sair") return sairDaLoja(); const k = +id.split(":")[1]; const x = d.alvos[k]; if (x && x.acao) x.acao(); };
     sair.addEventListener("click", sairDaLoja);
     addEventListener("keydown", (e) => { if (!M.dentro || (M.painelAberto && M.painelAberto())) return; if (e.key === "Escape") sairDaLoja(); else if (["ArrowRight", "ArrowDown", "PageDown"].includes(e.key)) mudarVista(1); else if (["ArrowLeft", "ArrowUp", "PageUp"].includes(e.key)) mudarVista(-1); });
   });

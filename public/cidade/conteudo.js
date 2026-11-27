@@ -364,7 +364,7 @@
       }
     });
     const caixa = (w, h, d, x, y, z, ry = 0) => { const b = new T.Mesh(new T.BoxGeometry(w, h, d), new T.MeshBasicMaterial({ visible: false, side: T.DoubleSide })); b.position.set(x, y, z); b.rotation.y = ry; scene.add(b); return b; };
-    const nomes = Object.fromEntries(Object.entries(byId).map(([k, v]) => [k, v.name]));
+    const nomes = Object.fromEntries(Object.entries(byId).map(([k, v]) => [k, v.name])); nomes.perfil = "A cafeteria";
     for (const l of M.lojas || []) { const go = () => (M.temSala && M.temSala(l.id) ? M.entrar(l.id) : abrir(l.id, l)); for (const o of l.alvos) marca(o, nomes[l.id], go); marca(caixa(0.2, 3.2, 3.6, l.porta.x, 1.7, l.porta.z), nomes[l.id], go);
       marcador(nomes[l.id], new T.Vector3(l.porta.x - l.side * 0.9, 3.35, l.porta.z), go, 42, l.kanji); }
     /* uma tábua de madeira com o texto na vertical (de cima para baixo), como as tábuas de nomes dos santuários */

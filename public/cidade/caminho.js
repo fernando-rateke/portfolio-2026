@@ -11,22 +11,20 @@
     const tx = M.trilhaX, yEsc = M.yEsc;
     const chao = (x, z) => (z <= L.Z_ESC0 + 1 && z >= L.Z_ESC1 - 1 && Math.abs(x) < 2 ? yEsc(z) : h(x, z));
     const at = (x, z, a = 1.65) => V3(x, chao(x, z) + a, z);
-    // cada nó: posição dos olhos, para onde olhar e, se for um lugar, o nome
+    /* o roteiro do Ato 1 (são 8 minutos de apresentação): a capa, e só duas paradas, a cafeteria e os certificados.
+       O grande torii não é parada: a câmera passa por ele a caminho dos certificados. Dos certificados, a porta (o torii
+       do topo) é atravessada direto, sem mapa. Cada parada tem a sua "rota": por onde a câmera chega depois de descer. */
+    const cafe = (M.lojas || []).find((l) => l.id === "perfil");
+    const cP = cafe ? cafe.porta : V3(-6, 1.6, -20), cS = cafe ? cafe.side : -1;
     const N = [
-      { p: V3(0.6, 1.65, 26), o: V3(-0.4, 3.2, -10), id: "rua", g: "A cidade", nome: "A rua", jp: "通り" },
-      { p: V3(0.3, 1.65, -14), o: V3(0, 3.6, -60), id: "lojas", g: "A cidade", nome: "A cafeteria", jp: "喫茶店" },
-      { p: V3(0, 1.7, -53), o: V3(0, 7.5, -75), id: "torii", g: "O santuário", nome: "O grande torii", jp: "鳥居" },
-      { p: at(0, -78, 1.6), o: V3(0, yEsc(-96) + 2, -96) },
-      { p: at(0.2, -94.5, 1.6), o: V3(4.6, yEsc(-104) + 2.0, -104), id: "escadaria", g: "O santuário", nome: "A escadaria das cerejeiras", jp: "桜の石段" },
-      // o fim do Ato 1: o torii do topo da escadaria, a porta para o Pavilhão (docs/plano-tres-atos.md)
-      { p: at(0, -108.6, 1.6), o: V3(0, L.Y_TOPO + 2.7, -122), id: "porta", g: "O santuário", nome: "A porta", jp: "門" },
+      { p: V3(-cS * 1.5, 1.66, cP.z + 4.2), o: V3(cP.x, 2.1, cP.z - 0.4), id: "cafeteria", g: "A cidade", nome: "A cafeteria", jp: "喫茶店", entrar: "perfil" },
+      { p: at(0.2, -94.5, 1.6), o: V3(4.6, yEsc(-104) + 2.0, -104), id: "certificados", g: "A escadaria", nome: "Os certificados", jp: "証",
+        rota: [V3(0, 1.75, -44), V3(0, 1.75, -56), V3(0, 1.8, -64.5), at(0, -72, 1.65), at(0, -80, 1.62), at(0.1, -88, 1.6)] },
+      { p: at(0, -108.6, 1.6), o: V3(0, L.Y_TOPO + 2.7, -122), id: "porta", g: "A escadaria", nome: "A porta", jp: "門", atravessar: true },
     ];
-
-    /* ---------- os lugares e os carimbos ---------- */
-    const lugares = N.map((n, i) => (n.nome ? i : -1)).filter((i) => i >= 0);
+    const lugares = N.map((n, i) => i);
     // o kanji do carimbo de cada lugar e onde ele flutua no mapa visto do céu
-    const HANKO = { rua: ["通", V3(0, 8, 14)], lojas: ["喫", V3(0, 10, -26)], torii: ["鳥居", V3(0, 13, -64)], escadaria: ["桜", V3(0, yEsc(-94) + 8, -94)], porta: ["門", V3(0, L.Y_TOPO + 9, -114.5)],
-      vale: ["谷", V3(tx(-198), h(tx(-198), -198) + 10, -198)], arrozal: ["田", V3(-34, L.Y_VALE + 7, -226)], lago: ["湖", V3(0, L.Y_AGUA + 9, -300)] };
+    const HANKO = { cafeteria: ["喫", V3(cP.x, 9, cP.z)], certificados: ["証", V3(L.KOSATSU.x, yEsc(L.KOSATSU.z) + 8, L.KOSATSU.z)], porta: ["門", V3(0, L.Y_TOPO + 9, -114.5)] };
     M.lugares = lugares.map((i, k) => ({ i: k, id: N[i].id, g: N[i].g, nome: N[i].nome, jp: N[i].jp, kj: (HANKO[N[i].id] || ["印"])[0] }));
     let aqui = 0;
     { const q = M.Q.get("s"); if (q != null) aqui = Math.max(0, Math.min(lugares.length - 1, parseInt(q, 10) || 0)); }
@@ -39,13 +37,14 @@
     /* o céu: uma vista de drone, inclinada, que corre ao longo da cidade (arrastar ou rolar anda pelo mapa, da rua ao
        lago); começa em cima do lugar onde se está */
     const OFF = V3(-52, 68, 82), CEU = { p: V3(), o: V3() }; let zF = 0, zFA = 0;
-    const Z0 = 0, Z1 = -290;
+    const Z0 = 18, Z1 = -100; // o mapa só anda pelo que existe: da rua até a porta
     const ajustaCeu = () => { const a = innerWidth / innerHeight; OFF.set(a < 0.8 ? -8 : -52, a < 0.8 ? 92 : 68, a < 0.8 ? 64 : 82); };
     const poseCeu = (z, out = CEU) => { out.o.set(0, Math.max(0, h(0, z)) + 4, z); out.p.copy(out.o).add(OFF); return out; };
     addEventListener("resize", ajustaCeu); ajustaCeu(); M.CEU = CEU;
     const andarCeu = (dz) => { zF = Math.max(Z1, Math.min(Z0, zF + dz)); }; M.andarCeu = andarCeu;
     addEventListener("wheel", (e) => { if (modo === "ceu" && !M.dentro) andarCeu(-e.deltaY * 0.12); }, { passive: true });
-    let modo = "lugar", voo = null, yaw = 0, pitch = 0, yawA = 0, pitchA = 0, mx = 0, my = 0, fogK = 1;
+    // sem ?s na URL, começa na capa (a câmera no alto, a cidade de fim de tarde e o nome)
+    let modo = M.Q.has("s") || M.Q.has("semcapa") ? "lugar" : "capa", voo = null, rota = null, yaw = 0, pitch = 0, yawA = 0, pitchA = 0, mx = 0, my = 0, fogK = 1;
     const olho = new T.Vector3(), mira = new T.Vector3(), tmp = new T.Vector3(), dir = new T.Vector3(), up = V3(0, 1, 0);
     { const n = noLugar(aqui); olho.copy(n.p); mira.copy(n.o); }
     M.olhar = (dx, dy) => { yaw = Math.max(-2.6, Math.min(2.6, yaw - dx * 1.4)); pitch = Math.max(-0.55, Math.min(0.5, pitch - dy)); };
@@ -62,24 +61,41 @@
     const chegada = (n, alto = 34) => { const tr = n.p.clone().sub(n.o).setY(0).normalize().multiplyScalar(26); return n.p.clone().add(tr).add(V3(0, alto, 0)); };
     function voar(paraP, paraO, b, c, dur, fim) { voo = { a: camera.position.clone(), b, c, d: paraP.clone(), oa: mira0().clone(), ob: paraO.clone(), t0: null, dur, fim, ceu: true }; }
     const mira0 = () => tmp.copy(camera.position).add(camera.getWorldDirection(dir).multiplyScalar(30));
-    function subir() { if (modo === "ceu" || voo || M.dentro) return; fecharTudo();
+    function subir(depois) { if (modo === "ceu" || voo || M.dentro) return; fecharTudo();
       zF = zFA = Math.max(Z1, Math.min(Z0, noLugar(aqui).p.z - 45)); poseCeu(zF);
-      const a = camera.position.clone(); voar(CEU.p, CEU.o, a.clone().add(V3(0, 30, 0)), CEU.p.clone().add(V3(10, -30, 20)), 2.4, () => { modo = "ceu"; ui(); });
+      const a = camera.position.clone(); voar(CEU.p, CEU.o, a.clone().add(V3(0, 30, 0)), CEU.p.clone().add(V3(10, -30, 20)), 2.4, () => { modo = "ceu"; ui(); if (depois) depois(); });
       modo = "subindo"; ui(); }
-    function pousar(k) { k = Math.max(0, Math.min(lugares.length - 1, k)); if (M.dentro) return; fecharTudo(); const n = noLugar(k);
-      const de = camera.position.clone(), alto = modo === "ceu" ? 0 : 38;
-      const b = modo === "ceu" ? de.clone().lerp(n.p, 0.35).setY(de.y * 0.9) : de.clone().add(V3(0, alto, 0));
-      const dist = de.distanceTo(n.p), dur = modo === "ceu" ? 2.6 : Math.min(4.2, 1.6 + dist / 70);
-      if (k === aqui && modo === "lugar") return;
-      voar(n.p, n.o, b, chegada(n), dur, () => { modo = "lugar"; aqui = k; yaw = pitch = yawA = pitchA = 0; chegou(k); });
+    function pousar(k, auto, depois) { k = Math.max(0, Math.min(lugares.length - 1, k)); if (M.dentro) return; fecharTudo(); const n = noLugar(k);
+      // a porta não é parada: dos certificados, atravessa direto; de outro lugar, chega aos certificados e segue
+      if (n.atravessar && M.atravessar) { if (modo === "lugar" && N[aqui].id === "certificados") M.atravessar(); else pousar(1, false, () => M.atravessar()); return; }
+      const alto0 = modo === "ceu" || modo === "capa", de = camera.position.clone(), alto = alto0 ? 0 : 38;
+      if (k === aqui && modo === "lugar") { if (auto && n.entrar && M.entrar) M.entrar(n.entrar); return; }
+      const fim = () => { modo = "lugar"; aqui = k; yaw = pitch = yawA = pitchA = 0; chegou(k); if (auto && n.entrar && M.entrar) setTimeout(() => M.entrar(n.entrar), 350); if (depois) setTimeout(depois, 250); };
+      // com rota: desce até o começo dela (olhando para frente) e segue a pé até a parada
+      const alvoP = n.rota ? n.rota[0] : n.p, alvoO = n.rota ? n.rota[2] : n.o;
+      const b = alto0 ? de.clone().lerp(alvoP, 0.35).setY(de.y * 0.9) : de.clone().add(V3(0, alto, 0));
+      const dur = alto0 ? 2.6 : Math.min(4.2, 1.6 + de.distanceTo(alvoP) / 70);
+      const c = n.rota ? alvoP.clone().add(V3(0, 24, 22)) : chegada(n);
+      voar(alvoP, alvoO, b, c, dur, n.rota ? () => seguir([...n.rota, n.p], n.o, fim) : fim);
       modo = "descendo"; aqui = k; ui(); }
+    // seguir uma rota a pé: a câmera anda pela curva olhando um pouco à frente e, no fim, vira para o que se vai ver
+    function seguir(pts, olharFim, fim) { const c = new T.CatmullRomCurve3(pts.map((p) => p.clone()), false, "centripetal"); const L0 = c.getLength();
+      rota = { c, o: olharFim.clone(), t0: null, dur: Math.max(2.4, Math.min(6.5, L0 / 7.5)), fim }; modo = "descendo"; }
+    M.seguirRota = seguir;
+    /* ir a um lugar "pelo mapa" (o controle pelo celular e os botões): a câmera sobe até o céu, mostra a cidade e desce
+       no lugar; de dentro da cafeteria, sai antes. auto: ao chegar, entra (na cafeteria) */
+    async function pelo(k, auto) { if (voo || rota) return; if (M.dentro && M.sair) { await M.sair(); await new Promise((r) => setTimeout(r, 450)); }
+      const n = noLugar(k); if (n.atravessar && modo === "lugar" && N[aqui].id === "certificados") return pousar(k);
+      if (modo === "lugar") { subir(() => setTimeout(() => pousar(k, auto), 700)); } else pousar(k, auto); }
+    M.ir = (id, auto = true) => { const k = N.findIndex((n) => n.id === id); if (k >= 0) pelo(k, auto); };
     const fecharTudo = () => { if (M.painelAberto && M.painelAberto()) M.fechar(); };
     M.irPara = pousar; M.pular = (k) => { voo = null; modo = "lugar"; aqui = Math.max(0, Math.min(lugares.length - 1, k)); yaw = pitch = yawA = pitchA = 0; chegou(aqui, true); };
-    M.mapa = () => (modo === "ceu" || modo === "subindo" ? pousar(aqui) : subir());
-    M.noCeu = () => modo !== "lugar";
+    M.mapa = () => (modo === "capa" ? comecar() : modo === "ceu" || modo === "subindo" ? pousar(aqui) : subir());
+    M.noCeu = () => modo !== "lugar"; M.andando = () => !!(voo || rota);
     M.lugarAtual = () => aqui;
-    M.proximo = () => { if (aqui === lugares.length - 1 && M.creditos) M.creditos(); else pousar(aqui + 1); };
-    M.anterior = () => pousar(aqui - 1);
+    // seguir em frente: da capa para a cafeteria, da cafeteria para os certificados, dos certificados pela porta
+    M.proximo = () => { if (modo === "capa") return comecar(); if (modo !== "lugar") return; pelo(Math.min(lugares.length - 1, aqui + 1), false); };
+    M.anterior = () => { if (modo === "lugar" && aqui > 0) pelo(aqui - 1, false); };
 
     /* ---------- a interface: o nome do lugar, o botão do mapa e, no céu, os carimbos ---------- */
     const css = document.createElement("style");
@@ -207,6 +223,16 @@
         bez(voo.a, voo.b, voo.c, voo.d, e, olho); mira.copy(voo.oa).lerp(voo.ob, suave(Math.min(1, u * 1.25)));
         camera.position.copy(olho); camera.lookAt(mira);
         if (u >= 1) { const f = voo.fim; voo = null; f(); }
+      } else if (rota) {
+        if (rota.t0 == null) rota.t0 = t;
+        const u = Math.min(1, (t - rota.t0) / rota.dur), e = u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
+        rota.c.getPointAt(e, olho); rota.c.getPointAt(Math.min(1, e + 0.06), tmp); tmp.y += 0.05;
+        mira.copy(tmp).lerp(rota.o, Math.max(0, (u - 0.7) / 0.3) ** 2); camera.position.copy(olho); camera.lookAt(mira);
+        if (u >= 1) { const f = rota.fim; rota = null; f(); }
+      } else if (modo === "capa") {
+        // a capa: no alto da rua, de frente para o grande torii e a escadaria, a câmera respira devagar
+        olho.copy(CAPA.p).add(V3(Math.sin(t * 0.06) * 2.5, Math.sin(t * 0.09) * 0.8, 0)); mira.copy(CAPA.o);
+        camera.position.copy(olho); tmp.copy(mira).sub(olho).applyAxisAngle(up, -mx * 0.08); tmp.y -= my * 0.05 * tmp.length(); camera.lookAt(tmp.add(olho));
       } else if (modo === "ceu") {
         zFA += (zF - zFA) * Math.min(1, dt * 3.5); poseCeu(zFA);
         olho.copy(CEU.p).add(V3(Math.sin(t * 0.07) * 3, Math.sin(t * 0.11) * 1.5, Math.cos(t * 0.05) * 2)); mira.copy(CEU.o);
@@ -225,6 +251,41 @@
       if (M.fogDens && scene.fog) scene.fog.density = M.fogDens * fogK;
       sombra(camera.position); luzes(camera.position); carimbos();
     };
-    ui(); chegou(aqui, true);
+    /* ---------- a capa ---------- */
+    const CAPA = { p: V3(7, 13.5, 48), o: V3(-1, 7, -48) };
+    const cs2 = document.createElement("style");
+    cs2.textContent = `.capa{position:fixed;inset:0;z-index:8;display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-start;padding:0 max(28px,6vw) max(70px,11vh);
+        background:linear-gradient(to top,rgba(14,8,14,.72),rgba(14,8,14,.2) 45%,transparent 70%);color:#fff4e6;opacity:0;pointer-events:none;transition:opacity 1s}
+      body.capa-on .capa{opacity:1;pointer-events:auto}
+      body.capa-on .nav-lugar,body.capa-on .nav-mapa,body.capa-on .marcas,body.capa-on .cantos .apr{opacity:0!important;pointer-events:none!important}
+      .capa .sl{display:flex;align-items:center;gap:14px;margin-bottom:16px}.capa .sl i{font:800 15px/1.05 "Shippori Mincho",serif;font-style:normal;writing-mode:vertical-rl;padding:7px 6px;border-radius:5px;background:#b5301b;color:#fff3e4;transform:rotate(-5deg)}
+      .capa .sl span{font:500 13px "Shippori Mincho",serif;letter-spacing:.32em;text-transform:uppercase;opacity:.85}
+      .capa h1{margin:0;font:800 clamp(38px,6.4vw,84px)/1.02 "Shippori Mincho","Noto Serif JP",Georgia,serif;letter-spacing:-.005em;text-shadow:0 6px 40px rgba(0,0,0,.45)}
+      .capa p{margin:14px 0 30px;max-width:560px;font:400 clamp(15px,1.5vw,19px)/1.55 "Shippori Mincho",Georgia,serif;opacity:.9}
+      .capa button{padding:15px 32px;border-radius:999px;border:1px solid rgba(255,228,196,.75);background:linear-gradient(135deg,rgba(181,48,27,.92),rgba(226,108,40,.92));color:#fff6ec;
+        font:700 17px "Shippori Mincho",Georgia,serif;letter-spacing:.05em;cursor:pointer;box-shadow:0 12px 34px rgba(0,0,0,.4)}
+      .capa button:hover,.capa button:focus-visible{filter:brightness(1.1);outline:none}
+      .capa small{margin-top:14px;font:400 12.5px "Shippori Mincho",serif;letter-spacing:.06em;opacity:.65}`;
+    document.head.appendChild(cs2);
+    const capa = document.createElement("div"); capa.className = "capa";
+    capa.innerHTML = `<div class="sl"><i>ラテケ</i><span>Portfólio · 3º ano · Colégio SESI</span></div><h1>Fernando<br>Rateke Neto</h1>
+      <p>Uma viagem em três lugares: quem eu sou, o que eu aprendi e para onde eu vou.</p><button type="button">Começar</button><small>Enter também começa · na apresentação, o controle pelo celular conduz</small>`;
+    if (!limpo) document.body.appendChild(capa);
+    function comecar() { if (modo !== "capa") return; document.body.classList.remove("capa-on"); pousar(0, false); }
+    capa.querySelector("button").addEventListener("click", (e) => { e.stopPropagation(); comecar(); });
+    addEventListener("keydown", (e) => { if (modo === "capa" && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); comecar(); } });
+    M.comecar = comecar; M.naCapa = () => modo === "capa";
+    if (modo === "capa") { document.body.classList.add("capa-on"); camera.position.copy(CAPA.p); camera.lookAt(CAPA.o); }
+
+    /* ---------- o que o controle pelo celular pode pedir agora (sem cursor: botões com nome) ---------- */
+    M.acoes = () => {
+      if (modo === "capa") return [{ id: "comecar", t: "Começar" }];
+      if (M.dentro && M.acoesDentro) return M.acoesDentro();
+      const a = [{ id: "ir:cafeteria", t: "Cafeteria", sub: "entra e mostra o currículo e o sobre mim" }, { id: "ir:certificados", t: "Certificados", sub: "passa pelo grande torii" }];
+      a.push({ id: "ir:porta", t: "Atravessar a porta", sub: "vai para o Pavilhão" }); a.push({ id: "mapa", t: modo === "lugar" ? "Abrir o mapa" : "Fechar o mapa" });
+      return a; };
+    M.fazer = (id) => { if (id === "comecar") return comecar(); if (id === "mapa") return M.mapa(); if (id.startsWith("ir:")) { if (modo === "capa") document.body.classList.remove("capa-on"); return M.ir(id.slice(3)); }
+      if (M.fazerDentro) M.fazerDentro(id); };
+    ui(); if (modo !== "capa") chegou(aqui, true);
   });
 })();

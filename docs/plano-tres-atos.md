@@ -25,6 +25,17 @@ O Vale (`/vale`) e o Tokyo Ghoul (`/tg`) ficam como estão, separados; não mexe
    e **a cena de créditos** com a logo.
    - A cidade tem de ser muito bem feita e **pronta** (não feita à mão): detalhes que faltarem podem ser feitos.
 
+## O roteiro do Ato 1 (feito)
+
+- **Capa** (sem `?s` na URL): a câmera no alto da rua, o nome e "Começar" (Enter também).
+- **Duas paradas**: a cafeteria (entra sozinha quando se vai pelo celular) e os certificados. O grande torii é passagem:
+  a câmera desce na frente dele e segue a pé, por dentro dele, até os certificados (`rota` em `caminho.js`).
+- **A porta**: dos certificados, "Atravessar a porta" sobe o resto da escadaria e cruza o torii do topo; o céu do outro
+  lado cobre a tela antes de cruzar (atrás não há nada) e a página do Pavilhão abre (`porta.js`).
+- **O mapa** só anda da rua até a porta. Ir a um lugar pelo celular sobe ao mapa e desce no lugar (`M.ir(id)`).
+- **O celular** não tem cursor: mostra botões com nome do que dá para fazer agora (`M.acoes()` / `M.fazer(id)`; dentro
+  da cafeteria `M.acoesDentro`), mais Fechar e uma faixa para rolar quando há um texto aberto. Meta do cronômetro: 8 min.
+
 ## As atividades (duas por matéria)
 
 | Matéria | Atividade | Link / observação |

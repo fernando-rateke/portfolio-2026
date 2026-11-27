@@ -42,6 +42,13 @@ button:active { background: rgba(217,164,65,0.18); }
 .pad .touch { position: absolute; width: 54px; height: 54px; margin: -27px 0 0 -27px; border-radius: 50%; border: 1px solid rgba(255,210,140,0.5); background: rgba(255,200,120,0.1); pointer-events: none; opacity: 0; transition: opacity 0.2s; }
 .pad.hold { background: radial-gradient(circle at var(--hx, 50%) var(--hy, 50%), rgba(255,220,150,0.25), rgba(0,0,0,0.3) 60%); }
 .pad .mode { position: absolute; top: 10px; left: 12px; font: 500 0.56rem/1 var(--f-label); letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); pointer-events: none; }
+/* os botões do que dá para fazer agora: grandes, com nome (sem cursor) */
+.acoes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.acoes button { padding: 16px 12px; text-align: left; display: grid; gap: 4px; min-height: 74px; border-color: rgba(217,164,65,0.35); background: linear-gradient(160deg, rgba(194,32,38,0.18), rgba(255,240,210,0.04)); }
+.acoes button b { font: 700 1.12rem/1.15 var(--f-display); } .acoes button span { font: 500 0.56rem/1.3 var(--f-label); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+.acoes button.um { grid-column: 1 / -1; text-align: center; }
+.acoes button:active { background: rgba(217,164,65,0.28); }
+.pad.oculto { display: none; }
 .row { display: grid; gap: 8px; }
 .row.main { grid-template-columns: 1fr 1.2fr 1fr; }
 .row.main button { padding: 16px 6px; font: 600 1rem/1 var(--f-display); }
@@ -85,8 +92,9 @@ button:disabled { opacity: 0.35; }
 </div>
 <div class="bar"><i id="tBar"></i></div>
 <details class="notes" id="notes" open><summary>Anotações</summary><div id="nBody"><p class="empty">Sem anotações para este lugar.</p></div></details>
-<div class="pad" id="pad" aria-label="Touchpad: arraste para mover o cursor, toque para clicar">
-  <span class="mode" id="padMode">Cursor</span>
+<div class="acoes" id="acoes"></div>
+<div class="pad oculto" id="pad" aria-label="Touchpad: arraste para mover o cursor, toque para clicar">
+  <span class="mode" id="padMode">Arraste para rolar o texto</span>
   <div class="touch" id="touchDot"></div>
   <div class="help">arraste: cursor · toque: clicar · segure: lanterna<br>dois dedos: olhar ou rolar · pinça: ampliar</div>
 </div>
@@ -109,7 +117,7 @@ button:disabled { opacity: 0.35; }
 <div class="sheet" id="more" role="dialog" aria-labelledby="moreT">
   <header><h2 id="moreT">Mais</h2><button id="moreX" type="button" style="padding:8px 14px">Fechar</button></header>
   <p style="margin:0;font:500 0.6rem var(--f-label);letter-spacing:.16em;text-transform:uppercase;color:var(--ink-2)">Tempo da apresentação</p>
-  <div class="opts" id="targets"><button type="button" data-m="10">10 min</button><button type="button" data-m="13" class="on">13 min</button><button type="button" data-m="15">15 min</button></div>
+  <div class="opts" id="targets"><button type="button" data-m="8" class="on">8 min</button><button type="button" data-m="10">10 min</button><button type="button" data-m="13">13 min</button></div>
   <p style="margin:8px 0 0;font:500 0.6rem var(--f-label);letter-spacing:.16em;text-transform:uppercase;color:var(--ink-2)">Velocidade do cursor</p>
   <div class="opts" id="speeds"><button type="button" data-s="0.8">Lenta</button><button type="button" data-s="1.25" class="on">Normal</button><button type="button" data-s="1.8">Rápida</button></div>
   <div class="opts" style="margin-top:8px"><button type="button" id="bMapa">Mapa do céu</button><button type="button" id="bCred">Créditos finais</button><button type="button" id="bHome">Voltar à entrada</button><button type="button" id="bReset">Zerar cronômetro</button><button type="button" id="bBye">Desconectar</button></div>
@@ -159,6 +167,10 @@ button:disabled { opacity: 0.35; }
     $("bMusic").classList.toggle("on", !!state.music);
     const n = notes[state.id];
     $("nBody").innerHTML = n && n.length ? "<ul>" + n.map((x) => `<li>${String(x).replace(/[&<]/g, (c) => (c === "&" ? "&amp;" : "&lt;"))}</li>`).join("") + "</ul>" : `<p class="empty">Sem anotações para este lugar.</p>`;
+    // os botões do momento: um toque e o site faz o caminho (sobe ao mapa, desce, entra...)
+    const ac = state.acoes || [];
+    $("acoes").innerHTML = ac.map((a, i) => `<button type="button" data-a="${esc(a.id)}" class="${ac.length % 2 && i === ac.length - 1 ? "um" : ""}"><b>${esc(a.t)}</b>${a.sub ? `<span>${esc(a.sub)}</span>` : ""}</button>`).join("");
+    $("pad").classList.toggle("oculto", !state.panel);
     let g0 = null;
     $("list").innerHTML = state.places.map((p) => { const head = p.g !== g0 ? `<h3>${esc(p.g)}</h3>` : ""; g0 = p.g; return head + `<button type="button" data-i="${p.i}" class="${p.i === state.place ? "cur" : ""}"><b>${esc(p.t)}</b>${p.sub ? `<span>${esc(p.sub)}</span>` : ""}</button>`; }).join("");
   }
@@ -170,6 +182,7 @@ button:disabled { opacity: 0.35; }
   tap("bBack", () => send({ t: "back" })); tap("bEntry", () => send(state && (state.fin === "topo" || state.fin === "infinito") ? { t: "fim" } : { t: "home" }));
   tap("bList", () => $("sheet").classList.add("on")); tap("sheetX", () => $("sheet").classList.remove("on"));
   $("list").addEventListener("click", (e) => { const b = e.target.closest("button[data-i]"); if (!b) return; vib(8); send({ t: "go", i: +b.dataset.i }); $("sheet").classList.remove("on"); });
+  $("acoes").addEventListener("click", (e) => { const b = e.target.closest("button[data-a]"); if (!b) return; vib(10); send({ t: "acao", id: b.dataset.a }); });
   tap("bClose", () => { send({ t: "close" }); zoomOn = false; $("bZoom").classList.remove("on"); });
   let zoomOn = false; tap("bZoom", () => { zoomOn = !zoomOn; $("bZoom").classList.toggle("on", zoomOn); send({ t: "zoom", on: zoomOn }); });
   let spotOn = false; const setSpot = (v) => { spotOn = v; $("bSpot").classList.toggle("on", v); send({ t: "spot", on: v }); };
@@ -183,7 +196,7 @@ button:disabled { opacity: 0.35; }
   $("speeds").addEventListener("click", (e) => { const b = e.target.closest("button[data-s]"); if (!b) return; speed = +b.dataset.s; [...$("speeds").children].forEach((x) => x.classList.toggle("on", x === b)); });
 
   /* cronômetro: avisos discretos por vibração 2 minutos antes, na meta e 2 minutos depois */
-  let target = 13 * 60, run = false, acc = 0, t0 = 0, warned = {};
+  let target = 8 * 60, run = false, acc = 0, t0 = 0, warned = {};
   $("targets").addEventListener("click", (e) => { const b = e.target.closest("button[data-m]"); if (!b) return; target = +b.dataset.m * 60; [...$("targets").children].forEach((x) => x.classList.toggle("on", x === b)); warned = {}; });
   const el = () => acc + (run ? (Date.now() - t0) / 1000 : 0);
   let holdT = null;
@@ -215,7 +228,7 @@ button:disabled { opacity: 0.35; }
   pad.addEventListener("pointermove", (e) => {
     const p = touches.get(e.pointerId); if (!p) return;
     const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY;
-    if (touches.size === 1 && !two) { moved += Math.abs(dx) + Math.abs(dy); const w = rect().width; acc2.dx += dx / w * speed; acc2.dy += dy / w * speed; showDot(e.clientX, e.clientY, true); }
+    if (touches.size === 1 && !two) { moved += Math.abs(dx) + Math.abs(dy); scroll += -dy * 2.4; look.dx += Math.abs(dy) * 0.06; showDot(e.clientX, e.clientY, true); }
     else if (touches.size === 2) {
       look.dx += dx / 2; look.dy += dy / 2; scroll += dy / 2 * 2.2;
       const [a, b] = [...touches.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y);
@@ -228,7 +241,7 @@ button:disabled { opacity: 0.35; }
     if (touches.size === 0) {
       clearTimeout(long); showDot(0, 0, false);
       if (holding) { holding = false; pad.classList.remove("hold"); send({ t: "spot", on: spotOn }); }
-      else if (!two && start && moved < 10 && performance.now() - start.t < 320) { send({ t: "click" }); vib(12); }
+      /* (sem cursor: tocar no pad não clica em nada) */
       two = false; $("padMode").textContent = "Cursor";
     }
   };
